@@ -286,7 +286,7 @@ impl NetworkMockBuilder {
         self.ok(&json!({
             "data": {
                 "info": {
-                    "version": "0.37.0",
+                    "version": "0.39.0",
                     "time": time,
                 }
             }
@@ -294,21 +294,21 @@ impl NetworkMockBuilder {
         .to_string())
     }
 
-    pub fn metrics(&mut self, time: u64, block_time: u64) -> &mut Self {
+    pub fn metrics(&mut self, time: u64, latency: u64) -> &mut Self {
         self.ok(&json!({
             "data": {
                 "info": {
-                    "version": "0.37.0",
+                    "version": "0.39.0",
                     "time": time,
-                    "lastBlockTime": block_time,
+                    "latency": latency,
                 }
             }
         })
         .to_string())
     }
 
-    pub fn election(&mut self, time: u64, block_time: u64) -> &mut Self {
-        self.schema(time).metrics(time, block_time)
+    pub fn election(&mut self, time: u64, latency: u64) -> &mut Self {
+        self.schema(time).metrics(time, latency)
     }
 
     pub fn election_loose(&mut self, time: u64) -> &mut Self {

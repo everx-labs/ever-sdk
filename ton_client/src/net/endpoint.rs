@@ -18,7 +18,7 @@ use crate::net::{Error, NetworkConfig};
 use serde_json::Value;
 use std::sync::atomic::{AtomicI64, AtomicU32, AtomicU64, Ordering};
 
-const V_0_37_0: u32 = 37000;
+const V_0_39_0: u32 = 39000;
 
 pub(crate) struct Endpoint {
     pub query_url: String,
@@ -47,7 +47,7 @@ impl Clone for Endpoint {
 }
 
 const QUERY_INFO_SCHEMA: &str = "?query=%7Binfo%7Bversion%20time%7D%7D";
-const QUERY_INFO_METRICS: &str = "?query=%7Binfo%7Bversion%20time%20lastBlockTime%7D%7D";
+const QUERY_INFO_METRICS: &str = "?query=%7Binfo%7Bversion%20time%20latency%7D%7D";
 
 impl Endpoint {
     pub fn http_headers() -> Vec<(String, String)> {
@@ -114,7 +114,7 @@ impl Endpoint {
         client_env: &ClientEnv,
         config: &NetworkConfig,
     ) -> ClientResult<()> {
-        if self.version() >= V_0_37_0 {
+        if self.version() >= V_0_39_0 {
             let info_request_time = client_env.now_ms();
             let (info, _, _) =
                 Self::fetch_info_with_url(client_env, &self.query_url, QUERY_INFO_METRICS).await?;
@@ -152,11 +152,9 @@ impl Endpoint {
                 server_time - ((info_request_time + now) / 2) as i64,
                 Ordering::Relaxed,
             );
-            if let Some(last_block_time) = info["lastBlockTime"].as_i64() {
-                self.server_latency.store(
-                    (server_time - last_block_time).abs() as u64,
-                    Ordering::Relaxed,
-                );
+            if let Some(latency) = info["latency"].as_i64() {
+                self.server_latency
+                    .store(latency.abs() as u64, Ordering::Relaxed);
                 self.next_latency_detection_time.store(
                     now as u64 + config.latency_detection_interval as u64,
                     Ordering::Relaxed,

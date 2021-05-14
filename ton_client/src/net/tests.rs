@@ -662,14 +662,14 @@ async fn retry_query_on_network_errors() {
     let now = client.env.now_ms();
     NetworkMock::build()
         .url("a")
-        .election(now, now - 1000)
+        .election(now, 1000)
         .repeat(2)
         .network_err()
-        .election(now, now - 1000)
+        .election(now, 1000)
         .blocks("1")
         .repeat(5)
         .network_err()
-        .election(now, now - 1000)
+        .election(now, 1000)
         .blocks("2")
         .reset_client(&client)
         .await;
@@ -697,10 +697,10 @@ async fn querying_endpoint_selection() {
     NetworkMock::build()
         .url("a")
         .delay(200)
-        .election(now, now - 500) // looser
+        .election(now, 500) // looser
         .url("b")
         .delay(100)
-        .election(now, now - 500) // winner
+        .election(now, 500) // winner
         .reset_client(&client)
         .await;
     assert_eq!(get_query_url(&client).await, "b");
@@ -710,10 +710,10 @@ async fn querying_endpoint_selection() {
     NetworkMock::build()
         .url("a")
         .delay(100)
-        .election(now, now - 1500) // looser
+        .election(now, 1500) // looser
         .url("b")
         .delay(200)
-        .election(now, now - 500) // winner
+        .election(now, 500) // winner
         .reset_client(&client)
         .await;
     assert_eq!(get_query_url(&client).await, "b");
@@ -723,10 +723,10 @@ async fn querying_endpoint_selection() {
     NetworkMock::build()
         .url("a")
         .delay(200)
-        .election(now, now - 1500) // winner (slower but better latency)
+        .election(now, 1500) // winner (slower but better latency)
         .url("b")
         .delay(100)
-        .election(now, now - 2000) // looser (faster but worse latency)
+        .election(now, 2000) // looser (faster but worse latency)
         .reset_client(&client)
         .await;
     assert_eq!(get_query_url(&client).await, "a");
@@ -790,7 +790,7 @@ async fn latency_detection_with_queries() {
     NetworkMock::build()
         .url("a")
         .delay(10)
-        .election(now, now - 500) // winner
+        .election(now, 500) // winner
         .url("b")
         .delay(20)
         .election_loose(now) // looser
@@ -803,19 +803,19 @@ async fn latency_detection_with_queries() {
                     "id": "2",
                 }],
                 "q2": {
-                    "version": "0.37.0",
+                    "version": "0.39.0",
                     "time": 1000,
                 },
             }
         })
         .to_string()) // query with latency checking, returns bad latency
-        .metrics(1000, 100)
+        .metrics(1000, 900)
         .url("a")
         .delay(20)
         .election_loose(now) // looser
         .url("b")
         .delay(10)
-        .election(now, now - 500) // winner
+        .election(now, 500) // winner
         .url("b")
         .blocks("2") // retry query
         .reset_client(&client)
@@ -849,7 +849,7 @@ async fn latency_detection_with_websockets() {
     NetworkMock::build()
         .url("a")
         .delay(10)
-        .election(now, now - 500) // winner
+        .election(now, 500) // winner
         .url("b")
         .delay(20)
         .election_loose(now) // looser
@@ -863,12 +863,12 @@ async fn latency_detection_with_websockets() {
         .ws_ack()
         .url("a")
         .delay(20)
-        .metrics(now, now - 700) // check latency, bad
+        .metrics(now, 700) // check latency, bad
         .delay(20)
         .election_loose(now) // looser
         .url("b")
         .delay(10)
-        .election(now, now - 500) // winner
+        .election(now, 500) // winner
         .reset_client(&client)
         .await;
 
@@ -909,7 +909,7 @@ async fn get_endpoints() {
     NetworkMock::build()
         .url("a")
         .delay(10)
-        .election(now, now - 500) // winner
+        .election(now, 500) // winner
         .url("b")
         .delay(20)
         .election_loose(now) // looser
