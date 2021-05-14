@@ -2,6 +2,26 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.14.1] – 2021-04-29
+
+### Fixed
+
+- Fixed building under Rust versions older than 1.51.
+
+## [1.14.0] – 2021-04-28
+
+### New
+
+- **Debot module**:
+    - implementation of Network DeBot interface in DEngine.
+    - implementation of `signHash` function in Sdk interface.
+
+### Fixed
+
+- **Debot module**:
+    - fixed bug in Json interface with supporting nested structures and arrays of structures.
+    - fixed bug in Json interface with keys containing hyphens.
+
 ## [1.13.0] – 2021-04-23
 
 ### New
