@@ -46,14 +46,14 @@ pub async fn calc_storage_fee(
     let stuff = account.stuff().ok_or(Error::invalid_account_boc("Account is None"))?;
     let config = crate::tvm::types::get_default_config(&context).await?;
 
-    if stuff.storage_stat.last_paid == 0 {
+    if stuff.storage_stat().last_paid() == 0 {
         return Err(Error::invalid_account_boc("Account `last_paid` field is not initialized"));
     }
 
     let fee = config.calc_storage_fee(
-        &stuff.storage_stat,
-        stuff.addr.is_masterchain(),
-        stuff.storage_stat.last_paid + params.period,
+        &stuff.storage_stat(),
+        stuff.addr().is_masterchain(),
+        stuff.storage_stat().last_paid() + params.period,
     );
 
     Ok(ResultOfCalcStorageFee {

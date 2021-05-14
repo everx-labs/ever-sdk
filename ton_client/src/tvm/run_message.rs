@@ -27,7 +27,7 @@ use crate::tvm::{check_transaction::calc_transaction_fees, Error};
 use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::sync::{atomic::AtomicU64, Arc};
-use ton_block::{Account, Message, Serializable};
+use ton_block::{Account, Message, Serializable, MsgAddressInt, CurrencyCollection, Transaction};
 use ton_executor::{ExecutorError, OrdinaryTransactionExecutor, TransactionExecutor};
 use ton_sdk::TransactionFees;
 use ton_types::Cell;
@@ -63,8 +63,8 @@ impl AccountForExecutor {
     pub async fn get_account(
         &self,
         context: &Arc<ClientContext>,
-        address: ton_block::MsgAddressInt,
-    ) -> ClientResult<(Cell, Option<ton_block::CurrencyCollection>)> {
+        address: MsgAddressInt,
+    ) -> ClientResult<(Cell, Option<CurrencyCollection>)> {
         match self {
             AccountForExecutor::None => {
                 let account = Account::AccountNone.write_to_new_cell().unwrap().into();
@@ -104,7 +104,7 @@ impl AccountForExecutor {
 
     pub fn restore_balance_if_needed(
         account: Cell,
-        balance: Option<ton_block::CurrencyCollection>,
+        balance: Option<CurrencyCollection>,
     ) -> ClientResult<Cell> {
         if let Some(balance) = balance {
             let mut account: Account = deserialize_object_from_cell(account, "account")?;
@@ -189,7 +189,7 @@ pub struct ResultOfRunTvm {
 
 async fn parse_transaction(
     context: &Arc<ClientContext>,
-    transaction: &ton_block::Transaction,
+    transaction: &Transaction,
 ) -> ClientResult<Value> {
     Ok(crate::boc::parse_transaction(
         context.clone(),
@@ -229,24 +229,24 @@ pub async fn run_executor(
     params: ParamsOfRunExecutor,
 ) -> ClientResult<ResultOfRunExecutor> {
     let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
-    let msg_address = message.dst().ok_or_else(|| Error::invalid_message_type())?;
+    let msg_address = message.dst_ref().ok_or_else(|| Error::invalid_message_type())?.clone();
     let (account, _) = params.account.get_account(&context, msg_address.clone()).await?;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
     let account_copy = account.clone();
     let contract_info = move || async move {
-        let account: ton_block::Account =
+        let account: Account =
             deserialize_object_from_cell(account_copy.clone(), "account")?;
         match account.stuff() {
             Some(stuff) => {
                 let balance = stuff
-                    .storage
-                    .balance
+                    .storage()
+                    .balance()
                     .grams
                     .value()
                     .to_u64()
                     .unwrap_or_default();
-                Ok((stuff.addr.clone(), balance))
+                Ok((stuff.addr().clone(), balance))
             }
             None => Ok((msg_address.clone(), 0)),
         }
@@ -314,15 +314,14 @@ pub async fn run_tvm(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfRunTvm,
 ) -> ClientResult<ResultOfRunTvm> {
-    let account = deserialize_object_from_boc(&context, &params.account, "account").await?;
+    let mut account = deserialize_object_from_boc::<Account>(&context, &params.account, "account").await?;
     let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
-    let stuff = match account.object {
-        ton_block::Account::AccountNone => Err(Error::invalid_account_boc("Acount is None")),
-        ton_block::Account::Account(stuff) => Ok(stuff),
-    }?;
+    if account.object.is_none() {
+        return Err(Error::invalid_account_boc("Acount is None"))
+    }
 
-    let (messages, stuff) = super::call_tvm::call_tvm_msg(stuff, options, &message)?;
+    let messages = super::call_tvm::call_tvm_msg(&mut account.object, options, &message)?;
 
     let mut out_messages = vec![];
     for message in messages {
@@ -337,7 +336,7 @@ pub async fn run_tvm(
     };
 
     let account = if params.return_updated_account.unwrap_or_default() {
-        serialize_object_to_boc(&context, &ton_block::Account::Account(stuff), "account", params.boc_cache).await?
+        serialize_object_to_boc(&context, &account.object, "account", params.boc_cache).await?
     } else {
         String::new()
     };
@@ -351,12 +350,12 @@ pub async fn run_tvm(
 
 async fn call_executor<F>(
     mut account: Cell,
-    msg: ton_block::Message,
+    msg: Message,
     options: ResolvedExecutionOptions,
     contract_info: impl FnOnce() -> F,
-) -> ClientResult<(ton_block::Transaction, Cell)>
+) -> ClientResult<(Transaction, Cell)>
 where
-    F: futures::Future<Output = ClientResult<(ton_block::MsgAddressInt, u64)>>,
+    F: futures::Future<Output = ClientResult<(MsgAddressInt, u64)>>,
 {
     let executor = OrdinaryTransactionExecutor::new(
         Arc::try_unwrap(options.blockchain_config)
