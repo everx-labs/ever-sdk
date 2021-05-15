@@ -34,6 +34,8 @@ pub(crate) fn call_tvm(
 ) -> ClientResult<ton_vm::executor::Engine> {
     let code = account.get_code().unwrap_or_default();
     let data = account.get_data().ok_or_else(|| Error::invalid_account_boc("Account has no code"))?;
+    let addr = account.get_addr().ok_or_else(|| Error::invalid_account_boc("Account has no address"))?;
+    let balance = account.balance().ok_or_else(|| Error::invalid_account_boc("Account has no balance"))?;
 
     let mut ctrls = SaveList::new();
     ctrls
@@ -45,8 +47,8 @@ pub(crate) fn call_tvm(
 
     let sci = build_contract_info(
         options.blockchain_config.raw_config(),
-        account.get_addr().unwrap(),
-        account.balance().unwrap(),
+        addr,
+        balance,
         options.block_time,
         options.block_lt,
         options.transaction_lt,
@@ -82,7 +84,7 @@ pub(crate) fn call_tvm(
                 exception.to_string(),
                 code,
                 Some(exit_arg),
-                &account.get_addr().unwrap(),
+                addr,
                 None,
             ))
         }
