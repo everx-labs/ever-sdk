@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0] – 2021-05-17
+
+### New
+- **Debot module**:
+    - signing messages with signing box handles returned from debots.
+    - return any sdk errors to debot in case of external calls.
+    - defining signing box handle used to sign message in approve callback.
 ## [1.14.1] – 2021-04-29
 
 ### Fixed
