@@ -322,6 +322,7 @@ impl ClientEnv {
             status: response.status(),
             url: response.url().to_string(),
             body: text,
+            remote_address: None,
         })
     }
 }
