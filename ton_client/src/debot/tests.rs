@@ -517,12 +517,12 @@ impl TestBrowser {
                 if let Some(expected) = state.activity.lock().await.pop() {
                     approved = expected.approved;
                     match activity {
-                        DebotActivity::Transaction{msg: _, dst, out, fee, setcode, signkey, sbhandle} => {
+                        DebotActivity::Transaction{msg: _, dst, out, fee, setcode, signkey, signing_box_handle} => {
                             assert_eq!(expected.dst, dst);
                             assert_eq!(expected.out, out);
                             assert_eq!(expected.setcode, setcode);
                             assert_eq!(expected.signkey, signkey);
-                            assert!(sbhandle != 0);
+                            assert!(signing_box_handle != 0);
                             assert!(fee > 0);
                         },
                     }

@@ -37,7 +37,7 @@ struct Metadata {
     is_timestamp: bool,
     is_expire: bool,
     is_pubkey: bool,
-    sign_box_handle: Option<SigningBoxHandle>,
+    signing_box_handle: Option<SigningBoxHandle>,
 }
 
 impl TryFrom<MsgAddressExt> for Metadata {
@@ -63,7 +63,7 @@ impl TryFrom<MsgAddressExt> for Metadata {
                 let is_expire = slice.get_next_bit().map_err(msg_err)?;
                 let is_pubkey = slice.get_next_bit().map_err(msg_err)?;
                 let is_sign_box_handle = slice.get_next_bit().unwrap_or(false);
-                let sign_box_handle = if is_sign_box_handle {
+                let signing_box_handle = if is_sign_box_handle {
                     Some(SigningBoxHandle(slice.get_next_u32().map_err(msg_err)?))
                 } else {
                     None
@@ -75,7 +75,7 @@ impl TryFrom<MsgAddressExt> for Metadata {
                     is_timestamp,
                     is_expire,
                     is_pubkey,
-                    sign_box_handle,
+                    signing_box_handle,
                 })
             }
         }
@@ -259,7 +259,7 @@ async fn decode_and_fix_ext_msg(
     browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     sign: bool,
 ) -> ClientResult<(u32, u32, u32, String, String, Signer)> {
-    let signer = resolve_signer(sign, signer, meta.sign_box_handle, browser.clone()).await?;
+    let signer = resolve_signer(sign, signer, meta.signing_box_handle, browser.clone()).await?;
     // find function id in message body: parse signature, pubkey and abi headers
 
     let mut in_body_slice = message.body().ok_or(msg_err("empty body"))?;
@@ -386,7 +386,7 @@ async fn resolve_signer(
             Signer::SigningBox {handle: _} => signer,
             _ => Signer::SigningBox {
                 handle: match msg_signing_box {
-                    Some(sbhandle) => sbhandle,
+                    Some(signing_box_handle) => signing_box_handle,
                     None => browser.get_signing_box().await
                         .map_err(|e| Error::external_call_failed(e))?,
                 },
@@ -445,7 +445,7 @@ async fn emulate_transaction(
         }
     }
 
-    let (sbhandle, signkey) = if let Signer::SigningBox { ref handle } = signer {
+    let (signing_box_handle, signkey) = if let Signer::SigningBox { ref handle } = signer {
         (handle.0, signer.resolve_public_key(client.clone()).await?.unwrap_or_default())
     } else {
         (0, String::new())
@@ -457,6 +457,6 @@ async fn emulate_transaction(
         fee: result.fees.total_account_fees,
         setcode: false,
         signkey, 
-        sbhandle,
+        signing_box_handle,
     })
 }

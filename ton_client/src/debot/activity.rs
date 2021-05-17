@@ -27,7 +27,7 @@ pub enum DebotActivity {
         setcode: bool,
         /// Public key from keypair that was used to sign external message.
         signkey: String,
-        /// Signing box handle
-        sbhandle: u32,
+        /// Signing box handle used to sign external message.
+        signing_box_handle: u32,
     }
 }
