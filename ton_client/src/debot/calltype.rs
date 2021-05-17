@@ -62,7 +62,7 @@ impl TryFrom<MsgAddressExt> for Metadata {
                 let is_timestamp = slice.get_next_bit().map_err(msg_err)?;
                 let is_expire = slice.get_next_bit().map_err(msg_err)?;
                 let is_pubkey = slice.get_next_bit().map_err(msg_err)?;
-                let is_sign_box_handle = slice.get_next_bit().map_err(msg_err)?;
+                let is_sign_box_handle = slice.get_next_bit().unwrap_or(false);
                 let sign_box_handle = if is_sign_box_handle {
                     Some(SigningBoxHandle(slice.get_next_u32().map_err(msg_err)?))
                 } else {
@@ -89,8 +89,12 @@ pub async fn run_get_method(
     target_state: String,
     debot_addr: &String,
 ) -> ClientResult<String> {
+    let mut message: Message = deserialize_object_from_base64(&msg, "message")
+        .map_err(msg_err)?
+        .object;
+    let meta = get_meta(&mut message)?;
     let (answer_id, _onerror_id, func_id, dest_addr, fixed_msg, _) =
-        decode_and_fix_ext_msg(ton.clone(), msg, Signer::None, browser, false)
+        decode_and_fix_ext_msg(ton.clone(), message, meta, Signer::None, browser, false)
             .await
             .map_err(|e| Error::get_method_failed(e))?;
 
@@ -126,11 +130,26 @@ pub async fn send_ext_msg<'a>(
     target_state: String,
     debot_addr: &'a String,
 ) -> ClientResult<String> {
-    
-    let (answer_id, onerror_id, func_id, dest_addr, fixed_msg, signer) =
-        decode_and_fix_ext_msg(ton.clone(), msg, signer, browser.clone(), true)
-            .await
-            .map_err(|e| Error::external_call_failed(e))?;
+    let mut message: Message = deserialize_object_from_base64(&msg, "message")
+        .map_err(msg_err)?
+        .object;
+    let meta = get_meta(&mut message)?;
+    let onerror_id = meta.onerror_id;
+    let dest_addr = message
+        .header()
+        .get_dst_address()
+        .map(|x| x.to_string())
+        .unwrap_or_default();
+        
+    let result = decode_and_fix_ext_msg(ton.clone(), message, meta, signer, browser.clone(), true)
+        .await
+        .map_err(|e| Error::external_call_failed(e));
+    if let Err(e) = result {
+        let error_body = build_onerror_body(onerror_id, e)?;
+        return build_internal_message(&dest_addr, debot_addr, error_body);
+    }
+
+    let (answer_id, onerror_id, func_id, dest_addr, fixed_msg, signer) = result.unwrap();
 
     let activity = emulate_transaction(
         ton.clone(),
@@ -234,25 +253,13 @@ fn build_onerror_body(onerror_id: u32, e: ClientError) -> ClientResult<SliceData
 
 async fn decode_and_fix_ext_msg(
     ton: TonClient,
-    msg: String,
+    mut message: Message,
+    meta: Metadata,
     signer: Signer,
     browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     sign: bool,
 ) -> ClientResult<(u32, u32, u32, String, String, Signer)> {
-    let mut message: Message = deserialize_object_from_base64(&msg, "message")
-        .map_err(msg_err)?
-        .object;
-
-    let src = std::mem::replace(
-        &mut message
-            .ext_in_header_mut()
-            .ok_or(msg_err("not an external inbound message"))?
-            .src,
-        MsgAddressExt::AddrNone,
-    );
-    let meta = Metadata::try_from(src)?;
     let signer = resolve_signer(sign, signer, meta.sign_box_handle, browser.clone()).await?;
-
     // find function id in message body: parse signature, pubkey and abi headers
 
     let mut in_body_slice = message.body().ok_or(msg_err("empty body"))?;
@@ -389,6 +396,17 @@ async fn resolve_signer(
         Signer::None
     };
     Ok(new_signer)
+}
+
+fn get_meta(message: &mut Message) -> ClientResult<Metadata> {
+    let src = std::mem::replace(
+        &mut message
+            .ext_in_header_mut()
+            .ok_or(msg_err("not an external inbound message"))?
+            .src,
+        MsgAddressExt::AddrNone,
+    );
+    Metadata::try_from(src)
 }
 
 async fn emulate_transaction(

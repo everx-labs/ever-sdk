@@ -4,13 +4,20 @@ pragma AbiHeader time;
 pragma AbiHeader pubkey;
 // import required DeBot interfaces and basic DeBot contract.
 import "../Debot.sol";
-import "../Terminal.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/SigningBoxInput/SigningBoxInput.sol";
 
 contract testDebot is Debot {
 
     /// @notice Entry point function for DeBot.
     function start() public override {
+        uint256[] hints;
+        SigningBoxInput.get(tvm.functionId(callSend), "Enter signing keys", hints);
+    }
+
+    function callSend(uint32 handle) public view {
         optional(uint256) pubkey = tvm.pubkey();
+        optional(uint32) sbHandle = handle;
         this.send1{
             abiVer: 2,
             extMsg: true,
@@ -18,8 +25,22 @@ contract testDebot is Debot {
             time: 0,
             expire: 0,
             pubkey: pubkey,
+            signBoxHandle: sbHandle,
             callbackId: tvm.functionId(onSuccess1),
             onErrorId: tvm.functionId(onError1)
+        }(2.2 ton, 3.5 ton);
+
+        sbHandle = 0;
+        this.send1{
+            abiVer: 2,
+            extMsg: true,
+            sign: true,
+            time: 0,
+            expire: 0,
+            pubkey: pubkey,
+            signBoxHandle: sbHandle,
+            callbackId: tvm.functionId(onSuccess1),
+            onErrorId: tvm.functionId(onError4)
         }(2.2 ton, 3.5 ton);
 
         this.send2{
@@ -74,6 +95,11 @@ contract testDebot is Debot {
         require(exitCode == 303, 103);
     }
 
+    function onError4(uint32 sdkError, uint32 exitCode) public pure {
+        require(sdkError == 810, 401);
+        require(exitCode == 0, 402);
+    }
+
     function send3() public view {
         require(false, 303);
     }
@@ -92,13 +118,25 @@ contract testDebot is Debot {
         addr.transfer(value2, false, 1);
     }
 
-    // @notice Define DeBot version and title here.
-    function getVersion() public override returns (string name, uint24 semver) {
-        (name, semver) = ("Test DeBot 6 for testing approve callback", _version(0,1,0));
+    /// @notice Returns Metadata about DeBot.
+    function getDebotInfo() public functionID(0xDEB) override view returns(
+        string name, string version, string publisher, string caption, string author,
+        address support, string hello, string language, string dabi, bytes icon
+    ) {
+        name = "testDebot6";
+        version = "0.1.0";
+        publisher = "TON Labs";
+        caption = "Test for approve callback and signing handle";
+        author = "TON Labs";
+        support = address(0);
+        hello = "testDebot6";
+        language = "en";
+        dabi = m_debotAbi.get();
+        icon = "";
     }
 
-    function _version(uint24 major, uint24 minor, uint24 fix) private pure inline returns (uint24) {
-        return (major << 16) | (minor << 8) | (fix);
+    function getRequiredInterfaces() public view override returns (uint256[] interfaces) {
+        return [ Terminal.ID, SigningBoxInput.ID ];
     }
 
 }

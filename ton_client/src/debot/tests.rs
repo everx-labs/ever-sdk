@@ -517,11 +517,12 @@ impl TestBrowser {
                 if let Some(expected) = state.activity.lock().await.pop() {
                     approved = expected.approved;
                     match activity {
-                        DebotActivity::Transaction{msg: _, dst, out, fee, setcode, signkey} => {
+                        DebotActivity::Transaction{msg: _, dst, out, fee, setcode, signkey, sbhandle} => {
                             assert_eq!(expected.dst, dst);
                             assert_eq!(expected.out, out);
                             assert_eq!(expected.setcode, setcode);
                             assert_eq!(expected.signkey, signkey);
+                            assert!(sbhandle != 0);
                             assert!(fee > 0);
                         },
                     }
@@ -1386,8 +1387,22 @@ async fn test_debot_getinfo() {
 async fn test_debot_approve() {
     let client = std::sync::Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot6").await;
-    let mut info = DebotInfo::default();
-    info.dabi = Some(abi);
+    let info = DebotInfo {
+        name: Some("testDebot6".to_owned()),
+        version: Some("0.1.0".to_owned()),
+        publisher: Some("TON Labs".to_owned()),
+        caption: Some("Test for approve callback and signing handle".to_owned()),
+        author: Some("TON Labs".to_owned()),
+        support: Some("0:0000000000000000000000000000000000000000000000000000000000000000".to_owned()),
+        hello: Some("testDebot6".to_owned()),
+        language: Some("en".to_owned()),
+        dabi: Some(abi),
+        icon: Some(format!("")),
+        interfaces: vec![
+            "0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned(),
+            "0xc13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a".to_owned(),
+        ],
+    };
     let steps = serde_json::from_value(json!([])).unwrap();
     TestBrowser::execute_with_details(
         client.clone(),
