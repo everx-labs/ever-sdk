@@ -4,7 +4,7 @@ use super::{BrowserCallbacks, DebotActivity, Spending, TonClient};
 use crate::abi::Signer;
 use crate::boc::internal::{deserialize_object_from_base64, serialize_object_to_base64};
 use crate::boc::{parse_message, ParamsOfParse};
-use crate::crypto::{signing_box_get_public_key, RegisteredSigningBox, SigningBoxHandle};
+use crate::crypto::{SigningBoxHandle};
 use crate::encoding::decode_abi_number;
 use crate::error::{ClientError, ClientResult};
 use crate::processing::{
@@ -37,6 +37,7 @@ struct Metadata {
     is_timestamp: bool,
     is_expire: bool,
     is_pubkey: bool,
+    sign_box_handle: Option<SigningBoxHandle>,
 }
 
 impl TryFrom<MsgAddressExt> for Metadata {
@@ -61,6 +62,12 @@ impl TryFrom<MsgAddressExt> for Metadata {
                 let is_timestamp = slice.get_next_bit().map_err(msg_err)?;
                 let is_expire = slice.get_next_bit().map_err(msg_err)?;
                 let is_pubkey = slice.get_next_bit().map_err(msg_err)?;
+                let is_sign_box_handle = slice.get_next_bit().map_err(msg_err)?;
+                let sign_box_handle = if is_sign_box_handle {
+                    Some(SigningBoxHandle(slice.get_next_u32().map_err(msg_err)?))
+                } else {
+                    None
+                };
 
                 Ok(Self {
                     answer_id,
@@ -68,6 +75,7 @@ impl TryFrom<MsgAddressExt> for Metadata {
                     is_timestamp,
                     is_expire,
                     is_pubkey,
+                    sign_box_handle,
                 })
             }
         }
@@ -75,13 +83,14 @@ impl TryFrom<MsgAddressExt> for Metadata {
 }
 
 pub async fn run_get_method(
+    browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     ton: TonClient,
     msg: String,
     target_state: String,
     debot_addr: &String,
 ) -> ClientResult<String> {
-    let (answer_id, _onerror_id, func_id, dest_addr, fixed_msg) =
-        decode_and_fix_ext_msg(ton.clone(), msg, Signer::None)
+    let (answer_id, _onerror_id, func_id, dest_addr, fixed_msg, _) =
+        decode_and_fix_ext_msg(ton.clone(), msg, Signer::None, browser, false)
             .await
             .map_err(|e| Error::get_method_failed(e))?;
 
@@ -113,33 +122,22 @@ pub async fn send_ext_msg<'a>(
     browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     ton: TonClient,
     msg: String,
-    signing_box: SigningBoxHandle,
+    signer: Signer,
     target_state: String,
     debot_addr: &'a String,
 ) -> ClientResult<String> {
-    let signer = Signer::SigningBox {
-        handle: signing_box.clone(),
-    };
-
-    let (answer_id, onerror_id, func_id, dest_addr, fixed_msg) =
-        decode_and_fix_ext_msg(ton.clone(), msg, signer)
+    
+    let (answer_id, onerror_id, func_id, dest_addr, fixed_msg, signer) =
+        decode_and_fix_ext_msg(ton.clone(), msg, signer, browser.clone(), true)
             .await
             .map_err(|e| Error::external_call_failed(e))?;
 
-    let pubkey = signing_box_get_public_key(
-        ton.clone(),
-        RegisteredSigningBox {
-            handle: signing_box,
-        },
-    )
-    .await?
-    .pubkey;
     let activity = emulate_transaction(
         ton.clone(),
         dest_addr.clone(),
         fixed_msg.clone(),
         target_state,
-        pubkey
+        signer,
     ).await;
     match activity {
         Ok(activity) => {
@@ -238,7 +236,9 @@ async fn decode_and_fix_ext_msg(
     ton: TonClient,
     msg: String,
     signer: Signer,
-) -> ClientResult<(u32, u32, u32, String, String)> {
+    browser: Arc<dyn BrowserCallbacks + Send + Sync>,
+    sign: bool,
+) -> ClientResult<(u32, u32, u32, String, String, Signer)> {
     let mut message: Message = deserialize_object_from_base64(&msg, "message")
         .map_err(msg_err)?
         .object;
@@ -251,6 +251,7 @@ async fn decode_and_fix_ext_msg(
         MsgAddressExt::AddrNone,
     );
     let meta = Metadata::try_from(src)?;
+    let signer = resolve_signer(sign, signer, meta.sign_box_handle, browser.clone()).await?;
 
     // find function id in message body: parse signature, pubkey and abi headers
 
@@ -286,10 +287,10 @@ async fn decode_and_fix_ext_msg(
     let mut new_body = BuilderData::new();
     let pubkey = signer.resolve_public_key(ton.clone()).await?;
     if meta.is_pubkey {
-        if let Some(key) = pubkey {
+        if let Some(ref key) = pubkey {
             new_body
                 .append_bit_one()
-                .and_then(|b| b.append_raw(&hex::decode(&key).unwrap(), 256))
+                .and_then(|b| b.append_raw(&hex::decode(key).unwrap(), 256))
                 .map_err(msg_err)?;
         } else {
             // pubkey bit = 0
@@ -336,7 +337,7 @@ async fn decode_and_fix_ext_msg(
         .get_dst_address()
         .map(|x| x.to_string())
         .unwrap_or_default();
-    Ok((meta.answer_id, meta.onerror_id, func_id, dst, msg))
+    Ok((meta.answer_id, meta.onerror_id, func_id, dst, msg, signer))
 }
 
 fn build_answer_msg(
@@ -367,12 +368,35 @@ fn build_answer_msg(
     build_internal_message(dest_addr, debot_addr, new_body.into()).ok()
 }
 
+async fn resolve_signer(
+    sign: bool,
+    signer: Signer,
+    msg_signing_box: Option<SigningBoxHandle>,
+    browser: Arc<dyn BrowserCallbacks + Send + Sync>
+) -> ClientResult<Signer> {
+    let new_signer = if sign {
+        match signer {
+            Signer::SigningBox {handle: _} => signer,
+            _ => Signer::SigningBox {
+                handle: match msg_signing_box {
+                    Some(sbhandle) => sbhandle,
+                    None => browser.get_signing_box().await
+                        .map_err(|e| Error::external_call_failed(e))?,
+                },
+            },
+        }
+    } else {
+        Signer::None
+    };
+    Ok(new_signer)
+}
+
 async fn emulate_transaction(
     client: TonClient,
     dst: String,
     msg: String,
     target_state: String,
-    signkey: String,
+    signer: Signer,
 ) -> ClientResult<DebotActivity> {
     let result = run_executor(
         client.clone(),
@@ -402,12 +426,19 @@ async fn emulate_transaction(
             });
         }
     }
+
+    let (sbhandle, signkey) = if let Signer::SigningBox { ref handle } = signer {
+        (handle.0, signer.resolve_public_key(client.clone()).await?.unwrap_or_default())
+    } else {
+        (0, String::new())
+    };
     Ok(DebotActivity::Transaction {
         msg: msg.clone(),
         dst: dst.clone(),
         out,
         fee: result.fees.total_account_fees,
         setcode: false,
-        signkey,
+        signkey, 
+        sbhandle,
     })
 }
