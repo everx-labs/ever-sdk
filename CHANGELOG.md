@@ -9,6 +9,12 @@ All notable changes to this project will be documented in this file.
     - signing messages with signing box handles returned from debots.
     - return any sdk errors to debot in case of external calls.
     - defining signing box handle used to sign message in approve callback.
+- Sync latency detection increases connection reliability. Library will change the current endpoint 
+  when it detects data sync latency on it.
+  
+- Configuration parameters: `latency_detection_interval`, 
+  `max_latency`. See client documentation for details. 
+
 ## [1.14.1] – 2021-04-29
 
 ### Fixed

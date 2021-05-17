@@ -1,5 +1,5 @@
 {
-  "version": "1.14.1",
+  "version": "1.15.0",
   "modules": [
     {
       "name": "client",
@@ -432,11 +432,11 @@
                 "number_type": "UInt",
                 "number_size": 8
               },
-              "summary": "Maximum number of randomly chosen endpoints the library uses to send message.",
+              "summary": "Maximum number of randomly chosen endpoints the library uses to broadcast a message.",
               "description": "Default is 2."
             },
             {
-              "name": "latency_detection_frequency",
+              "name": "latency_detection_interval",
               "type": "Optional",
               "optional_inner": {
                 "type": "Number",
@@ -444,7 +444,7 @@
                 "number_size": 32
               },
               "summary": "Frequency of sync latency detection.",
-              "description": "Library periodically performs checking for the server sync latency on current endpoint.\nIf the latency is less then the maximum allowed then library\nselects new current endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
+              "description": "Library periodically checks the current endpoint for blockchain data syncronization latency.\nIf the latency (time-lag) is less then `NetworkConfig.max_latency`\nthen library selects another endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
               "name": "max_latency",
@@ -454,8 +454,8 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Maximum value for the server sync latency.",
-              "description": "Library periodically performs checking for the server sync latency on current endpoint.\nIf the latency is less then the maximum allowed then library\nselects new current endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
+              "summary": "Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data syncronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.",
+              "description": "Must be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
               "name": "access_key",
@@ -7731,7 +7731,7 @@
         {
           "name": "run_executor",
           "summary": "Emulates all the phases of contract execution locally",
-          "description": "Performs all the phases of contract execution on Transaction Executor -\nthe same component that is used on Validator Nodes.\n\nCan be used for contract debugginh, to find out the reason why message was not delivered successfully\n - because Validators just throw away the failed external inbound messages, here you can catch them.\n\nAnother use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`\nto `true` so that emulation will not depend on the actual balance.\n\nOne more use case - you can produce the sequence of operations,\nthus emulating the multiple contract calls locally.\nAnd so on.\n\nTo get the account BOC (bag of cells) - use `net.query` method to download it from GraphQL API\n(field `boc` of `account`) or generate it with `abi.encode_account` method.\nTo get the message BOC - use `abi.encode_message` or prepare it any other way, for instance, with FIFT script.\n\nIf you need this emulation to be as precise as possible then specify `ParamsOfRunExecutor` parameter.\nIf you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.",
+          "description": "Performs all the phases of contract execution on Transaction Executor -\nthe same component that is used on Validator Nodes.\n\nCan be used for contract debugging, to find out the reason why a message was not delivered successfully.\nValidators throw away the failed external inbound messages (if they failed bedore `ACCEPT`) in the real network.\nThis is why these messages are impossible to debug in the real network.\nWith the help of run_executor you can do that. In fact, `process_message` function\nperforms local check with `run_executor` if there was no transaction as a result of processing\nand returns the error, if there is one.\n\nAnother use case to use `run_executor` is to estimate fees for message execution.\nSet  `AccountForExecutor::Account.unlimited_balance`\nto `true` so that emulation will not depend on the actual balance.\nThis may be needed to calculate deploy fees for an account that does not exist yet.\nJSON with fees is in `fees` field of the result.\n\nOne more use case - you can produce the sequence of operations,\nthus emulating the sequential contract calls locally.\nAnd so on.\n\nTransaction executor requires account BOC (bag of cells) as a parameter.\nTo get the account BOC - use `net.query` method to download it from GraphQL API\n(field `boc` of `account`) or generate it with `abi.encode_account` method.\n\nAlso it requires message BOC. To get the message BOC - use `abi.encode_message` or `abi.encode_internal_message`.\n\nIf you need this emulation to be as precise as possible (for instance - emulate transaction\nwith particular lt in particular block or use particular blockchain config,\nin case you want to download it from a particular key block - then specify `ParamsOfRunExecutor` parameter.\n\nIf you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.",
           "params": [
             {
               "name": "context",
