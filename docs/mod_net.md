@@ -28,6 +28,8 @@ Network access.
 
 [set_endpoints](#set_endpoints) – Sets the list of endpoints to use on reinit
 
+[get_endpoints](#get_endpoints) – Requests the list of alternative endpoints from server
+
 [query_counterparties](#query_counterparties) – Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
 
 ## Types
@@ -72,6 +74,8 @@ Network access.
 [ResultOfFindLastShardBlock](#ResultOfFindLastShardBlock)
 
 [EndpointsSet](#EndpointsSet)
+
+[ResultOfGetEndpoints](#ResultOfGetEndpoints)
 
 [ParamsOfQueryCounterparties](#ParamsOfQueryCounterparties)
 
@@ -416,6 +420,26 @@ function set_endpoints(
 - `endpoints`: _string[]_ – List of endpoints provided by server
 
 
+## get_endpoints
+
+Requests the list of alternative endpoints from server
+
+```ts
+type ResultOfGetEndpoints = {
+    query: string,
+    endpoints: string[]
+}
+
+function get_endpoints(): Promise<ResultOfGetEndpoints>;
+```
+
+
+### Result
+
+- `query`: _string_ – Current query endpoint
+- `endpoints`: _string[]_ – List of all endpoints used by client
+
+
 ## query_counterparties
 
 Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
@@ -757,6 +781,17 @@ type EndpointsSet = {
 }
 ```
 - `endpoints`: _string[]_ – List of endpoints provided by server
+
+
+## ResultOfGetEndpoints
+```ts
+type ResultOfGetEndpoints = {
+    query: string,
+    endpoints: string[]
+}
+```
+- `query`: _string_ – Current query endpoint
+- `endpoints`: _string[]_ – List of all endpoints used by client
 
 
 ## ParamsOfQueryCounterparties
