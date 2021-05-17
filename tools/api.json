@@ -432,7 +432,7 @@
                 "number_type": "UInt",
                 "number_size": 8
               },
-              "summary": "Maximum number of randomly chosen endpoints the library uses to send message.",
+              "summary": "Maximum number of randomly chosen endpoints the library uses to broadcast a message.",
               "description": "Default is 2."
             },
             {
@@ -444,7 +444,7 @@
                 "number_size": 32
               },
               "summary": "Frequency of sync latency detection.",
-              "description": "Library periodically performs checking for the server sync latency on current endpoint.\nIf the latency is less then the maximum allowed then library\nselects new current endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
+              "description": "Library periodically checks the current endpoint for blockchain data syncronization latency.\nIf the latency (time-lag) is less then `NetworkConfig.max_latency`\nthen library selects another endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
               "name": "max_latency",
@@ -454,8 +454,8 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Maximum value for the server sync latency.",
-              "description": "Library periodically performs checking for the server sync latency on current endpoint.\nIf the latency is less then the maximum allowed then library\nselects new current endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
+              "summary": "Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data syncronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.",
+              "description": "Must be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
               "name": "access_key",

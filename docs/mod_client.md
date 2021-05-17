@@ -256,12 +256,12 @@ type NetworkConfig = {
 <br>Must be specified in milliseconds. Default is 40000 (40 sec).
 - `out_of_sync_threshold`?: _number_ – Maximum time difference between server and client.
 <br>If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than<br>`message_processing_timeout/2`.<br><br>Must be specified in milliseconds. Default is 15000 (15 sec).
-- `sending_endpoint_count`?: _number_ – Maximum number of randomly chosen endpoints the library uses to send message.
+- `sending_endpoint_count`?: _number_ – Maximum number of randomly chosen endpoints the library uses to broadcast a message.
 <br>Default is 2.
 - `latency_detection_interval`?: _number_ – Frequency of sync latency detection.
-<br>Library periodically performs checking for the server sync latency on current endpoint.<br>If the latency is less then the maximum allowed then library<br>selects new current endpoint.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
-- `max_latency`?: _number_ – Maximum value for the server sync latency.
-<br>Library periodically performs checking for the server sync latency on current endpoint.<br>If the latency is less then the maximum allowed then library<br>selects new current endpoint.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
+<br>Library periodically checks the current endpoint for blockchain data syncronization latency.<br>If the latency (time-lag) is less then `NetworkConfig.max_latency`<br>then library selects another endpoint.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
+- `max_latency`?: _number_ – Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data syncronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.
+<br>Must be specified in milliseconds. Default is 60000 (1 min).
 - `access_key`?: _string_ – Access key to GraphQL API.
 <br>At the moment is not used in production.
 
