@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.15.0] – 2021-05-17
+
+### New
+
+- Sync latency detection increases a connection reliability. Library will change the current endpoint 
+  when it detects an endpoint sync latency.
+  
+- Configuration parameters: `latency_detection_interval`, 
+  `max_latency`. See client documentation for details. 
+
 ## [1.14.1] – 2021-04-29
 
 ### Fixed
