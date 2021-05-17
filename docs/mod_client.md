@@ -235,6 +235,8 @@ type NetworkConfig = {
     wait_for_timeout?: number,
     out_of_sync_threshold?: number,
     sending_endpoint_count?: number,
+    latency_detection_interval?: number,
+    max_latency?: number,
     access_key?: string
 }
 ```
@@ -243,17 +245,25 @@ type NetworkConfig = {
 <br>Any correct URL format can be specified, including IP addresses This parameter is prevailing over `server_address`.
 - `network_retries_count`?: _number_ – Deprecated.
 <br>You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout.
-- `max_reconnect_timeout`?: _number_ – Maximum time for sequential reconnections in ms.
-<br>Default value is 120000 (2 min)
+- `max_reconnect_timeout`?: _number_ – Maximum time for sequential reconnections.
+<br>Must be specified in milliseconds. Default is 120000 (2 min).
 - `reconnect_timeout`?: _number_ – Deprecated
-- `message_retries_count`?: _number_ – The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successful or failed with replay protection error. The default value is 5.
+- `message_retries_count`?: _number_ – The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successful or failed with replay protection error.
+<br>Default is 5.
 - `message_processing_timeout`?: _number_ – Timeout that is used to process message delivery for the contracts which ABI does not include "expire" header. If the message is not delivered within the specified timeout the appropriate error occurs.
-- `wait_for_timeout`?: _number_ – Maximum timeout that is used for query response. The default value is 40 sec.
+<br>Must be specified in milliseconds. Default is 40000 (40 sec).
+- `wait_for_timeout`?: _number_ – Maximum timeout that is used for query response.
+<br>Must be specified in milliseconds. Default is 40000 (40 sec).
 - `out_of_sync_threshold`?: _number_ – Maximum time difference between server and client.
-<br>If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than<br>`message_processing_timeout/2`.<br>The default value is 15 sec.
-- `sending_endpoint_count`?: _number_ – Maximum number of randomly chosen endpoints the library uses to send message. The default value is 2 endpoints.
+<br>If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than<br>`message_processing_timeout/2`.<br><br>Must be specified in milliseconds. Default is 15000 (15 sec).
+- `sending_endpoint_count`?: _number_ – Maximum number of randomly chosen endpoints the library uses to send message.
+<br>Default is 2.
+- `latency_detection_interval`?: _number_ – Frequency of sync latency detection.
+<br>Library periodically performs checking for the server sync latency on current endpoint.<br>If the latency is less then the maximum allowed then library<br>selects new current endpoint.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
+- `max_latency`?: _number_ – Maximum value for the server sync latency.
+<br>Library periodically performs checking for the server sync latency on current endpoint.<br>If the latency is less then the maximum allowed then library<br>selects new current endpoint.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
 - `access_key`?: _string_ – Access key to GraphQL API.
-<br>At the moment is not used in production
+<br>At the moment is not used in production.
 
 
 ## CryptoConfig
