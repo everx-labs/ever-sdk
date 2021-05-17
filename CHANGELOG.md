@@ -6,8 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### New
 
-- Sync latency detection increases a connection reliability. Library will change the current endpoint 
-  when it detects an endpoint sync latency.
+- Sync latency detection increases connection reliability. Library will change the current endpoint 
+  when it detects data sync latency on it.
   
 - Configuration parameters: `latency_detection_interval`, 
   `max_latency`. See client documentation for details. 
