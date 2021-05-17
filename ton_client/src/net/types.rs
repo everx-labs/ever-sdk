@@ -194,7 +194,7 @@ pub struct NetworkConfig {
     )]
     pub out_of_sync_threshold: u32,
 
-    /// Maximum number of randomly chosen endpoints the library uses to send message.
+    /// Maximum number of randomly chosen endpoints the library uses to broadcast a message.
     ///
     /// Default is 2.
     #[serde(
@@ -203,10 +203,10 @@ pub struct NetworkConfig {
     )]
     pub sending_endpoint_count: u8,
 
-    /// Frequency of sync latency detection. Library periodically performs
-    /// checking for the server sync latency on current endpoint.
-    /// If the latency is less then the maximum allowed then library
-    /// selects new current endpoint.
+    /// Frequency of sync latency detection. Library periodically
+    /// checks the current endpoint for blockchain data syncronization latency. 
+    /// If the latency (time-lag) is less then `NetworkConfig.max_latency` 
+    /// then library selects another endpoint.
     ///
     /// Must be specified in milliseconds. Default is 60000 (1 min).
     #[serde(
@@ -215,10 +215,11 @@ pub struct NetworkConfig {
     )]
     pub latency_detection_interval: u32,
 
-    /// Maximum value for the server sync latency. Library periodically performs
-    /// checking for the server sync latency on current endpoint.
-    /// If the latency is less then the maximum allowed then library
-    /// selects new current endpoint.
+    /// Maximum value for the endpoint's blockchain data syncronization latency (time-lag). 
+    /// Library periodically checks the current endpoint for blockchain 
+    /// data syncronization latency. 
+    /// If the latency (time-lag) is less then `NetworkConfig.max_latency` 
+    /// then library selects another endpoint.
     ///
     /// Must be specified in milliseconds. Default is 60000 (1 min).
     #[serde(
