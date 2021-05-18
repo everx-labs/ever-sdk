@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 ## [1.15.0] – 2021-05-17
 
 ### New
-
+- **Debot module**:
+    - signing messages with signing box handles returned from debots.
+    - return any sdk errors to debot in case of external calls.
+    - defining signing box handle used to sign message in approve callback.
 - Sync latency detection increases connection reliability. Library will change the current endpoint 
   when it detects data sync latency on it.
   
