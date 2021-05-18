@@ -9326,6 +9326,14 @@
                   "type": "String",
                   "summary": "Public key from keypair that was used to sign external message.",
                   "description": null
+                },
+                {
+                  "name": "signing_box_handle",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 32,
+                  "summary": "Signing box handle used to sign external message.",
+                  "description": null
                 }
               ],
               "summary": "DeBot wants to create new transaction in blockchain.",
