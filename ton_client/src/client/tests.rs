@@ -40,3 +40,20 @@ fn api_reference() {
     assert_ne!(api.api.modules.len(), 0);
     assert_eq!(api.api.version, env!("CARGO_PKG_VERSION"));
 }
+
+#[test]
+fn test_invalid_params_error_secret_stripped() {
+    let public = "1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+    let secret = "9234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef";
+    let error = super::errors::Error::invalid_params(
+        &format!(
+            r#"{{"address":"0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
+            "public":"{}",
+            "secret":"{}"}}"#,
+            public,
+            secret
+        ),
+        "error"
+    );
+    assert!(!error.message.contains(secret));
+}
