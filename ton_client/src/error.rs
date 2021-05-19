@@ -59,8 +59,11 @@ impl<T: Send> AddNetworkUrl for ClientResult<T> {
         match self {
             Err(mut err) => {
                 err.data["config_servers"] = client.config_servers().await.into();
-                if let Some(url) = client.query_url().await {
-                    err.data["query_url"] = url.into();
+                if let Some(endpoint) = client.query_endpoint().await {
+                    err.data["query_url"] = endpoint.query_url.as_str().into();
+                    if let Some(ip_address) = &endpoint.ip_address {
+                        err.data["query_ip_address"] = ip_address.as_str().into();
+                    }
                 }
                 Err(err)
             }

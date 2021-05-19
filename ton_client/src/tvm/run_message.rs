@@ -24,10 +24,9 @@ use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::processing::{parsing::decode_output, DecodedOutput};
 use crate::tvm::{check_transaction::calc_transaction_fees, Error};
-use num_traits::ToPrimitive;
 use serde_json::Value;
 use std::sync::{atomic::AtomicU64, Arc};
-use ton_block::{Account, Message, Serializable};
+use ton_block::{Account, Message, Serializable, MsgAddressInt, CurrencyCollection, Transaction};
 use ton_executor::{ExecutorError, OrdinaryTransactionExecutor, TransactionExecutor};
 use ton_sdk::TransactionFees;
 use ton_types::Cell;
@@ -63,11 +62,11 @@ impl AccountForExecutor {
     pub async fn get_account(
         &self,
         context: &Arc<ClientContext>,
-        address: ton_block::MsgAddressInt,
-    ) -> ClientResult<(Cell, Option<ton_block::CurrencyCollection>)> {
+        address: MsgAddressInt,
+    ) -> ClientResult<(Cell, Option<CurrencyCollection>)> {
         match self {
             AccountForExecutor::None => {
-                let account = Account::AccountNone.write_to_new_cell().unwrap().into();
+                let account = Account::default().serialize().unwrap();
                 Ok((account, None))
             }
             AccountForExecutor::Uninit => {
@@ -104,7 +103,7 @@ impl AccountForExecutor {
 
     pub fn restore_balance_if_needed(
         account: Cell,
-        balance: Option<ton_block::CurrencyCollection>,
+        balance: Option<CurrencyCollection>,
     ) -> ClientResult<Cell> {
         if let Some(balance) = balance {
             let mut account: Account = deserialize_object_from_cell(account, "account")?;
@@ -189,7 +188,7 @@ pub struct ResultOfRunTvm {
 
 async fn parse_transaction(
     context: &Arc<ClientContext>,
-    transaction: &ton_block::Transaction,
+    transaction: &Transaction,
 ) -> ClientResult<Value> {
     Ok(crate::boc::parse_transaction(
         context.clone(),
@@ -206,21 +205,33 @@ async fn parse_transaction(
 /// Performs all the phases of contract execution on Transaction Executor - 
 /// the same component that is used on Validator Nodes. 
 /// 
-/// Can be used for contract debugginh, to find out the reason why message was not delivered successfully 
-///  - because Validators just throw away the failed external inbound messages, here you can catch them. 
+/// Can be used for contract debugging, to find out the reason why a message was not delivered successfully.
+/// Validators throw away the failed external inbound messages (if they failed bedore `ACCEPT`) in the real network. 
+/// This is why these messages are impossible to debug in the real network. 
+/// With the help of run_executor you can do that. In fact, `process_message` function
+/// performs local check with `run_executor` if there was no transaction as a result of processing
+/// and returns the error, if there is one. 
 /// 
-/// Another use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`
+/// Another use case to use `run_executor` is to estimate fees for message execution. 
+/// Set  `AccountForExecutor::Account.unlimited_balance`
 /// to `true` so that emulation will not depend on the actual balance.
+/// This may be needed to calculate deploy fees for an account that does not exist yet.
+/// JSON with fees is in `fees` field of the result.
 /// 
 /// One more use case - you can produce the sequence of operations,
-/// thus emulating the multiple contract calls locally. 
+/// thus emulating the sequential contract calls locally. 
 /// And so on. 
 /// 
-/// To get the account BOC (bag of cells) - use `net.query` method to download it from GraphQL API
-/// (field `boc` of `account`) or generate it with `abi.encode_account` method. 
-/// To get the message BOC - use `abi.encode_message` or prepare it any other way, for instance, with FIFT script.
+/// Transaction executor requires account BOC (bag of cells) as a parameter. 
+/// To get the account BOC - use `net.query` method to download it from GraphQL API
+/// (field `boc` of `account`) or generate it with `abi.encode_account` method.
+///  
+/// Also it requires message BOC. To get the message BOC - use `abi.encode_message` or `abi.encode_internal_message`.
 /// 
-/// If you need this emulation to be as precise as possible then specify `ParamsOfRunExecutor` parameter.
+/// If you need this emulation to be as precise as possible (for instance - emulate transaction
+/// with particular lt in particular block or use particular blockchain config, 
+/// in case you want to download it from a particular key block - then specify `ParamsOfRunExecutor` parameter.
+/// 
 /// If you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.
 
 #[api_function]
@@ -229,26 +240,17 @@ pub async fn run_executor(
     params: ParamsOfRunExecutor,
 ) -> ClientResult<ResultOfRunExecutor> {
     let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
-    let msg_address = message.dst().ok_or_else(|| Error::invalid_message_type())?;
+    let msg_address = message.dst_ref().ok_or_else(|| Error::invalid_message_type())?.clone();
     let (account, _) = params.account.get_account(&context, msg_address.clone()).await?;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
     let account_copy = account.clone();
     let contract_info = move || async move {
-        let account: ton_block::Account =
-            deserialize_object_from_cell(account_copy.clone(), "account")?;
-        match account.stuff() {
-            Some(stuff) => {
-                let balance = stuff
-                    .storage
-                    .balance
-                    .grams
-                    .value()
-                    .to_u64()
-                    .unwrap_or_default();
-                Ok((stuff.addr.clone(), balance))
-            }
-            None => Ok((msg_address.clone(), 0)),
+        let account = deserialize_object_from_cell::<Account>(account_copy.clone(), "account")?;
+        if let (Some(addr), Some(balance)) = (account.get_addr(), account.balance()) {
+            Ok((addr.clone(), balance.grams.0 as u64))
+        } else {
+            Ok((msg_address.clone(), 0))
         }
     };
 
@@ -314,15 +316,14 @@ pub async fn run_tvm(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfRunTvm,
 ) -> ClientResult<ResultOfRunTvm> {
-    let account = deserialize_object_from_boc(&context, &params.account, "account").await?;
+    let mut account = deserialize_object_from_boc::<Account>(&context, &params.account, "account").await?;
     let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
-    let stuff = match account.object {
-        ton_block::Account::AccountNone => Err(Error::invalid_account_boc("Acount is None")),
-        ton_block::Account::Account(stuff) => Ok(stuff),
-    }?;
+    if account.object.is_none() {
+        return Err(Error::invalid_account_boc("Acount is None"))
+    }
 
-    let (messages, stuff) = super::call_tvm::call_tvm_msg(stuff, options, &message)?;
+    let messages = super::call_tvm::call_tvm_msg(&mut account.object, options, &message)?;
 
     let mut out_messages = vec![];
     for message in messages {
@@ -337,7 +338,7 @@ pub async fn run_tvm(
     };
 
     let account = if params.return_updated_account.unwrap_or_default() {
-        serialize_object_to_boc(&context, &ton_block::Account::Account(stuff), "account", params.boc_cache).await?
+        serialize_object_to_boc(&context, &account.object, "account", params.boc_cache).await?
     } else {
         String::new()
     };
@@ -351,12 +352,12 @@ pub async fn run_tvm(
 
 async fn call_executor<F>(
     mut account: Cell,
-    msg: ton_block::Message,
+    msg: Message,
     options: ResolvedExecutionOptions,
     contract_info: impl FnOnce() -> F,
-) -> ClientResult<(ton_block::Transaction, Cell)>
+) -> ClientResult<(Transaction, Cell)>
 where
-    F: futures::Future<Output = ClientResult<(ton_block::MsgAddressInt, u64)>>,
+    F: futures::Future<Output = ClientResult<(MsgAddressInt, u64)>>,
 {
     let executor = OrdinaryTransactionExecutor::new(
         Arc::try_unwrap(options.blockchain_config)

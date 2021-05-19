@@ -12,6 +12,8 @@
 */
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
+#[cfg(test)]
+use crate::client::network_mock::NetworkMock;
 use crate::error::ClientResult;
 use futures::{Future, SinkExt, StreamExt};
 use reqwest::{
@@ -20,8 +22,10 @@ use reqwest::{
 };
 use std::collections::HashMap;
 use std::str::FromStr;
-use tokio_tungstenite::tungstenite::Message as WsMessage;
 use tokio::runtime::Runtime;
+#[cfg(test)]
+use tokio::sync::RwLock;
+use tokio_tungstenite::tungstenite::Message as WsMessage;
 
 lazy_static! {
     static ref RUNTIME_CONTAINER: ClientResult<Runtime> = create_runtime();
@@ -39,6 +43,8 @@ fn create_runtime() -> ClientResult<Runtime> {
 pub(crate) struct ClientEnv {
     http_client: HttpClient,
     async_runtime_handle: tokio::runtime::Handle,
+    #[cfg(test)]
+    pub network_mock: RwLock<NetworkMock>,
 }
 
 impl ClientEnv {
@@ -49,18 +55,18 @@ impl ClientEnv {
 
         let async_runtime_handle = match tokio::runtime::Handle::try_current() {
             Ok(handle) => handle,
-            Err(_) => {
-                RUNTIME_CONTAINER
-                    .as_ref()
-                    .map_err(|err| err.clone())?
-                    .handle()
-                    .clone()
-            }
+            Err(_) => RUNTIME_CONTAINER
+                .as_ref()
+                .map_err(|err| err.clone())?
+                .handle()
+                .clone(),
         };
 
         Ok(Self {
             http_client: client,
-            async_runtime_handle
+            async_runtime_handle,
+            #[cfg(test)]
+            network_mock: RwLock::new(NetworkMock::new()),
         })
     }
 
@@ -119,6 +125,18 @@ impl ClientEnv {
         url: &str,
         headers: Option<HashMap<String, String>>,
     ) -> ClientResult<WebSocket> {
+        #[cfg(test)]
+        {
+            if let Some(ws) = self
+                .network_mock
+                .write()
+                .await
+                .websocket_connect(&self.async_runtime_handle, url)
+                .await
+            {
+                return Ok(ws);
+            }
+        }
         let mut request = tokio_tungstenite::tungstenite::handshake::client::Request::builder()
             .method("GET")
             .uri(url);
@@ -168,6 +186,13 @@ impl ClientEnv {
         body: Option<String>,
         timeout_ms: Option<u32>,
     ) -> ClientResult<FetchResult> {
+        #[cfg(test)]
+        {
+            let fetch_mock = { self.network_mock.write().await.dequeue_fetch(url, &body) };
+            if let Some(fetch) = fetch_mock {
+                return fetch.get_result(&self, url).await;
+            }
+        }
         let method = Method::from_str(method.as_str())
             .map_err(|err| Error::http_request_create_error(err))?;
 
@@ -192,6 +217,7 @@ impl ClientEnv {
             headers: Self::header_map_to_string_map(response.headers()),
             status: response.status().as_u16(),
             url: response.url().to_string(),
+            remote_address: response.remote_addr().map(|x| x.to_string()),
             body: response
                 .text()
                 .await

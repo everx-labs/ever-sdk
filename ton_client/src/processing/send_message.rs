@@ -183,7 +183,8 @@ impl SendingMessage {
         context: Arc<ClientContext>,
         address: &str,
     ) -> ClientResult<String> {
-        let endpoint = Endpoint::resolve(context.env.clone(), address).await?;
+        let endpoint =
+            Endpoint::resolve(&context.env, &context.config.network, address).await?;
 
         // Send
         context

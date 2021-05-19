@@ -1,5 +1,5 @@
 {
-  "version": "1.14.1",
+  "version": "1.15.0",
   "modules": [
     {
       "name": "client",
@@ -366,8 +366,8 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Maximum time for sequential reconnections in ms.",
-              "description": "Default value is 120000 (2 min)"
+              "summary": "Maximum time for sequential reconnections.",
+              "description": "Must be specified in milliseconds. Default is 120000 (2 min)."
             },
             {
               "name": "reconnect_timeout",
@@ -388,8 +388,8 @@
                 "number_type": "Int",
                 "number_size": 8
               },
-              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successful or failed with replay protection error. The default value is 5.",
-              "description": null
+              "summary": "The number of automatic message processing retries that SDK performs in case of `Message Expired (507)` error - but only for those messages which local emulation was successful or failed with replay protection error.",
+              "description": "Default is 5."
             },
             {
               "name": "message_processing_timeout",
@@ -400,7 +400,7 @@
                 "number_size": 32
               },
               "summary": "Timeout that is used to process message delivery for the contracts which ABI does not include \"expire\" header. If the message is not delivered within the specified timeout the appropriate error occurs.",
-              "description": null
+              "description": "Must be specified in milliseconds. Default is 40000 (40 sec)."
             },
             {
               "name": "wait_for_timeout",
@@ -410,8 +410,8 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Maximum timeout that is used for query response. The default value is 40 sec.",
-              "description": null
+              "summary": "Maximum timeout that is used for query response.",
+              "description": "Must be specified in milliseconds. Default is 40000 (40 sec)."
             },
             {
               "name": "out_of_sync_threshold",
@@ -422,7 +422,7 @@
                 "number_size": 32
               },
               "summary": "Maximum time difference between server and client.",
-              "description": "If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\nThe default value is 15 sec."
+              "description": "If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\n\nMust be specified in milliseconds. Default is 15000 (15 sec)."
             },
             {
               "name": "sending_endpoint_count",
@@ -432,8 +432,30 @@
                 "number_type": "UInt",
                 "number_size": 8
               },
-              "summary": "Maximum number of randomly chosen endpoints the library uses to send message. The default value is 2 endpoints.",
-              "description": null
+              "summary": "Maximum number of randomly chosen endpoints the library uses to broadcast a message.",
+              "description": "Default is 2."
+            },
+            {
+              "name": "latency_detection_interval",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Frequency of sync latency detection.",
+              "description": "Library periodically checks the current endpoint for blockchain data syncronization latency.\nIf the latency (time-lag) is less then `NetworkConfig.max_latency`\nthen library selects another endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
+            },
+            {
+              "name": "max_latency",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data syncronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.",
+              "description": "Must be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
               "name": "access_key",
@@ -442,7 +464,7 @@
                 "type": "String"
               },
               "summary": "Access key to GraphQL API.",
-              "description": "At the moment is not used in production"
+              "description": "At the moment is not used in production."
             }
           ],
           "summary": null,
@@ -7709,7 +7731,7 @@
         {
           "name": "run_executor",
           "summary": "Emulates all the phases of contract execution locally",
-          "description": "Performs all the phases of contract execution on Transaction Executor -\nthe same component that is used on Validator Nodes.\n\nCan be used for contract debugginh, to find out the reason why message was not delivered successfully\n - because Validators just throw away the failed external inbound messages, here you can catch them.\n\nAnother use case is to estimate fees for message execution. Set  `AccountForExecutor::Account.unlimited_balance`\nto `true` so that emulation will not depend on the actual balance.\n\nOne more use case - you can produce the sequence of operations,\nthus emulating the multiple contract calls locally.\nAnd so on.\n\nTo get the account BOC (bag of cells) - use `net.query` method to download it from GraphQL API\n(field `boc` of `account`) or generate it with `abi.encode_account` method.\nTo get the message BOC - use `abi.encode_message` or prepare it any other way, for instance, with FIFT script.\n\nIf you need this emulation to be as precise as possible then specify `ParamsOfRunExecutor` parameter.\nIf you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.",
+          "description": "Performs all the phases of contract execution on Transaction Executor -\nthe same component that is used on Validator Nodes.\n\nCan be used for contract debugging, to find out the reason why a message was not delivered successfully.\nValidators throw away the failed external inbound messages (if they failed bedore `ACCEPT`) in the real network.\nThis is why these messages are impossible to debug in the real network.\nWith the help of run_executor you can do that. In fact, `process_message` function\nperforms local check with `run_executor` if there was no transaction as a result of processing\nand returns the error, if there is one.\n\nAnother use case to use `run_executor` is to estimate fees for message execution.\nSet  `AccountForExecutor::Account.unlimited_balance`\nto `true` so that emulation will not depend on the actual balance.\nThis may be needed to calculate deploy fees for an account that does not exist yet.\nJSON with fees is in `fees` field of the result.\n\nOne more use case - you can produce the sequence of operations,\nthus emulating the sequential contract calls locally.\nAnd so on.\n\nTransaction executor requires account BOC (bag of cells) as a parameter.\nTo get the account BOC - use `net.query` method to download it from GraphQL API\n(field `boc` of `account`) or generate it with `abi.encode_account` method.\n\nAlso it requires message BOC. To get the message BOC - use `abi.encode_message` or `abi.encode_internal_message`.\n\nIf you need this emulation to be as precise as possible (for instance - emulate transaction\nwith particular lt in particular block or use particular blockchain config,\nin case you want to download it from a particular key block - then specify `ParamsOfRunExecutor` parameter.\n\nIf you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.",
           "params": [
             {
               "name": "context",
@@ -8416,6 +8438,29 @@
           "description": null
         },
         {
+          "name": "ResultOfGetEndpoints",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "query",
+              "type": "String",
+              "summary": "Current query endpoint",
+              "description": null
+            },
+            {
+              "name": "endpoints",
+              "type": "Array",
+              "array_item": {
+                "type": "String"
+              },
+              "summary": "List of all endpoints used by client",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfQueryCounterparties",
           "type": "Struct",
           "struct_fields": [
@@ -8902,6 +8947,37 @@
           "errors": null
         },
         {
+          "name": "get_endpoints",
+          "summary": "Requests the list of alternative endpoints from server",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfGetEndpoints"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
           "name": "query_counterparties",
           "summary": "Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts",
           "description": "*Attention* this query retrieves data from 'Counterparties' service which is not supported in\nthe opensource version of DApp Server (and will not be supported) as well as in TON OS SE (will be supported in SE in future),\nbut is always accessible via [TON OS Devnet/Mainnet Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks)",
@@ -9249,6 +9325,14 @@
                   "name": "signkey",
                   "type": "String",
                   "summary": "Public key from keypair that was used to sign external message.",
+                  "description": null
+                },
+                {
+                  "name": "signing_box_handle",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 32,
+                  "summary": "Signing box handle used to sign external message.",
                   "description": null
                 }
               ],

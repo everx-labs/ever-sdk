@@ -22,10 +22,10 @@ use std::convert::Into;
 use std::io::{Cursor, Read, Seek};
 use ton_abi::json_abi::DecodedMessage;
 use ton_block::{AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash,
-    Message as TvmMessage, MsgAddressInt, MsgAddressIntOrNone, Serializable, ShardIdent, StateInit,
+    Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit,
     InternalMessageHeader, CurrencyCollection};
 use ton_types::cells_serialization::deserialize_cells_tree;
-use ton_types::{error, AccountId, Result, SliceData};
+use ton_types::{error, fail, AccountId, Result, SliceData};
 
 pub struct Contract {}
 
@@ -331,7 +331,7 @@ impl Contract {
     // Returns message's bag of cells and identifier.
     pub fn construct_call_int_message_json(
         address: MsgAddressInt,
-        src_address: MsgAddressIntOrNone,
+        src_address: Option<MsgAddressInt>,
         ihr_disabled: bool,
         bounce: bool,
         value: CurrencyCollection,
@@ -359,7 +359,7 @@ impl Contract {
 
     pub fn construct_int_message_with_body(
         dst_address: MsgAddressInt,
-        src_address: MsgAddressIntOrNone,
+        src_address: Option<MsgAddressInt>,
         ihr_disabled: bool,
         bounce: bool,
         value: CurrencyCollection,
@@ -421,11 +421,12 @@ impl Contract {
         let cell = msg_body.into();
         let msg = Self::create_ext_deploy_message(Some(cell), image, workchain_id)?;
 
-        let address = msg.dst().ok_or_else(|| {
-            error!(SdkError::InternalError {
+        let address = match msg.dst_ref() {
+            Some(address) => address.clone(),
+            None => fail!(SdkError::InternalError {
                 msg: "No address in created deploy message".to_owned()
             })
-        })?;
+        };
         let (body, id) = Self::serialize_message(&msg)?;
 
         Ok(SdkMessage {
@@ -463,7 +464,7 @@ impl Contract {
     // Packs given image into an internal Message struct.
     // Returns message's bag of cells and identifier.
     pub fn construct_int_deploy_message_no_constructor(
-        src: MsgAddressIntOrNone,
+        src: Option<MsgAddressInt>,
         image: ContractImage,
         workchain_id: i32,
         ihr_disabled: bool,
@@ -499,7 +500,7 @@ impl Contract {
     // Packs given image and input into Message struct with internal header and returns data.
     // Works with json representation of input and abi.
     pub fn get_int_deploy_message_bytes(
-        src: MsgAddressIntOrNone,
+        src: Option<MsgAddressInt>,
         params: FunctionCallSet,
         image: ContractImage,
         workchain_id: i32,
@@ -542,11 +543,12 @@ impl Contract {
         let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
         message.set_body(signed_body.into());
 
-        let address = message.dst().ok_or_else(|| {
-            error!(SdkError::InternalError {
+        let address = match message.dst_ref() {
+            Some(address) => address.clone(),
+            None => fail!(SdkError::InternalError {
                 msg: "No address in signed message".to_owned()
             })
-        })?;
+        };
         let (body, id) = Self::serialize_message(&message)?;
 
         Ok(SdkMessage {
@@ -577,11 +579,12 @@ impl Contract {
         let signed_body = abi.add_sign_to_encoded_input(signature, public_key, body)?;
         message.set_body(signed_body.into());
 
-        let address = message.dst().ok_or_else(|| {
-            error!(SdkError::InternalError {
+        let address = match message.dst_ref() {
+            Some(address) => address.clone(),
+            None => fail!(SdkError::InternalError{
                 msg: "No address in signed message".to_owned()
             })
-        })?;
+        };
         let (body, id) = Self::serialize_message(&message)?;
 
         Ok(SdkMessage {
@@ -606,19 +609,18 @@ impl Contract {
         ihr_disabled: bool,
         bounce: bool,
         dst: MsgAddressInt,
-        src: MsgAddressIntOrNone,
+        src: Option<MsgAddressInt>,
         value: CurrencyCollection,
         msg_body: Option<SliceData>,
     ) -> Result<TvmMessage> {
-        let msg_header = InternalMessageHeader {
-            ihr_disabled,
-            bounce,
-            dst,
-            src,
-            value,
-            ..Default::default()
-        };
-
+        let mut msg_header = InternalMessageHeader::default();
+        if let Some(src) = src {
+            msg_header.set_src(src);
+        }
+        msg_header.set_dst(dst);
+        msg_header.value = value;
+        msg_header.ihr_disabled = ihr_disabled;
+        msg_header.bounce = bounce;
         let mut msg = TvmMessage::with_int_header(msg_header);
         msg_body.map(|body| msg.set_body(body));
 
@@ -643,20 +645,21 @@ impl Contract {
     }
 
     pub(crate) fn create_int_deploy_message(
-        src: MsgAddressIntOrNone,
+        src: Option<MsgAddressInt>,
         msg_body: Option<SliceData>,
         image: ContractImage,
         workchain_id: i32,
         ihr_disabled: bool,
         bounce: bool,
     ) -> Result<TvmMessage> {
-        let msg_header = InternalMessageHeader {
-            ihr_disabled,
-            bounce,
-            dst: image.msg_address(workchain_id),
-            src,
-            ..Default::default()
-        };
+        let dst = image.msg_address(workchain_id);
+        let mut msg_header = InternalMessageHeader::default();
+        if let Some(src) = src {
+            msg_header.set_src(src);
+        }
+        msg_header.set_dst(dst);
+        msg_header.ihr_disabled = ihr_disabled;
+        msg_header.bounce = bounce;
 
         let mut msg = TvmMessage::with_int_header(msg_header);
         msg.set_state_init(image.state_init());
@@ -687,14 +690,12 @@ impl Contract {
     }
 
     pub fn get_dst_from_msg(msg: &[u8]) -> Result<MsgAddressInt> {
-        let msg = Contract::deserialize_message(msg)?;
-
-        msg.dst().ok_or(
-            SdkError::InvalidData {
-                msg: "Wrong message type (extOut)".to_owned(),
-            }
-            .into(),
-        )
+        match Contract::deserialize_message(msg)?.dst_ref() {
+            Some(address) => Ok(address.clone()),
+            None => fail!(SdkError::InvalidData {
+                msg: "Wrong message type (extOut)".to_owned()
+            })
+        }
     }
 
     /// Deserializes TvmMessage from byte array

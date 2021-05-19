@@ -10,7 +10,7 @@ use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
 use ton_abi::Contract;
-use ton_block::{MsgAddressInt, MsgAddressIntOrNone, CurrencyCollection};
+use ton_block::{MsgAddressInt, CurrencyCollection};
 use ton_sdk::{ContractImage, FunctionCallSet};
 
 //--------------------------------------------------------------------------- encode_deploy_message
@@ -277,7 +277,7 @@ fn encode_deploy(
 }
 
 fn encode_int_deploy(
-    src: MsgAddressIntOrNone,
+    src: Option<MsgAddressInt>,
     context: std::sync::Arc<ClientContext>,
     abi: &str,
     image: ContractImage,
@@ -319,7 +319,7 @@ fn encode_empty_deploy(
 }
 
 fn encode_empty_int_deploy(
-    src: MsgAddressIntOrNone,
+    src: Option<MsgAddressInt>,
     image: ContractImage,
     workchain_id: i32,
     ihr_disabled: bool,
@@ -546,8 +546,8 @@ pub async  fn encode_internal_message(
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {
     let src_address = match params.src_address {
-        Some(addr) => MsgAddressIntOrNone::Some(account_decode(&addr)?),
-        None => MsgAddressIntOrNone::None,
+        Some(addr) => Some(account_decode(&addr)?),
+        None => None,
     };
     let ihr_disabled = !params.enable_ihr.unwrap_or(false);
     let bounce = params.bounce.unwrap_or(true);

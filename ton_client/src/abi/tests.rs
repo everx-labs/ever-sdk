@@ -15,7 +15,7 @@ use crate::utils::conversion::abi_uint;
 
 use std::io::Cursor;
 use ton_abi::Contract;
-use ton_block::{Message, InternalMessageHeader, MsgAddressIntOrNone, CurrencyCollection, Deserializable, Serializable};
+use ton_block::{Message, InternalMessageHeader, CurrencyCollection, Deserializable, Serializable};
 use ton_sdk::ContractImage;
 use ton_types::Result;
 
@@ -656,14 +656,11 @@ async fn test_encode_internal_message_empty_body() -> Result<()> {
     let dst_address = String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
     let src_address = String::from("0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94");
 
-    let mut msg_header = InternalMessageHeader {
-        ihr_disabled: true,
-        bounce: true,
-        src: MsgAddressIntOrNone::None,
-        dst: account_decode(&dst_address)?,
-        value: CurrencyCollection::with_grams(1000000000),
-        ..Default::default()
-    };
+    let mut msg_header = InternalMessageHeader::default();
+    msg_header.ihr_disabled = true;
+    msg_header.bounce = true;
+    msg_header.value = CurrencyCollection::with_grams(1000000000);
+    msg_header.set_dst(account_decode(&dst_address)?);
 
     let msg = Message::with_int_header(msg_header.clone());
     let expected_boc = serialize_object_to_base64(&msg, "message")?;
@@ -677,7 +674,7 @@ async fn test_encode_internal_message_empty_body() -> Result<()> {
         Some(&expected_boc),
     ).await?;
 
-    msg_header.src = MsgAddressIntOrNone::Some(account_decode(&src_address)?);
+    msg_header.set_src(account_decode(&src_address)?);
     let msg = Message::with_int_header(msg_header.clone());
     let expected_boc = serialize_object_to_base64(&msg, "message")?;
 

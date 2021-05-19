@@ -15,7 +15,7 @@ use serde_json::Value;
 
 use crate::client::ClientContext;
 use crate::error::{AddNetworkUrl, ClientResult};
-use crate::net::{ParamsOfQueryCollection, ParamsOfQueryCounterparties};
+use crate::net::{ParamsOfQueryCollection, ParamsOfQueryCounterparties, ServerLink};
 
 use super::Error;
 
@@ -36,6 +36,28 @@ pub struct ResultOfQuery {
     pub result: Value,
 }
 
+async fn deserialize_result<T>(
+    result: ClientResult<Value>,
+    server_link: &ServerLink,
+) -> ClientResult<T>
+where
+    T: DeserializeOwned + Send,
+{
+    match result {
+        Ok(result) => {
+            T::deserialize(result.clone())
+                .map_err(|err| Error::queries_query_failed(format!("{}: {}.", err, result)))
+                .add_network_url(server_link)
+                .await
+        }
+        Err(err) => {
+            Err(Error::queries_query_failed(err))
+                .add_network_url(server_link)
+                .await?
+        }
+    }
+}
+
 /// Performs DAppServer GraphQL query.
 #[api_function]
 pub async fn query(
@@ -46,20 +68,13 @@ pub async fn query(
     let query = GraphQLQuery {
         query: params.query,
         variables: params.variables,
+        is_batch: false,
+        timeout: None,
     };
-    let result = server_link
-        .query(query, None, None)
-        .await
-        .map_err(|err| Error::queries_query_failed(err))
-        .add_network_url(server_link)
-        .await?;
-
-    let result = serde_json::from_value(result)
-        .map_err(|err| Error::queries_query_failed(format!("Can not parse result: {}", err)))
-        .add_network_url(server_link)
-        .await?;
-
-    Ok(ResultOfQuery { result })
+    let result = server_link.query(&query, None).await;
+    Ok(ResultOfQuery {
+        result: deserialize_result(result, server_link).await?,
+    })
 }
 
 //------------------------------------------------------------------------------- query_collection
@@ -80,21 +95,11 @@ pub async fn query_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfQueryCollection,
 ) -> ClientResult<ResultOfQueryCollection> {
-    let client = context.get_server_link()?;
-    let result = client
-        .query_collection(params, None)
-        .await
-        .map_err(|err| Error::queries_query_failed(err))
-        .add_network_url(client)
-        .await?
-        .clone();
-
-    let result = serde_json::from_value(result)
-        .map_err(|err| Error::queries_query_failed(format!("Can not parse result: {}", err)))
-        .add_network_url(client)
-        .await?;
-
-    Ok(ResultOfQueryCollection { result })
+    let server_link = context.get_server_link()?;
+    let result = server_link.query_collection(params, None).await;
+    Ok(ResultOfQueryCollection {
+        result: deserialize_result(result, server_link).await?,
+    })
 }
 
 //---------------------------------------------------------------------------- wait_for_collection
@@ -145,6 +150,7 @@ pub async fn wait_for_collection(
 
 use crate::net::ton_gql::GraphQLQuery;
 use crate::net::ParamsOfAggregateCollection;
+use serde::de::DeserializeOwned;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfAggregateCollection {
@@ -164,44 +170,27 @@ pub async fn aggregate_collection(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfAggregateCollection,
 ) -> ClientResult<ResultOfAggregateCollection> {
-    let client = context.get_server_link()?;
-    let values = client
-        .aggregate_collection(params, None)
-        .await
-        .map_err(|err| Error::queries_query_failed(err))
-        .add_network_url(client)
-        .await?;
-
-    Ok(ResultOfAggregateCollection { values })
+    let server_link = context.get_server_link()?;
+    let result = server_link.aggregate_collection(params, None).await;
+    Ok(ResultOfAggregateCollection {
+        values: deserialize_result(result, server_link).await?,
+    })
 }
 
-/// Allows to query and paginate through the list of accounts that the specified account 
-/// has interacted with, sorted by the time of the last internal message between accounts 
-/// 
-/// *Attention* this query retrieves data from 'Counterparties' service which is not supported in 
-/// the opensource version of DApp Server (and will not be supported) as well as in TON OS SE (will be supported in SE in future), 
+/// Allows to query and paginate through the list of accounts that the specified account
+/// has interacted with, sorted by the time of the last internal message between accounts
+///
+/// *Attention* this query retrieves data from 'Counterparties' service which is not supported in
+/// the opensource version of DApp Server (and will not be supported) as well as in TON OS SE (will be supported in SE in future),
 /// but is always accessible via [TON OS Devnet/Mainnet Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks)
 #[api_function]
 pub async fn query_counterparties(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfQueryCounterparties,
 ) -> ClientResult<ResultOfQueryCollection> {
-    let client = context.get_server_link()?;
-
-    let result = client
-        .query_counterparties(params)
-        .await
-        .map_err(|err| Error::queries_query_failed(err))
-        .add_network_url(client)
-        .await?
-        .clone();
-
-    let result = serde_json::from_value(result)
-        .map_err(|err| Error::queries_query_failed(format!("Can not parse result: {}", err)))
-        .add_network_url(client)
-        .await?;
-
+    let server_link = context.get_server_link()?;
+    let result = server_link.query_counterparties(params).await;
     Ok(ResultOfQueryCollection {
-        result
+        result: deserialize_result(result, server_link).await?,
     })
 }

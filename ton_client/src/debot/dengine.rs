@@ -833,6 +833,7 @@ impl DEngine {
                     let target_state = Self::load_state(self.ton.clone(), dest.clone()).await
                         .map_err(|e| Error::execute_failed(e))?;
                     let answer_msg = calltype::run_get_method(
+                        self.browser.clone(),
                         self.ton.clone(),
                         msg,
                         target_state,
@@ -846,13 +847,11 @@ impl DEngine {
                     debug!("External call");
                     let target_state = Self::load_state(self.ton.clone(), dest.clone()).await
                         .map_err(|e| Error::execute_failed(e))?;
-                    let signing_box = self.browser.get_signing_box().await
-                        .map_err(|e| Error::external_call_failed(e))?;
                     let answer_msg = calltype::send_ext_msg(
                         self.browser.clone(),
                         self.ton.clone(),
                         msg,
-                        signing_box,
+                        Signer::None,
                         target_state,
                         &self.addr,
                     )

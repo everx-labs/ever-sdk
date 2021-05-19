@@ -16,35 +16,39 @@ use super::types::ResolvedExecutionOptions;
 use crate::error::ClientResult;
 use crate::tvm::Error;
 use std::sync::Arc;
-use ton_block;
-use ton_block::{Deserializable, Message, Serializable};
+use ton_block::{
+    Account, ConfigParams, CurrencyCollection,
+    CommonMsgInfo, Deserializable, Serializable,
+    OutActions, OutAction,
+    Message, MsgAddressInt,
+};
 use ton_types::dictionary::HashmapType;
 use ton_types::SliceData;
 use ton_vm::executor::gas::gas_state::Gas;
 use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
 
 pub(crate) fn call_tvm(
-    mut account: ton_block::AccountStuff,
+    account: &mut Account,
     options: ResolvedExecutionOptions,
     stack: Stack,
-) -> ClientResult<(ton_vm::executor::Engine, ton_block::AccountStuff)> {
-    let mut state = match &mut account.storage.state {
-        ton_block::AccountState::AccountActive(state) => Ok(state),
-        _ => Err(Error::invalid_account_boc("Account is not active")),
-    }?;
+) -> ClientResult<ton_vm::executor::Engine> {
+    let code = account.get_code().unwrap_or_default();
+    let data = account.get_data().ok_or_else(|| Error::invalid_account_boc("Account has no code"))?;
+    let addr = account.get_addr().ok_or_else(|| Error::invalid_account_boc("Account has no address"))?;
+    let balance = account.balance().ok_or_else(|| Error::invalid_account_boc("Account has no balance"))?;
 
     let mut ctrls = SaveList::new();
     ctrls
         .put(
             4,
-            &mut StackItem::Cell(state.data.clone().unwrap_or_default()),
+            &mut StackItem::Cell(data),
         )
         .map_err(|err| Error::internal_error(format!("can not put data to registers: {}", err)))?;
 
     let sci = build_contract_info(
         options.blockchain_config.raw_config(),
-        &account.addr,
-        &account.storage.balance,
+        addr,
+        balance,
         options.block_time,
         options.block_lt,
         options.transaction_lt,
@@ -56,10 +60,6 @@ pub(crate) fn call_tvm(
     let gas_limit = 1_000_000_000;
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
-    let code = state
-        .code
-        .clone()
-        .ok_or(Error::invalid_account_boc("Account has no code"))?;
     let mut engine = ton_vm::executor::Engine::new().setup(
         SliceData::from(code),
         Some(ctrls),
@@ -67,9 +67,7 @@ pub(crate) fn call_tvm(
         Some(gas),
     );
 
-    let result = engine.execute();
-
-    match result {
+    match engine.execute() {
         Err(err) => {
             let exception = ton_vm::error::tvm_exception(err)
                 .map_err(|err| Error::unknown_execution_error(err))?;
@@ -86,35 +84,37 @@ pub(crate) fn call_tvm(
                 exception.to_string(),
                 code,
                 Some(exit_arg),
-                &account.addr,
+                addr,
                 None,
             ))
         }
         Ok(_) => {
             match engine.get_committed_state().get_root() {
-                StackItem::Cell(cell) => state.data = Some(cell),
-                _ => return Err(Error::internal_error("invalid commited state")),
-            };
-            Ok((engine, account))
+                StackItem::Cell(data) => {
+                    account.set_data(data);
+                    Ok(engine)
+                }
+                _ => Err(Error::internal_error("invalid commited state"))
+            }
         }
     }
 }
 
 pub(crate) fn call_tvm_msg(
-    account: ton_block::AccountStuff,
+    account: &mut Account,
     options: ResolvedExecutionOptions,
     msg: &Message,
-) -> ClientResult<(Vec<Message>, ton_block::AccountStuff)> {
+) -> ClientResult<Vec<Message>> {
     let msg_cell = msg
-        .write_to_new_cell()
+        .serialize()
         .map_err(|err| Error::internal_error(format!("can not serialize message: {}", err)))?;
 
     let mut stack = Stack::new();
-    let balance = account.storage.balance.grams.value();
+    let balance = account.balance().map(|cc| cc.grams.0).unwrap_or_default();
     let function_selector = match msg.header() {
-        ton_block::CommonMsgInfo::IntMsgInfo(_) => ton_vm::int!(0),
-        ton_block::CommonMsgInfo::ExtInMsgInfo(_) => ton_vm::int!(-1),
-        ton_block::CommonMsgInfo::ExtOutMsgInfo(_) => return Err(Error::invalid_message_type()),
+        CommonMsgInfo::IntMsgInfo(_) => ton_vm::int!(0),
+        CommonMsgInfo::ExtInMsgInfo(_) => ton_vm::int!(-1),
+        CommonMsgInfo::ExtOutMsgInfo(_) => return Err(Error::invalid_message_type()),
     };
     stack
         .push(ton_vm::int!(balance)) // token balance of contract
@@ -123,7 +123,7 @@ pub(crate) fn call_tvm_msg(
         .push(StackItem::Slice(msg.body().unwrap_or_default())) // message body
         .push(function_selector); // function selector
 
-    let (engine, account) = call_tvm(account, options, stack)?;
+    let engine = call_tvm(account, options, stack)?;
 
     // process out actions to get out messages
     let actions_cell = engine
@@ -131,13 +131,13 @@ pub(crate) fn call_tvm_msg(
         .as_cell()
         .map_err(|err| Error::internal_error(format!("can not get actions: {}", err)))?
         .clone();
-    let mut actions = ton_block::OutActions::construct_from_cell(actions_cell)
+    let mut actions = OutActions::construct_from_cell(actions_cell)
         .map_err(|err| Error::internal_error(format!("can not parse actions: {}", err)))?;
 
     let mut msgs = vec![];
     for (_, action) in actions.iter_mut().enumerate() {
-        match std::mem::replace(action, ton_block::OutAction::None) {
-            ton_block::OutAction::SendMsg { out_msg, .. } => {
+        match std::mem::replace(action, OutAction::None) {
+            OutAction::SendMsg { out_msg, .. } => {
                 msgs.push(out_msg);
             }
             _ => {}
@@ -145,13 +145,13 @@ pub(crate) fn call_tvm_msg(
     }
 
     msgs.reverse();
-    Ok((msgs, account))
+    Ok(msgs)
 }
 
 fn build_contract_info(
-    config_params: &ton_block::ConfigParams,
-    address: &ton_block::MsgAddressInt,
-    balance: &ton_block::CurrencyCollection,
+    config_params: &ConfigParams,
+    address: &MsgAddressInt,
+    balance: &CurrencyCollection,
     block_unixtime: u32,
     block_lt: u64,
     tr_lt: u64,
