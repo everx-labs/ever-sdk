@@ -1,3 +1,4 @@
+use crate::crypto::keys::strip_secret;
 use crate::error::ClientError;
 use std::fmt::{Debug, Display};
 
@@ -44,6 +45,11 @@ fn error(code: ErrorCode, message: String) -> ClientError {
 }
 
 pub const CANNOT_SERIALIZE_RESULT: &str = r#"{ "code": 18, "message": "Can not serialize result"}"#;
+
+lazy_static! {
+    static ref SECRET_REGEX: regex::Regex =
+        regex::Regex::new(r#""secret"\s*:\s*"([0-9a-f]{64})""#).unwrap();
+}
 
 impl Error {
     pub fn is_network_error(error: &ClientError) -> bool {
@@ -178,9 +184,16 @@ impl Error {
     }
 
     pub fn invalid_params(params_json: &str, err: impl Display) -> ClientError {
+        let mut params_json_stripped = params_json.to_owned();
+        while let Some(captures) = SECRET_REGEX.captures(&params_json_stripped) {
+            let key = captures.get(1).unwrap().as_str();
+            let stripped = strip_secret(key);
+            params_json_stripped = params_json_stripped.replace(key, stripped.as_str());
+        }
+
         error(
             ErrorCode::InvalidParams,
-            format!("Invalid parameters: {}\nparams: {}", err, params_json),
+            format!("Invalid parameters: {}\nparams: {}", err, params_json_stripped),
         )
     }
 

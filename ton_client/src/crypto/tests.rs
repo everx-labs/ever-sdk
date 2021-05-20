@@ -8,7 +8,7 @@ use crate::crypto::hdkey::{
 };
 use crate::crypto::keys::{
     KeyPair, ParamsOfConvertPublicKeyToTonSafeFormat, ParamsOfSign, ParamsOfVerifySignature,
-    ResultOfConvertPublicKeyToTonSafeFormat, ResultOfSign, ResultOfVerifySignature,
+    ResultOfConvertPublicKeyToTonSafeFormat, ResultOfSign, ResultOfVerifySignature, strip_secret
 };
 use crate::crypto::math::{
     ParamsOfFactorize, ParamsOfGenerateRandomBytes, ParamsOfModularPower, ParamsOfTonCrc16,
@@ -849,4 +849,33 @@ async fn test_signing_box() {
                 handle: keys_box_handle.into(),
         },
     ).await.unwrap();
+}
+
+#[test]
+fn test_strip_secret() {
+    assert_eq!(strip_secret(""), r#""""#);
+    assert_eq!(strip_secret("0123456"), r#""0123456""#);
+    assert_eq!(strip_secret("01234567"), r#""01234567""#);
+    assert_eq!(strip_secret("012345678"), r#""01234567..." (9 chars)"#);
+    assert_eq!(strip_secret("0123456789"), r#""01234567..." (10 chars)"#);
+    assert_eq!(
+        strip_secret("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"),
+        r#""01234567..." (64 chars)"#
+    );
+}
+
+#[test]
+fn test_debug_keypair_secret_stripped() {
+    let keypair = KeyPair::new(
+        "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".into(),
+        "9123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".into()
+    );
+
+    assert_eq!(
+        format!("{:?}", keypair),
+        "KeyPair { \
+            public: \"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef\", \
+            secret: \"91234567...\" (64 chars) \
+        }"
+    )
 }
