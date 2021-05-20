@@ -8,6 +8,8 @@ use crate::tests::{TestClient, HELLO};
 use super::*;
 use crate::ClientConfig;
 use std::collections::HashSet;
+use std::sync::Arc;
+use crate::client::{NetworkMock};
 
 #[tokio::test(core_threads = 2)]
 async fn batch_query() {
@@ -205,14 +207,18 @@ async fn message_sending_addresses() {
             ..Default::default()
         },
         ..Default::default()
-    }).unwrap();
+    })
+    .unwrap();
     let link = client.get_server_link().unwrap();
     link.update_stat(
         &vec!["a".to_string(), "e".to_string()],
         EndpointStat::MessageUndelivered,
     )
     .await;
-    let bad: HashSet<_> = vec!["a".to_string(), "e".to_string()].iter().cloned().collect();
+    let bad: HashSet<_> = vec!["a".to_string(), "e".to_string()]
+        .iter()
+        .cloned()
+        .collect();
     for _ in 0..100 {
         let addresses = link.get_addresses_for_sending().await;
         let tail: HashSet<_> = addresses[addresses.len() - 2..].iter().cloned().collect();
@@ -428,7 +434,8 @@ async fn subscribe_for_transactions_with_addresses() {
     std::thread::sleep(std::time::Duration::from_millis(5000));
 
     // check that third transaction is now received after resume
-    let transactions = transactions.lock().await;
+    let transactions = transactions.lock().await.clone();
+    println!("{:?}", transactions.iter().map(|x|x["id"].to_string()).collect::<Vec<String>>());
     assert_eq!(transactions.len(), 3);
     assert_ne!(transactions[0]["id"], transactions[2]["id"]);
     // and both subscriptions received notification about resume
@@ -604,4 +611,318 @@ async fn test_query_counterparties() {
 
         assert_ne!(counterparties1.result, counterparties2.result);
     }
+}
+
+async fn query_block_id(client: &Arc<ClientContext>) -> String {
+    crate::net::query_collection(
+        client.clone(),
+        ParamsOfQueryCollection {
+            collection: "blocks".to_string(),
+            result: "id".to_string(),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap()
+    .result[0]["id"]
+        .as_str()
+        .unwrap()
+        .to_string()
+}
+
+async fn get_query_url(client: &Arc<ClientContext>) -> String {
+    let mut url = client
+        .get_server_link()
+        .unwrap()
+        .get_query_endpoint()
+        .await
+        .unwrap()
+        .query_url
+        .clone();
+    if let Some(stripped) = url.strip_prefix("http://") {
+        url = stripped.to_string();
+    }
+    if let Some(stripped) = url.strip_prefix("https://") {
+        url = stripped.to_string();
+    }
+    if let Some(stripped) = url.strip_suffix("/graphql") {
+        url = stripped.to_string();
+    }
+    url
+}
+
+#[tokio::test(core_threads = 2)]
+async fn retry_query_on_network_errors() {
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into()]),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+
+    let now = client.env.now_ms();
+    NetworkMock::build()
+        .url("a")
+        .election(now, 1000)
+        .repeat(2)
+        .network_err()
+        .election(now, 1000)
+        .blocks("1")
+        .repeat(5)
+        .network_err()
+        .election(now, 1000)
+        .blocks("2")
+        .reset_client(&client)
+        .await;
+    assert_eq!(query_block_id(&client).await, "1");
+    assert_eq!(query_block_id(&client).await, "2");
+}
+
+#[tokio::test(core_threads = 2)]
+async fn querying_endpoint_selection() {
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into(), "b".into()]),
+                network_retries_count: 3,
+                max_latency: 1000,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+
+    // Check for the fastest
+    let now = client.env.now_ms();
+    NetworkMock::build()
+        .url("a")
+        .delay(200)
+        .election(now, 500) // looser
+        .url("b")
+        .delay(100)
+        .election(now, 500) // winner
+        .reset_client(&client)
+        .await;
+    assert_eq!(get_query_url(&client).await, "b");
+
+    println!("\nSkip endpoint with bad latency\n");
+    let now = client.env.now_ms();
+    NetworkMock::build()
+        .url("a")
+        .delay(100)
+        .election(now, 1500) // looser
+        .url("b")
+        .delay(200)
+        .election(now, 500) // winner
+        .reset_client(&client)
+        .await;
+    assert_eq!(get_query_url(&client).await, "b");
+
+    println!("\nSelect when all have bad latency\n");
+    let now = client.env.now_ms();
+    NetworkMock::build()
+        .url("a")
+        .delay(200)
+        .election(now, 1500) // winner (slower but better latency)
+        .url("b")
+        .delay(100)
+        .election(now, 2000) // looser (faster but worse latency)
+        .reset_client(&client)
+        .await;
+    assert_eq!(get_query_url(&client).await, "a");
+
+    println!("\nFailed Network\n");
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into()]),
+                network_retries_count: 2,
+                max_latency: 1000,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+    NetworkMock::build()
+        .url("a")
+        .repeat(3)
+        .network_err()
+        .reset_client(&client)
+        .await;
+    let result = crate::net::query_collection(
+        client.clone(),
+        ParamsOfQueryCollection {
+            collection: "blocks".to_string(),
+            result: "id id".to_string(),
+            ..Default::default()
+        },
+    )
+    .await;
+
+    assert_eq!(
+        match &result {
+            Ok(_) => "ok",
+            Err(e) => &e.message,
+        },
+        "Query failed: Can not send http request: Network error"
+    );
+}
+
+#[tokio::test(core_threads = 2)]
+async fn latency_detection_with_queries() {
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into(), "b".into()]),
+                network_retries_count: 3,
+                max_latency: 600,
+                latency_detection_interval: 100,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+
+    // Check for the fastest
+    let now = client.env.now_ms();
+    NetworkMock::build()
+        .url("a")
+        .delay(10)
+        .election(now, 500) // winner
+        .url("b")
+        .delay(20)
+        .election_loose(now) // looser
+        .url("a")
+        .delay(200)
+        .blocks("1") // query
+        .ok(&json!({
+            "data": {
+                "q1": [{
+                    "id": "2",
+                }],
+                "q2": {
+                    "version": "0.39.0",
+                    "time": 1000,
+                },
+            }
+        })
+        .to_string()) // query with latency checking, returns bad latency
+        .metrics(1000, 900)
+        .url("a")
+        .delay(20)
+        .election_loose(now) // looser
+        .url("b")
+        .delay(10)
+        .election(now, 500) // winner
+        .url("b")
+        .blocks("2") // retry query
+        .reset_client(&client)
+        .await;
+
+    assert_eq!(get_query_url(&client).await, "a");
+    assert_eq!(query_block_id(&client).await, "1");
+    assert_eq!(query_block_id(&client).await, "2");
+    assert_eq!(NetworkMock::get_len(&client).await, 0);
+    assert_eq!(get_query_url(&client).await, "b");
+}
+
+#[tokio::test(core_threads = 2)]
+async fn latency_detection_with_websockets() {
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into(), "b".into()]),
+                network_retries_count: 3,
+                max_latency: 600,
+                latency_detection_interval: 100,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+
+    // Check for the fastest
+    let now = client.env.now_ms();
+    NetworkMock::build()
+        .url("a")
+        .delay(10)
+        .election(now, 500) // winner
+        .url("b")
+        .delay(20)
+        .election_loose(now) // looser
+        .url("a")
+        .delay(100)
+        .ws_ack()
+        .delay(200)
+        .ws_ka()
+        .url("b")
+        .delay(10)
+        .ws_ack()
+        .url("a")
+        .delay(20)
+        .metrics(now, 700) // check latency, bad
+        .delay(20)
+        .election_loose(now) // looser
+        .url("b")
+        .delay(10)
+        .election(now, 500) // winner
+        .reset_client(&client)
+        .await;
+
+    assert_eq!(get_query_url(&client).await, "a");
+    let subscription = subscribe_collection(
+        client.clone(),
+        ParamsOfSubscribeCollection {
+            collection: "blocks".to_string(),
+            filter: None,
+            result: "id".to_string(),
+        },
+        |_| async {},
+    )
+    .await
+    .unwrap();
+    let _ = client.env.set_timer(2000).await;
+    unsubscribe(client.clone(), subscription).await.unwrap();
+    assert_eq!(NetworkMock::get_len(&client).await, 0);
+    assert_eq!(get_query_url(&client).await, "b");
+    client.get_server_link().unwrap().suspend().await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn get_endpoints() {
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into(), "b".into()]),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+
+    // Check for the fastest
+    let now = client.env.now_ms();
+    NetworkMock::build()
+        .url("a")
+        .delay(10)
+        .election(now, 500) // winner
+        .url("b")
+        .delay(20)
+        .election_loose(now) // looser
+        .reset_client(&client)
+        .await;
+
+    let result = crate::net::get_endpoints(client.clone()).await.unwrap();
+    assert_eq!(NetworkMock::get_len(&client).await, 0);
+    assert_eq!(result.query, "https://a/graphql");
+    assert_eq!(result.endpoints, vec!["a".to_string(), "b".to_string()]);
 }

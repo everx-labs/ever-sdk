@@ -179,7 +179,7 @@ impl ClientEnv {
         ws.set_onerror(Some(onerror_callback.as_ref().unchecked_ref()));
         onerror_callback.forget();
 
-        // wait for webscoket opening or error occured during initialization
+        // wait for websocket opening or error occurred during initialization
         on_open_receiver
             .recv()
             .await
@@ -322,6 +322,7 @@ impl ClientEnv {
             status: response.status(),
             url: response.url().to_string(),
             body: text,
+            remote_address: None,
         })
     }
 }

@@ -320,7 +320,8 @@ type DebotActivity = {
     out: Spending[],
     fee: bigint,
     setcode: boolean,
-    signkey: string
+    signkey: string,
+    signing_box_handle: number
 }
 ```
 Depends on value of the  `type` field.
@@ -336,12 +337,13 @@ DeBot wants to create new transaction in blockchain.
 - `fee`: _bigint_ – Transaction total fee.
 - `setcode`: _boolean_ – Indicates if target smart contract updates its code.
 - `signkey`: _string_ – Public key from keypair that was used to sign external message.
+- `signing_box_handle`: _number_ – Signing box handle used to sign external message.
 
 
 Variant constructors:
 
 ```ts
-function debotActivityTransaction(msg: string, dst: string, out: Spending[], fee: bigint, setcode: boolean, signkey: string): DebotActivity;
+function debotActivityTransaction(msg: string, dst: string, out: Spending[], fee: bigint, setcode: boolean, signkey: string, signing_box_handle: number): DebotActivity;
 ```
 
 ## Spending

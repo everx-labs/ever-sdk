@@ -8,6 +8,7 @@ use crate::encoding::decode_abi_bigint;
 use serde_json::Value;
 use std::sync::Arc;
 use ton_abi::Contract;
+use crate::abi::Signer;
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::DEngine;
 
@@ -82,7 +83,7 @@ impl MsgInterface {
             self.browser.clone(),
             self.ton.clone(),
             message,
-            signing_box,
+            Signer::SigningBox{handle: signing_box},
             target_state,
             &self.debot_addr,
         )

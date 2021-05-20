@@ -51,7 +51,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
     let message_id = message.cell.repr_hash().to_hex_string();
     let address = message
         .object
-        .dst()
+        .dst_ref().cloned()
         .ok_or(Error::message_has_not_destination_address())?;
     let message_expiration_time =
         get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message).await?;

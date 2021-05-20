@@ -58,14 +58,13 @@ pub async fn run_get(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfRunGet,
 ) -> ClientResult<ResultOfRunGet> {
-    let account: ton_block::Account =
+    let mut account: ton_block::Account =
         deserialize_object_from_boc(&context, &params.account, "account").await?.object;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
-    let stuff = match account {
-        ton_block::Account::AccountNone => Err(Error::invalid_account_boc("Acount is None")),
-        ton_block::Account::Account(stuff) => Ok(stuff),
-    }?;
+    if account.is_none() {
+        return Err(Error::invalid_account_boc("Acount is None"))
+    }
 
     let mut crc = crc_any::CRC::crc16xmodem();
     crc.digest(params.function_name.as_bytes());
@@ -85,7 +84,7 @@ pub async fn run_get(
         function_id,
     ))));
 
-    let (engine, _) = super::call_tvm::call_tvm(stuff, options, stack_in)?;
+    let engine = super::call_tvm::call_tvm(&mut account, options, stack_in)?;
     Ok(ResultOfRunGet {
         output: stack::serialize_items(
             Box::new(engine.stack().iter()),

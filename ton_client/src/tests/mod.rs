@@ -118,6 +118,7 @@ lazy_static::lazy_static! {
     static ref TEST_RUNTIME: Mutex<TestRuntime> = Mutex::new(TestRuntime::new());
 }
 
+
 pub(crate) struct TestClient {
     config: ClientConfig,
     context: ContextHandle,
@@ -296,7 +297,7 @@ impl TestClient {
             .split(",")
             .map(|x| x.trim())
             .filter(|x| !x.is_empty())
-            .map(|x|x.to_string())
+            .map(|x| x.to_string())
             .collect()
     }
 

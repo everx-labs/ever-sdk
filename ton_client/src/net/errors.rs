@@ -52,7 +52,7 @@ impl Error {
     pub fn invalid_server_response<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::InvalidServerResponse,
-            format!("Invalid server response : {}", err),
+            format!("Invalid server response: {}", err),
         )
     }
 

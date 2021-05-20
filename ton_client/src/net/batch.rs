@@ -39,12 +39,12 @@ pub async fn batch_query(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfBatchQuery,
 ) -> ClientResult<ResultOfBatchQuery> {
-    let client = context.get_server_link()?;
-    let results = client
+    let server_link = context.get_server_link()?;
+    let results = server_link
         .batch_query(&params.operations, None)
         .await
         .map_err(|err| Error::queries_query_failed(err))
-        .add_network_url(client)
+        .add_network_url(server_link)
         .await?;
 
     Ok(ResultOfBatchQuery { results })
