@@ -49,15 +49,19 @@ pub struct MessageNode {
     pub id: String,
 
     /// Source transaction id.
+    ///
+    /// This field is missing for an external inbound messages.
     pub src_transaction_id: Option<String>,
 
     /// Destination transaction id.
+    ///
+    /// This field is missing for an external outbound messages.
     pub dst_transaction_id: Option<String>,
 
-    /// Source account.
+    /// Source address.
     pub src: Option<String>,
 
-    /// Destination account.
+    /// Destination address.
     pub dst: Option<String>,
 
     /// Transferred tokens value.
@@ -67,6 +71,9 @@ pub struct MessageNode {
     pub bounce: bool,
 
     /// Decoded body.
+    ///
+    /// Library tries to decode message body using provided `params.abi_registry`.
+    /// This field will be missing if none of the provided abi can be used to decode.
     pub decoded_body: Option<DecodedMessageBody>,
 }
 
@@ -125,8 +132,10 @@ impl MessageNode {
 pub struct TransactionNode {
     /// Transaction id.
     pub id: String,
+
     /// In message id.
     pub in_msg: String,
+
     /// Out message ids.
     pub out_msgs: Vec<String>,
 
@@ -214,7 +223,25 @@ async fn query_next_portion(
     Ok((messages, src_transactions))
 }
 
-/// Returns transaction tree for specific messages.
+/// Returns transaction tree for specific message.
+///
+/// Performs recursive retrieval of the transaction tree produced by the specific message:
+/// in_msg -> dst_transaction -> out_messages -> dst_transaction -> ...
+///
+/// All retrieved messages and transactions will be included
+/// into `result.messages` and `result.transactions` respectively.
+///
+/// The retrieval process will stop when the retrieved transaction count is more than 50.
+///
+/// It is guaranteed that each message in `result.messages` has the corresponding transaction
+/// in the `result.transactions`.
+///
+/// But there are no guaranties that all messages from transactions `out_msgs` are
+/// presented in `result.messages`.
+/// So the application have to continue retrieval for missing messages if it requires.
+///
+/// Note that limit of 50 transaction is absolutely enough for most transaction tress.
+/// Typical transaction tree has only a couple of transactions (two or three and rarely up to 5).
 #[api_function]
 pub async fn query_transaction_tree(
     context: std::sync::Arc<ClientContext>,
