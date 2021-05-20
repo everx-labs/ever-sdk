@@ -17,7 +17,7 @@ use serde_json::Value;
 use crate::error::{ClientError, ClientResult};
 use crate::net::gql::GraphQLMessageFromClient;
 use crate::net::ParamsOfWaitForCollection;
-use serde::{Deserialize, Deserializer, de::Error};
+use serde::{de::Error, Deserialize, Deserializer};
 
 const COUNTERPARTIES_COLLECTION: &str = "counterparties";
 const FETCH_ADDITIONAL_TIMEOUT: u32 = 5000;
@@ -431,7 +431,8 @@ impl GraphQLQuery {
         if result_data.is_null() {
             return Err(crate::net::Error::invalid_server_response(format!(
                 "Missing data.{} in: {}",
-                result_name, result
+                result_name,
+                result
             )));
         }
         if let Some(ParamsOfQueryOperation::WaitForCollection(_)) = param {

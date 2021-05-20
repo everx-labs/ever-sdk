@@ -240,7 +240,7 @@ async fn query_next_portion(
 /// presented in `result.messages`.
 /// So the application have to continue retrieval for missing messages if it requires.
 ///
-/// Note that limit of 50 transaction is absolutely enough for most transaction tress.
+/// Note that limit of 50 transaction is absolutely enough for most transaction trees.
 /// Typical transaction tree has only a couple of transactions (two or three and rarely up to 5).
 #[api_function]
 pub async fn query_transaction_tree(
