@@ -19,7 +19,7 @@ pub use queries::{
     ParamsOfQuery, ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery,
     ResultOfQueryCollection, ResultOfWaitForCollection,
 };
-pub(crate) use server_link::{ServerLink, EndpointStat, MAX_TIMEOUT};
+pub(crate) use server_link::{EndpointStat, ServerLink, MAX_TIMEOUT};
 pub use subscriptions::{
     subscribe_collection, unsubscribe, ParamsOfSubscribeCollection, ResultOfSubscribeCollection,
     ResultOfSubscription, SubscriptionResponseType,
@@ -29,9 +29,13 @@ pub use ton_gql::{
     ParamsOfQueryCollection, ParamsOfQueryCounterparties, ParamsOfQueryOperation, PostRequest,
     SortDirection,
 };
+pub use transaction_tree::{
+    query_transaction_tree, MessageNode, ParamsOfQueryTransactionTree,
+    ResultOfQueryTransactionTree, TransactionNode,
+};
 pub use types::{
-    NetworkConfig, BLOCKS_TABLE_NAME, CONTRACTS_TABLE_NAME, MESSAGES_TABLE_NAME,
-    TRANSACTIONS_TABLE_NAME,
+    NetworkConfig, ACCOUNTS_COLLECTION, BLOCKS_COLLECTION, MESSAGES_COLLECTION,
+    TRANSACTIONS_COLLECTION,
 };
 
 use crate::client::ClientContext;
@@ -45,6 +49,7 @@ pub(crate) mod queries;
 mod server_link;
 pub(crate) mod subscriptions;
 mod ton_gql;
+pub(crate) mod transaction_tree;
 mod types;
 mod websocket_link;
 
@@ -137,11 +142,12 @@ pub struct ResultOfGetEndpoints {
 
 /// Requests the list of alternative endpoints from server
 #[api_function]
-pub async fn get_endpoints(context: std::sync::Arc<ClientContext>) -> ClientResult<ResultOfGetEndpoints> {
+pub async fn get_endpoints(
+    context: std::sync::Arc<ClientContext>,
+) -> ClientResult<ResultOfGetEndpoints> {
     let server_link = context.get_server_link()?;
     Ok(ResultOfGetEndpoints {
         query: server_link.get_query_endpoint().await?.query_url.clone(),
         endpoints: server_link.get_all_endpoint_addresses().await?,
     })
 }
-

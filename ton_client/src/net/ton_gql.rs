@@ -17,6 +17,7 @@ use serde_json::Value;
 use crate::error::{ClientError, ClientResult};
 use crate::net::gql::GraphQLMessageFromClient;
 use crate::net::ParamsOfWaitForCollection;
+use serde::{Deserialize, Deserializer, de::Error};
 
 const COUNTERPARTIES_COLLECTION: &str = "counterparties";
 const FETCH_ADDITIONAL_TIMEOUT: u32 = 5000;
@@ -72,7 +73,7 @@ pub struct ParamsOfAggregateCollection {
     pub fields: Option<Vec<FieldAggregation>>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
+#[derive(Serialize, ApiType, Default, Clone)]
 pub struct ParamsOfQueryCollection {
     /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
@@ -84,6 +85,44 @@ pub struct ParamsOfQueryCollection {
     pub order: Option<Vec<OrderBy>>,
     /// Number of documents to return
     pub limit: Option<u32>,
+}
+
+#[derive(Deserialize)]
+struct ParamsOfQueryCollectionFix {
+    pub collection: String,
+    pub filter: Option<serde_json::Value>,
+    pub result: String,
+    pub order: Option<Vec<OrderBy>>,
+    #[serde(rename = "orderBy")]
+    pub order_by: Option<Vec<OrderBy>>,
+    pub limit: Option<u32>,
+}
+
+impl<'de> Deserialize<'de> for ParamsOfQueryCollection {
+    fn deserialize<D>(deserializer: D) -> Result<Self, <D as Deserializer<'de>>::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let verified = ParamsOfQueryCollectionFix::deserialize(deserializer);
+        match verified {
+            Ok(verified) => {
+                if verified.order_by.is_none() {
+                    Ok(Self {
+                        collection: verified.collection,
+                        filter: verified.filter,
+                        result: verified.result,
+                        order: verified.order,
+                        limit: verified.limit,
+                    })
+                } else {
+                    Err(D::Error::custom(
+                        "Invalid parameter name \"orderBy\"`. Valid name is \"order\".",
+                    ))
+                }
+            }
+            Err(err) => Err(err),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
@@ -392,8 +431,7 @@ impl GraphQLQuery {
         if result_data.is_null() {
             return Err(crate::net::Error::invalid_server_response(format!(
                 "Missing data.{} in: {}",
-                result_name,
-                result
+                result_name, result
             )));
         }
         if let Some(ParamsOfQueryOperation::WaitForCollection(_)) = param {

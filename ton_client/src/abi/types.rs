@@ -76,7 +76,7 @@ pub struct AbiEvent {
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiData {
-    pub key: u64,
+    pub key: u32,
     pub name: String,
     #[serde(rename = "type")]
     pub param_type: String,
