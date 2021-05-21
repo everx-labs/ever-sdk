@@ -2,13 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.16.0] – 2021-05-22
+## [1.16.0] – 2021-05-24
 
 ### New
 
 - `query_transaction_tree` function that returns messages and transactions tree produced 
   by the specified message was added to `query` module. [See the documentation]Link
-  
 
 ### Fixed
 
