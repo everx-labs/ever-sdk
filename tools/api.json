@@ -1,5 +1,5 @@
 {
-  "version": "1.15.0",
+  "version": "1.16.0",
   "modules": [
     {
       "name": "client",
@@ -4281,9 +4281,9 @@
           "struct_fields": [
             {
               "name": "key",
-              "type": "BigInt",
+              "type": "Number",
               "number_type": "UInt",
-              "number_size": 64,
+              "number_size": 32,
               "summary": null,
               "description": null
             },
