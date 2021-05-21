@@ -38,7 +38,7 @@ pub struct ParamsOfQueryTransactionTree {
     /// Input message id.
     pub in_msg: String,
 
-    /// List of contracts ABI that will be used to decode message bodies.
+    /// List of contract ABIs that will be used to decode message bodies.
     /// Library will try to decode each returned message body using any ABI from the registry.
     pub abi_registry: Option<Vec<Abi>>,
 }
@@ -223,9 +223,9 @@ async fn query_next_portion(
     Ok((messages, src_transactions))
 }
 
-/// Returns transaction tree for specific message.
+/// Returns transactions tree for specific message.
 ///
-/// Performs recursive retrieval of the transaction tree produced by the specific message:
+/// Performs recursive retrieval of the transactions tree produced by the specific message:
 /// in_msg -> dst_transaction -> out_messages -> dst_transaction -> ...
 ///
 /// All retrieved messages and transactions will be included
@@ -239,9 +239,6 @@ async fn query_next_portion(
 /// But there are no guaranties that all messages from transactions `out_msgs` are
 /// presented in `result.messages`.
 /// So the application have to continue retrieval for missing messages if it requires.
-///
-/// Note that limit of 50 transaction is absolutely enough for most transaction trees.
-/// Typical transaction tree has only a couple of transactions (two or three and rarely up to 5).
 #[api_function]
 pub async fn query_transaction_tree(
     context: std::sync::Arc<ClientContext>,
