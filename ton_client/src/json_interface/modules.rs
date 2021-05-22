@@ -350,6 +350,8 @@ fn register_net(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::net::ParamsOfQueryOperation>();
     module.register_type::<crate::net::FieldAggregation>();
     module.register_type::<crate::net::AggregationFn>();
+    module.register_type::<crate::net::TransactionNode>();
+    module.register_type::<crate::net::MessageNode>();
 
     module.register_async_fn(crate::net::query, crate::net::queries::query_api);
     module.register_async_fn(
@@ -388,6 +390,10 @@ fn register_net(handlers: &mut RuntimeHandlers) {
     module.register_async_fn(
         crate::net::query_counterparties,
         crate::net::queries::query_counterparties_api
+    );
+    module.register_async_fn(
+        crate::net::transaction_tree::query_transaction_tree,
+        crate::net::transaction_tree::query_transaction_tree_api
     );
     module.register();
 }
