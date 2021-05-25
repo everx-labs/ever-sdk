@@ -1,5 +1,5 @@
 {
-  "version": "1.15.0",
+  "version": "1.16.0",
   "modules": [
     {
       "name": "client",
@@ -4281,9 +4281,9 @@
           "struct_fields": [
             {
               "name": "key",
-              "type": "BigInt",
+              "type": "Number",
               "number_type": "UInt",
-              "number_size": 64,
+              "number_size": 32,
               "summary": null,
               "description": null
             },
@@ -8092,6 +8092,139 @@
           "description": null
         },
         {
+          "name": "TransactionNode",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "id",
+              "type": "String",
+              "summary": "Transaction id.",
+              "description": null
+            },
+            {
+              "name": "in_msg",
+              "type": "String",
+              "summary": "In message id.",
+              "description": null
+            },
+            {
+              "name": "out_msgs",
+              "type": "Array",
+              "array_item": {
+                "type": "String"
+              },
+              "summary": "Out message ids.",
+              "description": null
+            },
+            {
+              "name": "account_addr",
+              "type": "String",
+              "summary": "Account address.",
+              "description": null
+            },
+            {
+              "name": "total_fees",
+              "type": "String",
+              "summary": "Transactions total fees.",
+              "description": null
+            },
+            {
+              "name": "aborted",
+              "type": "Boolean",
+              "summary": "Aborted flag.",
+              "description": null
+            },
+            {
+              "name": "exit_code",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Compute phase exit code.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "MessageNode",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "id",
+              "type": "String",
+              "summary": "Message id.",
+              "description": null
+            },
+            {
+              "name": "src_transaction_id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Source transaction id.",
+              "description": "This field is missing for an external inbound messages."
+            },
+            {
+              "name": "dst_transaction_id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Destination transaction id.",
+              "description": "This field is missing for an external outbound messages."
+            },
+            {
+              "name": "src",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Source address.",
+              "description": null
+            },
+            {
+              "name": "dst",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Destination address.",
+              "description": null
+            },
+            {
+              "name": "value",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Transferred tokens value.",
+              "description": null
+            },
+            {
+              "name": "bounce",
+              "type": "Boolean",
+              "summary": "Bounce flag.",
+              "description": null
+            },
+            {
+              "name": "decoded_body",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "abi.DecodedMessageBody"
+              },
+              "summary": "Decoded body.",
+              "description": "Library tries to decode message body using provided `params.abi_registry`.\nThis field will be missing if none of the provided abi can be used to decode."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfQuery",
           "type": "Struct",
           "struct_fields": [
@@ -8494,6 +8627,61 @@
                 "type": "String"
               },
               "summary": "`cursor` field of the last received result",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfQueryTransactionTree",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "in_msg",
+              "type": "String",
+              "summary": "Input message id.",
+              "description": null
+            },
+            {
+              "name": "abi_registry",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "abi.Abi"
+                }
+              },
+              "summary": "List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfQueryTransactionTree",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "messages",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "net.MessageNode"
+              },
+              "summary": "Messages.",
+              "description": null
+            },
+            {
+              "name": "transactions",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "net.TransactionNode"
+              },
+              "summary": "Transactions.",
               "description": null
             }
           ],
@@ -9010,6 +9198,44 @@
               {
                 "type": "Ref",
                 "ref_name": "net.ResultOfQueryCollection"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "query_transaction_tree",
+          "summary": "Returns transactions tree for specific message.",
+          "description": "Performs recursive retrieval of the transactions tree produced by the specific message:\nin_msg -> dst_transaction -> out_messages -> dst_transaction -> ...\n\nAll retrieved messages and transactions will be included\ninto `result.messages` and `result.transactions` respectively.\n\nThe retrieval process will stop when the retrieved transaction count is more than 50.\n\nIt is guaranteed that each message in `result.messages` has the corresponding transaction\nin the `result.transactions`.\n\nBut there are no guaranties that all messages from transactions `out_msgs` are\npresented in `result.messages`.\nSo the application have to continue retrieval for missing messages if it requires.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfQueryTransactionTree",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfQueryTransactionTree"
               }
             ]
           },

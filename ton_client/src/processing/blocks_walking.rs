@@ -14,7 +14,7 @@
 use super::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
-use crate::net::{OrderBy, ParamsOfQueryCollection, ParamsOfWaitForCollection, SortDirection, BLOCKS_TABLE_NAME, Endpoint};
+use crate::net::{OrderBy, ParamsOfQueryCollection, ParamsOfWaitForCollection, SortDirection, BLOCKS_COLLECTION, Endpoint};
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_block::MASTERCHAIN_ID;
@@ -42,7 +42,7 @@ pub(crate) async fn find_last_shard_block(
     // if account resides in masterchain, then starting point is last masterchain block
     // generated before message was sent
     let blocks = server_link.query_collection(ParamsOfQueryCollection {
-            collection: BLOCKS_TABLE_NAME.to_string(),
+            collection: BLOCKS_COLLECTION.to_string(),
             filter: Some(json!({
                 "workchain_id": { "eq": MASTERCHAIN_ID }
             })),
@@ -71,7 +71,7 @@ pub(crate) async fn find_last_shard_block(
         if blocks[0].is_null() {
             // TON OS SE case - no masterchain, no sharding. Check that only one shard
             let blocks = server_link.query_collection(ParamsOfQueryCollection {
-                    collection: BLOCKS_TABLE_NAME.to_string(),
+                    collection: BLOCKS_COLLECTION.to_string(),
                     filter: Some(json!({
                     "workchain_id": { "eq": workchain },
                     })),
@@ -99,7 +99,7 @@ pub(crate) async fn find_last_shard_block(
 
             // Take last block by seq_no
             let blocks = server_link.query_collection(ParamsOfQueryCollection {
-                    collection: BLOCKS_TABLE_NAME.to_string(),
+                    collection: BLOCKS_COLLECTION.to_string(),
                     filter: Some(json!({
                     "workchain_id": { "eq": workchain },
                     "shard": { "eq": "8000000000000000" },
@@ -155,7 +155,7 @@ pub async fn wait_next_block(
 
     let block = client
         .wait_for_collection(ParamsOfWaitForCollection {
-            collection: BLOCKS_TABLE_NAME.to_string(),
+            collection: BLOCKS_COLLECTION.to_string(),
             filter: Some(json!({
                 "prev_ref": {
                     "root_hash": { "eq": current.to_string() }
@@ -179,7 +179,7 @@ pub async fn wait_next_block(
     if block["after_split"] == true && !check_shard_match(block.clone(), address)? {
         client
             .wait_for_collection(ParamsOfWaitForCollection {
-                collection: BLOCKS_TABLE_NAME.to_string(),
+                collection: BLOCKS_COLLECTION.to_string(),
                 filter: Some(json!({
                     "id": { "ne": block["id"]},
                     "prev_ref": {

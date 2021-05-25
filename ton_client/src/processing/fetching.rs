@@ -3,7 +3,7 @@ use crate::boc::internal::deserialize_object_from_base64;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::net::{
-    wait_for_collection, ParamsOfWaitForCollection, MAX_TIMEOUT, TRANSACTIONS_TABLE_NAME,
+    wait_for_collection, ParamsOfWaitForCollection, MAX_TIMEOUT, TRANSACTIONS_COLLECTION,
 };
 use crate::processing::blocks_walking::wait_next_block;
 use crate::processing::internal::can_retry_network_error;
@@ -88,7 +88,7 @@ impl TransactionBoc {
         Ok(wait_for_collection(
             context.clone(),
             ParamsOfWaitForCollection {
-                collection: TRANSACTIONS_TABLE_NAME.into(),
+                collection: TRANSACTIONS_COLLECTION.into(),
                 filter: Some(json!({
                     "id": { "eq": transaction_id.to_string() }
                 })),

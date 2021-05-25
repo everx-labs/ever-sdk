@@ -13,10 +13,10 @@
 
 use serde::{Deserialize, Deserializer};
 
-pub const MESSAGES_TABLE_NAME: &str = "messages";
-pub const CONTRACTS_TABLE_NAME: &str = "accounts";
-pub const BLOCKS_TABLE_NAME: &str = "blocks";
-pub const TRANSACTIONS_TABLE_NAME: &str = "transactions";
+pub const MESSAGES_COLLECTION: &str = "messages";
+pub const ACCOUNTS_COLLECTION: &str = "accounts";
+pub const BLOCKS_COLLECTION: &str = "blocks";
+pub const TRANSACTIONS_COLLECTION: &str = "transactions";
 
 pub fn default_network_retries_count() -> i8 {
     5
@@ -204,8 +204,8 @@ pub struct NetworkConfig {
     pub sending_endpoint_count: u8,
 
     /// Frequency of sync latency detection. Library periodically
-    /// checks the current endpoint for blockchain data syncronization latency. 
-    /// If the latency (time-lag) is less then `NetworkConfig.max_latency` 
+    /// checks the current endpoint for blockchain data syncronization latency.
+    /// If the latency (time-lag) is less then `NetworkConfig.max_latency`
     /// then library selects another endpoint.
     ///
     /// Must be specified in milliseconds. Default is 60000 (1 min).
@@ -215,10 +215,10 @@ pub struct NetworkConfig {
     )]
     pub latency_detection_interval: u32,
 
-    /// Maximum value for the endpoint's blockchain data syncronization latency (time-lag). 
-    /// Library periodically checks the current endpoint for blockchain 
-    /// data syncronization latency. 
-    /// If the latency (time-lag) is less then `NetworkConfig.max_latency` 
+    /// Maximum value for the endpoint's blockchain data syncronization latency (time-lag).
+    /// Library periodically checks the current endpoint for blockchain
+    /// data syncronization latency.
+    /// If the latency (time-lag) is less then `NetworkConfig.max_latency`
     /// then library selects another endpoint.
     ///
     /// Must be specified in milliseconds. Default is 60000 (1 min).

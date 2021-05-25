@@ -797,13 +797,13 @@ type AbiEvent = {
 ## AbiData
 ```ts
 type AbiData = {
-    key: bigint,
+    key: number,
     name: string,
     type: string,
     components?: AbiParam[]
 }
 ```
-- `key`: _bigint_
+- `key`: _number_
 - `name`: _string_
 - `type`: _string_
 - `components`?: _[AbiParam](mod_abi.md#AbiParam)[]_

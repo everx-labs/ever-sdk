@@ -3,13 +3,14 @@ use tokio::sync::Mutex;
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
 use crate::error::ClientError;
 use crate::processing::ParamsOfProcessMessage;
-use crate::tests::{TestClient, HELLO};
+use crate::tests::{TestClient, EVENTS, HELLO, SUBSCRIBE, TEST_DEBOT, TEST_DEBOT_TARGET};
 
 use super::*;
+use crate::client::NetworkMock;
 use crate::ClientConfig;
+use serde_json::Value;
 use std::collections::HashSet;
 use std::sync::Arc;
-use crate::client::{NetworkMock};
 
 #[tokio::test(core_threads = 2)]
 async fn batch_query() {
@@ -293,7 +294,10 @@ async fn subscribe_for_transactions_with_addresses() {
         async move {
             match result {
                 Ok(result) => {
-                    println!("Transaction 1 {}, {}",  result.result["id"], result.result["status"]);
+                    println!(
+                        "Transaction 1 {}, {}",
+                        result.result["id"], result.result["status"]
+                    );
                     assert_eq!(result.result["account_addr"], address1);
                     transactions_copy.lock().await.push(result.result);
                 }
@@ -367,7 +371,10 @@ async fn subscribe_for_transactions_with_addresses() {
         async move {
             match result {
                 Ok(result) => {
-                    println!("Transaction 2 {}, {}",  result.result["id"], result.result["status"]);
+                    println!(
+                        "Transaction 2 {}, {}",
+                        result.result["id"], result.result["status"]
+                    );
                     assert_eq!(result.result["account_addr"], address2);
                     transactions_copy.lock().await.push(result.result);
                 }
@@ -435,7 +442,13 @@ async fn subscribe_for_transactions_with_addresses() {
 
     // check that third transaction is now received after resume
     let transactions = transactions.lock().await.clone();
-    println!("{:?}", transactions.iter().map(|x|x["id"].to_string()).collect::<Vec<String>>());
+    println!(
+        "{:?}",
+        transactions
+            .iter()
+            .map(|x| x["id"].to_string())
+            .collect::<Vec<String>>()
+    );
     assert_eq!(transactions.len(), 3);
     assert_ne!(transactions[0]["id"], transactions[2]["id"]);
     // and both subscriptions received notification about resume
@@ -925,4 +938,189 @@ async fn get_endpoints() {
     assert_eq!(NetworkMock::get_len(&client).await, 0);
     assert_eq!(result.query, "https://a/graphql");
     assert_eq!(result.endpoints, vec!["a".to_string(), "b".to_string()]);
+}
+
+fn collect(loaded_messages: &Vec<Value>, messages: &mut Vec<Value>, transactions: &mut Vec<Value>) {
+    for message in loaded_messages {
+        messages.push(message.clone());
+        let tr = &message["dst_transaction"];
+        if tr.is_object() {
+            transactions.push(tr.clone());
+            if let Some(out_messages) = tr["out_messages"].as_array() {
+                collect(out_messages, messages, transactions);
+            }
+        }
+    }
+}
+
+#[tokio::test(core_threads = 2)]
+async fn transaction_tree() {
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(TestClient::endpoints()),
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+    let messages = query_collection(
+        client.clone(),
+        ParamsOfQueryCollection {
+            collection: MESSAGES_COLLECTION.to_string(),
+            filter: Some(json!({
+                "msg_type": { "eq": 1 },
+            })),
+            result: r#"
+            id dst
+            dst_transaction { id aborted
+              out_messages { id dst msg_type_name
+                dst_transaction { id aborted
+                  out_messages { id dst msg_type_name
+                    dst_transaction { id aborted
+                    }
+                  }
+                }
+              }
+            }
+        "#
+            .to_string(),
+            order: None,
+            limit: None,
+        },
+    )
+    .await
+    .unwrap();
+
+    let abi_registry = vec![
+        TestClient::giver_abi(),
+        TestClient::abi(SUBSCRIBE, None),
+        TestClient::abi(HELLO, None),
+        TestClient::abi(EVENTS, None),
+        TestClient::abi(TEST_DEBOT, None),
+        TestClient::abi(TEST_DEBOT_TARGET, None),
+    ];
+
+    let mut has_decoded_bodies = false;
+    for message in messages.result {
+        let result = query_transaction_tree(
+            client.clone(),
+            ParamsOfQueryTransactionTree {
+                in_msg: message["id"].as_str().unwrap().to_string(),
+                abi_registry: Some(abi_registry.clone()),
+            },
+        )
+        .await
+        .unwrap();
+        let mut ref_messages = Vec::new();
+        let mut ref_transactions = Vec::new();
+        collect(&vec![message], &mut ref_messages, &mut ref_transactions);
+        let ref_message_ids = ref_messages
+            .iter()
+            .map(|x| x["id"].as_str().unwrap().to_string())
+            .collect::<HashSet<String>>();
+        let ref_transaction_ids = ref_transactions
+            .iter()
+            .map(|x| x["id"].as_str().unwrap().to_string())
+            .collect::<HashSet<String>>();
+        let actual_message_ids = result
+            .messages
+            .iter()
+            .map(|x| x.id.clone())
+            .collect::<HashSet<String>>();
+        let actual_transaction_ids = result
+            .transactions
+            .iter()
+            .map(|x| x.id.clone())
+            .collect::<HashSet<String>>();
+
+        assert_eq!(ref_message_ids, actual_message_ids);
+        assert_eq!(ref_transaction_ids, actual_transaction_ids);
+        for msg in result.messages {
+            if msg.decoded_body.is_some() {
+                has_decoded_bodies = true;
+            }
+        }
+    }
+    assert!(has_decoded_bodies);
+}
+
+#[tokio::test(core_threads = 2)]
+async fn order_by_fallback() {
+    let params: ParamsOfQueryCollection = serde_json::from_str(
+        r#"
+        {
+            "collection": "messages",
+            "result": "id",
+            "order": [{"path": "id", "direction": "ASC"}]
+        }
+        "#,
+    )
+    .unwrap();
+    assert_eq!(params.order.unwrap()[0].path, "id");
+    assert!(serde_json::from_str::<ParamsOfQueryCollection>(
+        r#"
+        {
+            "collection": "messages",
+            "result": "id",
+            "orderBy": [{"path": "id", "direction": "ASC"}]
+        }
+        "#,
+    ).is_err());
+    assert!(serde_json::from_str::<ParamsOfQueryCollection>(
+        r#"
+        {
+            "collection": "messages",
+            "result": "id",
+            "orderBy": [
+                {"path": "id1", "direction": "ASC"}
+            ],
+            "order": [
+                {"path": "id", "direction": "ASC"}
+            ]
+        }
+        "#,
+    )
+    .is_err());
+    let client = TestClient::new();
+
+    let result: ClientResult<ResultOfQueryCollection> = client
+        .request_async(
+            "net.query_collection",
+            json!({
+                "collection": "messages",
+                "result": "id",
+                "limit": 1,
+            }),
+        )
+        .await;
+    assert!(result.is_ok());
+    let result: ClientResult<ResultOfQueryCollection> = client
+        .request_async(
+            "net.query_collection",
+            json!({
+                "collection": "messages",
+                "result": "id",
+                "limit": 1,
+                "order": [{"path":"id", "direction":"ASC"}],
+            }),
+        )
+        .await;
+    assert!(result.is_ok());
+    let result: ClientResult<ResultOfQueryCollection> = client
+        .request_async(
+            "net.query_collection",
+            json!({
+                "collection": "messages",
+                "result": "id",
+                "limit": 1,
+                "orderBy": [{"path":"id", "direction":"ASC"}],
+            }),
+        )
+        .await;
+    if let Err(err) = &result {
+        println!("{:?}", err);
+    }
+    assert!(result.is_err());
 }
