@@ -23,7 +23,8 @@ pub enum EnumWithTypes {
     Baz { a: String, b: String },
 }
 
-#[doc(summary = "Foo")]
+/// Foo
+///
 /// Foo struct
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct Foo {
@@ -38,8 +39,9 @@ pub struct Foo {
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 struct Bar {
-    #[doc(summary = "summary")]
-    #[doc = "description"]
+    /// summary
+    ///
+    /// description
     pub abi: Option<serde_json::Value>,
     pub function_name: Option<String>,
     pub message: Foo,
