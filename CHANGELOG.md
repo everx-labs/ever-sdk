@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.16.1] – 2021-05-27
+
+### Fixed
+- Warnings in Rust 1.52+. Little fixes in the documentation.
+
 ## [1.16.0] – 2021-05-25
 
 ### New

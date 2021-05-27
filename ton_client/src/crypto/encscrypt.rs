@@ -43,7 +43,8 @@ pub struct ResultOfScrypt {
     pub key: String,
 }
 
-#[doc(summary = "Perform `scrypt` encryption")]
+/// Perform `scrypt` encryption
+///
 /// Derives key from `password` and `key` using `scrypt` algorithm.
 /// See [https://en.wikipedia.org/wiki/Scrypt].
 ///

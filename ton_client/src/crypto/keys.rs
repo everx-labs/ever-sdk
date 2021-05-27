@@ -36,7 +36,6 @@ pub(crate) fn strip_secret(secret: &str) -> String {
 }
 
 //----------------------------------------------------------------------------------------- KeyPair
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, Clone, ApiType, Default, PartialEq)]
 pub struct KeyPair {
@@ -66,7 +65,6 @@ impl Debug for KeyPair {
 }
 
 //----------------------------------------------------------- convert_public_key_to_ton_safe_format
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfConvertPublicKeyToTonSafeFormat {
@@ -114,7 +112,6 @@ pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> Cli
 
 //-------------------------------------------------------------------------------------------- sign
 
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfSign {
@@ -148,7 +145,6 @@ pub fn sign(
 
 //-------------------------------------------------------------------------------- verify_signature
 
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfVerifySignature {
