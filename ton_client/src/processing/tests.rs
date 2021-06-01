@@ -2,6 +2,8 @@ use crate::abi::{
     CallSet, DecodedMessageBody, DeploySet, FunctionHeader, MessageBodyType, ParamsOfEncodeMessage,
     Signer,
 };
+use crate::tests::GIVER_V2;
+use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor, ResultOfRunExecutor};
 use crate::json_interface::modules::ProcessingModule;
 use crate::processing::types::DecodedOutput;
 use crate::processing::{
@@ -521,4 +523,82 @@ async fn test_retries() {
     for result in futures::future::join_all(tasks).await {
         result.unwrap().unwrap();
     }
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_fees() {
+    let client = TestClient::new();
+    let (abi, tvc) = TestClient::package(GIVER_V2, Some(2));
+    let keys = client.generate_sign_keys();
+
+    let address = client
+        .deploy_with_giver_async(
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                deploy_set: DeploySet::some_with_tvc(tvc.clone()),
+                call_set: CallSet::some_with_function("constructor"),
+                signer: Signer::Keys { keys: keys.clone() },
+                processing_try_index: None,
+                address: None,
+            },
+            None,
+        )
+        .await;
+
+    let params = ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        address: Some(address.clone()),
+        call_set: CallSet::some_with_function_and_input(
+            "sendTransaction",
+            json!({
+                "dest": address.to_string(),
+                "value": 100_000_000u64,
+                "bounce": false
+            })
+        ),
+        deploy_set: None,
+        processing_try_index: None,
+        signer: Signer::Keys { keys },
+    };
+
+    let account: String = client.fetch_account(&address).await["boc"]
+        .as_str()
+        .unwrap()
+        .into();
+
+    let message = client
+        .encode_message(params.clone())
+        .await
+        .unwrap();
+
+    let local_result: ResultOfRunExecutor = client.request_async(
+        "tvm.run_executor",
+        ParamsOfRunExecutor {
+            account: AccountForExecutor::Account { 
+                boc: account,
+                unlimited_balance: None
+            },
+            message: message.message,
+            ..Default::default()
+        }
+    ).await.unwrap();
+
+    let run_result = client
+        .net_process_message(
+            ParamsOfProcessMessage {
+                message_encode_params: params,
+                send_events: false,
+            },
+            TestClient::default_callback,
+        ).await.unwrap();
+
+    assert_eq!(local_result.fees.gas_fee, run_result.fees.gas_fee);
+    assert_eq!(local_result.fees.out_msgs_fwd_fee, run_result.fees.out_msgs_fwd_fee);
+    assert_eq!(local_result.fees.in_msg_fwd_fee, run_result.fees.in_msg_fwd_fee);
+    assert_eq!(local_result.fees.total_output, run_result.fees.total_output);
+    assert_eq!(local_result.fees.total_output, 100_000_000u64);
+    assert_eq!(
+        local_result.fees.total_account_fees - local_result.fees.storage_fee,
+        run_result.fees.total_account_fees - run_result.fees.storage_fee);
+    assert!(run_result.fees.storage_fee >= local_result.fees.storage_fee);
 }
