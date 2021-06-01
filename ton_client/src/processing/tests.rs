@@ -601,4 +601,9 @@ async fn test_fees() {
         local_result.fees.total_account_fees - local_result.fees.storage_fee,
         run_result.fees.total_account_fees - run_result.fees.storage_fee);
     assert!(run_result.fees.storage_fee >= local_result.fees.storage_fee);
+
+    assert!(local_result.fees.gas_fee > 0);
+    assert!(local_result.fees.out_msgs_fwd_fee > 0);
+    assert!(local_result.fees.in_msg_fwd_fee > 0);
+    assert!(local_result.fees.total_account_fees > 0);
 }
