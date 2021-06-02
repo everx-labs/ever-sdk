@@ -1009,6 +1009,7 @@ async fn transaction_tree() {
             ParamsOfQueryTransactionTree {
                 in_msg: message["id"].as_str().unwrap().to_string(),
                 abi_registry: Some(abi_registry.clone()),
+                ..Default::default()
             },
         )
         .await

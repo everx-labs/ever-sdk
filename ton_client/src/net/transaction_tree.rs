@@ -22,6 +22,8 @@ use std::collections::{HashMap, HashSet};
 use std::iter::FromIterator;
 use std::sync::Arc;
 
+const DEFAULT_WAITING_TIMEOUT: u32 = 60000;
+
 fn get_string(v: &Value, name: &str) -> Option<String> {
     v[name].as_str().map(|x| x.to_string())
 }
@@ -42,6 +44,15 @@ pub struct ParamsOfQueryTransactionTree {
     /// List of contract ABIs that will be used to decode message bodies.
     /// Library will try to decode each returned message body using any ABI from the registry.
     pub abi_registry: Option<Vec<Abi>>,
+
+    /// Timeout used to limit waiting time for the missing messages and transaction.
+    ///
+    /// If some of the following messages and transactions are missing yet
+    //  the function will wait for their appearance.
+    /// The maximum waiting time is regulated by this option.
+    ///
+    /// Default value is 60000 (1 min).
+    pub timeout: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone, Debug)]
@@ -187,6 +198,7 @@ pub struct ResultOfQueryTransactionTree {
 
 async fn query_next_portion(
     server_link: &ServerLink,
+    timeout: u32,
     queue: &mut Vec<(Option<String>, String)>,
 ) -> ClientResult<(Vec<Value>, HashMap<String, Option<String>>)> {
     let mut src_transactions = HashMap::new();
@@ -214,7 +226,7 @@ async fn query_next_portion(
         .collect::<HashSet<String>>();
 
     // Wait for all required messages but not more than one minute
-    let time_limit = server_link.client_env.now_ms() + 60000;
+    let time_limit = server_link.client_env.now_ms() + timeout as u64;
     loop {
         let mut messages = server_link
             .query_collection(
@@ -276,9 +288,10 @@ pub async fn query_transaction_tree(
     let mut transaction_nodes = Vec::new();
     let mut message_nodes = Vec::new();
     let mut query_queue: Vec<(Option<String>, String)> = vec![(None, params.in_msg.clone())];
+    let timeout = params.timeout.unwrap_or(DEFAULT_WAITING_TIMEOUT);
     while !query_queue.is_empty() && transaction_nodes.len() < 50 {
         let (messages, src_transactions) =
-            query_next_portion(server_link, &mut query_queue).await?;
+            query_next_portion(server_link, timeout, &mut query_queue).await?;
         for message in messages {
             let message_node =
                 MessageNode::from(&message, &context, &params.abi_registry, &src_transactions)

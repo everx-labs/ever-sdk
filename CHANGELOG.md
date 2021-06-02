@@ -4,9 +4,14 @@ All notable changes to this project will be documented in this file.
 
 ## [1.16.1] – 2021-05-27
 
+### New
+- `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the missing 
+  messages and transaction.
+
 ### Fixed
 - Warnings in Rust 1.52+. Little fixes in the documentation.
 - `total_output` field in fees was always 0.
+- `query_transaction_tree` didn't wait for messages.
 
 ## [1.16.0] – 2021-05-25
 
