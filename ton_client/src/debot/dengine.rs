@@ -5,8 +5,7 @@ use super::context::{
 };
 use super::debot_abi::DEBOT_ABI;
 use super::errors::Error;
-use super::calltype;
-use super::calltype::DebotCallType;
+use super::calltype::{ContractCall, DebotCallType};
 use super::routines;
 use super::run_output::RunOutput;
 use super::{JsonValue, TonClient, DInfo};
@@ -832,31 +831,32 @@ impl DEngine {
                     debug!("GetMethod call");
                     let target_state = Self::load_state(self.ton.clone(), dest.clone()).await
                         .map_err(|e| Error::execute_failed(e))?;
-                    let answer_msg = calltype::run_get_method(
+                    let callobj = ContractCall::new(
                         self.browser.clone(),
                         self.ton.clone(),
                         msg,
+                        Signer::None,
                         target_state,
-                        &self.addr,
-                    )
-                    .await?;
-                    debug!("GetMethod succeeded");
+                        self.addr.clone(),
+                        true,
+                    ).await?;
+                    let answer_msg = callobj.execute().await?;
                     output.append(self.send_to_debot(answer_msg).await?);
                 },
                 DebotCallType::External{msg, dest} => {
                     debug!("External call");
                     let target_state = Self::load_state(self.ton.clone(), dest.clone()).await
                         .map_err(|e| Error::execute_failed(e))?;
-                    let answer_msg = calltype::send_ext_msg(
+                    let callobj = ContractCall::new(
                         self.browser.clone(),
                         self.ton.clone(),
                         msg,
                         Signer::None,
                         target_state,
-                        &self.addr,
-                    )
-                    .await?;
-                    debug!("External call succeeded");
+                        self.addr.clone(),
+                        false,
+                    ).await?;
+                    let answer_msg = callobj.execute().await?;
                     output.append(self.send_to_debot(answer_msg).await?);
                 },
                 DebotCallType::Invoke{msg} => {

@@ -31,6 +31,7 @@ fn msg_err(e: impl Display) -> ClientError {
     Error::invalid_msg(e)
 }
 
+#[derive(Default)]
 struct Metadata {
     answer_id: u32,
     onerror_id: u32,
@@ -82,158 +83,269 @@ impl TryFrom<MsgAddressExt> for Metadata {
     }
 }
 
-pub async fn run_get_method(
+pub(crate) struct ContractCall {
     browser: Arc<dyn BrowserCallbacks + Send + Sync>,
     ton: TonClient,
-    msg: String,
-    target_state: String,
-    debot_addr: &String,
-) -> ClientResult<String> {
-    let mut message: Message = deserialize_object_from_base64(&msg, "message")
-        .map_err(msg_err)?
-        .object;
-    let meta = get_meta(&mut message)?;
-    let (answer_id, _onerror_id, func_id, dest_addr, fixed_msg, _) =
-        decode_and_fix_ext_msg(ton.clone(), message, meta, Signer::None, browser, false)
-            .await
-            .map_err(|e| Error::get_method_failed(e))?;
-
-    let mut result = run_tvm(
-        ton.clone(),
-        ParamsOfRunTvm {
-            account: target_state,
-            message: fixed_msg,
-            abi: None,
-            execution_options: None,
-            boc_cache: None,
-            return_updated_account: Some(true),
-        },
-    )
-    .await
-    .map_err(|e| Error::get_method_failed(e))?;
-
-    if result.out_messages.len() != 1 {
-        return Err(Error::get_method_failed(
-            "get-metod returns more than 1 message",
-        ));
-    }
-    let out_msg = result.out_messages.pop().unwrap();
-    build_answer_msg(&out_msg, answer_id, func_id, &dest_addr, debot_addr)
-        .ok_or(Error::get_method_failed("failed to build answer message"))
-}
-
-pub async fn send_ext_msg<'a>(
-    browser: Arc<dyn BrowserCallbacks + Send + Sync>,
-    ton: TonClient,
-    msg: String,
+    msg: Message,
     signer: Signer,
     target_state: String,
-    debot_addr: &'a String,
-) -> ClientResult<String> {
-    let mut message: Message = deserialize_object_from_base64(&msg, "message")
-        .map_err(msg_err)?
-        .object;
-    let meta = get_meta(&mut message)?;
-    let onerror_id = meta.onerror_id;
-    let dest_addr = message
-        .header()
-        .get_dst_address()
-        .map(|x| x.to_string())
-        .unwrap_or_default();
-        
-    let result = decode_and_fix_ext_msg(ton.clone(), message, meta, signer, browser.clone(), true)
+    debot_addr: String,
+    dest_addr: String,
+    local_run: bool,
+    meta: Metadata,
+}
+
+impl ContractCall {
+    pub async fn new(
+        browser: Arc<dyn BrowserCallbacks + Send + Sync>,
+        ton: TonClient,
+        msg: String,
+        signer: Signer,
+        target_state: String,
+        debot_addr: String,
+        local_run: bool,
+    ) -> ClientResult<Self> {
+        let mut msg: Message = deserialize_object_from_base64(&msg, "message")
+            .map_err(msg_err)?
+            .object;
+        let meta = get_meta(&mut msg)?;
+        let signer = resolve_signer(
+            local_run,
+            signer, 
+            meta.signing_box_handle.clone(), 
+            browser.clone()
+        ).await?;
+        let dest_addr = msg
+            .header()
+            .get_dst_address()
+            .map(|x| x.to_string())
+            .unwrap_or_default();
+        Ok(Self { browser, ton, msg, signer, target_state, debot_addr, dest_addr, local_run, meta })
+    }
+
+    pub async fn execute(&self) -> ClientResult<String> {
+        let result = self.decode_and_fix_ext_msg()
+            .await
+            .map_err(|e| Error::external_call_failed(e));
+        if let Err(e) = result {
+            let error_body = build_onerror_body(self.meta.onerror_id, e)?;
+            return build_internal_message(&self.dest_addr, &self.debot_addr, error_body);
+        }
+
+        let (func_id, fixed_msg) = result.unwrap();
+
+        if self.local_run {
+            self.run_get_method(func_id, fixed_msg).await
+        } else {
+            self.send_ext_msg(func_id, fixed_msg).await
+        }
+    }
+
+    async fn run_get_method(&self, func_id: u32, fixed_msg: String) -> ClientResult<String> {
+        let result = run_tvm(
+            self.ton.clone(),
+            ParamsOfRunTvm {
+                account: self.target_state.clone(),
+                message: fixed_msg,
+                abi: None,
+                execution_options: None,
+                boc_cache: None,
+                return_updated_account: Some(true),
+            },
+        )
         .await
-        .map_err(|e| Error::external_call_failed(e));
-    if let Err(e) = result {
-        let error_body = build_onerror_body(onerror_id, e)?;
-        return build_internal_message(&dest_addr, debot_addr, error_body);
+        .map_err(|e| Error::get_method_failed(e));
+
+        if let Err(e) = result {
+            let error_body = build_onerror_body(self.meta.onerror_id, e)?;
+            return build_internal_message(&self.dest_addr, &self.debot_addr, error_body);
+        }
+        
+        let mut messages = result.unwrap().out_messages;
+
+        if messages.len() != 1 {
+            return Err(Error::get_method_failed(
+                "get-method returns more than 1 message",
+            ));
+        }
+        let out_msg = messages.pop().unwrap();
+        build_answer_msg(&out_msg, self.meta.answer_id, func_id, &self.dest_addr, &self.debot_addr)
+            .ok_or(Error::get_method_failed("failed to build answer message"))
+    }
+    
+    async fn send_ext_msg(&self, func_id: u32, fixed_msg: String) -> ClientResult<String> {
+        let activity = emulate_transaction(
+            self.ton.clone(),
+            self.dest_addr.clone(),
+            fixed_msg.clone(),
+            self.target_state.clone(),
+            self.signer.clone(),
+        ).await;
+        match activity {
+            Ok(activity) => {
+                if !self.browser.approve(activity).await? {
+                    let error_body = build_onerror_body(self.meta.onerror_id, Error::operation_rejected())?;
+                    return build_internal_message(&self.dest_addr, &self.debot_addr, error_body);
+                }
+            },
+            Err(e) => {
+                let error_body = build_onerror_body(self.meta.onerror_id, e)?;
+                return build_internal_message(&self.dest_addr, &self.debot_addr, error_body);
+            },
+        }
+        
+        let browser = self.browser.clone();
+        let callback = move |event| {
+            debug!("{:?}", event);
+            let browser = browser.clone();
+            async move {
+                match event {
+                    ProcessingEvent::WillSend {
+                        shard_block_id: _,
+                        message_id,
+                        message: _,
+                    } => {
+                        browser.log(format!("Sending message {}", message_id)).await;
+                    }
+                    _ => (),
+                };
+            }
+        };
+
+        let result = send_message(
+            self.ton.clone(),
+            ParamsOfSendMessage {
+                message: fixed_msg.clone(),
+                abi: None,
+                send_events: true,
+            },
+            callback.clone(),
+        )
+        .await
+        .map(|e| { error!("{:?}", e); e })?;
+
+        let result = wait_for_transaction(
+            self.ton.clone(),
+            ParamsOfWaitForTransaction {
+                abi: None,
+                message: fixed_msg,
+                shard_block_id: result.shard_block_id,
+                send_events: true,
+                sending_endpoints: Some(result.sending_endpoints),
+            },
+            callback,
+        )
+        .await;
+        match result {
+            Ok(res) => {
+                for out_msg in &res.out_messages {
+                    let res = build_answer_msg(
+                        out_msg,
+                        self.meta.answer_id,
+                        func_id,
+                        &self.dest_addr,
+                        &self.debot_addr
+                    );
+                    if let Some(answer_msg) = res {
+                        return Ok(answer_msg);
+                    }
+                    debug!("Skip outbound message");
+                }
+                debug!("Build empty body");
+                // answer message not found, build empty answer.
+                let mut new_body = BuilderData::new();
+                new_body.append_u32(self.meta.answer_id).map_err(msg_err)?;
+                build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into())
+            }
+            Err(e) => {
+                debug!("Transaction failed: {:?}", e);
+                let error_body = build_onerror_body(self.meta.onerror_id, e)?;
+                build_internal_message(&self.dest_addr, &self.debot_addr, error_body)
+            }
+        }
     }
 
-    let (answer_id, onerror_id, func_id, dest_addr, fixed_msg, signer) = result.unwrap();
-
-    let activity = emulate_transaction(
-        ton.clone(),
-        dest_addr.clone(),
-        fixed_msg.clone(),
-        target_state,
-        signer,
-    ).await;
-    match activity {
-        Ok(activity) => {
-            if !browser.approve(activity).await? {
-                let error_body = build_onerror_body(onerror_id, Error::operation_rejected())?;
-                return build_internal_message(&dest_addr, debot_addr, error_body);
+    async fn decode_and_fix_ext_msg(&self) -> ClientResult<(u32, String)> {
+        // find function id in message body: parse signature, pubkey and abi headers
+        let mut message = self.msg.clone();
+        let mut in_body_slice = message.body().ok_or(msg_err("empty body"))?;
+        // skip signature bit and signature if present
+        let sign_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
+        if let Signer::SigningBox { handle: _ } = self.signer {
+            if !sign_bit {
+                return Err(msg_err("signature bit is zero"));
             }
-        },
-        Err(e) => {
-            let error_body = build_onerror_body(onerror_id, e)?;
-            return build_internal_message(&dest_addr, debot_addr, error_body);
-        },
-    }
-
-    let browser = browser.clone();
-    let callback = move |event| {
-        debug!("{:?}", event);
-        let browser = browser.clone();
-        async move {
-            match event {
-                ProcessingEvent::WillSend {
-                    shard_block_id: _,
-                    message_id,
-                    message: _,
-                } => {
-                    browser.log(format!("Sending message {}", message_id)).await;
-                }
-                _ => (),
-            };
+            in_body_slice.get_next_bits(512).map_err(msg_err)?;
         }
-    };
-    let result = send_message(
-        ton.clone(),
-        ParamsOfSendMessage {
-            message: fixed_msg.clone(),
-            abi: None,
-            send_events: true,
-        },
-        callback.clone(),
-    )
-    .await
-    .map(|e| {
-        error!("{:?}", e);
-        e
-    })?;
-    let result = wait_for_transaction(
-        ton.clone(),
-        ParamsOfWaitForTransaction {
-            abi: None,
-            message: fixed_msg,
-            shard_block_id: result.shard_block_id,
-            send_events: true,
-            sending_endpoints: Some(result.sending_endpoints),
-        },
-        callback,
-    )
-    .await;
-    match result {
-        Ok(res) => {
-            for out_msg in &res.out_messages {
-                let res = build_answer_msg(out_msg, answer_id, func_id, &dest_addr, debot_addr);
-                if let Some(answer_msg) = res {
-                    return Ok(answer_msg);
-                }
-                debug!("Skip outbound message");
+        if self.meta.is_pubkey {
+            let pubkey_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
+            if pubkey_bit {
+                in_body_slice.get_next_bits(256).map_err(msg_err)?;
             }
-            debug!("Build empty body");
-            // answer message not found, build empty answer.
-            let mut new_body = BuilderData::new();
-            new_body.append_u32(answer_id).map_err(msg_err)?;
-            build_internal_message(&dest_addr, debot_addr, new_body.into())
         }
-        Err(e) => {
-            debug!("Transaction failed: {:?}", e);
-            let error_body = build_onerror_body(onerror_id, e)?;
-            build_internal_message(&dest_addr, debot_addr, error_body)
+        if self.meta.is_timestamp {
+            // skip `timestamp` header
+            in_body_slice.get_next_u64().map_err(msg_err)?;
         }
+        if self.meta.is_expire {
+            // skip `expire` header
+            in_body_slice.get_next_u32().map_err(msg_err)?;
+        }
+        // remember function id
+        let func_id = in_body_slice.get_next_u32().map_err(msg_err)?;
+    
+        // rebuild msg body - insert correct `timestamp` and `expire` headers if they are present,
+        // then sign body with signing box
+    
+        let mut new_body = BuilderData::new();
+        let pubkey = self.signer.resolve_public_key(self.ton.clone()).await?;
+        if self.meta.is_pubkey {
+            if let Some(ref key) = pubkey {
+                new_body
+                    .append_bit_one()
+                    .and_then(|b| b.append_raw(&hex::decode(key).unwrap(), 256))
+                    .map_err(msg_err)?;
+            } else {
+                // pubkey bit = 0
+                new_body.append_bit_zero().map_err(msg_err)?;
+            }
+        }
+        let now = self.ton.env.now_ms();
+        let expired_at = ((now / 1000) as u32) + self.ton.config.abi.message_expiration_timeout;
+        if self.meta.is_timestamp {
+            new_body.append_u64(now).map_err(msg_err)?;
+        }
+        if self.meta.is_expire {
+            new_body.append_u32(expired_at).map_err(msg_err)?;
+        }
+        new_body
+            .append_u32(func_id)
+            .and_then(|b| b.append_builder(&BuilderData::from_slice(&in_body_slice)))
+            .map_err(msg_err)?;
+    
+        let mut signed_body = BuilderData::new();
+        match self.signer {
+            Signer::SigningBox { handle: _ } => {
+                let hash = Cell::from(&new_body).repr_hash().as_slice().to_vec();
+                let signature = self.signer.sign(self.ton.clone(), &hash).await?;
+                if let Some(signature) = signature {
+                    signed_body
+                        .append_bit_one()
+                        .and_then(|b| b.append_raw(&signature, signature.len() * 8))
+                        .map_err(msg_err)?;
+                } else {
+                    signed_body.append_bit_zero().map_err(msg_err)?;
+                }
+            },
+            _ => {
+                signed_body.append_bit_zero().map_err(msg_err)?;
+            }
+        }
+        signed_body.append_builder(&new_body).map_err(msg_err)?;
+    
+        message.set_body(signed_body.into());
+        let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
+        Ok((func_id, msg))
     }
 }
 
@@ -249,102 +361,6 @@ fn build_onerror_body(onerror_id: u32, e: ClientError) -> ClientResult<SliceData
         .unwrap_or(0);
     new_body.append_u32(error_code as u32).map_err(msg_err)?;
     Ok(new_body.into())
-}
-
-async fn decode_and_fix_ext_msg(
-    ton: TonClient,
-    mut message: Message,
-    meta: Metadata,
-    signer: Signer,
-    browser: Arc<dyn BrowserCallbacks + Send + Sync>,
-    sign: bool,
-) -> ClientResult<(u32, u32, u32, String, String, Signer)> {
-    let signer = resolve_signer(sign, signer, meta.signing_box_handle, browser.clone()).await?;
-    // find function id in message body: parse signature, pubkey and abi headers
-
-    let mut in_body_slice = message.body().ok_or(msg_err("empty body"))?;
-    // skip signature bit and signature if present
-    let sign_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
-    if let Signer::SigningBox { handle: _ } = signer {
-        if !sign_bit {
-            return Err(msg_err("signature bit is zero"));
-        }
-        in_body_slice.get_next_bits(512).map_err(msg_err)?;
-    }
-    if meta.is_pubkey {
-        let pubkey_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
-        if pubkey_bit {
-            in_body_slice.get_next_bits(256).map_err(msg_err)?;
-        }
-    }
-    if meta.is_timestamp {
-        // skip `timestamp` header
-        in_body_slice.get_next_u64().map_err(msg_err)?;
-    }
-    if meta.is_expire {
-        // skip `expire` header
-        in_body_slice.get_next_u32().map_err(msg_err)?;
-    }
-    // remember function id
-    let func_id = in_body_slice.get_next_u32().map_err(msg_err)?;
-
-    // rebuild msg body - insert correct `timestamp` and `expire` headers if they are present,
-    // then sign body with signing box
-
-    let mut new_body = BuilderData::new();
-    let pubkey = signer.resolve_public_key(ton.clone()).await?;
-    if meta.is_pubkey {
-        if let Some(ref key) = pubkey {
-            new_body
-                .append_bit_one()
-                .and_then(|b| b.append_raw(&hex::decode(key).unwrap(), 256))
-                .map_err(msg_err)?;
-        } else {
-            // pubkey bit = 0
-            new_body.append_bit_zero().map_err(msg_err)?;
-        }
-    }
-    let now = ton.env.now_ms();
-    let expired_at = ((now / 1000) as u32) + ton.config.abi.message_expiration_timeout;
-    if meta.is_timestamp {
-        new_body.append_u64(now).map_err(msg_err)?;
-    }
-    if meta.is_expire {
-        new_body.append_u32(expired_at).map_err(msg_err)?;
-    }
-    new_body
-        .append_u32(func_id)
-        .and_then(|b| b.append_builder(&BuilderData::from_slice(&in_body_slice)))
-        .map_err(msg_err)?;
-
-    let mut signed_body = BuilderData::new();
-    match signer {
-        Signer::SigningBox { handle: _ } => {
-            let hash = Cell::from(&new_body).repr_hash().as_slice().to_vec();
-            let signature = signer.sign(ton.clone(), &hash).await?;
-            if let Some(signature) = signature {
-                signed_body
-                    .append_bit_one()
-                    .and_then(|b| b.append_raw(&signature, signature.len() * 8))
-                    .map_err(msg_err)?;
-            } else {
-                signed_body.append_bit_zero().map_err(msg_err)?;
-            }
-        }
-        _ => {
-            signed_body.append_bit_zero().map_err(msg_err)?;
-        }
-    }
-    signed_body.append_builder(&new_body).map_err(msg_err)?;
-
-    message.set_body(signed_body.into());
-    let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
-    let dst = message
-        .header()
-        .get_dst_address()
-        .map(|x| x.to_string())
-        .unwrap_or_default();
-    Ok((meta.answer_id, meta.onerror_id, func_id, dst, msg, signer))
 }
 
 fn build_answer_msg(
