@@ -12,8 +12,8 @@ fn test_invalid_params_errors() {
     check_client_error_msg(
         json!({}),
         &[
-            r#"Field "abi" value is expected, but not provided"#,
-            r#"Field "signer" value is expected, but not provided"#,
+            r#"Field "abi" value is expected, but not provided."#,
+            r#"Field "signer" value is expected, but not provided."#,
         ],
     );
 
@@ -26,11 +26,11 @@ fn test_invalid_params_errors() {
             "Field \"abi\" is expected to be an enumeration of the class `Abi` represented by the \
                 JSON object with a field \"type\" identifying its type (one of \
                 \"Contract\", \"Json\", \"Handle\", \"Serialized\") and additional fields with \
-                data of the object with type \"Abi\"",
+                data from the object of a corresponding class.",
             "Field \"signer\" is expected to be an enumeration of the class `Signer` represented \
                 by the JSON object with a field \"type\" identifying its type (one of \
                 \"None\", \"External\", \"Keys\", \"SigningBox\") and additional fields with data \
-                of the object with type \"Signer\"",
+                from the object of a corresponding class.",
         ],
     );
 
@@ -47,8 +47,8 @@ fn test_invalid_params_errors() {
                 }
             }),
         &[
-            r#"Field "value" value is expected, but not provided"#,
-            r#"Field "keys" value is expected, but not provided"#
+            r#"Field "value" value is expected, but not provided."#,
+            r#"Field "keys" value is expected, but not provided."#
         ],
     );
 
@@ -80,7 +80,7 @@ fn check_client_error_msg(params: Value, expected_tips: &[&str]) {
         assert_eq!(
             tips[i].as_str(),
             expected_tips[i],
-            r#"Expected tip "{}" at position {}, but actual message is: "{}""#,
+            r#"Expected tip "{}" at position {}, but actual message is: "{}"."#,
             expected_tips[i],
             i,
             error.message,

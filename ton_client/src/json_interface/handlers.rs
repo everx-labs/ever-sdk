@@ -44,7 +44,7 @@ fn parse_params<P: DeserializeOwned + ApiType>(params_json: &str) -> ClientResul
                     error.message.push_str(&format!("\nTip: {}", error_message));
                 }
             } else {
-                error.message.push_str("\nTip: Fix syntax error in the JSON string");
+                error.message.push_str("\nTip: Fix syntax error in the JSON string.");
             }
 
             Err(error)
@@ -104,7 +104,7 @@ fn check_params_for_known_errors(
                 None => {
                     errors.push(
                         format!(
-                            r#"Field "{}" value is expected, but not provided"#,
+                            r#"Field "{}" value is expected, but not provided."#,
                             path.resolve_field_name(),
                         )
                     );
@@ -141,7 +141,7 @@ fn check_type(
             } else {
                 errors.push(
                     format!(
-                        "Field \"{}\" is expected to be an array, but actual value is {:?}",
+                        "Field \"{}\" is expected to be an array, but actual value is {:?}.",
                         path.resolve_field_name(),
                         value,
                     )
@@ -162,7 +162,7 @@ fn check_type(
             } else {
                 errors.push(
                     format!(
-                        "Field \"{}\" is expected to be an object, but actual value is {:?}",
+                        "Field \"{}\" is expected to be an object, but actual value is {:?}.",
                         path.resolve_field_name(),
                         value,
                     )
@@ -176,7 +176,7 @@ fn check_type(
                         Some(type_name) => type_name,
                         None => {
                             errors.push(
-                                format!("Field \"{}\" is expected to be `String`", ENUM_TYPE_TAG)
+                                format!("Field \"{}\" is expected to be `String`.", ENUM_TYPE_TAG)
                             );
                             return;
                         }
@@ -219,7 +219,7 @@ fn get_incorrect_enum_error(
     format!(
         "Field \"{field}\" is expected to be an enumeration of the class `{class}` represented \
             by the JSON object with a field \"{type_tag}\" identifying its type (one of {types}) \
-            and additional fields with data of the object with type \"{class}\"",
+            and additional fields with data from the object of a corresponding class.",
         field = field_name,
         class = class_name,
         type_tag = ENUM_TYPE_TAG,

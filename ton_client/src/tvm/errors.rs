@@ -111,7 +111,7 @@ impl Error {
             let tip = match exit_code {
                 0 => Some(
                     "You either forgot to add tvm.accept() into the contract's method, or try to \
-                    run a get method on-chain (and it fails because it does not have tvm.accept())"
+                    run a get method on-chain (and it fails because it does not have tvm.accept())."
                 ),
 
                 40 => Some(
@@ -125,7 +125,7 @@ impl Error {
                     "If this error occurs in 100% cases then you specified the wrong ABI. \
                     If it appears occasionally then the contract supports timestamp-based replay \
                     protection and does not allow to call it so often (call it with 5 seconds \
-                    timeout)"
+                    timeout)."
                 ),
 
                 _ => None,
