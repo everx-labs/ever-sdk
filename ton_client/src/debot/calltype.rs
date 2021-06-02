@@ -110,7 +110,7 @@ impl ContractCall {
             .object;
         let meta = get_meta(&mut msg)?;
         let signer = resolve_signer(
-            local_run,
+            !local_run,
             signer, 
             meta.signing_box_handle.clone(), 
             browser.clone()
