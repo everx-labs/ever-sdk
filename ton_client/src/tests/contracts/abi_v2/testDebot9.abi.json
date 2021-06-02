@@ -1,0 +1,142 @@
+{
+	"ABI version": 2,
+	"header": ["pubkey", "time", "expire"],
+	"functions": [
+		{
+			"name": "getseqno",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"seqno","type":"uint256"}
+			]
+		},
+		{
+			"name": "getcompleted",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"completed","type":"bool"}
+			]
+		},
+		{
+			"name": "start",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getDebotInfo",
+			"id": "0xDEB",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"name","type":"bytes"},
+				{"name":"version","type":"bytes"},
+				{"name":"publisher","type":"bytes"},
+				{"name":"caption","type":"bytes"},
+				{"name":"author","type":"bytes"},
+				{"name":"support","type":"address"},
+				{"name":"hello","type":"bytes"},
+				{"name":"language","type":"bytes"},
+				{"name":"dabi","type":"bytes"},
+				{"name":"icon","type":"bytes"}
+			]
+		},
+		{
+			"name": "getRequiredInterfaces",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"interfaces","type":"uint256[]"}
+			]
+		},
+		{
+			"name": "onSuccess",
+			"inputs": [
+				{"name":"n","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "onError",
+			"inputs": [
+				{"name":"sdkError","type":"uint32"},
+				{"name":"exitCode","type":"uint32"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "onGetSeqno",
+			"inputs": [
+				{"name":"seqno","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "onCompleted",
+			"inputs": [
+				{"name":"completed","type":"bool"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "startChain",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"n","type":"uint256"}
+			]
+		},
+		{
+			"name": "deployNext",
+			"inputs": [
+				{"name":"initNo","type":"uint256"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "completed",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getDebotOptions",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"options","type":"uint8"},
+				{"name":"debotAbi","type":"bytes"},
+				{"name":"targetAbi","type":"bytes"},
+				{"name":"targetAddr","type":"address"}
+			]
+		},
+		{
+			"name": "setABI",
+			"inputs": [
+				{"name":"dabi","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+		{"key":1,"name":"_seqno","type":"uint256"}
+	],
+	"events": [
+	]
+}
