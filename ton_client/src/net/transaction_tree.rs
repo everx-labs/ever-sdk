@@ -18,8 +18,11 @@ use crate::error::ClientResult;
 use crate::net::{ParamsOfQueryCollection, ServerLink, MESSAGES_COLLECTION};
 
 use crate::abi::{decode_message_body, Abi, DecodedMessageBody, ParamsOfDecodeMessageBody};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 use std::sync::Arc;
+
+const DEFAULT_WAITING_TIMEOUT: u32 = 60000;
 
 fn get_string(v: &Value, name: &str) -> Option<String> {
     v[name].as_str().map(|x| x.to_string())
@@ -41,6 +44,15 @@ pub struct ParamsOfQueryTransactionTree {
     /// List of contract ABIs that will be used to decode message bodies.
     /// Library will try to decode each returned message body using any ABI from the registry.
     pub abi_registry: Option<Vec<Abi>>,
+
+    /// Timeout used to limit waiting time for the missing messages and transaction.
+    ///
+    /// If some of the following messages and transactions are missing yet
+    //  the function will wait for their appearance.
+    /// The maximum waiting time is regulated by this option.
+    ///
+    /// Default value is 60000 (1 min).
+    pub timeout: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone, Debug)]
@@ -186,8 +198,9 @@ pub struct ResultOfQueryTransactionTree {
 
 async fn query_next_portion(
     server_link: &ServerLink,
+    timeout: u32,
     queue: &mut Vec<(Option<String>, String)>,
-) -> ClientResult<(Value, HashMap<String, Option<String>>)> {
+) -> ClientResult<(Vec<Value>, HashMap<String, Option<String>>)> {
     let mut src_transactions = HashMap::new();
     let mut has_none_src_transaction = false;
     while !queue.is_empty() && src_transactions.len() < 20 {
@@ -206,21 +219,48 @@ async fn query_next_portion(
     if has_none_src_transaction {
         result_fields.push_str(" src_transaction { id }");
     }
-    let messages = server_link
-        .query_collection(
-            ParamsOfQueryCollection {
-                collection: MESSAGES_COLLECTION.to_string(),
-                result: result_fields,
-                filter: Some(json!({
-                    "id": { "in": src_transactions.keys().map(|x|x.to_string()).collect::<Vec<String>>() }
-                })),
-                limit: None,
-                order: None,
-            },
-            None,
-        )
-        .await?;
-    Ok((messages, src_transactions))
+    let mut result_messages = Vec::new();
+    let mut message_ids = src_transactions
+        .keys()
+        .map(|x| x.to_string())
+        .collect::<HashSet<String>>();
+
+    // Wait for all required messages but not more than one minute
+    let time_limit = server_link.client_env.now_ms() + timeout as u64;
+    loop {
+        let mut messages = server_link
+            .query_collection(
+                ParamsOfQueryCollection {
+                    collection: MESSAGES_COLLECTION.to_string(),
+                    result: result_fields.clone(),
+                    filter: Some(json!({
+                        "id": { "in":  Vec::from_iter(&message_ids) }
+                    })),
+                    limit: None,
+                    order: None,
+                },
+                None,
+            )
+            .await?
+            .as_array()
+            .ok_or_else(|| crate::net::Error::invalid_server_response("Message array expected"))?
+            .to_owned();
+        while let Some(message) = messages.pop() {
+            let id = message["id"].as_str().ok_or_else(|| {
+                crate::net::Error::invalid_server_response("Message id is missing")
+            })?;
+            message_ids.remove(id);
+            result_messages.push(message);
+        }
+        if message_ids.is_empty() {
+            break;
+        }
+        if server_link.client_env.now_ms() > time_limit {
+            return Err(crate::net::Error::queries_query_failed("Query transaction tree failed: some messages doesn't appear during 1 minute. Possible reason: sync problems on server side."));
+        }
+        server_link.client_env.set_timer(1000).await?;
+    }
+    Ok((result_messages, src_transactions))
 }
 
 /// Returns transactions tree for specific message.
@@ -248,23 +288,23 @@ pub async fn query_transaction_tree(
     let mut transaction_nodes = Vec::new();
     let mut message_nodes = Vec::new();
     let mut query_queue: Vec<(Option<String>, String)> = vec![(None, params.in_msg.clone())];
+    let timeout = params.timeout.unwrap_or(DEFAULT_WAITING_TIMEOUT);
     while !query_queue.is_empty() && transaction_nodes.len() < 50 {
         let (messages, src_transactions) =
-            query_next_portion(server_link, &mut query_queue).await?;
-        if let Some(messages) = messages.as_array() {
-            for message in messages {
-                let message_node =
-                    MessageNode::from(message, &context, &params.abi_registry, &src_transactions).await?;
-                let transaction = &message["dst_transaction"];
-                if transaction.is_object() {
-                    let transaction_node = TransactionNode::from(&transaction, &message_node)?;
-                    for out_msg in &transaction_node.out_msgs {
-                        query_queue.push((Some(transaction_node.id.clone()), out_msg.clone()));
-                    }
-                    transaction_nodes.push(transaction_node)
-                };
-                message_nodes.push(message_node);
-            }
+            query_next_portion(server_link, timeout, &mut query_queue).await?;
+        for message in messages {
+            let message_node =
+                MessageNode::from(&message, &context, &params.abi_registry, &src_transactions)
+                    .await?;
+            let transaction = &message["dst_transaction"];
+            if transaction.is_object() {
+                let transaction_node = TransactionNode::from(&transaction, &message_node)?;
+                for out_msg in &transaction_node.out_msgs {
+                    query_queue.push((Some(transaction_node.id.clone()), out_msg.clone()));
+                }
+                transaction_nodes.push(transaction_node)
+            };
+            message_nodes.push(message_node);
         }
     }
     Ok(ResultOfQueryTransactionTree {
