@@ -107,6 +107,33 @@ impl Error {
             !error.message.contains("Exit code")
         {
             error.message.push_str(&format!(", exit code: {}", exit_code));
+
+            let tip = match exit_code {
+                0 => Some(
+                    "You either forgot to add tvm.accept() into the contract's method, or try to \
+                    run a get method on-chain (and it fails because it does not have tvm.accept())"
+                ),
+
+                40 => Some(
+                    "Check that:\n\
+                    1. your private key suits your public key;\n\
+                    2. you specified a key, but the contract doesn't expect it;\n\
+                    3. you specified the correct ABI."
+                ),
+
+                52 => Some(
+                    "If this error occurs in 100% cases then you specified the wrong ABI. \
+                    If it appears occasionally then the contract supports timestamp-based replay \
+                    protection and does not allow to call it so often (call it with 5 seconds \
+                    timeout)"
+                ),
+
+                _ => None,
+            };
+
+            if let Some(tip) = tip {
+                error.message.push_str(&format!("\nTip: {}", tip));
+            }
         }
 
         error.data["phase"] = "computeVm".into();
