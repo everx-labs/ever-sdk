@@ -17,6 +17,8 @@ use std::fmt::Display;
 use std::sync::Arc;
 use ton_block::{Message, MsgAddressExt};
 use ton_types::{BuilderData, Cell, IBitstring, SliceData};
+use crate::net::{query_transaction_tree, ParamsOfQueryTransactionTree};
+use ton_block::GetRepresentationHash;
 
 const SUPPORTED_ABI_VERSION: u8 = 2;
 
@@ -184,13 +186,11 @@ impl ContractCall {
         match activity {
             Ok(activity) => {
                 if !self.browser.approve(activity).await? {
-                    let error_body = build_onerror_body(self.meta.onerror_id, Error::operation_rejected())?;
-                    return build_internal_message(&self.dest_addr, &self.debot_addr, error_body);
+                    return self.build_error_answer_msg(Error::operation_rejected());
                 }
             },
             Err(e) => {
-                let error_body = build_onerror_body(self.meta.onerror_id, e)?;
-                return build_internal_message(&self.dest_addr, &self.debot_addr, error_body);
+                return self.build_error_answer_msg(e);
             },
         }
         
@@ -228,7 +228,7 @@ impl ContractCall {
             self.ton.clone(),
             ParamsOfWaitForTransaction {
                 abi: None,
-                message: fixed_msg,
+                message: fixed_msg.clone(),
                 shard_block_id: result.shard_block_id,
                 send_events: true,
                 sending_endpoints: Some(result.sending_endpoints),
@@ -238,6 +238,24 @@ impl ContractCall {
         .await;
         match result {
             Ok(res) => {
+                // TODO: refactor
+                
+                let fixed_tvm_msg: Message = deserialize_object_from_base64(&fixed_msg, "message").unwrap().object;
+                let msg_id: String = hex::encode(&fixed_tvm_msg.hash().unwrap().as_slice()[..]);
+                println!("messageId = {}", msg_id);
+                let result = query_transaction_tree(
+                    self.ton.clone(),
+                    ParamsOfQueryTransactionTree {
+                        in_msg: msg_id,
+                        abi_registry: None,
+                        ..Default::default()
+                    },
+                ).await;
+                if let Err(e) = result {
+                    return self.build_error_answer_msg(e);
+                }
+                let tr_tree = result.unwrap();
+                println!("{:?}", tr_tree);
                 for out_msg in &res.out_messages {
                     let res = build_answer_msg(
                         out_msg,
@@ -259,8 +277,7 @@ impl ContractCall {
             }
             Err(e) => {
                 debug!("Transaction failed: {:?}", e);
-                let error_body = build_onerror_body(self.meta.onerror_id, e)?;
-                build_internal_message(&self.dest_addr, &self.debot_addr, error_body)
+                self.build_error_answer_msg(e)
             }
         }
     }
@@ -346,6 +363,11 @@ impl ContractCall {
         message.set_body(signed_body.into());
         let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
         Ok((func_id, msg))
+    }
+
+    fn build_error_answer_msg(&self, e: ClientError) -> ClientResult<String> {
+        let error_body = build_onerror_body(self.meta.onerror_id, e)?;
+        build_internal_message(&self.dest_addr, &self.debot_addr, error_body)
     }
 }
 
