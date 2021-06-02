@@ -88,6 +88,7 @@ features = [
 log4rs = "^0"
 dirs = "2.0.2"
 pretty_assertions = "0.6.1"
+regex = "1.5.4"
 
 
 [features]
