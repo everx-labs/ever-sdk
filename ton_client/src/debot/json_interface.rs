@@ -66,7 +66,24 @@ impl JsonInterface {
                 self.bypass_json(pointer, json_obj, p.clone())?;
             }
         }
+        self.remove_floats(json_obj);
         Ok(())
+    }
+
+    fn remove_floats(&self, obj: &mut Value) {
+        let map = obj.as_object_mut().unwrap();
+        let mut entries_to_remove = vec![];
+        for item in map.iter_mut() {
+            if item.1.is_f64() {
+                entries_to_remove.push(item.0.clone());
+            }
+            if item.1.is_object() {
+                self.remove_floats(item.1);
+            }
+        }
+        for entry in entries_to_remove {
+            map.remove_entry(&entry).unwrap();
+        }
     }
 
     fn bypass_json(&self, top_pointer: &str, obj: &mut Value, p: Param) -> Result<(), String> {
