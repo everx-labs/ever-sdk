@@ -67,6 +67,7 @@ impl JsonInterface {
             }
         }
         self.remove_floats(json_obj);
+        println!("[DEBUG]: deserialized json: {}", json_obj);
         Ok(())
     }
 
@@ -74,6 +75,7 @@ impl JsonInterface {
         let map = obj.as_object_mut().unwrap();
         let mut entries_to_remove = vec![];
         for item in map.iter_mut() {
+            //println!("[DEBUG] key: {}, value type: {}", item.0, item.1);
             if item.1.is_f64() {
                 entries_to_remove.push(item.0.clone());
             }
