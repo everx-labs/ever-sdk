@@ -20,6 +20,7 @@ use futures::Future;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
+use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use super::request::Request;
@@ -36,7 +37,7 @@ fn parse_params<P: DeserializeOwned + ApiType>(params_json: &str) -> ClientResul
             if let Ok(value) = serde_json::from_str::<Value>(params_json) {
                 let field = P::api();
                 let errors = check_params_for_known_errors(
-                    &ProcessigPath::default().append(&field.name),
+                    &ProcessingPath::default().append(&field.name),
                     &field,
                     Some(&value),
                 );
@@ -53,11 +54,11 @@ fn parse_params<P: DeserializeOwned + ApiType>(params_json: &str) -> ClientResul
 }
 
 #[derive(Default, Clone)]
-struct ProcessigPath {
+struct ProcessingPath {
     path: Vec<String>,
 }
 
-impl ProcessigPath {
+impl ProcessingPath {
     fn append(&self, field_name: &str) -> Self {
         let mut path = self.path.clone();
         if field_name.len() > 0 {
@@ -77,7 +78,7 @@ impl ProcessigPath {
 }
 
 fn check_params_for_known_errors(
-    path: &ProcessigPath,
+    path: &ProcessingPath,
     mut field: &Field,
     value: Option<&Value>,
 ) -> Vec<String> {
@@ -120,7 +121,7 @@ fn check_params_for_known_errors(
 }
 
 fn check_type(
-    path: &ProcessigPath,
+    path: &ProcessingPath,
     class_name: &Option<&str>,
     field_type: &Type,
     value: &Value,
@@ -193,7 +194,9 @@ fn check_type(
                     }
                 }
             }
-            errors.push(get_incorrect_enum_error(path.resolve_field_name(), class_name, types));
+            errors.append(
+                &mut get_incorrect_enum_errors(path.resolve_field_name(), class_name, types)
+            );
         }
 
         _ => {
@@ -202,29 +205,50 @@ fn check_type(
     }
 }
 
-fn get_incorrect_enum_error(
+fn get_incorrect_enum_errors(
     field_name: &str,
     class_name: &Option<&str>,
     types: &Vec<Field>,
-) -> String {
+) -> Vec<String> {
     let types_str = types.iter()
         .map(|field| format!(r#""{}""#, field.name))
         .collect::<Vec<String>>()
         .join(", ");
-    let class_name = if let Some(class_name) = *class_name {
-        class_name
-    } else {
-        field_name
-    };
-    format!(
-        "Field \"{field}\" is expected to be an enumeration of the class `{class}` represented \
-            by the JSON object with a field \"{type_tag}\" identifying its type (one of {types}) \
-            and additional fields with data from the object of a corresponding class.",
+
+    lazy_static! {
+        static ref KNOWN_ENUM_TIPS: HashMap<&'static str, &'static str> = [
+            (
+                "Abi",
+                "You can use helper function abiContract(abi) if your library supports it, \
+                    to create right structure.",
+            ),
+            (
+                "Signer",
+                "You can use helper function signerKeys(keys) if your library supports it, \
+                    to create right structure.",
+            ),
+        ].iter().cloned().collect();
+    }
+
+    let mut result = vec![format!(
+        "Field \"{field}\" must be a structure:\n\
+        {{\n    \
+            \"{type_tag}\": one of {types},\n    \
+            ... fields of a corresponding structure, or \"value\" in a case of scalar\n\
+        }}.",
         field = field_name,
-        class = class_name,
         type_tag = ENUM_TYPE_TAG,
         types = types_str,
-    )
+    )];
+
+    let class_name = match *class_name {
+        Some(class_name) => class_name,
+        None => field_name,
+    };
+    if let Some(enum_tip) = KNOWN_ENUM_TIPS.get(class_name) {
+        result.push(enum_tip.to_string());
+    }
+    result
 }
 
 pub(crate) struct SpawnHandlerCallback<P, R, Fut, F>

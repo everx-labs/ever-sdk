@@ -1,11 +1,6 @@
-use regex::{Regex, Match};
 use serde_json::Value;
 
 use crate::tests::TestClient;
-
-lazy_static! {
-    static ref TIP_RE: Regex = Regex::new("\nTip: ([^\n]+)").unwrap();
-}
 
 #[test]
 fn test_invalid_params_errors() {
@@ -22,15 +17,20 @@ fn test_invalid_params_errors() {
             "abi": "abc",
             "signer": "edf",
         }),
-        &[
-            "Field \"abi\" is expected to be an enumeration of the class `Abi` represented by the \
-                JSON object with a field \"type\" identifying its type (one of \
-                \"Contract\", \"Json\", \"Handle\", \"Serialized\") and additional fields with \
-                data from the object of a corresponding class.",
-            "Field \"signer\" is expected to be an enumeration of the class `Signer` represented \
-                by the JSON object with a field \"type\" identifying its type (one of \
-                \"None\", \"External\", \"Keys\", \"SigningBox\") and additional fields with data \
-                from the object of a corresponding class.",
+        &["Field \"abi\" must be a structure:\n\
+            {\n    \
+                \"type\": one of \"Contract\", \"Json\", \"Handle\", \"Serialized\",\n    \
+                ... fields of a corresponding structure, or \"value\" in a case of scalar\n\
+            }.",
+            "You can use helper function abiContract(abi) if your library supports it, to create \
+                right structure.",
+            "Field \"signer\" must be a structure:\n\
+            {\n    \
+                \"type\": one of \"None\", \"External\", \"Keys\", \"SigningBox\",\n    \
+                ... fields of a corresponding structure, or \"value\" in a case of scalar\n\
+            }.",
+            "You can use helper function signerKeys(keys) if your library supports it, to create \
+                right structure.",
         ],
     );
 
@@ -70,15 +70,43 @@ fn test_invalid_params_errors() {
     );
 }
 
+const TIP_START_MARKER: &str = "\nTip: ";
+
+struct TipsIterator<'msg> {
+    message: &'msg str,
+    current_index: Option<usize>,
+}
+
+impl<'msg> TipsIterator<'msg> {
+    pub fn new(message: &'msg str) -> Self {
+        Self {
+            message,
+            current_index: message.find(TIP_START_MARKER),
+        }
+    }
+}
+
+impl<'msg> Iterator for TipsIterator<'msg> {
+    type Item = &'msg str;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.current_index
+            .map(|index| {
+                let tip_start = index + TIP_START_MARKER.len();
+                self.current_index = self.message[tip_start..].find(TIP_START_MARKER)
+                    .map(|index| index + tip_start);
+                &self.message[tip_start..self.current_index.unwrap_or(self.message.len())]
+            })
+    }
+}
+
 fn check_client_error_msg(params: Value, expected_tips: &[&str]) {
     let error = TestClient::new().request_json("abi.encode_message", params).unwrap_err();
-    let tips: Vec<Match> = TIP_RE.find_iter(&error.message)
-        .map(|tip| TIP_RE.captures(tip.as_str()).unwrap().get(1).unwrap())
-        .collect();
-    assert_eq!(tips.len(), expected_tips.len(), "Tips count mismatch");
+    let tips: Vec<&str> = TipsIterator::new(&error.message).collect();
+    assert_eq!(tips.len(), expected_tips.len(), "Tips count mismatch. Actual message: {}", error.message);
     for i in 0..expected_tips.len() {
         assert_eq!(
-            tips[i].as_str(),
+            tips[i],
             expected_tips[i],
             r#"Expected tip "{}" at position {}, but actual message is: "{}"."#,
             expected_tips[i],
