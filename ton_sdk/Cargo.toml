@@ -8,7 +8,7 @@ authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 [dependencies]
 ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git" }
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
-ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
+ton_vm = { git = "https://github.com/NilFoundation/rust-tvm.git", default-features = false }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
 
 api_info = { path = "../api/info" }
