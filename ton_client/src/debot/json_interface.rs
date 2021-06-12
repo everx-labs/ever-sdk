@@ -82,6 +82,11 @@ impl JsonInterface {
             if item.1.is_object() {
                 self.remove_floats(item.1);
             }
+            if item.1.is_array() {
+                for inner_item in item.1.iter_mut() {
+                    self.remove_floats(inner_item);
+                }
+            }
         }
         for entry in entries_to_remove {
             map.remove_entry(&entry).unwrap();
