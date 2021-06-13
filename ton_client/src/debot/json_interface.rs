@@ -83,7 +83,8 @@ impl JsonInterface {
                 self.remove_floats(item.1);
             }
             if item.1.is_array() {
-                for inner_item in item.1.iter_mut() {
+                let inner_array : Vec<Value> = item.1.as_array_mut().unwrap_or_default()
+                for inner_item in &inner_array {
                     self.remove_floats(inner_item);
                 }
             }
