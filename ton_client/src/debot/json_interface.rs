@@ -84,7 +84,7 @@ impl JsonInterface {
             }
             if item.1.is_array() {
                 let inner_array : &mut Vec<Value> = item.1.as_array_mut().unwrap();
-                for inner_item in &inner_array {
+                for inner_item in inner_array {
                     self.remove_floats(inner_item);
                 }
             }
