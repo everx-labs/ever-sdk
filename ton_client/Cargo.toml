@@ -20,7 +20,7 @@ api_derive = { path = "../api/derive" }
 api_info = { path = "../api/info" }
 ton_sdk = { path = "../ton_sdk", default-features = false }
 
-ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git" }
+ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git", branch = "dont-check-params-count" }
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_block_json = { git = "https://github.com/tonlabs/ton-labs-block-json.git" }
 ton_executor = { git = "https://github.com/tonlabs/ton-labs-executor.git", default-features = false }

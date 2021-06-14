@@ -67,42 +67,7 @@ impl JsonInterface {
                 self.bypass_json(pointer, json_obj, p.clone())?;
             }
         }
-        self.remove_floats(json_obj);
         Ok(())
-    }
-
-    fn remove_floats(&self, obj: &mut Value) {
-        let mut list = VecDeque::new();
-        list.push_back(obj);
-        while let Some(it) = list.pop_front() {
-            let mut entries_to_remove = vec![];
-            let map = it.as_object_mut().unwrap();
-            for item in map.iter() {
-                if item.1.is_f64() {
-                    entries_to_remove.push(item.0.clone());
-                } else if let Some(array) = item.1.as_array() {
-                    if let Some(val) = array.get(0) {
-                        if val.is_f64() {
-                            entries_to_remove.push(item.0.clone());
-                        }
-                    }
-                }
-            }
-            for entry in entries_to_remove {
-                let _ = map.remove_entry(&entry);
-            }
-            for item in map.iter_mut() {
-                if item.1.is_object() {
-                    list.push_back(item.1);
-                } else if let Some(array) = item.1.as_array_mut() {
-                    for item in array {
-                        if item.is_object() {
-                            list.push_back(item);
-                        }
-                    }
-                }
-            }
-        }
     }
 
     fn bypass_json(&self, top_pointer: &str, obj: &mut Value, p: Param) -> Result<(), String> {
@@ -258,13 +223,17 @@ mod tests {
                     "Url":hex::encode("https://this.is.url/logo/l.png"),
                     "Product":[{
                         "Currency":hex::encode("TON"),
+                        "MinValue":2.00,
                         "MinValueStr":hex::encode("2.00"),
+                        "MaxValue":461.00,
                         "MaxValueStr":hex::encode("461.00"),
                     }]
                 }],
                 "Status":hex::encode("success"),
+                "TestValue1": 9.200000000,
                 "TestValue2":hex::encode("9.300000000"),
-                "Numbers": [1, 2, 3]
+                "Numbers": [1, 2, 3],
+                "Floats": [1.1, 2.1, 3.1]
             })
         );
     }
