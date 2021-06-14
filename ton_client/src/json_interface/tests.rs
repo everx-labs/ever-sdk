@@ -10,6 +10,7 @@ fn test_invalid_params_errors() {
             r#"Field "abi" value is expected, but not provided."#,
             r#"Field "signer" value is expected, but not provided."#,
         ],
+        &[],
     );
 
     check_client_error_msg(
@@ -22,16 +23,13 @@ fn test_invalid_params_errors() {
                 \"type\": one of \"Contract\", \"Json\", \"Handle\", \"Serialized\",\n    \
                 ... fields of a corresponding structure, or \"value\" in a case of scalar\n\
             }.",
-            "You can use helper function abiContract(abi) if your library supports it, to create \
-                right structure.",
             "Field \"signer\" must be a structure:\n\
             {\n    \
                 \"type\": one of \"None\", \"External\", \"Keys\", \"SigningBox\",\n    \
                 ... fields of a corresponding structure, or \"value\" in a case of scalar\n\
             }.",
-            "You can use helper function signerKeys(keys) if your library supports it, to create \
-                right structure.",
         ],
+        &["Abi", "Signer"],
     );
 
     check_client_error_msg(
@@ -50,6 +48,7 @@ fn test_invalid_params_errors() {
             r#"Field "value" value is expected, but not provided."#,
             r#"Field "keys" value is expected, but not provided."#
         ],
+        &[],
     );
 
     check_client_error_msg(
@@ -66,6 +65,7 @@ fn test_invalid_params_errors() {
                     }
                 }
             }),
+        &[],
         &[],
     );
 }
@@ -100,7 +100,7 @@ impl<'msg> Iterator for TipsIterator<'msg> {
     }
 }
 
-fn check_client_error_msg(params: Value, expected_tips: &[&str]) {
+fn check_client_error_msg(params: Value, expected_tips: &[&str], expected_helpers_suggestions: &[&str]) {
     let error = TestClient::new().request_json("abi.encode_message", params).unwrap_err();
     let tips: Vec<&str> = TipsIterator::new(&error.message).collect();
     assert_eq!(tips.len(), expected_tips.len(), "Tips count mismatch. Actual message: {}", error.message);
@@ -113,6 +113,25 @@ fn check_client_error_msg(params: Value, expected_tips: &[&str]) {
             i,
             error.message,
         )
+    }
+    if expected_helpers_suggestions.len() > 0 {
+        let actual_classes = error.data["suggest_use_helper_for"].as_array().unwrap();
+        assert_eq!(
+            actual_classes.len(),
+            expected_helpers_suggestions.len(),
+            "Helpers suggestions mismatch. Expected: {:?}, actual: {:?}.",
+            expected_helpers_suggestions,
+            actual_classes,
+        );
+        for i in 0..expected_helpers_suggestions.len() {
+            assert_eq!(
+                actual_classes[i],
+                expected_helpers_suggestions[i],
+                r#"Helpers' suggestions mismatch. Expected: {:?}, actual: {:?}."#,
+                expected_helpers_suggestions,
+                actual_classes,
+            )
+        }
     }
 }
 

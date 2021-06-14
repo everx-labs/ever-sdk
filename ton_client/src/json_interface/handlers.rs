@@ -36,13 +36,24 @@ fn parse_params<P: DeserializeOwned + ApiType>(params_json: &str) -> ClientResul
             let mut error = Error::invalid_params(params_json, err);
             if let Ok(value) = serde_json::from_str::<Value>(params_json) {
                 let field = P::api();
-                let errors = check_params_for_known_errors(
+                let mut errors = vec![];
+                let mut suggest_use_helper_for = vec![];
+                check_params_for_known_errors(
                     &ProcessingPath::default().append(&field.name),
                     &field,
                     Some(&value),
+                    &mut errors,
+                    &mut suggest_use_helper_for,
                 );
                 for error_message in errors.iter() {
                     error.message.push_str(&format!("\nTip: {}", error_message));
+                }
+                if suggest_use_helper_for.len() > 0 {
+                    error.data["suggest_use_helper_for"] = Value::Array(
+                        suggest_use_helper_for.iter()
+                            .map(|s| Value::String(s.to_string()))
+                            .collect()
+                    );
                 }
             } else {
                 error.message.push_str("\nTip: Fix syntax error in the JSON string.");
@@ -81,9 +92,9 @@ fn check_params_for_known_errors(
     path: &ProcessingPath,
     mut field: &Field,
     value: Option<&Value>,
-) -> Vec<String> {
-    let mut errors = vec![];
-
+    errors: &mut Vec<String>,
+    suggest_use_helper_for: &mut Vec<&'static str>,
+) {
     let mut class_name = None;
     while let Type::Ref { ref name } = field.value {
         if let Some(field_ref) = Runtime::api().find_type(&name) {
@@ -95,9 +106,9 @@ fn check_params_for_known_errors(
     let value = match &field.value {
         Type::Optional { inner } => {
             if let Some(value) = value {
-                check_type(path, &class_name, &inner, value, &mut errors);
+                check_type(path, &class_name, &inner, value, errors, suggest_use_helper_for);
             }
-            return errors;
+            return;
         }
         _ => {
             match value {
@@ -109,15 +120,13 @@ fn check_params_for_known_errors(
                             path.resolve_field_name(),
                         )
                     );
-                    return errors;
+                    return;
                 },
             }
         }
     };
 
-    check_type(path, &class_name, &field.value, value, &mut errors);
-
-    errors
+    check_type(path, &class_name, &field.value, value, errors, suggest_use_helper_for);
 }
 
 fn check_type(
@@ -126,6 +135,7 @@ fn check_type(
     field_type: &Type,
     value: &Value,
     errors: &mut Vec<String>,
+    suggest_use_helper_for: &mut Vec<&'static str>,
 ) {
     match field_type {
         Type::Array { item } => {
@@ -137,6 +147,7 @@ fn check_type(
                         &item,
                         &vec[index],
                         errors,
+                        suggest_use_helper_for,
                     );
                 }
             } else {
@@ -152,12 +163,12 @@ fn check_type(
         Type::Struct { ref fields } => {
             if let Value::Object(map) = value {
                 for struct_field in fields {
-                    errors.append(
-                        &mut check_params_for_known_errors(
-                            &path.append(&struct_field.name),
-                            struct_field,
-                            map.get(&struct_field.name),
-                        )
+                    check_params_for_known_errors(
+                        &path.append(&struct_field.name),
+                        struct_field,
+                        map.get(&struct_field.name),
+                        errors,
+                        suggest_use_helper_for,
                     )
                 }
             } else {
@@ -183,20 +194,24 @@ fn check_type(
                         }
                     };
                     if let Some(enum_type) = types.iter().find(|item| item.name == type_name) {
-                        errors.append(
-                            &mut check_params_for_known_errors(
-                                &path,
-                                enum_type,
-                                Some(value),
-                            )
+                        check_params_for_known_errors(
+                            &path,
+                            enum_type,
+                            Some(value),
+                            errors,
+                            suggest_use_helper_for,
                         );
                         return;
                     }
                 }
             }
-            errors.append(
-                &mut get_incorrect_enum_errors(path.resolve_field_name(), class_name, types)
-            );
+            get_incorrect_enum_errors(
+                path.resolve_field_name(),
+                class_name,
+                types,
+                errors,
+                suggest_use_helper_for,
+            )
         }
 
         _ => {
@@ -209,28 +224,17 @@ fn get_incorrect_enum_errors(
     field_name: &str,
     class_name: &Option<&str>,
     types: &Vec<Field>,
-) -> Vec<String> {
+    errors: &mut Vec<String>,
+    suggest_use_helper_for: &mut Vec<&'static str>,
+) {
     let types_str = types.iter()
         .map(|field| format!(r#""{}""#, field.name))
         .collect::<Vec<String>>()
         .join(", ");
 
-    lazy_static! {
-        static ref KNOWN_ENUM_TIPS: HashMap<&'static str, &'static str> = [
-            (
-                "Abi",
-                "You can use helper function abiContract(abi) if your library supports it, \
-                    to create right structure.",
-            ),
-            (
-                "Signer",
-                "You can use helper function signerKeys(keys) if your library supports it, \
-                    to create right structure.",
-            ),
-        ].iter().cloned().collect();
-    }
+    static SUGGEST_USE_HELPER_FOR_SORTED: &[&'static str] = &["Abi", "Signer"];
 
-    let mut result = vec![format!(
+    errors.push(format!(
         "Field \"{field}\" must be a structure:\n\
         {{\n    \
             \"{type_tag}\": one of {types},\n    \
@@ -239,16 +243,15 @@ fn get_incorrect_enum_errors(
         field = field_name,
         type_tag = ENUM_TYPE_TAG,
         types = types_str,
-    )];
+    ));
 
     let class_name = match *class_name {
         Some(class_name) => class_name,
         None => field_name,
     };
-    if let Some(enum_tip) = KNOWN_ENUM_TIPS.get(class_name) {
-        result.push(enum_tip.to_string());
+    if let Ok(index) = SUGGEST_USE_HELPER_FOR_SORTED.binary_search(&class_name) {
+        suggest_use_helper_for.push(SUGGEST_USE_HELPER_FOR_SORTED[index])
     }
-    result
 }
 
 pub(crate) struct SpawnHandlerCallback<P, R, Fut, F>
