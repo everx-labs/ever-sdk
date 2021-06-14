@@ -787,3 +787,38 @@ async fn test_encode_internal_message_deploy(
 
     Ok(())
 }
+
+#[test]
+fn test_tips() {
+    let client = TestClient::new();
+    let (abi, _tvc) = TestClient::package(EVENTS, Some(2));
+    let err = client.request::<_, DecodedMessageBody>(
+        "abi.decode_message",
+        ParamsOfDecodeMessage {
+            abi: abi.clone(),
+            message: "te6ccgEBAgEAlgAB4a3f2/jCeWWvgMoAXOakv3VSD56sQrDPT76n1cbrSvpZ0BCs0KEUy2Duvo3zPExePONW3TYy0MCA1i+FFRXcSIXTHxAj/Hd67jWQF7peccWoU/dbMCBJBB6YdPCVZcJlJkAAAF0ZyXLg19VzGQVviwSgAQBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=".into(),
+            ..Default::default()
+        },
+    ).expect_err("Error expected");
+
+    assert!(
+        err.message.contains("Tip: Please check that you have specified the message's BOC, not body, as a parameter."),
+        "{}",
+        err.message
+    );
+
+    let err = client.request::<_, DecodedMessageBody>(
+        "abi.decode_message_body",
+        ParamsOfDecodeMessageBody {
+            abi: abi.clone(),
+            body: "te6ccgEBAwEAvAABRYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIMAQHhrd/b+MJ5Za+AygBc5qS/dVIPnqxCsM9PvqfVxutK+lnQEKzQoRTLYO6+jfM8TF4841bdNjLQwIDWL4UVFdxIhdMfECP8d3ruNZAXul5xxahT91swIEkEHph08JVlwmUmQAAAXRnJcuDX1XMZBW+LBKACAEAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==".into(),
+            ..Default::default()
+        },
+    ).expect_err("Error expected");
+
+    assert!(
+        err.message.contains("Tip: Please check that you specified message's body, not full BOC."),
+        "{}",
+        err.message
+    );
+}
