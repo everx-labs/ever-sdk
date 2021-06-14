@@ -802,7 +802,7 @@ fn test_tips() {
     ).expect_err("Error expected");
 
     assert!(
-        err.message.contains("Tip: Please check that you have specified the message's BoC, not body, as a parameter."),
+        err.message.contains("Tip: Please check that you have specified the message's BOC, not body, as a parameter."),
         "{}",
         err.message
     );
@@ -817,7 +817,7 @@ fn test_tips() {
     ).expect_err("Error expected");
 
     assert!(
-        err.message.contains("Tip: Please check that you specified message's body, not full BoC."),
+        err.message.contains("Tip: Please check that you specified message's body, not full BOC."),
         "{}",
         err.message
     );

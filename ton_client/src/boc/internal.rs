@@ -44,7 +44,7 @@ pub(crate) fn deserialize_object_from_cell<S: Deserializable>(
     name: &str,
 ) -> ClientResult<S> {
     let tip = match name {
-        "message" => "Please check that you have specified the message's BoC, not body, as a parameter.",
+        "message" => "Please check that you have specified the message's BOC, not body, as a parameter.",
         _ => "",
     };
     let tip_full = if tip.len() > 0 {
