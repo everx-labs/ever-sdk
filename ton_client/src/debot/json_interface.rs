@@ -3,7 +3,6 @@ use super::dinterface::{
 };
 use crate::abi::Abi;
 use serde_json::Value;
-use std::collections::VecDeque;
 use ton_abi::{Contract, param_type::ParamType, Param};
 
 const ABI: &str = r#"
