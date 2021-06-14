@@ -223,7 +223,7 @@ mod tests {
     "#;
 
     #[test]
-    fn test_json_desert_1() {
+    fn test_debot_json_desert_1() {
         let json_iface = JsonInterface::new(ABI);
         let mut json = json!({
             "Result": [{
