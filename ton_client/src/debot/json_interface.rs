@@ -3,6 +3,7 @@ use super::dinterface::{
 };
 use crate::abi::Abi;
 use serde_json::Value;
+use std::collections::VecDeque;
 use ton_abi::{Contract, param_type::ParamType, Param};
 
 const ABI: &str = r#"
@@ -67,30 +68,40 @@ impl JsonInterface {
             }
         }
         self.remove_floats(json_obj);
-        //println!("[DEBUG]: deserialized json: {}", json_obj);
         Ok(())
     }
 
     fn remove_floats(&self, obj: &mut Value) {
-        let map = obj.as_object_mut().unwrap();
-        let mut entries_to_remove = vec![];
-        for item in map.iter_mut() {
-            //println!("[DEBUG] key: {}, value type: {}", item.0, item.1);
-            if item.1.is_f64() {
-                entries_to_remove.push(item.0.clone());
-            }
-            if item.1.is_object() {
-                self.remove_floats(item.1);
-            }
-            if item.1.is_array() {
-                let inner_array : &mut Vec<Value> = item.1.as_array_mut().unwrap();
-                for inner_item in inner_array {
-                    self.remove_floats(inner_item);
+        let mut list = VecDeque::new();
+        list.push_back(obj);
+        while let Some(it) = list.pop_front() {
+            let mut entries_to_remove = vec![];
+            let map = it.as_object_mut().unwrap();
+            for item in map.iter() {
+                if item.1.is_f64() {
+                    entries_to_remove.push(item.0.clone());
+                } else if let Some(array) = item.1.as_array() {
+                    if let Some(val) = array.get(0) {
+                        if val.is_f64() {
+                            entries_to_remove.push(item.0.clone());
+                        }
+                    }
                 }
             }
-        }
-        for entry in entries_to_remove {
-            map.remove_entry(&entry).unwrap();
+            for entry in entries_to_remove {
+                let _ = map.remove_entry(&entry);
+            }
+            for item in map.iter_mut() {
+                if item.1.is_object() {
+                    list.push_back(item.1);
+                } else if let Some(array) = item.1.as_array_mut() {
+                    for item in array {
+                        if item.is_object() {
+                            list.push_back(item);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -191,7 +202,7 @@ mod tests {
                 "name": "setResult",
                 "id": "0x11111111",
                 "inputs": [
-                    {"components":[{"components":[{"name":"Provider","type":"bytes"},{"name":"Name","type":"bytes"},{"name":"Number","type":"uint64"},{"name":"Special_Name","type":"bytes"},{"name":"Url","type":"bytes"},{"components":[{"name":"Currency","type":"bytes"},{"name":"MinValueStr","type":"bytes"},{"name":"MaxValueStr","type":"bytes"}],"name":"Product","type":"tuple[]"}],"name":"Result","type":"tuple[]"},{"name":"Status","type":"bytes"},{"name":"TestValue2","type":"bytes"}],"name":"obj","type":"tuple"}
+                    {"components":[{"components":[{"name":"Provider","type":"bytes"},{"name":"Name","type":"bytes"},{"name":"Number","type":"uint64"},{"name":"Special_Name","type":"bytes"},{"name":"Url","type":"bytes"},{"components":[{"name":"Currency","type":"bytes"},{"name":"MinValueStr","type":"bytes"},{"name":"MaxValueStr","type":"bytes"}],"name":"Product","type":"tuple[]"}],"name":"Result","type":"tuple[]"},{"name":"Status","type":"bytes"},{"name":"TestValue2","type":"bytes"},{"name":"Numbers","type":"int32[]"}],"name":"obj","type":"tuple"}
                 ],
                 "outputs": [
                 ]
@@ -208,7 +219,7 @@ mod tests {
         ],
         "events": [
         ]
-    }
+    }    
     "#;
 
     #[test]
@@ -231,7 +242,9 @@ mod tests {
             }],
             "Status":"success",
             "TestValue1": 9.200000000,
-            "TestValue2": "9.300000000"
+            "TestValue2": "9.300000000",
+            "Numbers": [1, 2, 3],
+            "Floats": [1.1, 2.1, 3.1]
         });
         json_iface.deserialize_json(&mut json, 0x11111111).unwrap();
         assert_eq!(
@@ -250,7 +263,8 @@ mod tests {
                     }]
                 }],
                 "Status":hex::encode("success"),
-                "TestValue2":hex::encode("9.300000000")
+                "TestValue2":hex::encode("9.300000000"),
+                "Numbers": [1, 2, 3]
             })
         );
     }
