@@ -7,6 +7,11 @@ All notable changes to this project will be documented in this file.
 ### New
 - `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the missing 
   messages and transaction.
+  
+### Improved
+
+- Improved error messages regarding ABI and JSON interface. SDK now shows additional tips for the user in cases of 
+  errors.
 
 ### Fixed
 - Warnings in Rust 1.52+. Little fixes in the documentation.
