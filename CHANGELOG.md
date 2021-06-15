@@ -12,8 +12,6 @@ All notable changes to this project will be documented in this file.
 - Warnings in Rust 1.52+. Little fixes in the documentation.
 - `total_output` field in fees was always 0.
 - `query_transaction_tree` didn't wait for messages.
-- **Debot module**:
-    - bug fix in Json interface: float variables are not supported and removed from json.
 
 ## [1.16.0] – 2021-05-25
 
