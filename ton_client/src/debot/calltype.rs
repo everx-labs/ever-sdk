@@ -3,7 +3,7 @@ use super::helpers::build_internal_message;
 use super::{BrowserCallbacks, DebotActivity, Spending, TonClient};
 use crate::abi::Signer;
 use crate::boc::internal::{deserialize_object_from_base64, serialize_object_to_base64};
-use crate::boc::{parse_message, ParamsOfParse};
+use crate::boc::{get_boc_hash, parse_message, ParamsOfParse, ParamsOfGetBocHash};
 use crate::crypto::{SigningBoxHandle};
 use crate::encoding::decode_abi_number;
 use crate::error::{ClientError, ClientResult};
@@ -18,7 +18,6 @@ use std::sync::Arc;
 use ton_block::{Message, MsgAddressExt};
 use ton_types::{BuilderData, Cell, IBitstring, SliceData};
 use crate::net::{query_transaction_tree, ParamsOfQueryTransactionTree};
-use ton_block::GetRepresentationHash;
 
 const SUPPORTED_ABI_VERSION: u8 = 2;
 
@@ -238,24 +237,17 @@ impl ContractCall {
         .await;
         match result {
             Ok(res) => {
-                // TODO: refactor
-                
-                let fixed_tvm_msg: Message = deserialize_object_from_base64(&fixed_msg, "message").unwrap().object;
-                let msg_id: String = hex::encode(&fixed_tvm_msg.hash().unwrap().as_slice()[..]);
-                println!("messageId = {}", msg_id);
+                let msg_id = get_boc_hash(self.ton.clone(), ParamsOfGetBocHash { boc: fixed_msg }).await?.hash;
                 let result = query_transaction_tree(
                     self.ton.clone(),
                     ParamsOfQueryTransactionTree {
                         in_msg: msg_id,
-                        abi_registry: None,
                         ..Default::default()
                     },
                 ).await;
                 if let Err(e) = result {
                     return self.build_error_answer_msg(e);
                 }
-                let tr_tree = result.unwrap();
-                println!("{:?}", tr_tree);
                 for out_msg in &res.out_messages {
                     let res = build_answer_msg(
                         out_msg,

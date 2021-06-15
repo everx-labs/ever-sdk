@@ -5,8 +5,13 @@ pragma AbiHeader pubkey;
 import "../Debot.sol";
 import "../Terminal.sol";
 
+//
+//               -------               ------        -----
+// startChain -> |  1  | deployNext -> |  2 | -> ... | N | --
+//               -------               ------        -----  |
+//                                       ^--- completed ----- 
 contract TestDebot9 is Debot {
-    uint256 constant CHAIN_LENGTH = 100;
+    uint256 constant CHAIN_LENGTH = 10;
     uint256 static _seqno;
     bool _completed;
     address _sender;
@@ -56,7 +61,7 @@ contract TestDebot9 is Debot {
         return [ Terminal.ID ];
     }
 
-    function onSuccess(uint256 n) public {
+    function onSuccess(uint256 n) public view {
         require(n == _seqno, 101);
         optional(uint256) none;
         address addr = address(tvm.hash(tvm.buildStateInit({
@@ -82,7 +87,7 @@ contract TestDebot9 is Debot {
         revert(201);
     }
 
-    function onGetSeqno(uint256 seqno) public {
+    function onGetSeqno(uint256 seqno) public view {
         require(seqno == _seqno + CHAIN_LENGTH, 301);
         optional(uint256) none;
         TestDebot9(address(this)).getcompleted{
