@@ -1,5 +1,5 @@
 {
-  "version": "1.16.0",
+  "version": "1.16.1",
   "modules": [
     {
       "name": "client",
@@ -6661,7 +6661,7 @@
                 }
               },
               "summary": "The list of endpoints to which the message was sent.",
-              "description": "You must provide the same value as the `send_message` has returned."
+              "description": "Use this field to get more informative errors.\nProvide the same value as the `send_message` has returned.\nIf the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending."
             }
           ],
           "summary": null,
@@ -8655,6 +8655,17 @@
               },
               "summary": "List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.",
               "description": null
+            },
+            {
+              "name": "timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Timeout used to limit waiting time for the missing messages and transaction.",
+              "description": "If some of the following messages and transactions are missing yet\nThe maximum waiting time is regulated by this option.\n\nDefault value is 60000 (1 min)."
             }
           ],
           "summary": null,

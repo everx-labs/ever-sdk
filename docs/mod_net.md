@@ -508,7 +508,8 @@ So the application have to continue retrieval for missing messages if it require
 ```ts
 type ParamsOfQueryTransactionTree = {
     in_msg: string,
-    abi_registry?: Abi[]
+    abi_registry?: Abi[],
+    timeout?: number
 }
 
 type ResultOfQueryTransactionTree = {
@@ -523,6 +524,8 @@ function query_transaction_tree(
 ### Parameters
 - `in_msg`: _string_ – Input message id.
 - `abi_registry`?: _[Abi](mod_abi.md#Abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
+- `timeout`?: _number_ – Timeout used to limit waiting time for the missing messages and transaction.
+<br>If some of the following messages and transactions are missing yet<br>The maximum waiting time is regulated by this option.<br><br>Default value is 60000 (1 min).
 
 
 ### Result
@@ -915,11 +918,14 @@ type ParamsOfQueryCounterparties = {
 ```ts
 type ParamsOfQueryTransactionTree = {
     in_msg: string,
-    abi_registry?: Abi[]
+    abi_registry?: Abi[],
+    timeout?: number
 }
 ```
 - `in_msg`: _string_ – Input message id.
 - `abi_registry`?: _[Abi](mod_abi.md#Abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
+- `timeout`?: _number_ – Timeout used to limit waiting time for the missing messages and transaction.
+<br>If some of the following messages and transactions are missing yet<br>The maximum waiting time is regulated by this option.<br><br>Default value is 60000 (1 min).
 
 
 ## ResultOfQueryTransactionTree

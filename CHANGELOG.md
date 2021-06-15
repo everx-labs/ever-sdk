@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.16.1] – 2021-05-27
+## [1.16.1] – 2021-06-15
 
 ### New
 - `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the missing 
