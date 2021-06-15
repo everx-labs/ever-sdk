@@ -20,7 +20,6 @@ use futures::Future;
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use serde_json::Value;
-use std::collections::HashMap;
 use std::marker::PhantomData;
 use std::sync::Arc;
 use super::request::Request;
