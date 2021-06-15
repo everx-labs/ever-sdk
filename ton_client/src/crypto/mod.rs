@@ -29,8 +29,14 @@ mod tests;
 
 pub use crate::crypto::boxes::{
     get_signing_box, register_signing_box, remove_signing_box, signing_box_get_public_key,
-    signing_box_sign, ParamsOfSigningBoxSign, RegisteredSigningBox, ResultOfSigningBoxGetPublicKey,
+    signing_box_sign, register_encryption_box, remove_encryption_box,
+    encryption_box_get_info, encryption_box_encrypt, encryption_box_decrypt,
+    ParamsOfSigningBoxSign, RegisteredSigningBox, ResultOfSigningBoxGetPublicKey,
     ResultOfSigningBoxSign, SigningBox, SigningBoxHandle,
+    RegisteredEncryptionBox,
+    ParamsOfEncryptionBoxGetInfo, ResultOfEncryptionBoxGetInfo,
+    ParamsOfEncryptionBoxEncrypt, ResultOfEncryptionBoxEncrypt,
+    ParamsOfEncryptionBoxDecrypt, ResultOfEncryptionBoxDecrypt,
 };
 pub use crate::crypto::encscrypt::{scrypt, ParamsOfScrypt, ResultOfScrypt};
 pub use crate::crypto::hash::{sha256, sha512, ParamsOfHash, ResultOfHash};

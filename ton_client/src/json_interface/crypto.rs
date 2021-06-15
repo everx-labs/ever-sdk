@@ -12,9 +12,10 @@
  *
  */
 
- use crate::client::{AppObject, ClientContext, Error};
- use crate::error::ClientResult;
- use crate::crypto::{RegisteredSigningBox, SigningBox};
+use crate::client::{AppObject, ClientContext, Error};
+use crate::error::ClientResult;
+use crate::crypto::{RegisteredSigningBox, SigningBox};
+use crate::crypto::boxes::{Data, EncryptionBoxInfo, EncryptionBox, RegisteredEncryptionBox};
 
 /// Signing box callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
@@ -84,11 +85,101 @@ impl SigningBox for ExternalSigningBox {
     }
 }
 
- /// Register an application implemented signing box.
+/// Register an application implemented signing box.
 #[api_function]
 pub(crate) async fn register_signing_box(
     context: std::sync::Arc<ClientContext>,
     app_object: AppObject<ParamsOfAppSigningBox, ResultOfAppSigningBox>,
 ) -> ClientResult<RegisteredSigningBox> {
     crate::crypto::register_signing_box(context, ExternalSigningBox::new(app_object)).await
+}
+
+/// Encryption box callbacks.
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[serde(tag="type")]
+pub enum ParamsOfAppEncryptionBox {
+    /// Get encryption box info
+    GetInfo,
+    /// Encrypt data
+    Encrypt {
+        data: Data,
+    },
+    /// Decrypt data
+    Decrypt {
+        data: Data,
+    }
+}
+
+/// Returning values from signing box callbacks.
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[serde(tag="type")]
+pub enum ResultOfAppEncryptionBox {
+    /// Result of getting encryption box info
+    GetInfo {
+        info: EncryptionBoxInfo,
+    },
+    /// Result of encrypting data
+    Encrypt {
+        /// Encrypted data enumeration
+        data: Data,
+    },
+    /// Result of decrypting data
+    Decrypt {
+        /// Decrypted data enumeration
+        data: Data,
+    },
+}
+
+struct ExternalEncryptionBox {
+    app_object: AppObject<ParamsOfAppEncryptionBox, ResultOfAppEncryptionBox>,
+}
+
+impl ExternalEncryptionBox {
+    pub fn new(app_object: AppObject<ParamsOfAppEncryptionBox, ResultOfAppEncryptionBox>) -> Self {
+        Self { app_object }
+    }
+}
+
+#[async_trait::async_trait]
+impl EncryptionBox for ExternalEncryptionBox {
+    async fn get_info(&self) -> ClientResult<EncryptionBoxInfo> {
+        let response = self.app_object.call(ParamsOfAppEncryptionBox::GetInfo).await?;
+
+        match response {
+            ResultOfAppEncryptionBox::GetInfo { info } => Ok(info),
+            _ => Err(Error::unexpected_callback_response(
+                "EncryptionBoxGetInfo", &response))
+        }
+    }
+
+    async fn encrypt(&self, data: &Data) -> ClientResult<Data> {
+        let response =
+            self.app_object.call(ParamsOfAppEncryptionBox::Encrypt { data: data.clone() }).await?;
+
+        match response {
+            ResultOfAppEncryptionBox::Encrypt { data } => Ok(data),
+            _ => Err(Error::unexpected_callback_response(
+                "EncryptionBoxEncrypt", &response))
+        }
+    }
+
+    async fn decrypt(&self, data: &Data) -> ClientResult<Data> {
+        let response =
+            self.app_object.call(ParamsOfAppEncryptionBox::Decrypt { data: data.clone() }).await?;
+
+        match response {
+            ResultOfAppEncryptionBox::Decrypt { data } => Ok(data),
+            _ => Err(Error::unexpected_callback_response(
+                "EncryptionBoxDecrypt", &response))
+        }
+    }
+}
+
+/// Register an application implemented encryption box.
+#[api_function]
+pub(crate) async fn register_encryption_box(
+    context: std::sync::Arc<ClientContext>,
+    app_object: AppObject<ParamsOfAppEncryptionBox, ResultOfAppEncryptionBox>,
+) -> ClientResult<RegisteredEncryptionBox> {
+    crate::crypto::register_encryption_box(context, ExternalEncryptionBox::new(app_object)).await
 }
