@@ -172,14 +172,11 @@ pub struct EncryptionBoxInfo {
     pub public: Option<Value>,
 }
 
-pub type Base64 = String;
-pub type BlobUrl = String;
-
 /// Encryption box data
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub enum EncryptionBoxData {
-    Base64(Base64),
-    BlobUrl(BlobUrl),
+    Base64(String),
+    BlobUrl(String),
 }
 
 impl Default for EncryptionBoxData {
