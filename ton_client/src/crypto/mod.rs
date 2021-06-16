@@ -33,7 +33,7 @@ pub use crate::crypto::boxes::{
     encryption_box_get_info, encryption_box_encrypt, encryption_box_decrypt,
     ParamsOfSigningBoxSign, RegisteredSigningBox, ResultOfSigningBoxGetPublicKey,
     ResultOfSigningBoxSign, SigningBox, SigningBoxHandle,
-    RegisteredEncryptionBox,
+    RegisteredEncryptionBox, EncryptionBoxHandle, EncryptionBoxData, EncryptionBoxInfo,
     ParamsOfEncryptionBoxGetInfo, ResultOfEncryptionBoxGetInfo,
     ParamsOfEncryptionBoxEncrypt, ResultOfEncryptionBoxEncrypt,
     ParamsOfEncryptionBoxDecrypt, ResultOfEncryptionBoxDecrypt,

@@ -177,12 +177,12 @@ pub type BlobUrl = String;
 
 /// Encryption box data
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-pub enum Data {
+pub enum EncryptionBoxData {
     Base64(Base64),
     BlobUrl(BlobUrl),
 }
 
-impl Default for Data {
+impl Default for EncryptionBoxData {
     fn default() -> Self {
         Self::Base64(String::new())
     }
@@ -193,9 +193,9 @@ pub trait EncryptionBox {
     /// Gets encryption box information
     async fn get_info(&self) -> ClientResult<EncryptionBoxInfo>;
     /// Encrypts data
-    async fn encrypt(&self, data: &Data) -> ClientResult<Data>;
+    async fn encrypt(&self, data: &EncryptionBoxData) -> ClientResult<EncryptionBoxData>;
     /// Decrypts data
-    async fn decrypt(&self, data: &Data) -> ClientResult<Data>;
+    async fn decrypt(&self, data: &EncryptionBoxData) -> ClientResult<EncryptionBoxData>;
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
@@ -267,14 +267,14 @@ pub struct ParamsOfEncryptionBoxEncrypt {
     /// Encryption box handle
     pub encryption_box: EncryptionBoxHandle,
     /// Data to be encrypted
-    pub data: Data,
+    pub data: EncryptionBoxData,
 }
 
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct ResultOfEncryptionBoxEncrypt {
     /// Encrypted data
-    pub data: Data,
+    pub data: EncryptionBoxData,
 }
 
 /// Encrypts data using given encryption box
@@ -296,13 +296,13 @@ pub struct ParamsOfEncryptionBoxDecrypt {
     /// Encryption box handle
     pub encryption_box: EncryptionBoxHandle,
     /// Data to be decrypted
-    pub data: Data,
+    pub data: EncryptionBoxData,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct ResultOfEncryptionBoxDecrypt {
     /// Decrypted data
-    pub data: Data,
+    pub data: EncryptionBoxData,
 }
 
 /// Decrypts data using given encryption box

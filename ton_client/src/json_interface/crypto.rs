@@ -15,7 +15,7 @@
 use crate::client::{AppObject, ClientContext, Error};
 use crate::error::ClientResult;
 use crate::crypto::{RegisteredSigningBox, SigningBox};
-use crate::crypto::boxes::{Data, EncryptionBoxInfo, EncryptionBox, RegisteredEncryptionBox};
+use crate::crypto::boxes::{EncryptionBoxData, EncryptionBoxInfo, EncryptionBox, RegisteredEncryptionBox};
 
 /// Signing box callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
@@ -102,11 +102,11 @@ pub enum ParamsOfAppEncryptionBox {
     GetInfo,
     /// Encrypt data
     Encrypt {
-        data: Data,
+        data: EncryptionBoxData,
     },
     /// Decrypt data
     Decrypt {
-        data: Data,
+        data: EncryptionBoxData,
     }
 }
 
@@ -121,12 +121,12 @@ pub enum ResultOfAppEncryptionBox {
     /// Result of encrypting data
     Encrypt {
         /// Encrypted data enumeration
-        data: Data,
+        data: EncryptionBoxData,
     },
     /// Result of decrypting data
     Decrypt {
         /// Decrypted data enumeration
-        data: Data,
+        data: EncryptionBoxData,
     },
 }
 
@@ -152,7 +152,7 @@ impl EncryptionBox for ExternalEncryptionBox {
         }
     }
 
-    async fn encrypt(&self, data: &Data) -> ClientResult<Data> {
+    async fn encrypt(&self, data: &EncryptionBoxData) -> ClientResult<EncryptionBoxData> {
         let response =
             self.app_object.call(ParamsOfAppEncryptionBox::Encrypt { data: data.clone() }).await?;
 
@@ -163,7 +163,7 @@ impl EncryptionBox for ExternalEncryptionBox {
         }
     }
 
-    async fn decrypt(&self, data: &Data) -> ClientResult<Data> {
+    async fn decrypt(&self, data: &EncryptionBoxData) -> ClientResult<EncryptionBoxData> {
         let response =
             self.app_object.call(ParamsOfAppEncryptionBox::Decrypt { data: data.clone() }).await?;
 
