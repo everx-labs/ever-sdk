@@ -39,9 +39,13 @@ pub struct Boxes {
     pub(crate) signing_boxes: LockfreeMap<u32, Box<dyn SigningBox + Send + Sync>>,
 }
 
+pub(crate) trait CollectionIterator {
+}
+
 pub struct NetworkContext {
     pub(crate) server_link: Option<ServerLink>,
     pub(crate) subscriptions: Mutex<HashMap<u32, mpsc::Sender<SubscriptionAction>>>,
+    pub(crate) iterators: LockfreeMap<u32, Box<dyn CollectionIterator + Send + Sync>>,
 }
 
 pub struct ClientContext {

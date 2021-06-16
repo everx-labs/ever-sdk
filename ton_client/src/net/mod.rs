@@ -48,6 +48,7 @@ mod gql;
 pub(crate) mod queries;
 mod server_link;
 pub(crate) mod subscriptions;
+pub(crate) mod iterators;
 mod ton_gql;
 pub(crate) mod transaction_tree;
 mod types;
