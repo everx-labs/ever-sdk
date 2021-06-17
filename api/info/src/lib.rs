@@ -6,6 +6,18 @@ pub struct API {
     pub modules: Vec<Module>,
 }
 
+impl API {
+    pub fn find_type(&self, name: &str) -> Option<&Field> {
+        // TODO: Searching now is O(n), can speed up, if needed
+        for module in &self.modules {
+            if let Some(field) = module.find_type(name) {
+                return Some(field);
+            }
+        }
+        None
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Module {
     pub name: String,
@@ -13,6 +25,18 @@ pub struct Module {
     pub description: Option<String>,
     pub types: Vec<Field>,
     pub functions: Vec<Function>,
+}
+
+impl Module {
+    pub fn find_type(&self, name: &str) -> Option<&Field> {
+        // TODO: Searching now is O(n), can speed up, if needed
+        for field in &self.types {
+            if field.name == name {
+                return Some(field);
+            }
+        }
+        None
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]

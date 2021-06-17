@@ -33,7 +33,9 @@ pub struct ParamsOfWaitForTransaction {
 
     /// The list of endpoints to which the message was sent.
     ///
-    /// You must provide the same value as the `send_message` has returned.
+    /// Use this field to get more informative errors. 
+    /// Provide the same value as the `send_message` has returned.
+    /// If the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending.
     pub sending_endpoints: Option<Vec<String>>,
 }
 

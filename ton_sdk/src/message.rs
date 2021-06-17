@@ -12,7 +12,7 @@
 */
 
 use crate::json_helper;
-use crate::types::StringId;
+use crate::types::{StringId, grams_to_u64};
 use ton_types::Result;
 
 use ton_block::GetRepresentationHash;
@@ -50,17 +50,26 @@ pub struct Message {
 #[allow(dead_code)]
 impl Message {
     pub fn with_msg(tvm_msg: &TvmMessage) -> Result<Self> {
-        let mut msg = Self::default();
-        msg.id = tvm_msg.hash()?.as_slice()[..].into();
-        msg.body = tvm_msg.body().map(|slice| slice.into_cell());
+        let id = tvm_msg.hash()?.as_slice()[..].into();
+        let body = tvm_msg.body().map(|slice| slice.into_cell());
+        let value = tvm_msg
+            .get_value()
+            .map(|cc| grams_to_u64(&cc.grams))
+            .transpose()?
+            .unwrap_or(0);
 
-        msg.msg_type = match tvm_msg.header() {
+        let msg_type = match tvm_msg.header() {
             CommonMsgInfo::IntMsgInfo(_) => MessageType::Internal,
             CommonMsgInfo::ExtInMsgInfo(_) => MessageType::ExternalInbound,
             CommonMsgInfo::ExtOutMsgInfo(_) => MessageType::ExternalOutbound,
         };
 
-        Ok(msg)
+        Ok(Self {
+            id,
+            body,
+            msg_type,
+            value
+        })
     }
 
     // Returns message's identifier

@@ -1,5 +1,5 @@
 {
-  "version": "1.16.0",
+  "version": "1.16.1",
   "modules": [
     {
       "name": "client",
@@ -2241,8 +2241,8 @@
       "functions": [
         {
           "name": "factorize",
-          "summary": "Performs prime factorization – decomposition of a composite number into a product of smaller prime integers (factors). See [https://en.wikipedia.org/wiki/Integer_factorization]",
-          "description": null,
+          "summary": "Integer factorization",
+          "description": "Performs prime factorization – decomposition of a composite number\ninto a product of smaller prime integers (factors).\nSee [https://en.wikipedia.org/wiki/Integer_factorization]",
           "params": [
             {
               "name": "_context",
@@ -2279,8 +2279,8 @@
         },
         {
           "name": "modular_power",
-          "summary": "Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`). See [https://en.wikipedia.org/wiki/Modular_exponentiation]",
-          "description": null,
+          "summary": "Modular exponentiation",
+          "description": "Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`).\nSee [https://en.wikipedia.org/wiki/Modular_exponentiation]",
           "params": [
             {
               "name": "_context",
@@ -2614,8 +2614,8 @@
         },
         {
           "name": "scrypt",
-          "summary": "Derives key from `password` and `key` using `scrypt` algorithm. See [https://en.wikipedia.org/wiki/Scrypt].",
-          "description": "# Arguments\n- `log_n` - The log2 of the Scrypt parameter `N`\n- `r` - The Scrypt parameter `r`\n- `p` - The Scrypt parameter `p`\n# Conditions\n- `log_n` must be less than `64`\n- `r` must be greater than `0` and less than or equal to `4294967295`\n- `p` must be greater than `0` and less than `4294967295`\n# Recommended values sufficient for most use-cases\n- `log_n = 15` (`n = 32768`)\n- `r = 8`\n- `p = 1`",
+          "summary": "Perform `scrypt` encryption",
+          "description": "Derives key from `password` and `key` using `scrypt` algorithm.\nSee [https://en.wikipedia.org/wiki/Scrypt].\n\n# Arguments\n- `log_n` - The log2 of the Scrypt parameter `N`\n- `r` - The Scrypt parameter `r`\n- `p` - The Scrypt parameter `p`\n# Conditions\n- `log_n` must be less than `64`\n- `r` must be greater than `0` and less than or equal to `4294967295`\n- `p` must be greater than `0` and less than `4294967295`\n# Recommended values sufficient for most use-cases\n- `log_n = 15` (`n = 32768`)\n- `r = 8`\n- `p = 1`",
           "params": [
             {
               "name": "_context",
@@ -3101,8 +3101,8 @@
         },
         {
           "name": "mnemonic_from_random",
-          "summary": "Generates a random mnemonic from the specified dictionary and word count",
-          "description": null,
+          "summary": "Generates a random mnemonic",
+          "description": "Generates a random mnemonic from the specified dictionary and word count",
           "params": [
             {
               "name": "context",
@@ -3177,8 +3177,8 @@
         },
         {
           "name": "mnemonic_verify",
-          "summary": "The phrase supplied will be checked for word length and validated according to the checksum specified in BIP0039.",
-          "description": null,
+          "summary": "Validates a mnemonic phrase",
+          "description": "The phrase supplied will be checked for word length and validated according to the checksum\nspecified in BIP0039.",
           "params": [
             {
               "name": "context",
@@ -3215,8 +3215,8 @@
         },
         {
           "name": "mnemonic_derive_sign_keys",
-          "summary": "Validates the seed phrase, generates master key and then derives the key pair from the master key and the specified path",
-          "description": null,
+          "summary": "Derives a key pair for signing from the seed phrase",
+          "description": "Validates the seed phrase, generates master key and then derives\nthe key pair from the master key and the specified path",
           "params": [
             {
               "name": "context",
@@ -6661,7 +6661,7 @@
                 }
               },
               "summary": "The list of endpoints to which the message was sent.",
-              "description": "You must provide the same value as the `send_message` has returned."
+              "description": "Use this field to get more informative errors.\nProvide the same value as the `send_message` has returned.\nIf the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending."
             }
           ],
           "summary": null,
@@ -8655,6 +8655,17 @@
               },
               "summary": "List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.",
               "description": null
+            },
+            {
+              "name": "timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Timeout used to limit waiting time for the missing messages and transaction.",
+              "description": "If some of the following messages and transactions are missing yet\nThe maximum waiting time is regulated by this option.\n\nDefault value is 60000 (1 min)."
             }
           ],
           "summary": null,

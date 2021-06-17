@@ -130,7 +130,7 @@ function wait_for_transaction(
 <br>You must provide the same value as the `send_message` has returned.
 - `send_events`: _boolean_ – Flag that enables/disables intermediate events
 - `sending_endpoints`?: _string[]_ – The list of endpoints to which the message was sent.
-<br>You must provide the same value as the `send_message` has returned.
+<br>Use this field to get more informative errors.<br>Provide the same value as the `send_message` has returned.<br>If the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending.
 - `responseHandler`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.
 
 ### Result
@@ -450,7 +450,7 @@ type ParamsOfWaitForTransaction = {
 <br>You must provide the same value as the `send_message` has returned.
 - `send_events`: _boolean_ – Flag that enables/disables intermediate events
 - `sending_endpoints`?: _string[]_ – The list of endpoints to which the message was sent.
-<br>You must provide the same value as the `send_message` has returned.
+<br>Use this field to get more informative errors.<br>Provide the same value as the `send_message` has returned.<br>If the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending.
 
 
 ## ParamsOfProcessMessage

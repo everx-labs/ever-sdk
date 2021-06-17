@@ -4,9 +4,9 @@ Crypto functions.
 
 
 ## Functions
-[factorize](#factorize) – Performs prime factorization – decomposition of a composite number into a product of smaller prime integers (factors). See [https://en.wikipedia.org/wiki/Integer_factorization]
+[factorize](#factorize) – Integer factorization
 
-[modular_power](#modular_power) – Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`). See [https://en.wikipedia.org/wiki/Modular_exponentiation]
+[modular_power](#modular_power) – Modular exponentiation
 
 [ton_crc16](#ton_crc16) – Calculates CRC16 using TON algorithm.
 
@@ -24,7 +24,7 @@ Crypto functions.
 
 [sha512](#sha512) – Calculates SHA512 hash of the specified data.
 
-[scrypt](#scrypt) – Derives key from `password` and `key` using `scrypt` algorithm. See [https://en.wikipedia.org/wiki/Scrypt].
+[scrypt](#scrypt) – Perform `scrypt` encryption
 
 [nacl_sign_keypair_from_secret_key](#nacl_sign_keypair_from_secret_key) – Generates a key pair for signing from the secret key
 
@@ -50,13 +50,13 @@ Crypto functions.
 
 [mnemonic_words](#mnemonic_words) – Prints the list of words from the specified dictionary
 
-[mnemonic_from_random](#mnemonic_from_random) – Generates a random mnemonic from the specified dictionary and word count
+[mnemonic_from_random](#mnemonic_from_random) – Generates a random mnemonic
 
 [mnemonic_from_entropy](#mnemonic_from_entropy) – Generates mnemonic from pre-generated entropy
 
-[mnemonic_verify](#mnemonic_verify) – The phrase supplied will be checked for word length and validated according to the checksum specified in BIP0039.
+[mnemonic_verify](#mnemonic_verify) – Validates a mnemonic phrase
 
-[mnemonic_derive_sign_keys](#mnemonic_derive_sign_keys) – Validates the seed phrase, generates master key and then derives the key pair from the master key and the specified path
+[mnemonic_derive_sign_keys](#mnemonic_derive_sign_keys) – Derives a key pair for signing from the seed phrase
 
 [hdkey_xprv_from_mnemonic](#hdkey_xprv_from_mnemonic) – Generates an extended master private key that will be the root for all the derived keys
 
@@ -213,7 +213,11 @@ Crypto functions.
 # Functions
 ## factorize
 
-Performs prime factorization – decomposition of a composite number into a product of smaller prime integers (factors). See [https://en.wikipedia.org/wiki/Integer_factorization]
+Integer factorization
+
+Performs prime factorization – decomposition of a composite number
+into a product of smaller prime integers (factors).
+See [https://en.wikipedia.org/wiki/Integer_factorization]
 
 ```ts
 type ParamsOfFactorize = {
@@ -239,7 +243,10 @@ function factorize(
 
 ## modular_power
 
-Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`). See [https://en.wikipedia.org/wiki/Modular_exponentiation]
+Modular exponentiation
+
+Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`).
+See [https://en.wikipedia.org/wiki/Modular_exponentiation]
 
 ```ts
 type ParamsOfModularPower = {
@@ -482,7 +489,10 @@ function sha512(
 
 ## scrypt
 
-Derives key from `password` and `key` using `scrypt` algorithm. See [https://en.wikipedia.org/wiki/Scrypt].
+Perform `scrypt` encryption
+
+Derives key from `password` and `key` using `scrypt` algorithm.
+See [https://en.wikipedia.org/wiki/Scrypt].
 
 # Arguments
 - `log_n` - The log2 of the Scrypt parameter `N`
@@ -889,6 +899,8 @@ function mnemonic_words(
 
 ## mnemonic_from_random
 
+Generates a random mnemonic
+
 Generates a random mnemonic from the specified dictionary and word count
 
 ```ts
@@ -948,7 +960,10 @@ function mnemonic_from_entropy(
 
 ## mnemonic_verify
 
-The phrase supplied will be checked for word length and validated according to the checksum specified in BIP0039.
+Validates a mnemonic phrase
+
+The phrase supplied will be checked for word length and validated according to the checksum
+specified in BIP0039.
 
 ```ts
 type ParamsOfMnemonicVerify = {
@@ -978,7 +993,10 @@ function mnemonic_verify(
 
 ## mnemonic_derive_sign_keys
 
-Validates the seed phrase, generates master key and then derives the key pair from the master key and the specified path
+Derives a key pair for signing from the seed phrase
+
+Validates the seed phrase, generates master key and then derives
+the key pair from the master key and the specified path
 
 ```ts
 type ParamsOfMnemonicDeriveSignKeys = {

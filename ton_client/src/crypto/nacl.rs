@@ -23,7 +23,6 @@ use ed25519_dalek::Verifier;
 // Signing
 
 //------------------------------------------------------------------------ sign_keypair_from_secret
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSignKeyPairFromSecret {
@@ -47,7 +46,6 @@ pub fn nacl_sign_keypair_from_secret_key(
 }
 
 //--------------------------------------------------------------------------------------- nacl_sign
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSign {
@@ -79,7 +77,6 @@ pub fn nacl_sign(
 }
 
 //------------------------------------------------------------------------------ nacl_sign_detached
-#[doc(summary = "")]
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed encoded in `base64`.
@@ -114,7 +111,6 @@ pub fn nacl_sign_detached(
 }
 
 //---------------------------------------------------------------------------------- nacl_sign_open
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSignOpen {
@@ -217,7 +213,6 @@ pub fn nacl_box_keypair(_context: std::sync::Arc<ClientContext>) -> ClientResult
 }
 
 //-------------------------------------------------------------------- nacl_box_keypair_from_secret
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclBoxKeyPairFromSecret {
@@ -241,7 +236,6 @@ pub fn nacl_box_keypair_from_secret_key(
 }
 
 //---------------------------------------------------------------------------------------- nacl_box
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclBox {
@@ -292,7 +286,6 @@ pub fn nacl_box(
 }
 
 //----------------------------------------------------------------------------------- nacl_box_open
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclBoxOpen {
@@ -342,7 +335,6 @@ pub fn nacl_box_open(
 // Secret Box
 
 //--------------------------------------------------------------------------------- nacl_secret_box
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSecretBox {
@@ -376,7 +368,6 @@ pub fn nacl_secret_box(
 }
 
 //---------------------------------------------------------------------------- nacl_secret_box_open
-#[doc(summary = "")]
 ///
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfNaclSecretBoxOpen {

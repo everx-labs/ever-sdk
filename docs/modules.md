@@ -23,9 +23,9 @@ Where:
 
 ## [crypto](mod_crypto.md) – Crypto functions.
 
-[factorize](mod_crypto.md#factorize) – Performs prime factorization – decomposition of a composite number into a product of smaller prime integers (factors). See [https://en.wikipedia.org/wiki/Integer_factorization]
+[factorize](mod_crypto.md#factorize) – Integer factorization
 
-[modular_power](mod_crypto.md#modular_power) – Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`). See [https://en.wikipedia.org/wiki/Modular_exponentiation]
+[modular_power](mod_crypto.md#modular_power) – Modular exponentiation
 
 [ton_crc16](mod_crypto.md#ton_crc16) – Calculates CRC16 using TON algorithm.
 
@@ -43,7 +43,7 @@ Where:
 
 [sha512](mod_crypto.md#sha512) – Calculates SHA512 hash of the specified data.
 
-[scrypt](mod_crypto.md#scrypt) – Derives key from `password` and `key` using `scrypt` algorithm. See [https://en.wikipedia.org/wiki/Scrypt].
+[scrypt](mod_crypto.md#scrypt) – Perform `scrypt` encryption
 
 [nacl_sign_keypair_from_secret_key](mod_crypto.md#nacl_sign_keypair_from_secret_key) – Generates a key pair for signing from the secret key
 
@@ -69,13 +69,13 @@ Where:
 
 [mnemonic_words](mod_crypto.md#mnemonic_words) – Prints the list of words from the specified dictionary
 
-[mnemonic_from_random](mod_crypto.md#mnemonic_from_random) – Generates a random mnemonic from the specified dictionary and word count
+[mnemonic_from_random](mod_crypto.md#mnemonic_from_random) – Generates a random mnemonic
 
 [mnemonic_from_entropy](mod_crypto.md#mnemonic_from_entropy) – Generates mnemonic from pre-generated entropy
 
-[mnemonic_verify](mod_crypto.md#mnemonic_verify) – The phrase supplied will be checked for word length and validated according to the checksum specified in BIP0039.
+[mnemonic_verify](mod_crypto.md#mnemonic_verify) – Validates a mnemonic phrase
 
-[mnemonic_derive_sign_keys](mod_crypto.md#mnemonic_derive_sign_keys) – Validates the seed phrase, generates master key and then derives the key pair from the master key and the specified path
+[mnemonic_derive_sign_keys](mod_crypto.md#mnemonic_derive_sign_keys) – Derives a key pair for signing from the seed phrase
 
 [hdkey_xprv_from_mnemonic](mod_crypto.md#hdkey_xprv_from_mnemonic) – Generates an extended master private key that will be the root for all the derived keys
 

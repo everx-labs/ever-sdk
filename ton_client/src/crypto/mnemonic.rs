@@ -82,7 +82,8 @@ pub struct ResultOfMnemonicFromRandom {
     pub phrase: String,
 }
 
-#[doc(summary = "Generates a random mnemonic")]
+/// Generates a random mnemonic
+///
 /// Generates a random mnemonic from the specified dictionary and word count
 #[api_function]
 pub fn mnemonic_from_random(
@@ -113,7 +114,6 @@ pub struct ResultOfMnemonicFromEntropy {
     pub phrase: String,
 }
 
-#[doc(summary = "Generates mnemonic from the specified entropy")]
 /// Generates mnemonic from pre-generated entropy
 #[api_function]
 pub fn mnemonic_from_entropy(
@@ -144,7 +144,8 @@ pub struct ResultOfMnemonicVerify {
     pub valid: bool,
 }
 
-#[doc(summary = "Validates a mnemonic phrase")]
+/// Validates a mnemonic phrase
+///
 /// The phrase supplied will be checked for word length and validated according to the checksum
 /// specified in BIP0039.
 #[api_function]
@@ -172,7 +173,8 @@ pub struct ParamsOfMnemonicDeriveSignKeys {
     pub word_count: Option<u8>,
 }
 
-#[doc(summary = "Derives a key pair for signing from the seed phrase")]
+/// Derives a key pair for signing from the seed phrase
+/// 
 /// Validates the seed phrase, generates master key and then derives
 /// the key pair from the master key and the specified path
 #[api_function]

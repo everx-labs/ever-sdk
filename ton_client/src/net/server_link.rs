@@ -306,7 +306,7 @@ impl NetworkState {
 
 pub(crate) struct ServerLink {
     config: NetworkConfig,
-    client_env: Arc<ClientEnv>,
+    pub(crate) client_env: Arc<ClientEnv>,
     websocket_link: WebsocketLink,
     state: Arc<NetworkState>,
 }

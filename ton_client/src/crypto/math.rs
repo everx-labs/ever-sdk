@@ -37,7 +37,8 @@ pub struct ResultOfModularPower {
     pub modular_power: String,
 }
 
-#[doc(summary = "Modular exponentiation")]
+/// Modular exponentiation
+///
 /// Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`).
 /// See [https://en.wikipedia.org/wiki/Modular_exponentiation]
 #[api_function]
@@ -72,7 +73,8 @@ pub struct ResultOfFactorize {
     pub factors: [String; 2],
 }
 
-#[doc(summary = "Integer factorization")]
+/// Integer factorization
+///
 /// Performs prime factorization – decomposition of a composite number
 /// into a product of smaller prime integers (factors).
 /// See [https://en.wikipedia.org/wiki/Integer_factorization]
