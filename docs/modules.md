@@ -99,6 +99,16 @@ Where:
 
 [remove_signing_box](mod_crypto.md#remove_signing_box) – Removes signing box from SDK.
 
+[register_encryption_box](mod_crypto.md#register_encryption_box) – Register an application implemented encryption box.
+
+[remove_encryption_box](mod_crypto.md#remove_encryption_box) – Removes encryption box from SDK
+
+[encryption_box_get_info](mod_crypto.md#encryption_box_get_info) – Queries info from the given encryption box
+
+[encryption_box_encrypt](mod_crypto.md#encryption_box_encrypt) – Encrypts data using given encryption box
+
+[encryption_box_decrypt](mod_crypto.md#encryption_box_decrypt) – Decrypts data using given encryption box
+
 ## [abi](mod_abi.md) – Provides message encoding and decoding according to the ABI specification.
 
 [encode_message_body](mod_abi.md#encode_message_body) – Encodes message body according to ABI function call.
