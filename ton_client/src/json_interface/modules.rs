@@ -58,7 +58,6 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     module.register_error_code::<crate::crypto::ErrorCode>();
     module.register_type::<crate::crypto::SigningBoxHandle>();
     module.register_type::<crate::crypto::EncryptionBoxHandle>();
-    module.register_type::<crate::crypto::EncryptionBoxData>();
     module.register_type::<crate::crypto::EncryptionBoxInfo>();
 
     // Math

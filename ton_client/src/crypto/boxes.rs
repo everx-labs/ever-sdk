@@ -172,27 +172,14 @@ pub struct EncryptionBoxInfo {
     pub public: Option<Value>,
 }
 
-/// Encryption box data
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-pub enum EncryptionBoxData {
-    Base64(String),
-    BlobUrl(String),
-}
-
-impl Default for EncryptionBoxData {
-    fn default() -> Self {
-        Self::Base64(String::new())
-    }
-}
-
 #[async_trait::async_trait]
 pub trait EncryptionBox {
     /// Gets encryption box information
     async fn get_info(&self) -> ClientResult<EncryptionBoxInfo>;
     /// Encrypts data
-    async fn encrypt(&self, data: &EncryptionBoxData) -> ClientResult<EncryptionBoxData>;
+    async fn encrypt(&self, data: &String) -> ClientResult<String>;
     /// Decrypts data
-    async fn decrypt(&self, data: &EncryptionBoxData) -> ClientResult<EncryptionBoxData>;
+    async fn decrypt(&self, data: &String) -> ClientResult<String>;
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
@@ -263,15 +250,15 @@ pub async fn encryption_box_get_info(
 pub struct ParamsOfEncryptionBoxEncrypt {
     /// Encryption box handle
     pub encryption_box: EncryptionBoxHandle,
-    /// Data to be encrypted
-    pub data: EncryptionBoxData,
+    /// Data to be encrypted, encoded in Base64
+    pub data: String,
 }
 
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct ResultOfEncryptionBoxEncrypt {
-    /// Encrypted data
-    pub data: EncryptionBoxData,
+    /// Encrypted data, encoded in Base64
+    pub data: String,
 }
 
 /// Encrypts data using given encryption box
@@ -292,14 +279,14 @@ pub async fn encryption_box_encrypt(
 pub struct ParamsOfEncryptionBoxDecrypt {
     /// Encryption box handle
     pub encryption_box: EncryptionBoxHandle,
-    /// Data to be decrypted
-    pub data: EncryptionBoxData,
+    /// Data to be decrypted, encoded in Base64
+    pub data: String,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct ResultOfEncryptionBoxDecrypt {
-    /// Decrypted data
-    pub data: EncryptionBoxData,
+    /// Decrypted data, encoded in Base64
+    pub data: String,
 }
 
 /// Decrypts data using given encryption box
