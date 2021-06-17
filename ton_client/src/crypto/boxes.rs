@@ -166,9 +166,13 @@ impl From<u32> for EncryptionBoxHandle {
 /// Encryption box information
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct EncryptionBoxInfo {
+    /// Derivation path, for instance "m/44'/396'/0'/0/0"
     pub hdpath: Option<String>,
+    /// Cryptographic algorithm, used by this encryption box
     pub algorithm: Option<String>,
+    /// Options, depends on algorithm and specific encryption box implementation
     pub options: Option<Value>,
+    /// Public information, depends on algorithm
     pub public: Option<Value>,
 }
 
