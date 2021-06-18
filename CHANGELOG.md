@@ -2,11 +2,21 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.16.1] – 2021-05-27
+## [1.17.0] – 2021-06-17
 
 ### New
-- `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the missing 
-  messages and transaction.
+- Added support of external encryption boxes. [See the documentation](docs/mod_crypto.md#register_encryption_box)
+
+## [1.16.1] – 2021-06-16
+
+### New
+- `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the next 
+  message and transaction in the transaction tree.
+  
+### Improved
+
+- Improved error messages regarding ABI and JSON interface. SDK now shows additional tips for the user in cases of 
+  errors.
 
 ### Fixed
 - Warnings in Rust 1.52+. Little fixes in the documentation.
@@ -18,7 +28,7 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `query_transaction_tree` function that returns messages and transactions tree produced 
-  by the specified message was added to `query` module. [See the documentation](docs/mod_net.md#query_transaction_tree)
+  by the specified message was added to `net` module. [See the documentation](docs/mod_net.md#query_transaction_tree)
 
 ### Fixed
 

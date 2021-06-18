@@ -23,6 +23,7 @@ pub enum ErrorCode {
     MnemonicFromEntropyFailed = 120,
     SigningBoxNotRegistered = 121,
     InvalidSignature = 122,
+    EncryptionBoxNotRegistered = 123,
 }
 
 pub struct Error;
@@ -166,6 +167,13 @@ impl Error {
         error(
             ErrorCode::SigningBoxNotRegistered,
             format!("Signing box is not registered. ID {}", id),
+        )
+    }
+
+    pub fn encryption_box_not_registered(id: u32) -> ClientError {
+        error(
+            ErrorCode::EncryptionBoxNotRegistered,
+            format!("Encryption box is not registered. ID {}", id),
         )
     }
 }

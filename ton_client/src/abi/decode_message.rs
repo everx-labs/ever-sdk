@@ -159,7 +159,8 @@ fn decode_body(
         )
     } else {
         Err(Error::invalid_message_for_decode(
-            "The message body does not match the specified ABI",
+            "The message body does not match the specified ABI.\n
+                Tip: Please check that you specified message's body, not full BOC.",
         ))
     }
 }
