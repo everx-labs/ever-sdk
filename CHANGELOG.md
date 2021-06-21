@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.17.0] – 2021-06-17
+## [1.17.0] – 2021-06-21
 
 ### New
 - Added support of external encryption boxes. [See the documentation](docs/mod_crypto.md#register_encryption_box)
