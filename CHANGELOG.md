@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.17.0] – 2021-06-21
+
+### New
+- Added support of external encryption boxes. [See the documentation](docs/mod_crypto.md#register_encryption_box)
+- **Debot module**:
+    - Dengine waits for completion of all transactions in a chain initiated by debot's onchain call.
+
 ## [1.16.1] – 2021-06-16
 
 ### New

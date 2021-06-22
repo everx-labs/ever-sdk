@@ -80,10 +80,24 @@ Crypto functions.
 
 [remove_signing_box](#remove_signing_box) – Removes signing box from SDK.
 
+[register_encryption_box](#register_encryption_box) – Register an application implemented encryption box.
+
+[remove_encryption_box](#remove_encryption_box) – Removes encryption box from SDK
+
+[encryption_box_get_info](#encryption_box_get_info) – Queries info from the given encryption box
+
+[encryption_box_encrypt](#encryption_box_encrypt) – Encrypts data using given encryption box
+
+[encryption_box_decrypt](#encryption_box_decrypt) – Decrypts data using given encryption box
+
 ## Types
 [CryptoErrorCode](#CryptoErrorCode)
 
 [SigningBoxHandle](#SigningBoxHandle)
+
+[EncryptionBoxHandle](#EncryptionBoxHandle)
+
+[EncryptionBoxInfo](#EncryptionBoxInfo) – Encryption box information
 
 [ParamsOfFactorize](#ParamsOfFactorize)
 
@@ -207,7 +221,27 @@ Crypto functions.
 
 [ResultOfSigningBoxSign](#ResultOfSigningBoxSign)
 
+[RegisteredEncryptionBox](#RegisteredEncryptionBox)
+
+[ParamsOfAppEncryptionBox](#ParamsOfAppEncryptionBox) – Encryption box callbacks.
+
+[ResultOfAppEncryptionBox](#ResultOfAppEncryptionBox) – Returning values from signing box callbacks.
+
+[ParamsOfEncryptionBoxGetInfo](#ParamsOfEncryptionBoxGetInfo)
+
+[ResultOfEncryptionBoxGetInfo](#ResultOfEncryptionBoxGetInfo)
+
+[ParamsOfEncryptionBoxEncrypt](#ParamsOfEncryptionBoxEncrypt)
+
+[ResultOfEncryptionBoxEncrypt](#ResultOfEncryptionBoxEncrypt)
+
+[ParamsOfEncryptionBoxDecrypt](#ParamsOfEncryptionBoxDecrypt)
+
+[ResultOfEncryptionBoxDecrypt](#ResultOfEncryptionBoxDecrypt)
+
 [AppSigningBox](#AppSigningBox)
+
+[AppEncryptionBox](#AppEncryptionBox)
 
 
 # Functions
@@ -1324,6 +1358,125 @@ function remove_signing_box(
 - `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
 
 
+## register_encryption_box
+
+Register an application implemented encryption box.
+
+```ts
+type RegisteredEncryptionBox = {
+    handle: EncryptionBoxHandle
+}
+
+function register_encryption_box(
+    obj: AppEncryptionBox,
+): Promise<RegisteredEncryptionBox>;
+```
+
+
+### Result
+
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
+
+
+## remove_encryption_box
+
+Removes encryption box from SDK
+
+```ts
+type RegisteredEncryptionBox = {
+    handle: EncryptionBoxHandle
+}
+
+function remove_encryption_box(
+    params: RegisteredEncryptionBox,
+): Promise<void>;
+```
+### Parameters
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
+
+
+## encryption_box_get_info
+
+Queries info from the given encryption box
+
+```ts
+type ParamsOfEncryptionBoxGetInfo = {
+    encryption_box: EncryptionBoxHandle
+}
+
+type ResultOfEncryptionBoxGetInfo = {
+    info: EncryptionBoxInfo
+}
+
+function encryption_box_get_info(
+    params: ParamsOfEncryptionBoxGetInfo,
+): Promise<ResultOfEncryptionBoxGetInfo>;
+```
+### Parameters
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+
+
+### Result
+
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_ – Encryption box information
+
+
+## encryption_box_encrypt
+
+Encrypts data using given encryption box
+
+```ts
+type ParamsOfEncryptionBoxEncrypt = {
+    encryption_box: EncryptionBoxHandle,
+    data: string
+}
+
+type ResultOfEncryptionBoxEncrypt = {
+    data: string
+}
+
+function encryption_box_encrypt(
+    params: ParamsOfEncryptionBoxEncrypt,
+): Promise<ResultOfEncryptionBoxEncrypt>;
+```
+### Parameters
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `data`: _string_ – Data to be encrypted, encoded in Base64
+
+
+### Result
+
+- `data`: _string_ – Encrypted data, encoded in Base64
+
+
+## encryption_box_decrypt
+
+Decrypts data using given encryption box
+
+```ts
+type ParamsOfEncryptionBoxDecrypt = {
+    encryption_box: EncryptionBoxHandle,
+    data: string
+}
+
+type ResultOfEncryptionBoxDecrypt = {
+    data: string
+}
+
+function encryption_box_decrypt(
+    params: ParamsOfEncryptionBoxDecrypt,
+): Promise<ResultOfEncryptionBoxDecrypt>;
+```
+### Parameters
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `data`: _string_ – Data to be decrypted, encoded in Base64
+
+
+### Result
+
+- `data`: _string_ – Decrypted data, encoded in Base64
+
+
 # Types
 ## CryptoErrorCode
 ```ts
@@ -1347,7 +1500,8 @@ enum CryptoErrorCode {
     MnemonicGenerationFailed = 119,
     MnemonicFromEntropyFailed = 120,
     SigningBoxNotRegistered = 121,
-    InvalidSignature = 122
+    InvalidSignature = 122,
+    EncryptionBoxNotRegistered = 123
 }
 ```
 One of the following value:
@@ -1372,12 +1526,36 @@ One of the following value:
 - `MnemonicFromEntropyFailed = 120`
 - `SigningBoxNotRegistered = 121`
 - `InvalidSignature = 122`
+- `EncryptionBoxNotRegistered = 123`
 
 
 ## SigningBoxHandle
 ```ts
 type SigningBoxHandle = number
 ```
+
+
+## EncryptionBoxHandle
+```ts
+type EncryptionBoxHandle = number
+```
+
+
+## EncryptionBoxInfo
+Encryption box information
+
+```ts
+type EncryptionBoxInfo = {
+    hdpath?: string,
+    algorithm?: string,
+    options?: any,
+    public?: any
+}
+```
+- `hdpath`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
+- `algorithm`?: _string_ – Cryptographic algorithm, used by this encryption box
+- `options`?: _any_ – Options, depends on algorithm and specific encryption box implementation
+- `public`?: _any_ – Public information, depends on algorithm
 
 
 ## ParamsOfFactorize
@@ -2080,6 +2258,164 @@ type ResultOfSigningBoxSign = {
 <br>Encoded with `hex`.
 
 
+## RegisteredEncryptionBox
+```ts
+type RegisteredEncryptionBox = {
+    handle: EncryptionBoxHandle
+}
+```
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
+
+
+## ParamsOfAppEncryptionBox
+Encryption box callbacks.
+
+```ts
+type ParamsOfAppEncryptionBox = {
+    type: 'GetInfo'
+} | {
+    type: 'Encrypt'
+    data: string
+} | {
+    type: 'Decrypt'
+    data: string
+}
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'GetInfo'_
+
+Get encryption box info
+
+
+When _type_ is _'Encrypt'_
+
+Encrypt data
+
+
+- `data`: _string_ – Data, encoded in Base64
+
+When _type_ is _'Decrypt'_
+
+Decrypt data
+
+
+- `data`: _string_ – Data, encoded in Base64
+
+
+Variant constructors:
+
+```ts
+function paramsOfAppEncryptionBoxGetInfo(): ParamsOfAppEncryptionBox;
+function paramsOfAppEncryptionBoxEncrypt(data: string): ParamsOfAppEncryptionBox;
+function paramsOfAppEncryptionBoxDecrypt(data: string): ParamsOfAppEncryptionBox;
+```
+
+## ResultOfAppEncryptionBox
+Returning values from signing box callbacks.
+
+```ts
+type ResultOfAppEncryptionBox = {
+    type: 'GetInfo'
+    info: EncryptionBoxInfo
+} | {
+    type: 'Encrypt'
+    data: string
+} | {
+    type: 'Decrypt'
+    data: string
+}
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'GetInfo'_
+
+Result of getting encryption box info
+
+
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_
+
+When _type_ is _'Encrypt'_
+
+Result of encrypting data
+
+
+- `data`: _string_ – Encrypted data, encoded in Base64
+
+When _type_ is _'Decrypt'_
+
+Result of decrypting data
+
+
+- `data`: _string_ – Decrypted data, encoded in Base64
+
+
+Variant constructors:
+
+```ts
+function resultOfAppEncryptionBoxGetInfo(info: EncryptionBoxInfo): ResultOfAppEncryptionBox;
+function resultOfAppEncryptionBoxEncrypt(data: string): ResultOfAppEncryptionBox;
+function resultOfAppEncryptionBoxDecrypt(data: string): ResultOfAppEncryptionBox;
+```
+
+## ParamsOfEncryptionBoxGetInfo
+```ts
+type ParamsOfEncryptionBoxGetInfo = {
+    encryption_box: EncryptionBoxHandle
+}
+```
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+
+
+## ResultOfEncryptionBoxGetInfo
+```ts
+type ResultOfEncryptionBoxGetInfo = {
+    info: EncryptionBoxInfo
+}
+```
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_ – Encryption box information
+
+
+## ParamsOfEncryptionBoxEncrypt
+```ts
+type ParamsOfEncryptionBoxEncrypt = {
+    encryption_box: EncryptionBoxHandle,
+    data: string
+}
+```
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `data`: _string_ – Data to be encrypted, encoded in Base64
+
+
+## ResultOfEncryptionBoxEncrypt
+```ts
+type ResultOfEncryptionBoxEncrypt = {
+    data: string
+}
+```
+- `data`: _string_ – Encrypted data, encoded in Base64
+
+
+## ParamsOfEncryptionBoxDecrypt
+```ts
+type ParamsOfEncryptionBoxDecrypt = {
+    encryption_box: EncryptionBoxHandle,
+    data: string
+}
+```
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `data`: _string_ – Data to be decrypted, encoded in Base64
+
+
+## ResultOfEncryptionBoxDecrypt
+```ts
+type ResultOfEncryptionBoxDecrypt = {
+    data: string
+}
+```
+- `data`: _string_ – Decrypted data, encoded in Base64
+
+
 ## AppSigningBox
 
 ```ts
@@ -2144,5 +2480,106 @@ function sign(
 ### Result
 
 - `signature`: _string_ – Data signature encoded as hex
+
+
+## AppEncryptionBox
+
+```ts
+
+type ResultOfAppEncryptionBoxGetInfo = {
+    info: EncryptionBoxInfo
+}
+
+type ParamsOfAppEncryptionBoxEncrypt = {
+    data: string
+}
+
+type ResultOfAppEncryptionBoxEncrypt = {
+    data: string
+}
+
+type ParamsOfAppEncryptionBoxDecrypt = {
+    data: string
+}
+
+type ResultOfAppEncryptionBoxDecrypt = {
+    data: string
+}
+
+export interface AppEncryptionBox {
+    get_info(): Promise<ResultOfAppEncryptionBoxGetInfo>,
+    encrypt(params: ParamsOfAppEncryptionBoxEncrypt): Promise<ResultOfAppEncryptionBoxEncrypt>,
+    decrypt(params: ParamsOfAppEncryptionBoxDecrypt): Promise<ResultOfAppEncryptionBoxDecrypt>,
+}
+```
+
+## get_info
+
+Get encryption box info
+
+```ts
+type ResultOfAppEncryptionBoxGetInfo = {
+    info: EncryptionBoxInfo
+}
+
+function get_info(): Promise<ResultOfAppEncryptionBoxGetInfo>;
+```
+
+
+### Result
+
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_
+
+
+## encrypt
+
+Encrypt data
+
+```ts
+type ParamsOfAppEncryptionBoxEncrypt = {
+    data: string
+}
+
+type ResultOfAppEncryptionBoxEncrypt = {
+    data: string
+}
+
+function encrypt(
+    params: ParamsOfAppEncryptionBoxEncrypt,
+): Promise<ResultOfAppEncryptionBoxEncrypt>;
+```
+### Parameters
+- `data`: _string_ – Data, encoded in Base64
+
+
+### Result
+
+- `data`: _string_ – Encrypted data, encoded in Base64
+
+
+## decrypt
+
+Decrypt data
+
+```ts
+type ParamsOfAppEncryptionBoxDecrypt = {
+    data: string
+}
+
+type ResultOfAppEncryptionBoxDecrypt = {
+    data: string
+}
+
+function decrypt(
+    params: ParamsOfAppEncryptionBoxDecrypt,
+): Promise<ResultOfAppEncryptionBoxDecrypt>;
+```
+### Parameters
+- `data`: _string_ – Data, encoded in Base64
+
+
+### Result
+
+- `data`: _string_ – Decrypted data, encoded in Base64
 
 

@@ -57,6 +57,8 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
 
     module.register_error_code::<crate::crypto::ErrorCode>();
     module.register_type::<crate::crypto::SigningBoxHandle>();
+    module.register_type::<crate::crypto::EncryptionBoxHandle>();
+    module.register_type::<crate::crypto::EncryptionBoxInfo>();
 
     // Math
 
@@ -197,6 +199,7 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
 
     // Boxes
 
+    // Signing box
     module.register_async_fn_with_app_object_no_args(
         super::crypto::register_signing_box,
         super::crypto::register_signing_box_api,
@@ -216,6 +219,28 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     module.register_sync_fn(
         crate::crypto::remove_signing_box,
         crate::crypto::boxes::remove_signing_box_api,
+    );
+
+    // Encryption box
+    module.register_async_fn_with_app_object_no_args(
+        super::crypto::register_encryption_box,
+        super::crypto::register_encryption_box_api,
+    );
+    module.register_sync_fn(
+        crate::crypto::remove_encryption_box,
+        crate::crypto::boxes::remove_encryption_box_api,
+    );
+    module.register_async_fn(
+        crate::crypto::encryption_box_get_info,
+        crate::crypto::boxes::encryption_box_get_info_api,
+    );
+    module.register_async_fn(
+        crate::crypto::encryption_box_encrypt,
+        crate::crypto::boxes::encryption_box_encrypt_api,
+    );
+    module.register_async_fn(
+        crate::crypto::encryption_box_decrypt,
+        crate::crypto::boxes::encryption_box_decrypt_api,
     );
 
     module.register();
