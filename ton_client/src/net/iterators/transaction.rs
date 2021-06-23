@@ -62,9 +62,6 @@ impl<'a> TransactionBounceFields<'a> {
 pub(crate) struct TransactionFields<'a>(pub &'a Value);
 
 impl<'a> TransactionFields<'a> {
-    pub fn now(&self) -> u32 {
-        self.0["now"].as_u64().unwrap_or(0) as u32
-    }
     pub fn bounce(&self) -> Option<TransactionBounceFields> {
         self.0.get("bounce").map(|x| TransactionBounceFields(x))
     }

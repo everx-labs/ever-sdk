@@ -116,6 +116,9 @@ async fn remove_iterator(client: &TestClient, iterator: u32) {
 
 #[tokio::test(core_threads = 2)]
 async fn block_iterator() {
+    if TestClient::node_se() {
+        return;
+    }
     let context = ClientContext::new(Default::default()).unwrap();
     let start_time = (context.env.now_ms() / 1000) as u32 - 60 * 60 * 10;
     let end_time = start_time + 60;
@@ -164,10 +167,13 @@ async fn block_iterator() {
 
 #[tokio::test(core_threads = 2)]
 async fn transaction_iterator() {
+    if TestClient::node_se() {
+        return;
+    }
+    let client = TestClient::new();
     let context = ClientContext::new(Default::default()).unwrap();
     let start_time = (context.env.now_ms() / 1000) as u32 - 60 * 60 * 10;
     let end_time = start_time + 60;
-    let client = TestClient::new();
     let mut ids = query_transaction_ids_in_range(&client, start_time, end_time).await;
     let mut extra_ids = HashSet::new();
 
