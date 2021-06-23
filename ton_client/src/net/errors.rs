@@ -117,7 +117,7 @@ impl Error {
         )
     }
 
-    pub fn not_suppported(request: &str) -> ClientError {
+    pub fn not_supported(request: &str) -> ClientError {
         error(
             ErrorCode::NotSupported,
             format!("Server does not support the following request: {}", request),

@@ -1068,7 +1068,8 @@ async fn order_by_fallback() {
             "orderBy": [{"path": "id", "direction": "ASC"}]
         }
         "#,
-    ).is_err());
+    )
+    .is_err());
     assert!(serde_json::from_str::<ParamsOfQueryCollection>(
         r#"
         {

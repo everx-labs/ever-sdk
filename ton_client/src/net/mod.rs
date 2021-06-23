@@ -14,6 +14,18 @@
 pub use batch::{batch_query, ParamsOfBatchQuery, ResultOfBatchQuery};
 pub(crate) use endpoint::Endpoint;
 pub use errors::{Error, ErrorCode};
+pub use iterators::block_iterator::{
+    create_block_iterator, resume_block_iterator, ParamsOfCreateBlockIterator,
+    ParamsOfResumeBlockIterator,
+};
+pub use iterators::transaction_iterator::{
+    create_transaction_iterator, resume_transaction_iterator, ParamsOfCreateTransactionIterator,
+    ParamsOfResumeTransactionIterator,
+};
+pub use iterators::{
+    iterator_next, remove_iterator, ChainIterator, ParamsOfIteratorNext, RegisteredIterator,
+    ResultOfIteratorNext,
+};
 pub use queries::{
     aggregate_collection, query, query_collection, query_counterparties, wait_for_collection,
     ParamsOfQuery, ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery,
@@ -45,10 +57,10 @@ pub(crate) mod batch;
 mod endpoint;
 mod errors;
 mod gql;
+pub(crate) mod iterators;
 pub(crate) mod queries;
 mod server_link;
 pub(crate) mod subscriptions;
-pub(crate) mod iterators;
 mod ton_gql;
 pub(crate) mod transaction_tree;
 mod types;
