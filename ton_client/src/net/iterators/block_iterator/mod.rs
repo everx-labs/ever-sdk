@@ -340,7 +340,7 @@ pub struct ParamsOfCreateBlockIterator {
     /// List of the fields that must be returned for iterated items.
     /// This field is the same as the `result` parameter of
     /// the `query_collection` function.
-    /// Note that iterated items can contains additional fields that is
+    /// Note that iterated items can contains additional fields that are
     /// not requested in the `result`.
     pub result: Option<String>,
 }
@@ -357,7 +357,7 @@ pub struct ParamsOfCreateBlockIterator {
 /// - `end_time` – the upper time range. Only blocks with `gen_utime`
 /// less then this value is iterated. If this parameter is omitted then there is
 /// no upper time edge, so iterator never finishes.
-/// - `shard_filter` – workchains and shard prefixes that reduces set of interesting
+/// - `shard_filter` – workchains and shard prefixes that reduce the set of interesting
 /// blocks. Block conforms to the shard filter if it belongs to the filter workchain
 /// and the first bits of block's `shard` fields matches to the shard prefix.
 /// Only blocks with suitable shard are iterated.
@@ -378,7 +378,7 @@ pub struct ParamsOfCreateBlockIterator {
 ///        root_hash
 ///    }
 ///
-/// Application can request an additional fields in the `result` parameter.
+/// Application can request additional fields in the `result` parameter.
 ///
 /// Application should call the `remove_iterator` when iterator is no longer required.
 #[api_function]
@@ -403,7 +403,7 @@ pub struct ParamsOfResumeBlockIterator {
 
 /// Resumes block iterator.
 ///
-/// The iterator stays exactly at the same position where the `resume_state` was catch.
+/// The iterator stays exactly at the same position where the `resume_state` was catched.
 ///
 /// Application should call the `remove_iterator` when iterator is no longer required.
 #[api_function]

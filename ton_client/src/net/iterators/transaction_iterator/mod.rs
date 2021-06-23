@@ -270,13 +270,16 @@ pub struct ParamsOfCreateTransactionIterator {
 
     /// Shard prefix filters.
     ///
-    /// If the application specifies this parameter and it is not the empty array
+    /// If the application specifies this parameter and it is not an empty array
     /// then the iteration will include items related to accounts that belongs to
     /// the specified shard prefixes.
     /// Shard prefix must be represented as a string "workchain:prefix".
     /// Where `workchain` is a signed integer and the `prefix` if a hexadecimal
     /// representation if the 64-bit unsigned integer with tagged shard prefix.
     /// For example: "0:3800000000000000".
+    /// Account address conforms to the shard filter if
+    /// it belongs to the filter workchain and the first bits of address match to
+    /// the shard prefix. Only transactions with suitable account addresses are iterated.
     pub shard_filter: Option<Vec<String>>,
 
     /// Account address filter.
@@ -285,10 +288,10 @@ pub struct ParamsOfCreateTransactionIterator {
     /// it wants to iterate transactions.
     ///
     /// If this parameter is missing or an empty list then the library iterates
-    /// transactions for all accounts that passes the shard filter.
+    /// transactions for all accounts that pass the shard filter.
     ///
     /// Note that the library doesn't detect conflicts between the account filter and the shard filter
-    /// if both is specified.
+    /// if both are specified.
     /// So it is an application responsibility to specify the correct filter combination.
     pub accounts_filter: Option<Vec<String>>,
 
@@ -297,42 +300,38 @@ pub struct ParamsOfCreateTransactionIterator {
     /// List of the fields that must be returned for iterated items.
     /// This field is the same as the `result` parameter of
     /// the `query_collection` function.
-    /// Note that iterated items can contains additional fields that is
+    /// Note that iterated items can contain additional fields that are
     /// not requested in the `result`.
     pub result: Option<String>,
 
     /// Include `transfers` field in iterated transactions.
     ///
     /// If this parameter is `true` then each transaction contains field
-    /// `transfers` with list of transfer
-    /// This field is the same as the `result` parameter of
-    /// the `query_collection` function.
-    /// Note that iterated items can contains additional fields that is
-    /// not requested in the `result`.
+    /// `transfers` with list of transfer. See more about this structure in function description.
     pub include_transfers: Option<bool>,
 }
 
 /// Creates transaction iterator.
 ///
-/// Transaction iterator uses robust iteration methods that guaranties that every
+/// Transaction iterator uses robust iteration methods that guaranty that every
 /// transaction in the specified range isn't missed or iterated twice.
 ///
 /// Iterated range can be reduced with some filters:
 /// - `start_time` – the bottom time range. Only transactions with `now`
-/// more or equal to this value is iterated. If this parameter is omitted then there is
-/// no bottom time edge, so all transactions since zero state is iterated.
+/// more or equal to this value are iterated. If this parameter is omitted then there is
+/// no bottom time edge, so all the transactions since zero state are iterated.
 /// - `end_time` – the upper time range. Only transactions with `now`
-/// less then this value is iterated. If this parameter is omitted then there is
+/// less then this value are iterated. If this parameter is omitted then there is
 /// no upper time edge, so iterator never finishes.
-/// - `shard_filter` – workchains and shard prefixes that reduces set of interesting
+/// - `shard_filter` – workchains and shard prefixes that reduce the set of interesting
 /// accounts. Account address conforms to the shard filter if
-/// it belongs to the filter workchain and the first bits of address matches to
+/// it belongs to the filter workchain and the first bits of address match to
 /// the shard prefix. Only transactions with suitable account addresses are iterated.
 /// - `accounts_filter` – set of account addresses whose transactions must be iterated.
 /// Note that accounts filter can conflict with shard filter so application must combine
-/// thees filters carefully.
+/// these filters carefully.
 ///
-/// Items iterated is a JSON objects with transaction data. The minimal set of returned
+/// Iterated item is a JSON objects with transaction data. The minimal set of returned
 /// fields is:
 ///
 ///     id
@@ -361,10 +360,10 @@ pub struct ParamsOfCreateTransactionIterator {
 /// Each transfer is calculated from the particular message related to the transaction
 /// and has the following structure:
 /// - message – source message identifier.
-/// - isBounced – indicates that the transaction is bounced.
-/// - isDeposit – indicates that this transfer is the deposit or withdraw.
+/// - isBounced – indicates that the transaction is bounced, which means the value will be returned back to the sender.
+/// - isDeposit – indicates that this transfer is the deposit (true) or withdraw (false).
 /// - counterparty – account address of the transfer source or destination depending on `isDeposit`.
-/// - value – amount of nano tokens transferred. The value is represented as a decimal string
+/// - value – amount of nano tokens transfered. The value is represented as a decimal string
 /// because the actual value can be more precise than the JSON number can represent. Application
 /// must use this string carefully – conversion to number can follow to loose of precision.
 ///
@@ -397,17 +396,17 @@ pub struct ParamsOfResumeTransactionIterator {
     /// transactions for all accounts that passes the shard filter.
     ///
     /// Note that the library doesn't detect conflicts between the account filter and the shard filter
-    /// if both is specified.
-    /// So it is an application responsibility to specify the correct filter combination.
+    /// if both are specified.
+    /// So it is the application's responsibility to specify the correct filter combination.
     pub accounts_filter: Option<Vec<String>>,
 }
 
 /// Resumes transaction iterator.
 ///
-/// The iterator stays exactly at the same position where the `resume_state` was catch.
+/// The iterator stays exactly at the same position where the `resume_state` was catched.
 /// Note that `resume_state` doesn't store the account filter. If the application requires
 /// to use the same account filter as it was when the iterator was created then the application
-/// must account filter again in `accounts_filter` parameter.
+/// must pass the account filter again in `accounts_filter` parameter.
 ///
 /// Application should call the `remove_iterator` when iterator is no longer required.
 #[api_function]
