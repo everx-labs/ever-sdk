@@ -20,9 +20,9 @@ use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
 
 use super::{AppRequestResult, Error, ParamsOfAppRequest};
 use crate::abi::AbiConfig;
-use crate::boc::{cache::Bocs, BocConfig};
-use crate::crypto::boxes::SigningBox;
+use crate::boc::{BocConfig, cache::Bocs};
 use crate::crypto::CryptoConfig;
+use crate::crypto::boxes::{SigningBox, EncryptionBox};
 use crate::debot::DEngine;
 use crate::error::ClientResult;
 use crate::json_interface::interop::ResponseType;
@@ -39,6 +39,7 @@ use super::wasm_client_env::ClientEnv;
 #[derive(Default)]
 pub struct Boxes {
     pub(crate) signing_boxes: LockfreeMap<u32, Box<dyn SigningBox + Send + Sync>>,
+    pub(crate) encryption_boxes: LockfreeMap<u32, Box<dyn EncryptionBox + Send + Sync>>,
 }
 
 pub struct NetworkContext {

@@ -2,11 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.16.1] – 2021-06-15
+## [1.17.0] – 2021-06-21
 
 ### New
-- `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the missing 
-  messages and transaction.
+- Added support of external encryption boxes. [See the documentation](docs/mod_crypto.md#register_encryption_box)
+- **Debot module**:
+    - Dengine waits for completion of all transactions in a chain initiated by debot's onchain call.
+
+## [1.16.1] – 2021-06-16
+
+### New
+- `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the next 
+  message and transaction in the transaction tree.
   
 ### Improved
 
@@ -23,7 +30,7 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `query_transaction_tree` function that returns messages and transactions tree produced 
-  by the specified message was added to `query` module. [See the documentation](docs/mod_net.md#query_transaction_tree)
+  by the specified message was added to `net` module. [See the documentation](docs/mod_net.md#query_transaction_tree)
 
 ### Fixed
 
