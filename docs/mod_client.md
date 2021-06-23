@@ -154,7 +154,8 @@ enum ClientErrorCode {
     CanNotParseRequestResult = 30,
     UnexpectedCallbackResponse = 31,
     CanNotParseNumber = 32,
-    InternalError = 33
+    InternalError = 33,
+    InvalidHandle = 34
 }
 ```
 One of the following value:
@@ -192,6 +193,7 @@ One of the following value:
 - `UnexpectedCallbackResponse = 31`
 - `CanNotParseNumber = 32`
 - `InternalError = 33`
+- `InvalidHandle = 34`
 
 
 ## ClientError
