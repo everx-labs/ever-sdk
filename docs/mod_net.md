@@ -574,7 +574,7 @@ no bottom time edge, so all blocks since zero state is iterated.
 - `end_time` – the upper time range. Only blocks with `gen_utime`
 less then this value is iterated. If this parameter is omitted then there is
 no upper time edge, so iterator never finishes.
-- `shard_filter` – workchains and shard prefixes that reduces set of interesting
+- `shard_filter` – workchains and shard prefixes that reduce the set of interesting
 blocks. Block conforms to the shard filter if it belongs to the filter workchain
 and the first bits of block's `shard` fields matches to the shard prefix.
 Only blocks with suitable shard are iterated.
@@ -595,7 +595,7 @@ fields is:
        root_hash
    }
 
-Application can request an additional fields in the `result` parameter.
+Application can request additional fields in the `result` parameter.
 
 Application should call the `remove_iterator` when iterator is no longer required.
 
@@ -623,7 +623,7 @@ function create_block_iterator(
 - `shard_filter`?: _string[]_ – Shard prefix filter.
 <br>If the application specifies this parameter and it is not the empty array<br>then the iteration will include items related to accounts that belongs to<br>the specified shard prefixes.<br>Shard prefix must be represented as a string "workchain:prefix".<br>Where `workchain` is a signed integer and the `prefix` if a hexadecimal<br>representation if the 64-bit unsigned integer with tagged shard prefix.<br>For example: "0:3800000000000000".
 - `result`?: _string_ – Projection (result) string.
-<br>List of the fields that must be returned for iterated items.<br>This field is the same as the `result` parameter of<br>the `query_collection` function.<br>Note that iterated items can contains additional fields that is<br>not requested in the `result`.
+<br>List of the fields that must be returned for iterated items.<br>This field is the same as the `result` parameter of<br>the `query_collection` function.<br>Note that iterated items can contains additional fields that are<br>not requested in the `result`.
 
 
 ### Result
@@ -636,7 +636,7 @@ function create_block_iterator(
 
 Resumes block iterator.
 
-The iterator stays exactly at the same position where the `resume_state` was catch.
+The iterator stays exactly at the same position where the `resume_state` was catched.
 
 Application should call the `remove_iterator` when iterator is no longer required.
 
@@ -668,25 +668,25 @@ function resume_block_iterator(
 
 Creates transaction iterator.
 
-Transaction iterator uses robust iteration methods that guaranties that every
+Transaction iterator uses robust iteration methods that guaranty that every
 transaction in the specified range isn't missed or iterated twice.
 
 Iterated range can be reduced with some filters:
 - `start_time` – the bottom time range. Only transactions with `now`
-more or equal to this value is iterated. If this parameter is omitted then there is
-no bottom time edge, so all transactions since zero state is iterated.
+more or equal to this value are iterated. If this parameter is omitted then there is
+no bottom time edge, so all the transactions since zero state are iterated.
 - `end_time` – the upper time range. Only transactions with `now`
-less then this value is iterated. If this parameter is omitted then there is
+less then this value are iterated. If this parameter is omitted then there is
 no upper time edge, so iterator never finishes.
-- `shard_filter` – workchains and shard prefixes that reduces set of interesting
+- `shard_filter` – workchains and shard prefixes that reduce the set of interesting
 accounts. Account address conforms to the shard filter if
-it belongs to the filter workchain and the first bits of address matches to
+it belongs to the filter workchain and the first bits of address match to
 the shard prefix. Only transactions with suitable account addresses are iterated.
 - `accounts_filter` – set of account addresses whose transactions must be iterated.
 Note that accounts filter can conflict with shard filter so application must combine
-thees filters carefully.
+these filters carefully.
 
-Items iterated is a JSON objects with transaction data. The minimal set of returned
+Iterated item is a JSON objects with transaction data. The minimal set of returned
 fields is:
 
     id
@@ -715,10 +715,10 @@ list of the useful `TransactionTransfer` objects.
 Each transfer is calculated from the particular message related to the transaction
 and has the following structure:
 - message – source message identifier.
-- isBounced – indicates that the transaction is bounced.
-- isDeposit – indicates that this transfer is the deposit or withdraw.
+- isBounced – indicates that the transaction is bounced, which means the value will be returned back to the sender.
+- isDeposit – indicates that this transfer is the deposit (true) or withdraw (false).
 - counterparty – account address of the transfer source or destination depending on `isDeposit`.
-- value – amount of nano tokens transferred. The value is represented as a decimal string
+- value – amount of nano tokens transfered. The value is represented as a decimal string
 because the actual value can be more precise than the JSON number can represent. Application
 must use this string carefully – conversion to number can follow to loose of precision.
 
@@ -748,13 +748,13 @@ function create_transaction_iterator(
 - `end_time`?: _number_ – Optional end time to iterate for.
 <br>If the application specifies this parameter then the iteration<br>includes blocks with `gen_utime` < `end_time`.<br>Otherwise the iteration never stops.<br><br>Must be specified in seconds.
 - `shard_filter`?: _string[]_ – Shard prefix filters.
-<br>If the application specifies this parameter and it is not the empty array<br>then the iteration will include items related to accounts that belongs to<br>the specified shard prefixes.<br>Shard prefix must be represented as a string "workchain:prefix".<br>Where `workchain` is a signed integer and the `prefix` if a hexadecimal<br>representation if the 64-bit unsigned integer with tagged shard prefix.<br>For example: "0:3800000000000000".
+<br>If the application specifies this parameter and it is not an empty array<br>then the iteration will include items related to accounts that belongs to<br>the specified shard prefixes.<br>Shard prefix must be represented as a string "workchain:prefix".<br>Where `workchain` is a signed integer and the `prefix` if a hexadecimal<br>representation if the 64-bit unsigned integer with tagged shard prefix.<br>For example: "0:3800000000000000".<br>Account address conforms to the shard filter if<br>it belongs to the filter workchain and the first bits of address match to<br>the shard prefix. Only transactions with suitable account addresses are iterated.
 - `accounts_filter`?: _string[]_ – Account address filter.
-<br>Application can specify the list of accounts for which<br>it wants to iterate transactions.<br><br>If this parameter is missing or an empty list then the library iterates<br>transactions for all accounts that passes the shard filter.<br><br>Note that the library doesn't detect conflicts between the account filter and the shard filter<br>if both is specified.<br>So it is an application responsibility to specify the correct filter combination.
+<br>Application can specify the list of accounts for which<br>it wants to iterate transactions.<br><br>If this parameter is missing or an empty list then the library iterates<br>transactions for all accounts that pass the shard filter.<br><br>Note that the library doesn't detect conflicts between the account filter and the shard filter<br>if both are specified.<br>So it is an application responsibility to specify the correct filter combination.
 - `result`?: _string_ – Projection (result) string.
-<br>List of the fields that must be returned for iterated items.<br>This field is the same as the `result` parameter of<br>the `query_collection` function.<br>Note that iterated items can contains additional fields that is<br>not requested in the `result`.
+<br>List of the fields that must be returned for iterated items.<br>This field is the same as the `result` parameter of<br>the `query_collection` function.<br>Note that iterated items can contain additional fields that are<br>not requested in the `result`.
 - `include_transfers`?: _boolean_ – Include `transfers` field in iterated transactions.
-<br>If this parameter is `true` then each transaction contains field<br>`transfers` with list of transfer<br>This field is the same as the `result` parameter of<br>the `query_collection` function.<br>Note that iterated items can contains additional fields that is<br>not requested in the `result`.
+<br>If this parameter is `true` then each transaction contains field<br>`transfers` with list of transfer. See more about this structure in function description.
 
 
 ### Result
@@ -767,10 +767,10 @@ function create_transaction_iterator(
 
 Resumes transaction iterator.
 
-The iterator stays exactly at the same position where the `resume_state` was catch.
+The iterator stays exactly at the same position where the `resume_state` was catched.
 Note that `resume_state` doesn't store the account filter. If the application requires
 to use the same account filter as it was when the iterator was created then the application
-must account filter again in `accounts_filter` parameter.
+must pass the account filter again in `accounts_filter` parameter.
 
 Application should call the `remove_iterator` when iterator is no longer required.
 
@@ -792,7 +792,7 @@ function resume_transaction_iterator(
 - `resume_state`: _any_ – Iterator state from which to resume.
 <br>Same as value returned from `iterator_next`.
 - `accounts_filter`?: _string[]_ – Account address filter.
-<br>Application can specify the list of accounts for which<br>it wants to iterate transactions.<br><br>If this parameter is missing or an empty list then the library iterates<br>transactions for all accounts that passes the shard filter.<br><br>Note that the library doesn't detect conflicts between the account filter and the shard filter<br>if both is specified.<br>So it is an application responsibility to specify the correct filter combination.
+<br>Application can specify the list of accounts for which<br>it wants to iterate transactions.<br><br>If this parameter is missing or an empty list then the library iterates<br>transactions for all accounts that passes the shard filter.<br><br>Note that the library doesn't detect conflicts between the account filter and the shard filter<br>if both are specified.<br>So it is the application's responsibility to specify the correct filter combination.
 
 
 ### Result
@@ -1297,7 +1297,7 @@ type ParamsOfCreateBlockIterator = {
 - `shard_filter`?: _string[]_ – Shard prefix filter.
 <br>If the application specifies this parameter and it is not the empty array<br>then the iteration will include items related to accounts that belongs to<br>the specified shard prefixes.<br>Shard prefix must be represented as a string "workchain:prefix".<br>Where `workchain` is a signed integer and the `prefix` if a hexadecimal<br>representation if the 64-bit unsigned integer with tagged shard prefix.<br>For example: "0:3800000000000000".
 - `result`?: _string_ – Projection (result) string.
-<br>List of the fields that must be returned for iterated items.<br>This field is the same as the `result` parameter of<br>the `query_collection` function.<br>Note that iterated items can contains additional fields that is<br>not requested in the `result`.
+<br>List of the fields that must be returned for iterated items.<br>This field is the same as the `result` parameter of<br>the `query_collection` function.<br>Note that iterated items can contains additional fields that are<br>not requested in the `result`.
 
 
 ## RegisteredIterator
@@ -1336,13 +1336,13 @@ type ParamsOfCreateTransactionIterator = {
 - `end_time`?: _number_ – Optional end time to iterate for.
 <br>If the application specifies this parameter then the iteration<br>includes blocks with `gen_utime` < `end_time`.<br>Otherwise the iteration never stops.<br><br>Must be specified in seconds.
 - `shard_filter`?: _string[]_ – Shard prefix filters.
-<br>If the application specifies this parameter and it is not the empty array<br>then the iteration will include items related to accounts that belongs to<br>the specified shard prefixes.<br>Shard prefix must be represented as a string "workchain:prefix".<br>Where `workchain` is a signed integer and the `prefix` if a hexadecimal<br>representation if the 64-bit unsigned integer with tagged shard prefix.<br>For example: "0:3800000000000000".
+<br>If the application specifies this parameter and it is not an empty array<br>then the iteration will include items related to accounts that belongs to<br>the specified shard prefixes.<br>Shard prefix must be represented as a string "workchain:prefix".<br>Where `workchain` is a signed integer and the `prefix` if a hexadecimal<br>representation if the 64-bit unsigned integer with tagged shard prefix.<br>For example: "0:3800000000000000".<br>Account address conforms to the shard filter if<br>it belongs to the filter workchain and the first bits of address match to<br>the shard prefix. Only transactions with suitable account addresses are iterated.
 - `accounts_filter`?: _string[]_ – Account address filter.
-<br>Application can specify the list of accounts for which<br>it wants to iterate transactions.<br><br>If this parameter is missing or an empty list then the library iterates<br>transactions for all accounts that passes the shard filter.<br><br>Note that the library doesn't detect conflicts between the account filter and the shard filter<br>if both is specified.<br>So it is an application responsibility to specify the correct filter combination.
+<br>Application can specify the list of accounts for which<br>it wants to iterate transactions.<br><br>If this parameter is missing or an empty list then the library iterates<br>transactions for all accounts that pass the shard filter.<br><br>Note that the library doesn't detect conflicts between the account filter and the shard filter<br>if both are specified.<br>So it is an application responsibility to specify the correct filter combination.
 - `result`?: _string_ – Projection (result) string.
-<br>List of the fields that must be returned for iterated items.<br>This field is the same as the `result` parameter of<br>the `query_collection` function.<br>Note that iterated items can contains additional fields that is<br>not requested in the `result`.
+<br>List of the fields that must be returned for iterated items.<br>This field is the same as the `result` parameter of<br>the `query_collection` function.<br>Note that iterated items can contain additional fields that are<br>not requested in the `result`.
 - `include_transfers`?: _boolean_ – Include `transfers` field in iterated transactions.
-<br>If this parameter is `true` then each transaction contains field<br>`transfers` with list of transfer<br>This field is the same as the `result` parameter of<br>the `query_collection` function.<br>Note that iterated items can contains additional fields that is<br>not requested in the `result`.
+<br>If this parameter is `true` then each transaction contains field<br>`transfers` with list of transfer. See more about this structure in function description.
 
 
 ## ParamsOfResumeTransactionIterator
@@ -1355,7 +1355,7 @@ type ParamsOfResumeTransactionIterator = {
 - `resume_state`: _any_ – Iterator state from which to resume.
 <br>Same as value returned from `iterator_next`.
 - `accounts_filter`?: _string[]_ – Account address filter.
-<br>Application can specify the list of accounts for which<br>it wants to iterate transactions.<br><br>If this parameter is missing or an empty list then the library iterates<br>transactions for all accounts that passes the shard filter.<br><br>Note that the library doesn't detect conflicts between the account filter and the shard filter<br>if both is specified.<br>So it is an application responsibility to specify the correct filter combination.
+<br>Application can specify the list of accounts for which<br>it wants to iterate transactions.<br><br>If this parameter is missing or an empty list then the library iterates<br>transactions for all accounts that passes the shard filter.<br><br>Note that the library doesn't detect conflicts between the account filter and the shard filter<br>if both are specified.<br>So it is the application's responsibility to specify the correct filter combination.
 
 
 ## ParamsOfIteratorNext

@@ -1,5 +1,5 @@
 {
-  "version": "1.17.0",
+  "version": "1.18.0",
   "modules": [
     {
       "name": "client",
@@ -9220,7 +9220,7 @@
                 "type": "String"
               },
               "summary": "Projection (result) string.",
-              "description": "List of the fields that must be returned for iterated items.\nThis field is the same as the `result` parameter of\nthe `query_collection` function.\nNote that iterated items can contains additional fields that is\nnot requested in the `result`."
+              "description": "List of the fields that must be returned for iterated items.\nThis field is the same as the `result` parameter of\nthe `query_collection` function.\nNote that iterated items can contains additional fields that are\nnot requested in the `result`."
             }
           ],
           "summary": null,
@@ -9293,7 +9293,7 @@
                 }
               },
               "summary": "Shard prefix filters.",
-              "description": "If the application specifies this parameter and it is not the empty array\nthen the iteration will include items related to accounts that belongs to\nthe specified shard prefixes.\nShard prefix must be represented as a string \"workchain:prefix\".\nWhere `workchain` is a signed integer and the `prefix` if a hexadecimal\nrepresentation if the 64-bit unsigned integer with tagged shard prefix.\nFor example: \"0:3800000000000000\"."
+              "description": "If the application specifies this parameter and it is not an empty array\nthen the iteration will include items related to accounts that belongs to\nthe specified shard prefixes.\nShard prefix must be represented as a string \"workchain:prefix\".\nWhere `workchain` is a signed integer and the `prefix` if a hexadecimal\nrepresentation if the 64-bit unsigned integer with tagged shard prefix.\nFor example: \"0:3800000000000000\".\nAccount address conforms to the shard filter if\nit belongs to the filter workchain and the first bits of address match to\nthe shard prefix. Only transactions with suitable account addresses are iterated."
             },
             {
               "name": "accounts_filter",
@@ -9305,7 +9305,7 @@
                 }
               },
               "summary": "Account address filter.",
-              "description": "Application can specify the list of accounts for which\nit wants to iterate transactions.\n\nIf this parameter is missing or an empty list then the library iterates\ntransactions for all accounts that passes the shard filter.\n\nNote that the library doesn't detect conflicts between the account filter and the shard filter\nif both is specified.\nSo it is an application responsibility to specify the correct filter combination."
+              "description": "Application can specify the list of accounts for which\nit wants to iterate transactions.\n\nIf this parameter is missing or an empty list then the library iterates\ntransactions for all accounts that pass the shard filter.\n\nNote that the library doesn't detect conflicts between the account filter and the shard filter\nif both are specified.\nSo it is an application responsibility to specify the correct filter combination."
             },
             {
               "name": "result",
@@ -9314,7 +9314,7 @@
                 "type": "String"
               },
               "summary": "Projection (result) string.",
-              "description": "List of the fields that must be returned for iterated items.\nThis field is the same as the `result` parameter of\nthe `query_collection` function.\nNote that iterated items can contains additional fields that is\nnot requested in the `result`."
+              "description": "List of the fields that must be returned for iterated items.\nThis field is the same as the `result` parameter of\nthe `query_collection` function.\nNote that iterated items can contain additional fields that are\nnot requested in the `result`."
             },
             {
               "name": "include_transfers",
@@ -9323,7 +9323,7 @@
                 "type": "Boolean"
               },
               "summary": "Include `transfers` field in iterated transactions.",
-              "description": "If this parameter is `true` then each transaction contains field\n`transfers` with list of transfer\nThis field is the same as the `result` parameter of\nthe `query_collection` function.\nNote that iterated items can contains additional fields that is\nnot requested in the `result`."
+              "description": "If this parameter is `true` then each transaction contains field\n`transfers` with list of transfer. See more about this structure in function description."
             }
           ],
           "summary": null,
@@ -9350,7 +9350,7 @@
                 }
               },
               "summary": "Account address filter.",
-              "description": "Application can specify the list of accounts for which\nit wants to iterate transactions.\n\nIf this parameter is missing or an empty list then the library iterates\ntransactions for all accounts that passes the shard filter.\n\nNote that the library doesn't detect conflicts between the account filter and the shard filter\nif both is specified.\nSo it is an application responsibility to specify the correct filter combination."
+              "description": "Application can specify the list of accounts for which\nit wants to iterate transactions.\n\nIf this parameter is missing or an empty list then the library iterates\ntransactions for all accounts that passes the shard filter.\n\nNote that the library doesn't detect conflicts between the account filter and the shard filter\nif both are specified.\nSo it is the application's responsibility to specify the correct filter combination."
             }
           ],
           "summary": null,
@@ -9982,7 +9982,7 @@
         {
           "name": "create_block_iterator",
           "summary": "Creates block iterator.",
-          "description": "Block iterator uses robust iteration methods that guaranties that every\nblock in the specified range isn't missed or iterated twice.\n\nIterated range can be reduced with some filters:\n- `start_time` – the bottom time range. Only blocks with `gen_utime`\nmore or equal to this value is iterated. If this parameter is omitted then there is\nno bottom time edge, so all blocks since zero state is iterated.\n- `end_time` – the upper time range. Only blocks with `gen_utime`\nless then this value is iterated. If this parameter is omitted then there is\nno upper time edge, so iterator never finishes.\n- `shard_filter` – workchains and shard prefixes that reduces set of interesting\nblocks. Block conforms to the shard filter if it belongs to the filter workchain\nand the first bits of block's `shard` fields matches to the shard prefix.\nOnly blocks with suitable shard are iterated.\n\nItems iterated is a JSON objects with block data. The minimal set of returned\nfields is:\n\n   id\n   gen_utime\n   workchain_id\n   shard\n   after_split\n   after_merge\n   prev_ref {\n       root_hash\n   }\n   prev_alt_ref {\n       root_hash\n   }\n\nApplication can request an additional fields in the `result` parameter.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
+          "description": "Block iterator uses robust iteration methods that guaranties that every\nblock in the specified range isn't missed or iterated twice.\n\nIterated range can be reduced with some filters:\n- `start_time` – the bottom time range. Only blocks with `gen_utime`\nmore or equal to this value is iterated. If this parameter is omitted then there is\nno bottom time edge, so all blocks since zero state is iterated.\n- `end_time` – the upper time range. Only blocks with `gen_utime`\nless then this value is iterated. If this parameter is omitted then there is\nno upper time edge, so iterator never finishes.\n- `shard_filter` – workchains and shard prefixes that reduce the set of interesting\nblocks. Block conforms to the shard filter if it belongs to the filter workchain\nand the first bits of block's `shard` fields matches to the shard prefix.\nOnly blocks with suitable shard are iterated.\n\nItems iterated is a JSON objects with block data. The minimal set of returned\nfields is:\n\n   id\n   gen_utime\n   workchain_id\n   shard\n   after_split\n   after_merge\n   prev_ref {\n       root_hash\n   }\n   prev_alt_ref {\n       root_hash\n   }\n\nApplication can request additional fields in the `result` parameter.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
           "params": [
             {
               "name": "context",
@@ -10020,7 +10020,7 @@
         {
           "name": "resume_block_iterator",
           "summary": "Resumes block iterator.",
-          "description": "The iterator stays exactly at the same position where the `resume_state` was catch.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
+          "description": "The iterator stays exactly at the same position where the `resume_state` was catched.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
           "params": [
             {
               "name": "context",
@@ -10058,7 +10058,7 @@
         {
           "name": "create_transaction_iterator",
           "summary": "Creates transaction iterator.",
-          "description": "Transaction iterator uses robust iteration methods that guaranties that every\ntransaction in the specified range isn't missed or iterated twice.\n\nIterated range can be reduced with some filters:\n- `start_time` – the bottom time range. Only transactions with `now`\nmore or equal to this value is iterated. If this parameter is omitted then there is\nno bottom time edge, so all transactions since zero state is iterated.\n- `end_time` – the upper time range. Only transactions with `now`\nless then this value is iterated. If this parameter is omitted then there is\nno upper time edge, so iterator never finishes.\n- `shard_filter` – workchains and shard prefixes that reduces set of interesting\naccounts. Account address conforms to the shard filter if\nit belongs to the filter workchain and the first bits of address matches to\nthe shard prefix. Only transactions with suitable account addresses are iterated.\n- `accounts_filter` – set of account addresses whose transactions must be iterated.\nNote that accounts filter can conflict with shard filter so application must combine\nthees filters carefully.\n\nItems iterated is a JSON objects with transaction data. The minimal set of returned\nfields is:\n\n    id\n    account_addr\n    now\n    balance_delta(format:DEC)\n    bounce { bounce_type }\n    in_message {\n        id\n        value(format:DEC)\n        msg_type\n        src\n    }\n    out_messages {\n        id\n        value(format:DEC)\n        msg_type\n        dst\n    }\n\nApplication can request an additional fields in the `result` parameter.\n\nAnother parameter that affects on the returned fields is the `include_transfers`.\nWhen this parameter is `true` the iterator computes and adds `transfer` field containing\nlist of the useful `TransactionTransfer` objects.\nEach transfer is calculated from the particular message related to the transaction\nand has the following structure:\n- message – source message identifier.\n- isBounced – indicates that the transaction is bounced.\n- isDeposit – indicates that this transfer is the deposit or withdraw.\n- counterparty – account address of the transfer source or destination depending on `isDeposit`.\n- value – amount of nano tokens transferred. The value is represented as a decimal string\nbecause the actual value can be more precise than the JSON number can represent. Application\nmust use this string carefully – conversion to number can follow to loose of precision.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
+          "description": "Transaction iterator uses robust iteration methods that guaranty that every\ntransaction in the specified range isn't missed or iterated twice.\n\nIterated range can be reduced with some filters:\n- `start_time` – the bottom time range. Only transactions with `now`\nmore or equal to this value are iterated. If this parameter is omitted then there is\nno bottom time edge, so all the transactions since zero state are iterated.\n- `end_time` – the upper time range. Only transactions with `now`\nless then this value are iterated. If this parameter is omitted then there is\nno upper time edge, so iterator never finishes.\n- `shard_filter` – workchains and shard prefixes that reduce the set of interesting\naccounts. Account address conforms to the shard filter if\nit belongs to the filter workchain and the first bits of address match to\nthe shard prefix. Only transactions with suitable account addresses are iterated.\n- `accounts_filter` – set of account addresses whose transactions must be iterated.\nNote that accounts filter can conflict with shard filter so application must combine\nthese filters carefully.\n\nIterated item is a JSON objects with transaction data. The minimal set of returned\nfields is:\n\n    id\n    account_addr\n    now\n    balance_delta(format:DEC)\n    bounce { bounce_type }\n    in_message {\n        id\n        value(format:DEC)\n        msg_type\n        src\n    }\n    out_messages {\n        id\n        value(format:DEC)\n        msg_type\n        dst\n    }\n\nApplication can request an additional fields in the `result` parameter.\n\nAnother parameter that affects on the returned fields is the `include_transfers`.\nWhen this parameter is `true` the iterator computes and adds `transfer` field containing\nlist of the useful `TransactionTransfer` objects.\nEach transfer is calculated from the particular message related to the transaction\nand has the following structure:\n- message – source message identifier.\n- isBounced – indicates that the transaction is bounced, which means the value will be returned back to the sender.\n- isDeposit – indicates that this transfer is the deposit (true) or withdraw (false).\n- counterparty – account address of the transfer source or destination depending on `isDeposit`.\n- value – amount of nano tokens transfered. The value is represented as a decimal string\nbecause the actual value can be more precise than the JSON number can represent. Application\nmust use this string carefully – conversion to number can follow to loose of precision.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
           "params": [
             {
               "name": "context",
@@ -10096,7 +10096,7 @@
         {
           "name": "resume_transaction_iterator",
           "summary": "Resumes transaction iterator.",
-          "description": "The iterator stays exactly at the same position where the `resume_state` was catch.\nNote that `resume_state` doesn't store the account filter. If the application requires\nto use the same account filter as it was when the iterator was created then the application\nmust account filter again in `accounts_filter` parameter.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
+          "description": "The iterator stays exactly at the same position where the `resume_state` was catched.\nNote that `resume_state` doesn't store the account filter. If the application requires\nto use the same account filter as it was when the iterator was created then the application\nmust pass the account filter again in `accounts_filter` parameter.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
           "params": [
             {
               "name": "context",
