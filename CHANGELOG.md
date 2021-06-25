@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.18.0] – 2021-06-26
+
+### New
+- iterators in `net` module: robust way to iterate blockchain items (blocks, transactions) 
+  in specified range. See documentation for `create_block_iterator` , `create_transaction_iterator`, 
+  `resume_block_iterator`, `resume_transaction_iterator`, `iterator_next`, `iterator_remove` 
+  functions.
+- library adds `http://` protocol to endpoints `localhost`, `127.0.0.1`, `0.0.0.0` if protocol 
+  isn't specified in config.
+
 ## [1.17.0] – 2021-06-21
 
 ### New
