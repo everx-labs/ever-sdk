@@ -1,4 +1,4 @@
-use super::calltype::send_ext_msg;
+use super::calltype::{ContractCall};
 use super::dinterface::{get_arg, DebotInterface, InterfaceResult};
 use crate::abi::{decode_message, Abi, ParamsOfDecodeMessage};
 use crate::crypto::{get_signing_box, KeyPair};
@@ -79,21 +79,24 @@ impl MsgInterface {
         let target_state = DEngine::load_state(self.ton.clone(), dest)
             .await
             .map_err(|e| format!("{}", e))?;
-        let msg = send_ext_msg(
+        let callobj = ContractCall::new(
             self.browser.clone(),
             self.ton.clone(),
             message,
             Signer::SigningBox{handle: signing_box},
             target_state,
-            &self.debot_addr,
-        )
-        .await
-        .map_err(|e| format!("{}", e))?;
+            self.debot_addr.clone(),
+            false,
+        ).await.map_err(|e| format!("{}", e))?;
+        let answer_msg = callobj.execute()
+            .await
+            .map_err(|e| format!("{}", e))?;
+        
         let result = decode_message(
             self.ton.clone(),
             ParamsOfDecodeMessage {
                 abi: self.debot_abi.clone(),
-                message: msg,
+                message: answer_msg,
             },
         )
         .await

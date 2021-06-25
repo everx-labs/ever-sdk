@@ -12,22 +12,24 @@
 */
 
 use lockfree::map::Map as LockfreeMap;
-use serde::{Deserialize, Deserializer, Serialize, de::DeserializeOwned};
+use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
-use std::collections::HashMap;
-use tokio::sync::{Mutex, mpsc, oneshot, RwLock};
+use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
 
-use super::{ParamsOfAppRequest, Error, AppRequestResult};
-use crate::error::ClientResult;
+use super::{AppRequestResult, Error, ParamsOfAppRequest};
 use crate::abi::AbiConfig;
 use crate::boc::{BocConfig, cache::Bocs};
 use crate::crypto::CryptoConfig;
-use crate::crypto::boxes::SigningBox;
+use crate::crypto::boxes::{SigningBox, EncryptionBox};
 use crate::debot::DEngine;
-use crate::json_interface::request::Request;
+use crate::error::ClientResult;
 use crate::json_interface::interop::ResponseType;
-use crate::net::{NetworkConfig, ServerLink, subscriptions::SubscriptionAction};
+use crate::json_interface::request::Request;
+use crate::net::{
+    subscriptions::SubscriptionAction, ChainIterator, NetworkConfig, ServerLink,
+};
 
 #[cfg(not(feature = "wasm"))]
 use super::std_client_env::ClientEnv;
@@ -37,11 +39,13 @@ use super::wasm_client_env::ClientEnv;
 #[derive(Default)]
 pub struct Boxes {
     pub(crate) signing_boxes: LockfreeMap<u32, Box<dyn SigningBox + Send + Sync>>,
+    pub(crate) encryption_boxes: LockfreeMap<u32, Box<dyn EncryptionBox + Send + Sync>>,
 }
 
 pub struct NetworkContext {
     pub(crate) server_link: Option<ServerLink>,
     pub(crate) subscriptions: Mutex<HashMap<u32, mpsc::Sender<SubscriptionAction>>>,
+    pub(crate) iterators: Mutex<HashMap<u32, Arc<Mutex<Box<dyn ChainIterator + Send + Sync>>>>>,
 }
 
 pub struct ClientContext {
@@ -60,7 +64,10 @@ pub struct ClientContext {
 
 impl ClientContext {
     pub(crate) fn get_server_link(&self) -> ClientResult<&ServerLink> {
-        self.net.server_link.as_ref().ok_or_else(|| Error::net_module_not_init())
+        self.net
+            .server_link
+            .as_ref()
+            .ok_or_else(|| Error::net_module_not_init())
     }
 
     pub async fn set_timer(&self, ms: u64) -> ClientResult<()> {
@@ -90,6 +97,7 @@ Note that default values are used if parameters are omitted in config"#,
             net: NetworkContext {
                 server_link,
                 subscriptions: Default::default(),
+                iterators: Default::default(),
             },
             env,
             debots: LockfreeMap::new(),
@@ -113,30 +121,25 @@ Note that default values are used if parameters are omitted in config"#,
     ) -> ClientResult<R> {
         let id = self.get_next_id();
         let (sender, receiver) = oneshot::channel();
-        self.app_requests
-            .lock()
-            .await
-            .insert(id, sender);
+        self.app_requests.lock().await.insert(id, sender);
 
-        let params = serde_json::to_value(params)
-            .map_err(Error::cannot_serialize_result)?;
+        let params = serde_json::to_value(params).map_err(Error::cannot_serialize_result)?;
 
         callback.response(
             ParamsOfAppRequest {
                 app_request_id: id,
-                request_data: params
+                request_data: params,
             },
-            ResponseType::AppRequest as u32);
+            ResponseType::AppRequest as u32,
+        );
         let result = receiver
             .await
             .map_err(|err| Error::can_not_receive_request_result(err))?;
 
         match result {
             AppRequestResult::Error { text } => Err(Error::app_request_error(&text)),
-            AppRequestResult::Ok { result } => {
-                serde_json::from_value(result)
-                    .map_err(|err| Error::can_not_parse_request_result(err))
-            }
+            AppRequestResult::Ok { result } => serde_json::from_value(result)
+                .map_err(|err| Error::can_not_parse_request_result(err)),
         }
     }
 }
@@ -191,7 +194,7 @@ impl Default for ClientConfig {
 pub(crate) struct AppObject<P: Serialize, R: DeserializeOwned> {
     context: Arc<ClientContext>,
     object_handler: Arc<Request>,
-    phantom: std::marker::PhantomData<(P, R)>
+    phantom: std::marker::PhantomData<(P, R)>,
 }
 
 impl<P, R> AppObject<P, R>
@@ -200,7 +203,11 @@ where
     R: DeserializeOwned,
 {
     pub fn new(context: Arc<ClientContext>, object_handler: Arc<Request>) -> AppObject<P, R> {
-        AppObject { context, object_handler, phantom: std::marker::PhantomData }
+        AppObject {
+            context,
+            object_handler,
+            phantom: std::marker::PhantomData,
+        }
     }
 
     pub async fn call(&self, params: P) -> ClientResult<R> {
@@ -208,6 +215,7 @@ where
     }
 
     pub fn notify(&self, params: P) {
-        self.object_handler.response(params, ResponseType::AppNotify as u32)
+        self.object_handler
+            .response(params, ResponseType::AppNotify as u32)
     }
 }

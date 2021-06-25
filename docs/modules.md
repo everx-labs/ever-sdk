@@ -99,6 +99,16 @@ Where:
 
 [remove_signing_box](mod_crypto.md#remove_signing_box) – Removes signing box from SDK.
 
+[register_encryption_box](mod_crypto.md#register_encryption_box) – Register an application implemented encryption box.
+
+[remove_encryption_box](mod_crypto.md#remove_encryption_box) – Removes encryption box from SDK
+
+[encryption_box_get_info](mod_crypto.md#encryption_box_get_info) – Queries info from the given encryption box
+
+[encryption_box_encrypt](mod_crypto.md#encryption_box_encrypt) – Encrypts data using given encryption box
+
+[encryption_box_decrypt](mod_crypto.md#encryption_box_decrypt) – Decrypts data using given encryption box
+
 ## [abi](mod_abi.md) – Provides message encoding and decoding according to the ABI specification.
 
 [encode_message_body](mod_abi.md#encode_message_body) – Encodes message body according to ABI function call.
@@ -200,6 +210,18 @@ Where:
 [query_counterparties](mod_net.md#query_counterparties) – Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
 
 [query_transaction_tree](mod_net.md#query_transaction_tree) – Returns transactions tree for specific message.
+
+[create_block_iterator](mod_net.md#create_block_iterator) – Creates block iterator.
+
+[resume_block_iterator](mod_net.md#resume_block_iterator) – Resumes block iterator.
+
+[create_transaction_iterator](mod_net.md#create_transaction_iterator) – Creates transaction iterator.
+
+[resume_transaction_iterator](mod_net.md#resume_transaction_iterator) – Resumes transaction iterator.
+
+[iterator_next](mod_net.md#iterator_next) – Returns next available items.
+
+[remove_iterator](mod_net.md#remove_iterator) – Removes an iterator
 
 ## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 

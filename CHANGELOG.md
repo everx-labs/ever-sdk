@@ -2,11 +2,33 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.16.1] – 2021-05-27
+## [1.18.0] – 2021-06-26
 
 ### New
-- `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the missing 
-  messages and transaction.
+- Iterators in `net` module: robust way to iterate blockchain items (blocks, transactions) 
+  in specified range. See documentation for `create_block_iterator` , `create_transaction_iterator`, 
+  `resume_block_iterator`, `resume_transaction_iterator`, `iterator_next`, `iterator_remove` 
+  functions.
+- Library adds `http://` protocol to endpoints `localhost`, `127.0.0.1`, `0.0.0.0` if protocol 
+  isn't specified in config.
+
+## [1.17.0] – 2021-06-21
+
+### New
+- Added support of external encryption boxes. [See the documentation](docs/mod_crypto.md#register_encryption_box)
+- **Debot module**:
+    - Dengine waits for completion of all transactions in a chain initiated by debot's onchain call.
+
+## [1.16.1] – 2021-06-16
+
+### New
+- `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the next 
+  message and transaction in the transaction tree.
+  
+### Improved
+
+- Improved error messages regarding ABI and JSON interface. SDK now shows additional tips for the user in cases of 
+  errors.
 
 ### Fixed
 - Warnings in Rust 1.52+. Little fixes in the documentation.
@@ -18,7 +40,7 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `query_transaction_tree` function that returns messages and transactions tree produced 
-  by the specified message was added to `query` module. [See the documentation](docs/mod_net.md#query_transaction_tree)
+  by the specified message was added to `net` module. [See the documentation](docs/mod_net.md#query_transaction_tree)
 
 ### Fixed
 

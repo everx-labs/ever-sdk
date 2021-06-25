@@ -24,3 +24,6 @@ pub(crate) mod modules;
 mod registrar;
 pub(crate) mod request;
 pub(crate) mod runtime;
+
+#[cfg(test)]
+mod tests;
