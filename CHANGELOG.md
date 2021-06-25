@@ -11,7 +11,8 @@ All notable changes to this project will be documented in this file.
   functions.
 - Library adds `http://` protocol to endpoints `localhost`, `127.0.0.1`, `0.0.0.0` if protocol 
   isn't specified in config.
-
+- **Debot module**:
+    - added tests for Json interface.
 ## [1.17.0] – 2021-06-21
 
 ### New

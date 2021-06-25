@@ -152,3 +152,88 @@ impl DebotInterface for JsonInterface {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::JsonInterface;
+
+    const ABI: &str = r#"
+    {
+        "ABI version": 2,
+        "header": ["time"],
+        "functions": [
+            {
+                "name": "setResult",
+                "id": "0x11111111",
+                "inputs": [
+                    {"components":[{"components":[{"name":"Provider","type":"bytes"},{"name":"Name","type":"bytes"},{"name":"Number","type":"uint64"},{"name":"Special_Name","type":"bytes"},{"name":"Url","type":"bytes"},{"components":[{"name":"Currency","type":"bytes"},{"name":"MinValueStr","type":"bytes"},{"name":"MaxValueStr","type":"bytes"}],"name":"Product","type":"tuple[]"}],"name":"Result","type":"tuple[]"},{"name":"Status","type":"bytes"},{"name":"TestValue2","type":"bytes"},{"name":"Numbers","type":"int32[]"}],"name":"obj","type":"tuple"}
+                ],
+                "outputs": [
+                ]
+            },
+            {
+                "name": "constructor",
+                "inputs": [
+                ],
+                "outputs": [
+                ]
+            }
+        ],
+        "data": [
+        ],
+        "events": [
+        ]
+    }    
+    "#;
+
+    #[test]
+    fn test_debot_json_desert_1() {
+        let json_iface = JsonInterface::new(ABI);
+        let mut json = json!({
+            "Result": [{
+                "Provider":"PROVIDER",
+                "Name":"This is a name",
+                "Number": 123,
+                "Special-Name": "Name with hyphen",
+                "Url":"https://this.is.url/logo/l.png",
+                "Product":[{
+                    "Currency":"TON",
+                    "MinValue":2.00,
+                    "MinValueStr":"2.00",
+                    "MaxValue":461.00,
+                    "MaxValueStr":"461.00",
+                }]
+            }],
+            "Status":"success",
+            "TestValue1": 9.200000000,
+            "TestValue2": "9.300000000",
+            "Numbers": [1, 2, 3],
+            "Floats": [1.1, 2.1, 3.1]
+        });
+        json_iface.deserialize_json(&mut json, 0x11111111).unwrap();
+        assert_eq!(
+            json,
+            json!({
+                "Result": [{
+                    "Provider":hex::encode("PROVIDER"),
+                    "Name":hex::encode("This is a name"),
+                    "Number": 123,
+                    "Special_Name": hex::encode("Name with hyphen"),
+                    "Url":hex::encode("https://this.is.url/logo/l.png"),
+                    "Product":[{
+                        "Currency":hex::encode("TON"),
+                        "MinValue":2.00,
+                        "MinValueStr":hex::encode("2.00"),
+                        "MaxValue":461.00,
+                        "MaxValueStr":hex::encode("461.00"),
+                    }]
+                }],
+                "Status":hex::encode("success"),
+                "TestValue1": 9.200000000,
+                "TestValue2":hex::encode("9.300000000"),
+                "Numbers": [1, 2, 3],
+                "Floats": [1.1, 2.1, 3.1]
+            })
+        );
+    }
+}
