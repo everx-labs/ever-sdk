@@ -364,20 +364,20 @@ pub struct ParamsOfCreateBlockIterator {
 ///
 /// Items iterated is a JSON objects with block data. The minimal set of returned
 /// fields is:
-///
-///    id
-///    gen_utime
-///    workchain_id
-///    shard
-///    after_split
-///    after_merge
-///    prev_ref {
-///        root_hash
-///    }
-///    prev_alt_ref {
-///        root_hash
-///    }
-///
+/// ```text
+/// id
+/// gen_utime
+/// workchain_id
+/// shard
+/// after_split
+/// after_merge
+/// prev_ref {
+///     root_hash
+/// }
+/// prev_alt_ref {
+///     root_hash
+/// }
+/// ```
 /// Application can request additional fields in the `result` parameter.
 ///
 /// Application should call the `remove_iterator` when iterator is no longer required.
