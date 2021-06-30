@@ -304,8 +304,8 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::encode_account::encode_account_api,
     );
     module.register_async_fn(
-        crate::abi::decode_data,
-        crate::abi::decode_data::decode_data_api,
+        crate::abi::decode_account_data,
+        crate::abi::decode_data::decode_account_data_api,
     );
     module.register();
 }

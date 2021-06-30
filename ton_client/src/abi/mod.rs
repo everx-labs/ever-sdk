@@ -26,7 +26,7 @@ mod types;
 
 use serde::{Deserialize, Deserializer};
 
-pub use decode_data::{decode_data, ParamsOfDecodeData, ResultOfDecodeData};
+pub use decode_data::{decode_account_data, ParamsOfDecodeAccountData, ResultOfDecodeData};
 pub use decode_message::{
     decode_message, decode_message_body, DecodedMessageBody, MessageBodyType,
     ParamsOfDecodeMessage, ParamsOfDecodeMessageBody,

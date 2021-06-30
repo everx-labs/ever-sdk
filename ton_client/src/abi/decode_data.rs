@@ -13,7 +13,7 @@ use ton_types::{deserialize_tree_of_cells, SliceData};
 //---------------------------------------------------------------------------------- decode_message
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
-pub struct ParamsOfDecodeData {
+pub struct ParamsOfDecodeAccountData {
     /// contract ABI
     pub abi: Abi,
 
@@ -40,9 +40,9 @@ pub struct DataAbi {
 
 /// Decodes account data using provided data BOC and ABI.
 #[api_function]
-pub async fn decode_data(
+pub async fn decode_account_data(
     context: Arc<ClientContext>,
-    params: ParamsOfDecodeData,
+    params: ParamsOfDecodeAccountData,
 ) -> ClientResult<ResultOfDecodeData> {
     let data = base64_decode(&params.data)?;
     let data =
