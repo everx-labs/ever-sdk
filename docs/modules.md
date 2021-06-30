@@ -211,6 +211,18 @@ Where:
 
 [query_transaction_tree](mod_net.md#query_transaction_tree) – Returns transactions tree for specific message.
 
+[create_block_iterator](mod_net.md#create_block_iterator) – Creates block iterator.
+
+[resume_block_iterator](mod_net.md#resume_block_iterator) – Resumes block iterator.
+
+[create_transaction_iterator](mod_net.md#create_transaction_iterator) – Creates transaction iterator.
+
+[resume_transaction_iterator](mod_net.md#resume_transaction_iterator) – Resumes transaction iterator.
+
+[iterator_next](mod_net.md#iterator_next) – Returns next available items.
+
+[remove_iterator](mod_net.md#remove_iterator) – Removes an iterator
+
 ## [debot](mod_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 
 [init](mod_debot.md#init) – [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.

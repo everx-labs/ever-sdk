@@ -19,6 +19,15 @@
 			]
 		},
 		{
+			"name": "setResult2",
+			"inputs": [
+				{"name":"result","type":"bool"},
+				{"components":[{"components":[{"name":"Provider","type":"bytes"},{"name":"Name","type":"bytes"},{"name":"Number","type":"uint64"},{"name":"Special_Name","type":"bytes"},{"name":"Url","type":"bytes"},{"components":[{"name":"Currency","type":"bytes"},{"name":"MinValueStr","type":"bytes"},{"name":"MaxValueStr","type":"bytes"}],"name":"Product","type":"tuple[]"}],"name":"Result","type":"tuple[]"},{"name":"Status","type":"bytes"},{"name":"TestValue2","type":"bytes"},{"name":"Numbers","type":"int32[]"}],"name":"obj","type":"tuple"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "getRequiredInterfaces",
 			"inputs": [
 			],
@@ -35,22 +44,13 @@
 				{"name":"name","type":"bytes"},
 				{"name":"version","type":"bytes"},
 				{"name":"publisher","type":"bytes"},
-				{"name":"key","type":"bytes"},
+				{"name":"caption","type":"bytes"},
 				{"name":"author","type":"bytes"},
 				{"name":"support","type":"address"},
 				{"name":"hello","type":"bytes"},
 				{"name":"language","type":"bytes"},
 				{"name":"dabi","type":"bytes"},
 				{"name":"icon","type":"bytes"}
-			]
-		},
-		{
-			"name": "getVersion",
-			"inputs": [
-			],
-			"outputs": [
-				{"name":"name","type":"bytes"},
-				{"name":"semver","type":"uint24"}
 			]
 		},
 		{

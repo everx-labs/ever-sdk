@@ -49,16 +49,25 @@ impl Clone for Endpoint {
 const QUERY_INFO_SCHEMA: &str = "?query=%7Binfo%7Bversion%20time%7D%7D";
 const QUERY_INFO_METRICS: &str = "?query=%7Binfo%7Bversion%20time%20latency%7D%7D";
 
+const HTTP_PROTOCOL: &str = "http://";
+const HTTPS_PROTOCOL: &str = "https://";
+
 impl Endpoint {
     pub fn http_headers() -> Vec<(String, String)> {
         vec![("tonclient-core-version".to_string(), core_version())]
     }
 
     fn expand_address(base_url: &str) -> String {
-        let base_url = if base_url.starts_with("http://") || base_url.starts_with("https://") {
+        let url = base_url.trim_end_matches("/").to_lowercase();
+        let base_url = if url.starts_with(HTTP_PROTOCOL) || url.starts_with(HTTPS_PROTOCOL) {
             base_url.to_owned()
         } else {
-            format!("https://{}", base_url)
+            let protocol = if url == "localhost" || url == "127.0.0.1" || url == "0.0.0.0" {
+                HTTP_PROTOCOL
+            } else {
+                HTTPS_PROTOCOL
+            };
+            format!("{}{}", protocol, base_url)
         };
 
         format!("{}/graphql", base_url.trim_end_matches("/"))

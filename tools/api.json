@@ -1,5 +1,5 @@
 {
-  "version": "1.17.0",
+  "version": "1.18.0",
   "modules": [
     {
       "name": "client",
@@ -238,6 +238,13 @@
               "name": "InternalError",
               "type": "Number",
               "value": "33",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidHandle",
+              "type": "Number",
+              "value": "34",
               "summary": null,
               "description": null
             }
@@ -9167,6 +9174,257 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfCreateBlockIterator",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "start_time",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Starting time to iterate from.",
+              "description": "If the application specifies this parameter then the iteration\nincludes blocks with `gen_utime` >= `start_time`.\nOtherwise the iteration starts from zero state.\n\nMust be specified in seconds."
+            },
+            {
+              "name": "end_time",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Optional end time to iterate for.",
+              "description": "If the application specifies this parameter then the iteration\nincludes blocks with `gen_utime` < `end_time`.\nOtherwise the iteration never stops.\n\nMust be specified in seconds."
+            },
+            {
+              "name": "shard_filter",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "String"
+                }
+              },
+              "summary": "Shard prefix filter.",
+              "description": "If the application specifies this parameter and it is not the empty array\nthen the iteration will include items related to accounts that belongs to\nthe specified shard prefixes.\nShard prefix must be represented as a string \"workchain:prefix\".\nWhere `workchain` is a signed integer and the `prefix` if a hexadecimal\nrepresentation if the 64-bit unsigned integer with tagged shard prefix.\nFor example: \"0:3800000000000000\"."
+            },
+            {
+              "name": "result",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Projection (result) string.",
+              "description": "List of the fields that must be returned for iterated items.\nThis field is the same as the `result` parameter of\nthe `query_collection` function.\nNote that iterated items can contains additional fields that are\nnot requested in the `result`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "RegisteredIterator",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "handle",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "Iterator handle.",
+              "description": "Must be removed using `remove_iterator`\nwhen it is no more needed for the application."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfResumeBlockIterator",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "resume_state",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Iterator state from which to resume.",
+              "description": "Same as value returned from `iterator_next`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfCreateTransactionIterator",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "start_time",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Starting time to iterate from.",
+              "description": "If the application specifies this parameter then the iteration\nincludes blocks with `gen_utime` >= `start_time`.\nOtherwise the iteration starts from zero state.\n\nMust be specified in seconds."
+            },
+            {
+              "name": "end_time",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Optional end time to iterate for.",
+              "description": "If the application specifies this parameter then the iteration\nincludes blocks with `gen_utime` < `end_time`.\nOtherwise the iteration never stops.\n\nMust be specified in seconds."
+            },
+            {
+              "name": "shard_filter",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "String"
+                }
+              },
+              "summary": "Shard prefix filters.",
+              "description": "If the application specifies this parameter and it is not an empty array\nthen the iteration will include items related to accounts that belongs to\nthe specified shard prefixes.\nShard prefix must be represented as a string \"workchain:prefix\".\nWhere `workchain` is a signed integer and the `prefix` if a hexadecimal\nrepresentation if the 64-bit unsigned integer with tagged shard prefix.\nFor example: \"0:3800000000000000\".\nAccount address conforms to the shard filter if\nit belongs to the filter workchain and the first bits of address match to\nthe shard prefix. Only transactions with suitable account addresses are iterated."
+            },
+            {
+              "name": "accounts_filter",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "String"
+                }
+              },
+              "summary": "Account address filter.",
+              "description": "Application can specify the list of accounts for which\nit wants to iterate transactions.\n\nIf this parameter is missing or an empty list then the library iterates\ntransactions for all accounts that pass the shard filter.\n\nNote that the library doesn't detect conflicts between the account filter and the shard filter\nif both are specified.\nSo it is an application responsibility to specify the correct filter combination."
+            },
+            {
+              "name": "result",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Projection (result) string.",
+              "description": "List of the fields that must be returned for iterated items.\nThis field is the same as the `result` parameter of\nthe `query_collection` function.\nNote that iterated items can contain additional fields that are\nnot requested in the `result`."
+            },
+            {
+              "name": "include_transfers",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Include `transfers` field in iterated transactions.",
+              "description": "If this parameter is `true` then each transaction contains field\n`transfers` with list of transfer. See more about this structure in function description."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfResumeTransactionIterator",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "resume_state",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Iterator state from which to resume.",
+              "description": "Same as value returned from `iterator_next`."
+            },
+            {
+              "name": "accounts_filter",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "String"
+                }
+              },
+              "summary": "Account address filter.",
+              "description": "Application can specify the list of accounts for which\nit wants to iterate transactions.\n\nIf this parameter is missing or an empty list then the library iterates\ntransactions for all accounts that passes the shard filter.\n\nNote that the library doesn't detect conflicts between the account filter and the shard filter\nif both are specified.\nSo it is the application's responsibility to specify the correct filter combination."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfIteratorNext",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "iterator",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "Iterator handle",
+              "description": null
+            },
+            {
+              "name": "limit",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Maximum count of the returned items.",
+              "description": "If value is missing or is less than 1 the library uses 1."
+            },
+            {
+              "name": "return_resume_state",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Indicates that function must return the iterator state that can be used for resuming iteration.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfIteratorNext",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "items",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "Next available items.",
+              "description": "Note that `iterator_next` can return an empty items and `has_more` equals to `true`.\nIn this case the application have to continue iteration.\nSuch situation can take place when there is no data yet but\nthe requested `end_time` is not reached."
+            },
+            {
+              "name": "has_more",
+              "type": "Boolean",
+              "summary": "Indicates that there are more available items in iterated range.",
+              "description": null
+            },
+            {
+              "name": "resume_state",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "Optional iterator state that can be used for resuming iteration.",
+              "description": "This field is returned only if the `return_resume_state` parameter\nis specified.\n\nNote that `resume_state` corresponds to the iteration position\nafter the returned items."
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -9716,6 +9974,233 @@
               {
                 "type": "Ref",
                 "ref_name": "net.ResultOfQueryTransactionTree"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "create_block_iterator",
+          "summary": "Creates block iterator.",
+          "description": "Block iterator uses robust iteration methods that guaranties that every\nblock in the specified range isn't missed or iterated twice.\n\nIterated range can be reduced with some filters:\n- `start_time` – the bottom time range. Only blocks with `gen_utime`\nmore or equal to this value is iterated. If this parameter is omitted then there is\nno bottom time edge, so all blocks since zero state is iterated.\n- `end_time` – the upper time range. Only blocks with `gen_utime`\nless then this value is iterated. If this parameter is omitted then there is\nno upper time edge, so iterator never finishes.\n- `shard_filter` – workchains and shard prefixes that reduce the set of interesting\nblocks. Block conforms to the shard filter if it belongs to the filter workchain\nand the first bits of block's `shard` fields matches to the shard prefix.\nOnly blocks with suitable shard are iterated.\n\nItems iterated is a JSON objects with block data. The minimal set of returned\nfields is:\n```text\nid\ngen_utime\nworkchain_id\nshard\nafter_split\nafter_merge\nprev_ref {\n    root_hash\n}\nprev_alt_ref {\n    root_hash\n}\n```\nApplication can request additional fields in the `result` parameter.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfCreateBlockIterator",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.RegisteredIterator"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "resume_block_iterator",
+          "summary": "Resumes block iterator.",
+          "description": "The iterator stays exactly at the same position where the `resume_state` was catched.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfResumeBlockIterator",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.RegisteredIterator"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "create_transaction_iterator",
+          "summary": "Creates transaction iterator.",
+          "description": "Transaction iterator uses robust iteration methods that guaranty that every\ntransaction in the specified range isn't missed or iterated twice.\n\nIterated range can be reduced with some filters:\n- `start_time` – the bottom time range. Only transactions with `now`\nmore or equal to this value are iterated. If this parameter is omitted then there is\nno bottom time edge, so all the transactions since zero state are iterated.\n- `end_time` – the upper time range. Only transactions with `now`\nless then this value are iterated. If this parameter is omitted then there is\nno upper time edge, so iterator never finishes.\n- `shard_filter` – workchains and shard prefixes that reduce the set of interesting\naccounts. Account address conforms to the shard filter if\nit belongs to the filter workchain and the first bits of address match to\nthe shard prefix. Only transactions with suitable account addresses are iterated.\n- `accounts_filter` – set of account addresses whose transactions must be iterated.\nNote that accounts filter can conflict with shard filter so application must combine\nthese filters carefully.\n\nIterated item is a JSON objects with transaction data. The minimal set of returned\nfields is:\n```text\nid\naccount_addr\nnow\nbalance_delta(format:DEC)\nbounce { bounce_type }\nin_message {\n    id\n    value(format:DEC)\n    msg_type\n    src\n}\nout_messages {\n    id\n    value(format:DEC)\n    msg_type\n    dst\n}\n```\nApplication can request an additional fields in the `result` parameter.\n\nAnother parameter that affects on the returned fields is the `include_transfers`.\nWhen this parameter is `true` the iterator computes and adds `transfer` field containing\nlist of the useful `TransactionTransfer` objects.\nEach transfer is calculated from the particular message related to the transaction\nand has the following structure:\n- message – source message identifier.\n- isBounced – indicates that the transaction is bounced, which means the value will be returned back to the sender.\n- isDeposit – indicates that this transfer is the deposit (true) or withdraw (false).\n- counterparty – account address of the transfer source or destination depending on `isDeposit`.\n- value – amount of nano tokens transferred. The value is represented as a decimal string\nbecause the actual value can be more precise than the JSON number can represent. Application\nmust use this string carefully – conversion to number can follow to loose of precision.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfCreateTransactionIterator",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.RegisteredIterator"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "resume_transaction_iterator",
+          "summary": "Resumes transaction iterator.",
+          "description": "The iterator stays exactly at the same position where the `resume_state` was caught.\nNote that `resume_state` doesn't store the account filter. If the application requires\nto use the same account filter as it was when the iterator was created then the application\nmust pass the account filter again in `accounts_filter` parameter.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfResumeTransactionIterator",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.RegisteredIterator"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "iterator_next",
+          "summary": "Returns next available items.",
+          "description": "In addition to available items this function returns the `has_more` flag\nindicating that the iterator isn't reach the end of the iterated range yet.\n\nThis function can return the empty list of available items but\nindicates that there are more items is available.\nThis situation appears when the iterator doesn't reach iterated range\nbut database doesn't contains available items yet.\n\nIf application requests resume state in `return_resume_state` parameter\nthen this function returns `resume_state` that can be used later to\nresume the iteration from the position after returned items.\n\nThe structure of the items returned depends on the iterator used.\nSee the description to the appropriated iterator creation function.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfIteratorNext",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfIteratorNext"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "remove_iterator",
+          "summary": "Removes an iterator",
+          "description": "Frees all resources allocated in library to serve iterator.\n\nApplication always should call the `remove_iterator` when iterator\nis no longer required.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.RegisteredIterator",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },
