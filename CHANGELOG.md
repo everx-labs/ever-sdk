@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.18.1] – 2021-07-02
+## [1.19.0] – 2021-07-02
 
 ### New
 
@@ -10,7 +10,7 @@ All notable changes to this project will be documented in this file.
   according to ABI 2.1.
 
 ### Fixed
-- Fixed first master blocks search for network start in blocks and transactions iterators
+- Search of the first master blocks during the network start period was fixed in blocks and transactions iterators
 
 ## [1.18.0] – 2021-06-26
 
