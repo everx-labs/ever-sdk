@@ -263,30 +263,35 @@ impl MasterBlock {
             )
             .await?
         } else {
-            Vec::default()
+            vec![Value::Null]
         };
-        if blocks.is_empty() || !BlockFields(&blocks[0]).has_shards() {
+
+        let mut last_gen_utime = 0;
+        while !blocks.is_empty() {
+            while let Some(block) = blocks.pop() {
+                let fields = BlockFields(&block);
+                if fields.has_shards() {
+                    return Ok(block);
+                }
+                last_gen_utime = fields.gen_utime();
+            }
             blocks = Self::query_blocks(
                 context,
                 json!({
                     "workchain_id": { "eq": -1 },
+                    "gen_utime": { "gt": last_gen_utime },
                 }),
                 SortDirection::ASC,
                 10,
                 fields,
             )
             .await?;
-            while !blocks.is_empty() && !BlockFields(&blocks[0]).has_shards() {
-                blocks.remove(0);
-            }
+            blocks.reverse();
         }
-        if !blocks.is_empty() {
-            Ok(blocks.remove(0))
-        } else {
-            Err(crate::net::Error::invalid_server_response(
-                "missing master blocks",
-            ))
-        }
+
+        Err(crate::net::Error::invalid_server_response(
+            "missing master blocks",
+        ))
     }
 
     async fn query_blocks(
