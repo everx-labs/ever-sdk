@@ -6,8 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### New
 
-- `decode_account_data` function in `abi` module converts account data BOC into JSON representation
-  according to ABI 2.1.
+- `decode_account_data` function in `abi` module converts account data BOC into JSON representation according to ABI 2.1. See documentation.
 
 ### Fixed
 - Search of the first master blocks during the network start period was fixed in blocks and transactions iterators
