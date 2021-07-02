@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.0] – 2021-07-06
+### New
+- Added `get_address_type` function, which validates address and returns its type.
+
 ## [1.18.0] – 2021-06-26
 
 ### New
