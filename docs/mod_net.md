@@ -581,20 +581,20 @@ Only blocks with suitable shard are iterated.
 
 Items iterated is a JSON objects with block data. The minimal set of returned
 fields is:
-
-   id
-   gen_utime
-   workchain_id
-   shard
-   after_split
-   after_merge
-   prev_ref {
-       root_hash
-   }
-   prev_alt_ref {
-       root_hash
-   }
-
+```text
+id
+gen_utime
+workchain_id
+shard
+after_split
+after_merge
+prev_ref {
+    root_hash
+}
+prev_alt_ref {
+    root_hash
+}
+```
 Application can request additional fields in the `result` parameter.
 
 Application should call the `remove_iterator` when iterator is no longer required.
@@ -688,25 +688,25 @@ these filters carefully.
 
 Iterated item is a JSON objects with transaction data. The minimal set of returned
 fields is:
-
+```text
+id
+account_addr
+now
+balance_delta(format:DEC)
+bounce { bounce_type }
+in_message {
     id
-    account_addr
-    now
-    balance_delta(format:DEC)
-    bounce { bounce_type }
-    in_message {
-        id
-        value(format:DEC)
-        msg_type
-        src
-    }
-    out_messages {
-        id
-        value(format:DEC)
-        msg_type
-        dst
-    }
-
+    value(format:DEC)
+    msg_type
+    src
+}
+out_messages {
+    id
+    value(format:DEC)
+    msg_type
+    dst
+}
+```
 Application can request an additional fields in the `result` parameter.
 
 Another parameter that affects on the returned fields is the `include_transfers`.
@@ -718,7 +718,7 @@ and has the following structure:
 - isBounced – indicates that the transaction is bounced, which means the value will be returned back to the sender.
 - isDeposit – indicates that this transfer is the deposit (true) or withdraw (false).
 - counterparty – account address of the transfer source or destination depending on `isDeposit`.
-- value – amount of nano tokens transfered. The value is represented as a decimal string
+- value – amount of nano tokens transferred. The value is represented as a decimal string
 because the actual value can be more precise than the JSON number can represent. Application
 must use this string carefully – conversion to number can follow to loose of precision.
 
@@ -767,7 +767,7 @@ function create_transaction_iterator(
 
 Resumes transaction iterator.
 
-The iterator stays exactly at the same position where the `resume_state` was catched.
+The iterator stays exactly at the same position where the `resume_state` was caught.
 Note that `resume_state` doesn't store the account filter. If the application requires
 to use the same account filter as it was when the iterator was created then the application
 must pass the account filter again in `accounts_filter` parameter.

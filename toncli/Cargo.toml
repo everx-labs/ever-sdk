@@ -1,6 +1,6 @@
 [package]
 name = "toncli"
-version = "1.18.0"
+version = "1.18.1"
 description = "TON CLient Command Line Tool"
 authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 repository = "https://github.com/tonlabs/TON-SDK"

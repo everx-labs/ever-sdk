@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.18.1] – 2021-07-02
+
+### Fixed
+- Fixed first master blocks search for network start in blocks and transactions iterators
+
 ## [1.18.0] – 2021-06-26
 
 ### New
