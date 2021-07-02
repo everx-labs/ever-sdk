@@ -95,15 +95,6 @@ pub struct AbiParam {
     pub components: Vec<AbiParam>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
-pub struct AbiField {
-    pub name: String,
-    #[serde(rename = "type")]
-    pub param_type: String,
-    #[serde(default)]
-    pub components: Vec<AbiParam>,
-}
-
 /// The ABI function header.
 ///
 /// Includes several hidden function parameters that contract
