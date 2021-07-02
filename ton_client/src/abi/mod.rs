@@ -14,15 +14,19 @@
 #[cfg(test)]
 mod tests;
 
+pub(crate) mod decode_data;
 pub(crate) mod decode_message;
 pub(crate) mod encode_account;
 pub(crate) mod encode_message;
+
 mod errors;
 mod internal;
 mod signing;
 mod types;
+
 use serde::{Deserialize, Deserializer};
 
+pub use decode_data::{decode_account_data, ParamsOfDecodeAccountData, ResultOfDecodeData};
 pub use decode_message::{
     decode_message, decode_message_body, DecodedMessageBody, MessageBodyType,
     ParamsOfDecodeMessage, ParamsOfDecodeMessageBody,
@@ -31,11 +35,11 @@ pub use encode_account::{
     encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,
 };
 pub use encode_message::{
-    attach_signature, attach_signature_to_message_body, encode_message, encode_internal_message, encode_message_body,
-    CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfAttachSignatureToMessageBody,
-    ParamsOfEncodeInternalMessage, ParamsOfEncodeMessage, ParamsOfEncodeMessageBody,
-    ResultOfAttachSignature, ResultOfAttachSignatureToMessageBody, ResultOfEncodeInternalMessage,
-    ResultOfEncodeMessage, ResultOfEncodeMessageBody,
+    attach_signature, attach_signature_to_message_body, encode_internal_message, encode_message,
+    encode_message_body, CallSet, DeploySet, ParamsOfAttachSignature,
+    ParamsOfAttachSignatureToMessageBody, ParamsOfEncodeInternalMessage, ParamsOfEncodeMessage,
+    ParamsOfEncodeMessageBody, ResultOfAttachSignature, ResultOfAttachSignatureToMessageBody,
+    ResultOfEncodeInternalMessage, ResultOfEncodeMessage, ResultOfEncodeMessageBody,
 };
 pub use errors::{Error, ErrorCode};
 pub use signing::Signer;

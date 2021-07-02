@@ -51,6 +51,8 @@ pub struct AbiContract {
     pub events: Vec<AbiEvent>,
     #[serde(default)]
     pub data: Vec<AbiData>,
+    #[serde(default)]
+    pub fields: Vec<AbiParam>,
 }
 
 fn default_abi_version() -> u32 {
