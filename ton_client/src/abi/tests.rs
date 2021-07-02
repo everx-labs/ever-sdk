@@ -909,5 +909,59 @@ async fn decode_depool_data() {
     .unwrap()
     .data;
 
-    println!(">>> {}", serde_json::to_string_pretty(&decoded).unwrap());
+    assert_eq!(
+        decoded,
+        json!({
+          "pubkey": "0xf33e06c497a6d9b7adf237b6dd17752738cd00372019c83e2168120e2d863174",
+          "time": "1612210661999",
+          "someFlag": true,
+          "m_validatorWallet": "0:27da7884e032ede0f7d5758bb58bcab9942dfb6c1b764a38bb6377a47a0822de",
+          "m_proxies": [
+            "-1:ca9eb496d0a0857811a320c2ce567bde893964aa7e70069b0ffbafa6a0483a21",
+            "-1:0c4af2d629cbf29de1d8f9e2e4a86aec2e8c8f9f13d7847f17ecdf3846d243be"
+          ],
+          "m_participants": {
+            "0:12ef7a258af50c75712839c2b930d8d759642a9ca87d359d7cd9a34968dcc8ae": {
+              "roundQty": "1",
+              "reward": "630629900074",
+              "vestingParts": "0",
+              "lockParts": "0",
+              "reinvest": true,
+              "withdrawValue": "0",
+              "vestingDonor": "0:0000000000000000000000000000000000000000000000000000000000000000",
+              "lockDonor": "0:0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "0:0005e3c1f00e627930dfba997449015f834582a5b9a11eb9433cdb6af16498d8": {
+              "roundQty": "2",
+              "reward": "3106852502805",
+              "vestingParts": "0",
+              "lockParts": "0",
+              "reinvest": true,
+              "withdrawValue": "0",
+              "vestingDonor": "0:0000000000000000000000000000000000000000000000000000000000000000",
+              "lockDonor": "0:0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "0:27da7884e032ede0f7d5758bb58bcab9942dfb6c1b764a38bb6377a47a0822de": {
+              "roundQty": "2",
+              "reward": "21704779866320",
+              "vestingParts": "2",
+              "lockParts": "2",
+              "reinvest": true,
+              "withdrawValue": "0",
+              "vestingDonor": "0:e17ac4e77f46626579c7c4fefe35286117384c5ccfc8745c9780cdf056c378bf",
+              "lockDonor": "0:e17ac4e77f46626579c7c4fefe35286117384c5ccfc8745c9780cdf056c378bf"
+            },
+            "-1:f6967e2ce65843a5cc450362b898e87a0fab3925bdc507195fa5003465cd62af": {
+              "roundQty": "2",
+              "reward": "6188183108212",
+              "vestingParts": "0",
+              "lockParts": "0",
+              "reinvest": true,
+              "withdrawValue": "0",
+              "vestingDonor": "0:0000000000000000000000000000000000000000000000000000000000000000",
+              "lockDonor": "0:0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          }
+        })
+    );
 }
