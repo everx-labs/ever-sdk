@@ -6,6 +6,8 @@ Misc utility Functions.
 ## Functions
 [convert_address](#convert_address) – Converts address from any TON format to any TON format
 
+[get_address_type](#get_address_type) – Returns the type of any TON address
+
 [calc_storage_fee](#calc_storage_fee) – Calculates storage fee for an account over a specified time period
 
 [compress_zstd](#compress_zstd) – Compresses data using Zstandard algorithm
@@ -18,6 +20,10 @@ Misc utility Functions.
 [ParamsOfConvertAddress](#ParamsOfConvertAddress)
 
 [ResultOfConvertAddress](#ResultOfConvertAddress)
+
+[ParamsOfGetAddressType](#ParamsOfGetAddressType)
+
+[ResultOfGetAddressType](#ResultOfGetAddressType)
 
 [ParamsOfCalcStorageFee](#ParamsOfCalcStorageFee)
 
@@ -59,6 +65,32 @@ function convert_address(
 ### Result
 
 - `address`: _string_ – Address in the specified format
+
+
+## get_address_type
+
+Returns the type of any TON address
+
+```ts
+type ParamsOfGetAddressType = {
+    address: string
+}
+
+type ResultOfGetAddressType = {
+    address_type: AccountAddressType
+}
+
+function get_address_type(
+    params: ParamsOfGetAddressType,
+): Promise<ResultOfGetAddressType>;
+```
+### Parameters
+- `address`: _string_ – Account address in any TON format.
+
+
+### Result
+
+- `address_type`: _AccountAddressType_ – Account address type.
 
 
 ## calc_storage_fee
@@ -203,6 +235,24 @@ type ResultOfConvertAddress = {
 }
 ```
 - `address`: _string_ – Address in the specified format
+
+
+## ParamsOfGetAddressType
+```ts
+type ParamsOfGetAddressType = {
+    address: string
+}
+```
+- `address`: _string_ – Account address in any TON format.
+
+
+## ResultOfGetAddressType
+```ts
+type ResultOfGetAddressType = {
+    address_type: AccountAddressType
+}
+```
+- `address_type`: _AccountAddressType_ – Account address type.
 
 
 ## ParamsOfCalcStorageFee
