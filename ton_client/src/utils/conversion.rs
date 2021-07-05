@@ -84,7 +84,16 @@ lazy_static! {
     static ref ACCOUNT_ID_REGEX: regex::Regex = regex::Regex::new(r#"^[0-9a-fA-F]{64}$"#).unwrap();
 }
 
-/// Returns the type of any TON address
+/// Validates and returns the type of any TON address.
+/// 
+/// Address types are the following
+/// 
+/// `0:919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - standart TON address most 
+/// commonly used in all cases. Also called as hex addres
+/// `919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - account ID. A part of full 
+/// address. Identifies account inside particular workchain
+/// `EQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H9wam` - base64 address. Also called "user-friendly". 
+/// Was used at the beginning of TON. Now it is supported for compatibility
 #[api_function]
 pub fn get_address_type(
     _context: Arc<ClientContext>,
