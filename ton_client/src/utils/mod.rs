@@ -29,3 +29,4 @@ pub use conversion::{
 };
 pub use compression::{compress_zstd, decompress_zstd};
 pub use errors::{Error, ErrorCode};
+pub use crate::encoding::AccountAddressType;

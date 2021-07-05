@@ -492,6 +492,7 @@ pub struct UtilsModule;
 fn register_utils(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<UtilsModule>(handlers);
     module.register_type::<crate::utils::AddressStringFormat>();
+    module.register_type::<crate::utils::AccountAddressType>();
     module.register_sync_fn(
         crate::utils::convert_address,
         crate::utils::conversion::convert_address_api,
