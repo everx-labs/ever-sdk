@@ -7504,6 +7504,35 @@
           "description": null
         },
         {
+          "name": "ParamsOfGetAddressType",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "address",
+              "type": "String",
+              "summary": "Account address in any TON format.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetAddressType",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "address_type",
+              "type": "Ref",
+              "ref_name": "AccountAddressType",
+              "summary": "Account address type.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfCalcStorageFee",
           "type": "Struct",
           "struct_fields": [
@@ -7641,6 +7670,44 @@
               {
                 "type": "Ref",
                 "ref_name": "utils.ResultOfConvertAddress"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_address_type",
+          "summary": "Returns the type of any TON address",
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "utils.ParamsOfGetAddressType",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "utils.ResultOfGetAddressType"
               }
             ]
           },

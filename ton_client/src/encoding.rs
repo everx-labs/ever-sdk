@@ -26,7 +26,7 @@ pub(crate) fn account_encode(value: &MsgAddressInt) -> String {
     value.to_string()
 }
 
-#[derive(Serialize, Deserialize, Debug, ApiType, Clone)]
+#[derive(Serialize, Deserialize, Debug, ApiType, Clone, PartialEq, Eq)]
 pub enum AccountAddressType {
     AccountId,
     Hex,
@@ -66,7 +66,7 @@ pub(crate) fn account_decode(string: &str) -> ClientResult<MsgAddressInt> {
     }
 }
 
-fn decode_std_base64(data: &str) -> ClientResult<MsgAddressInt> {
+pub(crate) fn decode_std_base64(data: &str) -> ClientResult<MsgAddressInt> {
     // conversion from base64url
     let data = data.replace('_', "/").replace('-', "+");
 

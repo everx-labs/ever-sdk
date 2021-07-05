@@ -1,10 +1,13 @@
+use api_info::ApiModule;
 use crate::{boc::tests::ACCOUNT, json_interface::modules::UtilsModule};
+use crate::encoding::AccountAddressType;
+use crate::error::ClientResult;
 use crate::tests::TestClient;
-use super::*;
 use crate::json_interface::utils::{
     ParamsOfCompressZstd, ResultOfCompressZstd, ResultOfDecompressZstd, ParamsOfDecompressZstd
 };
-use api_info::ApiModule;
+
+use super::*;
 
 #[tokio::test(core_threads = 2)]
 async fn test_utils() {
@@ -124,4 +127,88 @@ fn test_compression() {
     let decompressed = base64::decode(&decompressed.decompressed).unwrap();
 
     assert_eq!(decompressed, uncompressed);
+}
+
+#[test]
+fn test_get_address_type() {
+    let client = TestClient::new();
+
+    assert!(get_address_type(&client, "").is_err());
+    assert!(get_address_type(&client, "                                  ").is_err());
+    assert!(get_address_type(&client, "123456").is_err());
+    assert!(get_address_type(&client, "abcdef").is_err());
+
+    assert_eq!(
+        get_address_type(
+            &client,
+            "-1:7777777777777777777777777777777777777777777777777777777777777777",
+        ).unwrap(),
+        AccountAddressType::Hex,
+    );
+
+    assert_eq!(
+        get_address_type(
+            &client,
+            "0:919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7",
+        ).unwrap(),
+        AccountAddressType::Hex,
+    );
+
+    assert_eq!(
+        get_address_type(
+            &client,
+            "7777777777777777777777777777777777777777777777777777777777777777",
+        ).unwrap(),
+        AccountAddressType::AccountId,
+    );
+
+    assert_eq!(
+        get_address_type(
+            &client,
+            "919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7",
+        ).unwrap(),
+        AccountAddressType::AccountId,
+    );
+
+    assert_eq!(
+        get_address_type(
+            &client,
+            "EQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H9wam",
+        ).unwrap(),
+        AccountAddressType::Base64,
+    );
+
+    assert_eq!(
+        get_address_type(
+            &client,
+            "EQCRnbjnQNUL80nfLuoD-jDDhdhGuZH_VULmcJjugz_H9wam",
+        ).unwrap(),
+        AccountAddressType::Base64,
+    );
+
+    assert_eq!(
+        get_address_type(
+            &client,
+            "UQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H91tj",
+        ).unwrap(),
+        AccountAddressType::Base64,
+    );
+
+    assert_eq!(
+        get_address_type(
+            &client,
+            "UQCRnbjnQNUL80nfLuoD-jDDhdhGuZH_VULmcJjugz_H91tj",
+        ).unwrap(),
+        AccountAddressType::Base64,
+    );
+}
+
+fn get_address_type(client: &TestClient, address: &'static str) -> ClientResult<AccountAddressType> {
+    client.request::<_, ResultOfGetAddressType>(
+        "utils.get_address_type",
+        ParamsOfGetAddressType {
+            address: address.to_string()
+        }
+    )
+        .map(|result| result.address_type)
 }
