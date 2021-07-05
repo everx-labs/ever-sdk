@@ -15,6 +15,7 @@ pub enum ErrorCode {
     InvalidSigner = 310,
     InvalidAbi = 311,
     InvalidFunctionId = 312,
+    InvalidData = 313,
 }
 
 pub struct Error;
@@ -102,4 +103,12 @@ impl Error {
             format!("Invalid function {}: {}", func_id, err),
         )
     }
+
+    pub fn invalid_data_for_decode<E: Display>(err: E) -> ClientError {
+        error(
+            ErrorCode::InvalidData,
+            format!("Data can't be decoded: {}", err),
+        )
+    }
+
 }

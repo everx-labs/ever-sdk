@@ -127,6 +127,8 @@ Where:
 
 [encode_account](mod_abi.md#encode_account) – Creates account state BOC
 
+[decode_account_data](mod_abi.md#decode_account_data) – Decodes account data using provided data BOC and ABI.
+
 ## [boc](mod_boc.md) – BOC manipulation module.
 
 [parse_message](mod_boc.md#parse_message) – Parses message boc into a JSON

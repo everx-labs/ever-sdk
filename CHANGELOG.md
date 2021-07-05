@@ -3,8 +3,13 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.19.0] – 2021-07-06
+
 ### New
-- Added `get_address_type` function, which validates address and returns its type.
+- `get_address_type` function, which validates address and returns its type.
+- `decode_account_data` function in `abi` module converts account data BOC into JSON representation according to ABI 2.1. See documentation.
+
+### Fixed
+- Search of the first master blocks during the network start period was fixed in blocks and transactions iterators
 
 ## [1.18.0] – 2021-06-26
 

@@ -1,5 +1,5 @@
 {
-  "version": "1.18.0",
+  "version": "1.19.0",
   "modules": [
     {
       "name": "client",
@@ -4248,6 +4248,13 @@
               "value": "312",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "InvalidData",
+              "type": "Number",
+              "value": "313",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -4914,6 +4921,19 @@
               },
               "summary": null,
               "description": null
+            },
+            {
+              "name": "fields",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Array",
+                "array_item": {
+                  "type": "Ref",
+                  "ref_name": "abi.AbiParam"
+                }
+              },
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -5457,6 +5477,42 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfDecodeAccountData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "abi.Abi",
+              "summary": "Contract ABI",
+              "description": null
+            },
+            {
+              "name": "data",
+              "type": "String",
+              "summary": "Data BOC",
+              "description": "Must be encoded with base64"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfDecodeData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Decoded data as a JSON structure.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -5759,6 +5815,44 @@
               {
                 "type": "Ref",
                 "ref_name": "abi.ResultOfEncodeAccount"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "decode_account_data",
+          "summary": "Decodes account data using provided data BOC and ABI.",
+          "description": "Note: this feature requires ABI 2.1 or higher.",
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfDecodeAccountData",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "abi.ResultOfDecodeData"
               }
             ]
           },
