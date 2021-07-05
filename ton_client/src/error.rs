@@ -1,6 +1,7 @@
 use crate::client::core_version;
 use serde_json::Value;
 use std::fmt::Display;
+use chrono::TimeZone;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, ApiType)]
 pub struct ClientError {
@@ -135,4 +136,12 @@ impl ClientError {
         self.data["account_address"] = address.to_string().into();
         self
     }
+}
+
+pub(crate) fn format_time(time: u32) -> String {
+    format!(
+        "{} ({})",
+        chrono::Local.timestamp(time as i64, 0).to_rfc2822(),
+        time
+    )
 }

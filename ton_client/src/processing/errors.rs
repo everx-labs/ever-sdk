@@ -12,8 +12,7 @@
  *
  */
 
-use crate::error::ClientError;
-use chrono::TimeZone;
+use crate::error::{ClientError, format_time};
 use serde_json::Value;
 use ton_block::MsgAddressInt;
 
@@ -42,14 +41,6 @@ fn error(code: ErrorCode, message: String) -> ClientError {
 
 fn error_with_data(code: ErrorCode, message: String, data: Value) -> ClientError {
     ClientError::new(code as u32, message, data)
-}
-
-fn format_time(time: u32) -> String {
-    format!(
-        "{} ({})",
-        chrono::Local.timestamp(time as i64, 0).to_rfc2822(),
-        time
-    )
 }
 
 impl Error {
