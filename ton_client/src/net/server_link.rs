@@ -311,6 +311,46 @@ pub(crate) struct ServerLink {
     state: Arc<NetworkState>,
 }
 
+struct EndpointsReplacement<'a> {
+    url: &'a str,
+    aliases: &'a [String],
+}
+
+fn strip_endpoint(endpoint: &str) -> &str {
+    endpoint.trim_start_matches("https://").trim_start_matches("http://").trim_end_matches("/").trim_end_matches("\\")
+}
+
+fn replace_endpoints(mut endpoints: Vec<String>) -> Vec<String> {
+    let endpoints_replace = &[
+        EndpointsReplacement {
+            url: "main.ton.dev",
+            aliases: &["main2.ton.dev".to_owned(), "main3.ton.dev".to_owned(), "main4.ton.dev".to_owned()],
+        },
+        EndpointsReplacement {
+            url: "net.ton.dev",
+            aliases: &["net1.ton.dev".to_owned(), "net5.ton.dev".to_owned()],
+        },
+    ];
+
+    for entry in endpoints_replace {
+        let len = endpoints.len();
+        endpoints.retain(|endpoint| strip_endpoint(&endpoint) != entry.url);
+        if len != endpoints.len() {
+            endpoints.extend_from_slice(&entry.aliases);
+        }
+    }
+
+    let mut result: Vec<String> = vec![];
+
+    for endpoint in endpoints {
+        if !result.iter().any(|val| strip_endpoint(val) == strip_endpoint(&endpoint)) {
+            result.push(endpoint);
+        }
+    }
+
+    result
+}
+
 impl ServerLink {
     pub fn new(config: NetworkConfig, client_env: Arc<ClientEnv>) -> ClientResult<Self> {
         let endpoint_addresses = config
@@ -321,6 +361,7 @@ impl ServerLink {
         if endpoint_addresses.len() == 0 {
             return Err(crate::client::Error::net_module_not_init());
         }
+        let endpoint_addresses = replace_endpoints(endpoint_addresses);
 
         let state = Arc::new(NetworkState::new(
             client_env.clone(),
