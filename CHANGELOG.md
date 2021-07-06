@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.19.0] – 2021-07-06
 
 ### New
-- `get_address_type` function, which validates address and returns its type.
+- `get_address_type` function in `utils` module, which validates address and returns its type. See documentation.
 - `decode_account_data` function in `abi` module converts account data BOC into JSON representation according to ABI 2.1. See documentation.
 - Diagnostic fields `filter` and `timestamp` in `wait_for_collection` error
 
