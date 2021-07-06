@@ -34,6 +34,22 @@ pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
 pub const MAX_RESUME_TIMEOUT: u32 = 3000;
 
+struct EndpointsReplacement<'a> {
+    url: &'a str,
+    aliases: &'a [&'a str],
+}
+
+const ENDPOINTS_REPLACE: [EndpointsReplacement; 2] = [
+    EndpointsReplacement {
+        url: "main.ton.dev",
+        aliases: &["main2.ton.dev", "main3.ton.dev", "main4.ton.dev"],
+    },
+    EndpointsReplacement {
+        url: "net.ton.dev",
+        aliases: &["net1.ton.dev", "net5.ton.dev"],
+    },
+];
+
 pub(crate) struct Subscription {
     pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
     pub data_stream: Pin<Box<dyn Stream<Item = ClientResult<Value>> + Send>>,
@@ -311,32 +327,16 @@ pub(crate) struct ServerLink {
     state: Arc<NetworkState>,
 }
 
-struct EndpointsReplacement<'a> {
-    url: &'a str,
-    aliases: &'a [String],
-}
-
 fn strip_endpoint(endpoint: &str) -> &str {
     endpoint.trim_start_matches("https://").trim_start_matches("http://").trim_end_matches("/").trim_end_matches("\\")
 }
 
 fn replace_endpoints(mut endpoints: Vec<String>) -> Vec<String> {
-    let endpoints_replace = &[
-        EndpointsReplacement {
-            url: "main.ton.dev",
-            aliases: &["main2.ton.dev".to_owned(), "main3.ton.dev".to_owned(), "main4.ton.dev".to_owned()],
-        },
-        EndpointsReplacement {
-            url: "net.ton.dev",
-            aliases: &["net1.ton.dev".to_owned(), "net5.ton.dev".to_owned()],
-        },
-    ];
-
-    for entry in endpoints_replace {
+    for entry in &ENDPOINTS_REPLACE {
         let len = endpoints.len();
         endpoints.retain(|endpoint| strip_endpoint(&endpoint) != entry.url);
         if len != endpoints.len() {
-            endpoints.extend_from_slice(&entry.aliases);
+            endpoints.extend_from_slice(&entry.aliases.iter().map(|val| (*val).to_owned()).collect::<Vec<String>>());
         }
     }
 
