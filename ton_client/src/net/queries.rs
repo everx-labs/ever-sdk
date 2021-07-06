@@ -136,10 +136,11 @@ pub async fn wait_for_collection(
     params: ParamsOfWaitForCollection,
 ) -> ClientResult<ResultOfWaitForCollection> {
     let client = context.get_server_link()?;
+    let filter = params.filter.clone();
     let result = client
         .wait_for_collection(params, None)
         .await
-        .map_err(|err| Error::queries_wait_for_failed(err))
+        .map_err(|err| Error::queries_wait_for_failed(err, filter, (context.env.now_ms() / 1000) as u32))
         .add_network_url(client)
         .await?;
 
