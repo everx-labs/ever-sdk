@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### New
 - `get_address_type` function, which validates address and returns its type.
 - `decode_account_data` function in `abi` module converts account data BOC into JSON representation according to ABI 2.1. See documentation.
+- Diagnostic fields `filter` and `timestamp` in `wait_for_collection` error
 
 ### Fixed
 - Search of the first master blocks during the network start period was fixed in blocks and transactions iterators
