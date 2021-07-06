@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - `get_address_type` function in `utils` module, which validates address and returns its type. See documentation.
 - `decode_account_data` function in `abi` module converts account data BOC into JSON representation according to ABI 2.1. See documentation.
 - Diagnostic fields `filter` and `timestamp` in `wait_for_collection` error
+- Deprecated `main.ton.dev` and `net.ton.dev` endpoints are replaced with proper endpoints list
 
 ### Fixed
 - Search of the first master blocks during the network start period was fixed in blocks and transactions iterators
