@@ -6,7 +6,7 @@ Misc utility Functions.
 ## Functions
 [convert_address](#convert_address) – Converts address from any TON format to any TON format
 
-[get_address_type](#get_address_type) – Returns the type of any TON address
+[get_address_type](#get_address_type) – Validates and returns the type of any TON address.
 
 [calc_storage_fee](#calc_storage_fee) – Calculates storage fee for an account over a specified time period
 
@@ -16,6 +16,8 @@ Misc utility Functions.
 
 ## Types
 [AddressStringFormat](#AddressStringFormat)
+
+[AccountAddressType](#AccountAddressType)
 
 [ParamsOfConvertAddress](#ParamsOfConvertAddress)
 
@@ -69,7 +71,16 @@ function convert_address(
 
 ## get_address_type
 
-Returns the type of any TON address
+Validates and returns the type of any TON address.
+
+Address types are the following
+
+`0:919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - standart TON address most
+commonly used in all cases. Also called as hex addres
+`919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - account ID. A part of full
+address. Identifies account inside particular workchain
+`EQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H9wam` - base64 address. Also called "user-friendly".
+Was used at the beginning of TON. Now it is supported for compatibility
 
 ```ts
 type ParamsOfGetAddressType = {
@@ -90,7 +101,7 @@ function get_address_type(
 
 ### Result
 
-- `address_type`: _AccountAddressType_ – Account address type.
+- `address_type`: _[AccountAddressType](mod_utils.md#AccountAddressType)_ – Account address type.
 
 
 ## calc_storage_fee
@@ -217,6 +228,21 @@ function addressStringFormatHex(): AddressStringFormat;
 function addressStringFormatBase64(url: boolean, test: boolean, bounce: boolean): AddressStringFormat;
 ```
 
+## AccountAddressType
+```ts
+enum AccountAddressType {
+    AccountId = "AccountId",
+    Hex = "Hex",
+    Base64 = "Base64"
+}
+```
+One of the following value:
+
+- `AccountId = "AccountId"`
+- `Hex = "Hex"`
+- `Base64 = "Base64"`
+
+
 ## ParamsOfConvertAddress
 ```ts
 type ParamsOfConvertAddress = {
@@ -252,7 +278,7 @@ type ResultOfGetAddressType = {
     address_type: AccountAddressType
 }
 ```
-- `address_type`: _AccountAddressType_ – Account address type.
+- `address_type`: _[AccountAddressType](mod_utils.md#AccountAddressType)_ – Account address type.
 
 
 ## ParamsOfCalcStorageFee

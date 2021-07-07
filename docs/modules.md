@@ -167,7 +167,7 @@ Where:
 
 [convert_address](mod_utils.md#convert_address) – Converts address from any TON format to any TON format
 
-[get_address_type](mod_utils.md#get_address_type) – Returns the type of any TON address
+[get_address_type](mod_utils.md#get_address_type) – Validates and returns the type of any TON address.
 
 [calc_storage_fee](mod_utils.md#calc_storage_fee) – Calculates storage fee for an account over a specified time period
 

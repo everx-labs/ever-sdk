@@ -7469,6 +7469,32 @@
           "description": null
         },
         {
+          "name": "AccountAddressType",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "AccountId",
+              "type": "None",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Hex",
+              "type": "None",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Base64",
+              "type": "None",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfConvertAddress",
           "type": "Struct",
           "struct_fields": [
@@ -7524,7 +7550,7 @@
             {
               "name": "address_type",
               "type": "Ref",
-              "ref_name": "AccountAddressType",
+              "ref_name": "utils.AccountAddressType",
               "summary": "Account address type.",
               "description": null
             }
@@ -7677,8 +7703,8 @@
         },
         {
           "name": "get_address_type",
-          "summary": "Returns the type of any TON address",
-          "description": null,
+          "summary": "Validates and returns the type of any TON address.",
+          "description": "Address types are the following\n\n`0:919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - standart TON address most\ncommonly used in all cases. Also called as hex addres\n`919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - account ID. A part of full\naddress. Identifies account inside particular workchain\n`EQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H9wam` - base64 address. Also called \"user-friendly\".\nWas used at the beginning of TON. Now it is supported for compatibility",
           "params": [
             {
               "name": "_context",

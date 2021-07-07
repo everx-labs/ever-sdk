@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.19.0] – 2021-07-06
+## [1.19.0] – 2021-07-07
 
 ### New
 - `get_address_type` function in `utils` module, which validates address and returns its type. See the documentation.
