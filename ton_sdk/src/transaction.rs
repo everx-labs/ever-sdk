@@ -152,7 +152,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
         })?;
 
         Ok(Transaction {
-            id: Cell::from(transaction.write_to_new_cell()?)
+            id: Cell::from(transaction.serialize()?)
                 .repr_hash()
                 .to_hex_string()
                 .into(),
