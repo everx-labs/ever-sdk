@@ -16,7 +16,7 @@ use std::convert::TryFrom;
 use std::fmt::Display;
 use std::sync::Arc;
 use ton_block::{Message, MsgAddressExt};
-use ton_types::{BuilderData, Cell, IBitstring, SliceData};
+use ton_types::{BuilderData, IBitstring, SliceData};
 use crate::net::{query_transaction_tree, ParamsOfQueryTransactionTree};
 
 const SUPPORTED_ABI_VERSION: u8 = 2;
@@ -265,7 +265,7 @@ impl ContractCall {
                 // answer message not found, build empty answer.
                 let mut new_body = BuilderData::new();
                 new_body.append_u32(self.meta.answer_id).map_err(msg_err)?;
-                build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into())
+                build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into_cell().map_err(msg_err)?.into())
             }
             Err(e) => {
                 debug!("Transaction failed: {:?}", e);
@@ -335,7 +335,7 @@ impl ContractCall {
         let mut signed_body = BuilderData::new();
         match self.signer {
             Signer::SigningBox { handle: _ } => {
-                let hash = Cell::from(&new_body).repr_hash().as_slice().to_vec();
+                let hash = new_body.clone().into_cell().map_err(msg_err)?.repr_hash().as_slice().to_vec();
                 let signature = self.signer.sign(self.ton.clone(), &hash).await?;
                 if let Some(signature) = signature {
                     signed_body
@@ -352,7 +352,7 @@ impl ContractCall {
         }
         signed_body.append_builder(&new_body).map_err(msg_err)?;
     
-        message.set_body(signed_body.into());
+        message.set_body(signed_body.into_cell().map_err(msg_err)?.into());
         let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
         Ok((func_id, msg))
     }
@@ -374,7 +374,7 @@ fn build_onerror_body(onerror_id: u32, e: ClientError) -> ClientResult<SliceData
         .and_then(|val| val.as_i64())
         .unwrap_or(0);
     new_body.append_u32(error_code as u32).map_err(msg_err)?;
-    Ok(new_body.into())
+    Ok(new_body.into_cell().map_err(msg_err)?.into())
 }
 
 fn build_answer_msg(
@@ -402,7 +402,7 @@ fn build_answer_msg(
             .ok()?;
     }
 
-    build_internal_message(dest_addr, debot_addr, new_body.into()).ok()
+    build_internal_message(dest_addr, debot_addr, new_body.into_cell().ok()?.into()).ok()
 }
 
 async fn resolve_signer(

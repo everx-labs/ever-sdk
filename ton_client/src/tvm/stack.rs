@@ -133,12 +133,13 @@ fn process_item(item: &StackItem) -> ClientResult<ProcessingResult> {
         StackItem::Tuple(items) => ProcessingResult::Nested(Box::new(items.iter())),
         StackItem::Builder(value) => ProcessingResult::Serialized(json!(
             ComplexType::Builder(
-                serialize_cell_to_base64(&value.deref().into(), "stack item `Builder`")?
+                serialize_cell_to_base64(&value.deref().clone().into_cell().map_err(|err| Error::unknown_execution_error(
+                    format!("Can not parse object: {}", err)))?, "stack item `Builder`")?
             )
         )),
         StackItem::Slice(value) => ProcessingResult::Serialized(json!(
             ComplexType::Slice(
-                serialize_cell_to_base64(&value.into_cell(), "stack item `Slice`")?
+                serialize_cell_to_base64(&value.clone().into_cell(), "stack item `Slice`")?
             )
         )),
         StackItem::Cell(value) => ProcessingResult::Serialized(json!(
@@ -148,7 +149,7 @@ fn process_item(item: &StackItem) -> ClientResult<ProcessingResult> {
         )),
         StackItem::Continuation(value) => ProcessingResult::Serialized(json!(
             ComplexType::Continuation(
-                serialize_cell_to_base64(&value.code().into_cell(), "stack item `Continuation`")?
+                serialize_cell_to_base64(&value.code().clone().into_cell(), "stack item `Continuation`")?
             )
         )),
     })
