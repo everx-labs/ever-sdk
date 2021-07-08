@@ -175,7 +175,7 @@ pub fn deserialize_item(value: &Value) -> ClientResult<StackItem> {
             match object {
                 ComplexType::Builder(string) => {
                     let cell = deserialize_cell_from_base64(&string, "Builder")?.1;
-                    StackItem::builder(BuilderData::from(&cell))
+                    StackItem::builder(BuilderData::from(cell))
                 }
                 ComplexType::Cell(string) => {
                     let cell = deserialize_cell_from_base64(&string, "Cell")?.1;
