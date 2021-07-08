@@ -11,10 +11,14 @@
 * limitations under the License.
 */
 
+use crate::client;
 use crate::client::ClientContext;
-use crate::encoding::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams};
+use crate::encoding::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams, decode_std_base64};
 use crate::error::ClientResult;
 use std::sync::Arc;
+use ton_block::MsgAddressInt;
+
+use std::str::FromStr;
 
 #[derive(Serialize, Deserialize, Debug, ApiType, Clone)]
 #[serde(tag = "type")]
@@ -62,6 +66,49 @@ pub fn convert_address(
     Ok(ResultOfConvertAddress {
         address: account_encode_ex(&address, addr_type, base64_params)?,
     })
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default, Debug)]
+pub struct ParamsOfGetAddressType {
+    /// Account address in any TON format.
+    pub address: String,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Debug)]
+pub struct ResultOfGetAddressType {
+    /// Account address type.
+    pub address_type: AccountAddressType,
+}
+
+lazy_static! {
+    static ref ACCOUNT_ID_REGEX: regex::Regex = regex::Regex::new(r#"^[0-9a-fA-F]{64}$"#).unwrap();
+}
+
+/// Validates and returns the type of any TON address.
+/// 
+/// Address types are the following
+/// 
+/// `0:919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - standart TON address most 
+/// commonly used in all cases. Also called as hex addres
+/// `919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - account ID. A part of full 
+/// address. Identifies account inside particular workchain
+/// `EQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H9wam` - base64 address. Also called "user-friendly". 
+/// Was used at the beginning of TON. Now it is supported for compatibility
+#[api_function]
+pub fn get_address_type(
+    _context: Arc<ClientContext>,
+    params: ParamsOfGetAddressType,
+) -> ClientResult<ResultOfGetAddressType> {
+    match MsgAddressInt::from_str(&params.address) {
+        Ok(_address) => Ok(if ACCOUNT_ID_REGEX.is_match(&params.address) {
+            AccountAddressType::AccountId
+        } else {
+            AccountAddressType::Hex
+        }),
+        Err(_err) if params.address.len() == 48 => decode_std_base64(&params.address)
+            .map(|_addr| AccountAddressType::Base64),
+        Err(err) => Err(client::Error::invalid_address(err, &params.address)),
+    }.map(|address_type| ResultOfGetAddressType { address_type })
 }
 
 #[cfg(test)]

@@ -20,6 +20,8 @@ Provides message encoding and decoding according to the ABI specification.
 
 [encode_account](#encode_account) – Creates account state BOC
 
+[decode_account_data](#decode_account_data) – Decodes account data using provided data BOC and ABI.
+
 ## Types
 [AbiErrorCode](#AbiErrorCode)
 
@@ -82,6 +84,10 @@ Provides message encoding and decoding according to the ABI specification.
 [ParamsOfEncodeAccount](#ParamsOfEncodeAccount)
 
 [ResultOfEncodeAccount](#ResultOfEncodeAccount)
+
+[ParamsOfDecodeAccountData](#ParamsOfDecodeAccountData)
+
+[ResultOfDecodeData](#ResultOfDecodeData)
 
 
 # Functions
@@ -445,6 +451,37 @@ function encode_account(
 - `id`: _string_ – Account ID  encoded in `hex`.
 
 
+## decode_account_data
+
+Decodes account data using provided data BOC and ABI.
+
+Note: this feature requires ABI 2.1 or higher.
+
+```ts
+type ParamsOfDecodeAccountData = {
+    abi: Abi,
+    data: string
+}
+
+type ResultOfDecodeData = {
+    data: any
+}
+
+function decode_account_data(
+    params: ParamsOfDecodeAccountData,
+): Promise<ResultOfDecodeData>;
+```
+### Parameters
+- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `data`: _string_ – Data BOC
+<br>Must be encoded with base64
+
+
+### Result
+
+- `data`: _any_ – Decoded data as a JSON structure.
+
+
 # Types
 ## AbiErrorCode
 ```ts
@@ -460,7 +497,8 @@ enum AbiErrorCode {
     RequiredPublicKeyMissingForFunctionHeader = 309,
     InvalidSigner = 310,
     InvalidAbi = 311,
-    InvalidFunctionId = 312
+    InvalidFunctionId = 312,
+    InvalidData = 313
 }
 ```
 One of the following value:
@@ -477,6 +515,7 @@ One of the following value:
 - `InvalidSigner = 310`
 - `InvalidAbi = 311`
 - `InvalidFunctionId = 312`
+- `InvalidData = 313`
 
 
 ## Abi
@@ -832,7 +871,8 @@ type AbiContract = {
     header?: string[],
     functions?: AbiFunction[],
     events?: AbiEvent[],
-    data?: AbiData[]
+    data?: AbiData[],
+    fields?: AbiParam[]
 }
 ```
 - `ABI version`?: _number_
@@ -841,6 +881,7 @@ type AbiContract = {
 - `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
 - `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
 - `data`?: _[AbiData](mod_abi.md#AbiData)[]_
+- `fields`?: _[AbiParam](mod_abi.md#AbiParam)[]_
 
 
 ## ParamsOfEncodeMessageBody
@@ -1074,5 +1115,26 @@ type ResultOfEncodeAccount = {
 ```
 - `account`: _string_ – Account BOC encoded in `base64`.
 - `id`: _string_ – Account ID  encoded in `hex`.
+
+
+## ParamsOfDecodeAccountData
+```ts
+type ParamsOfDecodeAccountData = {
+    abi: Abi,
+    data: string
+}
+```
+- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `data`: _string_ – Data BOC
+<br>Must be encoded with base64
+
+
+## ResultOfDecodeData
+```ts
+type ResultOfDecodeData = {
+    data: any
+}
+```
+- `data`: _any_ – Decoded data as a JSON structure.
 
 

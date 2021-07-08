@@ -1,26 +1,31 @@
-use crate::{abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage}, boc::ResultOfParse};
 use crate::abi::encode_message::{
-    CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeMessage, ResultOfAttachSignature,
-    ResultOfEncodeMessage, ParamsOfEncodeInternalMessage, ResultOfEncodeInternalMessage
+    CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeInternalMessage,
+    ParamsOfEncodeMessage, ResultOfAttachSignature, ResultOfEncodeInternalMessage,
+    ResultOfEncodeMessage,
 };
-use crate::abi::internal::{is_empty_pubkey, resolve_pubkey, create_tvc_image};
+use crate::abi::internal::{create_tvc_image, is_empty_pubkey, resolve_pubkey};
 use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
 use crate::boc::internal::{get_boc_hash, serialize_object_to_base64};
-use crate::boc::{ParamsOfParse, ResultOfGetCodeFromTvc, ParamsOfGetCodeFromTvc};
+use crate::boc::{ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfGetCodeFromTvc};
 use crate::crypto::KeyPair;
 use crate::encoding::account_decode;
 use crate::error::ClientError;
 use crate::tests::{TestClient, EVENTS, HELLO};
 use crate::utils::conversion::abi_uint;
+use crate::{
+    abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage},
+    boc::ResultOfParse,
+    ClientContext,
+};
 
 use std::io::Cursor;
 use ton_abi::Contract;
-use ton_block::{Message, InternalMessageHeader, CurrencyCollection, Deserializable, Serializable};
+use ton_block::{CurrencyCollection, Deserializable, InternalMessageHeader, Message, Serializable};
 use ton_sdk::ContractImage;
 use ton_types::Result;
 
-
 use super::*;
+use std::sync::Arc;
 
 #[test]
 fn encode_v2() {
@@ -35,10 +40,9 @@ fn encode_v2() {
     let time: u64 = 1599458364291;
     let expire: u32 = 1599458404;
 
-    let signing_box: crate::crypto::boxes::RegisteredSigningBox = client.request(
-        "crypto.get_signing_box",
-        keys.clone()
-    ).unwrap();
+    let signing_box: crate::crypto::boxes::RegisteredSigningBox = client
+        .request("crypto.get_signing_box", keys.clone())
+        .unwrap();
 
     let msg: ParamsOfEncodeMessage = serde_json::from_str(
         r#"{
@@ -118,7 +122,9 @@ fn encode_v2() {
     let signed_with_box: ResultOfEncodeMessage = client
         .request(
             "abi.encode_message",
-            deploy_params(Signer::SigningBox { handle: signing_box.handle.clone() }),
+            deploy_params(Signer::SigningBox {
+                handle: signing_box.handle.clone(),
+            }),
         )
         .unwrap();
     assert_eq!(signed_with_box.message, "te6ccgECGAEAA6wAA0eIAAt9aqvShfTon7Lei1PVOhUEkEEZQkhDKPgNyzeTL6YSEbAHAgEA4bE5Gr3mWwDtlcEOWHr6slWoyQlpIWeYyw/00eKFGFkbAJMMFLWnu0mq4HSrPmktmzeeAboa4kxkFymCsRVt44dTHxAj/Hd67jWQF7peccWoU/dbMCBJBB6YdPCVZcJlJkAAAF0ZyXLg19VzGRotV8/gAQHAAwIDzyAGBAEB3gUAA9AgAEHaY+IEf47vXcayAvdLzji1Cn7rZgQJIIPTDp4SrLhMpMwCJv8A9KQgIsABkvSg4YrtU1gw9KEKCAEK9KQg9KEJAAACASANCwHI/38h7UTQINdJwgGOENP/0z/TANF/+GH4Zvhj+GKOGPQFcAGAQPQO8r3XC//4YnD4Y3D4Zn/4YeLTAAGOHYECANcYIPkBAdMAAZTT/wMBkwL4QuIg+GX5EPKoldMAAfJ64tM/AQwAao4e+EMhuSCfMCD4I4ED6KiCCBt3QKC53pL4Y+CANPI02NMfAfgjvPK50x8B8AH4R26S8jzeAgEgEw4CASAQDwC9uotV8/+EFujjXtRNAg10nCAY4Q0//TP9MA0X/4Yfhm+GP4Yo4Y9AVwAYBA9A7yvdcL//hicPhjcPhmf/hh4t74RvJzcfhm0fgA+ELIy//4Q88LP/hGzwsAye1Uf/hngCASASEQDluIAGtb8ILdHCfaiaGn/6Z/pgGi//DD8M3wx/DFvfSDK6mjofSBv6PwikDdJGDhvfCFdeXAyfABkZP2CEGRnwoRnRoIEB9AAAAAAAAAAAAAAAAAAIGeLZMCAQH2AGHwhZGX//CHnhZ/8I2eFgGT2qj/8M8ADFuZPCot8ILdHCfaiaGn/6Z/pgGi//DD8M3wx/DFva4b/yupo6Gn/7+j8AGRF7gAAAAAAAAAAAAAAAAhni2fA58jjyxi9EOeF/+S4/YAYfCFkZf/8IeeFn/wjZ4WAZPaqP/wzwAgFIFxQBCbi3xYJQFQH8+EFujhPtRNDT/9M/0wDRf/hh+Gb4Y/hi3tcN/5XU0dDT/9/R+ADIi9wAAAAAAAAAAAAAAAAQzxbPgc+Rx5YxeiHPC//JcfsAyIvcAAAAAAAAAAAAAAAAEM8Wz4HPklb4sEohzwv/yXH7ADD4QsjL//hDzws/+EbPCwDJ7VR/FgAE+GcActxwItDWAjHSADDcIccAkvI74CHXDR+S8jzhUxGS8jvhwQQighD////9vLGS8jzgAfAB+EdukvI83g==");
@@ -144,21 +150,20 @@ fn encode_v2() {
         signer: signing,
         processing_try_index: None,
     };
-    let body_params = |run_params: ParamsOfEncodeMessage| {
-        ParamsOfEncodeMessageBody {
-            abi: run_params.abi,
-            call_set: run_params.call_set.unwrap(),
-            is_internal: false,
-            processing_try_index: run_params.processing_try_index,
-            signer: run_params.signer,
-        }
+    let body_params = |run_params: ParamsOfEncodeMessage| ParamsOfEncodeMessageBody {
+        abi: run_params.abi,
+        call_set: run_params.call_set.unwrap(),
+        is_internal: false,
+        processing_try_index: run_params.processing_try_index,
+        signer: run_params.signer,
     };
     let extract_body = |message| {
-        let unsigned_parsed: crate::boc::ResultOfParse = client.request(
-            "boc.parse_message",
-            crate::boc::ParamsOfParse {
-                boc: message
-            }).unwrap();
+        let unsigned_parsed: crate::boc::ResultOfParse = client
+            .request(
+                "boc.parse_message",
+                crate::boc::ParamsOfParse { boc: message },
+            )
+            .unwrap();
         unsigned_parsed.parsed["body"].as_str().unwrap().to_owned()
     };
 
@@ -243,7 +248,9 @@ fn encode_v2() {
     let signed: ResultOfEncodeMessage = client
         .request(
             "abi.encode_message",
-            run_params(Signer::SigningBox { handle: signing_box.handle.clone() }),
+            run_params(Signer::SigningBox {
+                handle: signing_box.handle.clone(),
+            }),
         )
         .unwrap();
     assert_eq!(signed.message, signed_message);
@@ -251,7 +258,9 @@ fn encode_v2() {
     let signed: ResultOfEncodeMessageBody = client
         .request(
             "abi.encode_message_body",
-            body_params(run_params(Signer::SigningBox { handle: signing_box.handle.clone() })),
+            body_params(run_params(Signer::SigningBox {
+                handle: signing_box.handle.clone(),
+            })),
         )
         .unwrap();
     assert_eq!(signed.body, signed_body);
@@ -262,7 +271,10 @@ fn encode_v2() {
     assert_eq!(no_pubkey.message, "te6ccgEBAQEAVQAApYgAC31qq9KF9Oifst6LU9U6FQSQQRlCSEMo+A3LN5MvphIAAAAC6M5Llwa+q5jIK3xYJAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAB");
 
     let no_pubkey_body: ResultOfEncodeMessageBody = client
-        .request("abi.encode_message_body", body_params(run_params(Signer::None)))
+        .request(
+            "abi.encode_message_body",
+            body_params(run_params(Signer::None)),
+        )
         .unwrap();
     assert_eq!(no_pubkey_body.body, extract_body(no_pubkey.message));
 }
@@ -283,11 +295,14 @@ fn decode_v2() {
                 },
             )
             .unwrap();
-        let parsed: crate::boc::ResultOfParse = client.request(
+        let parsed: crate::boc::ResultOfParse = client
+            .request(
                 "boc.parse_message",
                 crate::boc::ParamsOfParse {
-                    boc: message.into()
-                }).unwrap();
+                    boc: message.into(),
+                },
+            )
+            .unwrap();
         let body = parsed.parsed["body"].as_str().unwrap().to_owned();
         let result_body: DecodedMessageBody = client
             .request(
@@ -382,9 +397,10 @@ async fn test_resolve_pubkey() -> Result<()> {
         ..Default::default()
     };
     let mut image = create_tvc_image(&context, "", None, &tvc).await?;
-    assert!(resolve_pubkey(&deploy_set, &image, &None )?.is_none());
+    assert!(resolve_pubkey(&deploy_set, &image, &None)?.is_none());
 
-    let external_pub_key = Some("1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_owned());
+    let external_pub_key =
+        Some("1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_owned());
     let resolved = resolve_pubkey(&deploy_set, &image, &external_pub_key)?;
     assert_eq!(resolved, external_pub_key);
 
@@ -406,7 +422,8 @@ async fn test_resolve_pubkey() -> Result<()> {
 
     assert_eq!(resolved, Some(hex::encode(tvc_pubkey_1.as_bytes())));
 
-    let initial_pub_key = Some("1234567890123456789012345678901234567890123456789012345678901234".to_owned());
+    let initial_pub_key =
+        Some("1234567890123456789012345678901234567890123456789012345678901234".to_owned());
     deploy_set.initial_pubkey = initial_pub_key.clone();
 
     let resolved = resolve_pubkey(&deploy_set, &image, &external_pub_key)?;
@@ -433,7 +450,8 @@ async fn test_encode_message_pubkey() -> Result<()> {
         &None,
         &signer_pubkey,
         &signer_pubkey,
-    ).await?;
+    )
+    .await?;
 
     test_encode_message_pubkey_internal(
         &client,
@@ -443,7 +461,8 @@ async fn test_encode_message_pubkey() -> Result<()> {
         &tvc_pubkey,
         &signer_pubkey,
         &tvc_pubkey,
-    ).await?;
+    )
+    .await?;
 
     test_encode_message_pubkey_internal(
         &client,
@@ -453,7 +472,8 @@ async fn test_encode_message_pubkey() -> Result<()> {
         &None,
         &signer_pubkey,
         &initial_pubkey,
-    ).await?;
+    )
+    .await?;
 
     test_encode_message_pubkey_internal(
         &client,
@@ -463,7 +483,8 @@ async fn test_encode_message_pubkey() -> Result<()> {
         &tvc_pubkey,
         &signer_pubkey,
         &initial_pubkey,
-    ).await?;
+    )
+    .await?;
 
     // Expected error, if signer's public key is not provided:
     let error = test_encode_message_pubkey_internal(
@@ -475,9 +496,9 @@ async fn test_encode_message_pubkey() -> Result<()> {
         &None,
         &None,
     )
-        .await
-        .unwrap_err()
-        .downcast::<ClientError>()?;
+    .await
+    .unwrap_err()
+    .downcast::<ClientError>()?;
 
     assert_eq!(error.code, 305);
 
@@ -511,7 +532,7 @@ async fn test_encode_message_pubkey_internal(
         }),
         signer: if let Some(key) = signer_pubkey {
             Signer::External {
-                public_key: hex::encode(key.as_bytes())
+                public_key: hex::encode(key.as_bytes()),
             }
         } else {
             Signer::None
@@ -521,10 +542,13 @@ async fn test_encode_message_pubkey_internal(
         call_set: CallSet::some_with_function("constructor"),
     };
 
-    let result: ResultOfEncodeMessage = client.request_async("abi.encode_message", deploy_params).await?;
+    let result: ResultOfEncodeMessage = client
+        .request_async("abi.encode_message", deploy_params)
+        .await?;
 
     let message = Message::construct_from_base64(&result.message)?;
-    let state_init = message.state_init()
+    let state_init = message
+        .state_init()
         .expect("Expected State Init")
         .write_to_bytes()?;
     let image = ContractImage::from_state_init(&mut Cursor::new(state_init))?;
@@ -547,7 +571,8 @@ async fn test_encode_internal_message() -> Result<()> {
     let func_id = contract.function("sayHello").unwrap().get_input_id();
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let image = create_tvc_image(&context, &abi.json_string()?, None, &tvc).await?;
-    let address = String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+    let address =
+        String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
 
     test_encode_internal_message_deploy(
         &client,
@@ -621,7 +646,8 @@ async fn test_encode_internal_message() -> Result<()> {
         None,
         Some(address.clone()),
         Some(expected_boc),
-    ).await?;
+    )
+    .await?;
 
     test_encode_internal_message_run(
         &client,
@@ -634,7 +660,8 @@ async fn test_encode_internal_message() -> Result<()> {
         None,
         Some(address.clone()),
         Some(expected_boc),
-    ).await?;
+    )
+    .await?;
 
     test_encode_internal_message_run(
         &client,
@@ -647,14 +674,17 @@ async fn test_encode_internal_message() -> Result<()> {
         None,
         Some(address.clone()),
         Some(expected_boc),
-    ).await
+    )
+    .await
 }
 
 #[tokio::test(core_threads = 2)]
 async fn test_encode_internal_message_empty_body() -> Result<()> {
     let client = TestClient::new();
-    let dst_address = String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
-    let src_address = String::from("0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94");
+    let dst_address =
+        String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
+    let src_address =
+        String::from("0:841288ed3b55d9cdafa806807f02a0ae0c169aa5edfe88a789a6482429756a94");
 
     let mut msg_header = InternalMessageHeader::default();
     msg_header.ihr_disabled = true;
@@ -672,7 +702,8 @@ async fn test_encode_internal_message_empty_body() -> Result<()> {
         None,
         Some(dst_address.clone()),
         Some(&expected_boc),
-    ).await?;
+    )
+    .await?;
 
     msg_header.set_src(account_decode(&src_address)?);
     let msg = Message::with_int_header(msg_header.clone());
@@ -685,7 +716,8 @@ async fn test_encode_internal_message_empty_body() -> Result<()> {
         Some(src_address.clone()),
         Some(dst_address.clone()),
         Some(&expected_boc),
-    ).await
+    )
+    .await
 }
 
 async fn test_encode_internal_message_run(
@@ -696,45 +728,54 @@ async fn test_encode_internal_message_run(
     dst: Option<String>,
     expected_boc: Option<&str>,
 ) -> Result<()> {
-    let result: ResultOfEncodeInternalMessage = client.request_async(
-        "abi.encode_internal_message",
-        ParamsOfEncodeInternalMessage {
-            abi: abi.map(|x| x.clone()),
-            src_address: src.clone(),
-            address: dst.clone(),
-            deploy_set: None,
-            call_set,
-            value: "1000000000".to_string(),
-            bounce: Some(true),
-            enable_ihr: None
-        },
-    ).await?;
+    let result: ResultOfEncodeInternalMessage = client
+        .request_async(
+            "abi.encode_internal_message",
+            ParamsOfEncodeInternalMessage {
+                abi: abi.map(|x| x.clone()),
+                src_address: src.clone(),
+                address: dst.clone(),
+                deploy_set: None,
+                call_set,
+                value: "1000000000".to_string(),
+                bounce: Some(true),
+                enable_ihr: None,
+            },
+        )
+        .await?;
 
     if dst.is_some() {
         assert_eq!(&result.address, dst.as_ref().unwrap());
     }
-    assert_eq!(result.message_id, get_boc_hash(&base64::decode(&result.message)?)?);
+    assert_eq!(
+        result.message_id,
+        get_boc_hash(&base64::decode(&result.message)?)?
+    );
     if let Some(expected_boc) = expected_boc {
         assert_eq!(&result.message, expected_boc);
     }
 
-    let parsed: ResultOfParse = client.request_async(
-        "boc.parse_message",
-        ParamsOfParse {
-            boc: result.message
-        }
-    ).await?;
+    let parsed: ResultOfParse = client
+        .request_async(
+            "boc.parse_message",
+            ParamsOfParse {
+                boc: result.message,
+            },
+        )
+        .await?;
 
     assert_eq!(parsed.parsed["msg_type_name"], "internal");
     assert_eq!(parsed.parsed["src"], src.unwrap_or("".to_owned()).as_str());
-    assert_eq!(parsed.parsed["dst"], dst.unwrap_or(result.address.to_owned()).as_str());
+    assert_eq!(
+        parsed.parsed["dst"],
+        dst.unwrap_or(result.address.to_owned()).as_str()
+    );
     assert_eq!(parsed.parsed["value"], "0x3b9aca00");
     assert_eq!(parsed.parsed["bounce"], true);
     assert_eq!(parsed.parsed["ihr_disabled"], true);
 
     Ok(())
 }
-
 
 async fn test_encode_internal_message_deploy(
     client: &TestClient,
@@ -744,44 +785,51 @@ async fn test_encode_internal_message_deploy(
     call_set: Option<CallSet>,
     expected_boc: Option<&str>,
 ) -> Result<()> {
-    let result: ResultOfEncodeInternalMessage = client.request_async(
-        "abi.encode_internal_message",
-        ParamsOfEncodeInternalMessage {
-            abi: Some(abi.clone()),
-            src_address: None,
-            address: None,
-            deploy_set: Some(DeploySet {
-                tvc: tvc.clone(),
-                workchain_id: None,
-                initial_data: None,
-                initial_pubkey: None,
-            }),
-            call_set,
-            value: "0".to_string(),
-            bounce: None,
-            enable_ihr: None
-        },
-    ).await?;
+    let result: ResultOfEncodeInternalMessage = client
+        .request_async(
+            "abi.encode_internal_message",
+            ParamsOfEncodeInternalMessage {
+                abi: Some(abi.clone()),
+                src_address: None,
+                address: None,
+                deploy_set: Some(DeploySet {
+                    tvc: tvc.clone(),
+                    workchain_id: None,
+                    initial_data: None,
+                    initial_pubkey: None,
+                }),
+                call_set,
+                value: "0".to_string(),
+                bounce: None,
+                enable_ihr: None,
+            },
+        )
+        .await?;
 
     assert_eq!(result.address, image.msg_address(0).to_string());
-    assert_eq!(result.message_id, get_boc_hash(&base64::decode(&result.message)?)?);
+    assert_eq!(
+        result.message_id,
+        get_boc_hash(&base64::decode(&result.message)?)?
+    );
     if let Some(expected_boc) = expected_boc {
         assert_eq!(&result.message, expected_boc);
     }
 
-    let parsed: ResultOfParse = client.request_async(
-        "boc.parse_message",
-        ParamsOfParse {
-            boc: result.message
-        }
-    ).await?;
+    let parsed: ResultOfParse = client
+        .request_async(
+            "boc.parse_message",
+            ParamsOfParse {
+                boc: result.message,
+            },
+        )
+        .await?;
 
-    let code_from_tvc: ResultOfGetCodeFromTvc = client.request_async(
-        "boc.get_code_from_tvc",
-        ParamsOfGetCodeFromTvc {
-            tvc: tvc.clone(),
-        }
-    ).await?;
+    let code_from_tvc: ResultOfGetCodeFromTvc = client
+        .request_async(
+            "boc.get_code_from_tvc",
+            ParamsOfGetCodeFromTvc { tvc: tvc.clone() },
+        )
+        .await?;
 
     assert_eq!(parsed.parsed["code"], code_from_tvc.code);
 
@@ -817,8 +865,103 @@ fn test_tips() {
     ).expect_err("Error expected");
 
     assert!(
-        err.message.contains("Tip: Please check that you specified message's body, not full BOC."),
+        err.message
+            .contains("Tip: Please check that you specified message's body, not full BOC."),
         "{}",
         err.message
+    );
+}
+
+const DEPOOL_DATA: &str = "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";
+
+#[tokio::test]
+async fn decode_depool_data() {
+    let abi = Abi::Json(
+        json!({
+            "ABI version": 2,
+            "header": ["time", "expire"],
+            "fields": [
+                { "name": "m_validatorWallet", "type": "address" },
+                { "name": "m_proxies", "type": "address[]" },
+                { "name": "m_participants", "type": "map(address,tuple)", "components": [
+                    { "name": "roundQty", "type": "uint8" },
+                    { "name": "reward", "type": "uint64" },
+                    { "name": "vestingParts", "type": "uint8" },
+                    { "name": "lockParts", "type": "uint8" },
+                    { "name": "reinvest", "type": "bool" },
+                    { "name": "withdrawValue", "type": "uint64" },
+                    { "name": "vestingDonor", "type": "address" },
+                    { "name": "lockDonor", "type": "address" },
+                ] },
+            ]
+        })
+        .to_string(),
+    );
+    let context = Arc::new(ClientContext::new(Default::default()).unwrap());
+    let decoded = decode_account_data(
+        context,
+        ParamsOfDecodeAccountData {
+            data: DEPOOL_DATA.to_string(),
+            abi,
+        },
+    )
+    .await
+    .unwrap()
+    .data;
+
+    assert_eq!(
+        decoded,
+        json!({
+          "pubkey": "0xf33e06c497a6d9b7adf237b6dd17752738cd00372019c83e2168120e2d863174",
+          "time": "1612210661999",
+          "someFlag": true,
+          "m_validatorWallet": "0:27da7884e032ede0f7d5758bb58bcab9942dfb6c1b764a38bb6377a47a0822de",
+          "m_proxies": [
+            "-1:ca9eb496d0a0857811a320c2ce567bde893964aa7e70069b0ffbafa6a0483a21",
+            "-1:0c4af2d629cbf29de1d8f9e2e4a86aec2e8c8f9f13d7847f17ecdf3846d243be"
+          ],
+          "m_participants": {
+            "0:12ef7a258af50c75712839c2b930d8d759642a9ca87d359d7cd9a34968dcc8ae": {
+              "roundQty": "1",
+              "reward": "630629900074",
+              "vestingParts": "0",
+              "lockParts": "0",
+              "reinvest": true,
+              "withdrawValue": "0",
+              "vestingDonor": "0:0000000000000000000000000000000000000000000000000000000000000000",
+              "lockDonor": "0:0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "0:0005e3c1f00e627930dfba997449015f834582a5b9a11eb9433cdb6af16498d8": {
+              "roundQty": "2",
+              "reward": "3106852502805",
+              "vestingParts": "0",
+              "lockParts": "0",
+              "reinvest": true,
+              "withdrawValue": "0",
+              "vestingDonor": "0:0000000000000000000000000000000000000000000000000000000000000000",
+              "lockDonor": "0:0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "0:27da7884e032ede0f7d5758bb58bcab9942dfb6c1b764a38bb6377a47a0822de": {
+              "roundQty": "2",
+              "reward": "21704779866320",
+              "vestingParts": "2",
+              "lockParts": "2",
+              "reinvest": true,
+              "withdrawValue": "0",
+              "vestingDonor": "0:e17ac4e77f46626579c7c4fefe35286117384c5ccfc8745c9780cdf056c378bf",
+              "lockDonor": "0:e17ac4e77f46626579c7c4fefe35286117384c5ccfc8745c9780cdf056c378bf"
+            },
+            "-1:f6967e2ce65843a5cc450362b898e87a0fab3925bdc507195fa5003465cd62af": {
+              "roundQty": "2",
+              "reward": "6188183108212",
+              "vestingParts": "0",
+              "lockParts": "0",
+              "reinvest": true,
+              "withdrawValue": "0",
+              "vestingDonor": "0:0000000000000000000000000000000000000000000000000000000000000000",
+              "lockDonor": "0:0000000000000000000000000000000000000000000000000000000000000000"
+            }
+          }
+        })
     );
 }

@@ -127,6 +127,8 @@ Where:
 
 [encode_account](mod_abi.md#encode_account) – Creates account state BOC
 
+[decode_account_data](mod_abi.md#decode_account_data) – Decodes account data using provided data BOC and ABI.
+
 ## [boc](mod_boc.md) – BOC manipulation module.
 
 [parse_message](mod_boc.md#parse_message) – Parses message boc into a JSON
@@ -164,6 +166,8 @@ Where:
 ## [utils](mod_utils.md) – Misc utility Functions.
 
 [convert_address](mod_utils.md#convert_address) – Converts address from any TON format to any TON format
+
+[get_address_type](mod_utils.md#get_address_type) – Validates and returns the type of any TON address.
 
 [calc_storage_fee](mod_utils.md#calc_storage_fee) – Calculates storage fee for an account over a specified time period
 

@@ -303,6 +303,10 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::encode_account,
         crate::abi::encode_account::encode_account_api,
     );
+    module.register_async_fn(
+        crate::abi::decode_account_data,
+        crate::abi::decode_data::decode_account_data_api,
+    );
     module.register();
 }
 
@@ -492,9 +496,14 @@ pub struct UtilsModule;
 fn register_utils(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<UtilsModule>(handlers);
     module.register_type::<crate::utils::AddressStringFormat>();
+    module.register_type::<crate::utils::AccountAddressType>();
     module.register_sync_fn(
         crate::utils::convert_address,
         crate::utils::conversion::convert_address_api,
+    );
+    module.register_sync_fn(
+        crate::utils::get_address_type,
+        crate::utils::conversion::get_address_type_api,
     );
     module.register_async_fn(
         crate::utils::calc_storage_fee,

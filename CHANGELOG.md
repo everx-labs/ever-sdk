@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.0] – 2021-07-07
+
+### New
+- `get_address_type` function in `utils` module, which validates address and returns its type. See the documentation.
+- `decode_account_data` function in `abi` module that converts account data BOC into JSON representation according to ABI 2.1. See the documentation.
+- Diagnostic fields `filter` and `timestamp` added to `wait_for_collection` error
+- `main.ton.dev` and `net.ton.dev` endpoints that will be deprecated on 12.07.21 are now replaced with [proper endpoints list](https://docs.ton.dev/86757ecb2/p/85c869-networks), if they were specified in network `endpoints` config 
+
+### Fixed
+- Search of the first master blocks during the network start period was fixed in blocks and transactions iterators
+
 ## [1.18.0] – 2021-06-26
 
 ### New

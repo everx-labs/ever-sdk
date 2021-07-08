@@ -24,9 +24,13 @@
   
 # Useful links
 
-[Quick Start](https://docs.ton.dev/86757ecb2/p/33b76d-quick-start)
+[Quick Start (Javascript)](https://docs.ton.dev/86757ecb2/p/33b76d-quick-start)    
 
-[Full API/SDK documentation](https://docs.ton.dev/86757ecb2/p/39fc5e-products)
+[JavaScript Types and Methods (API Reference)](https://tonlabs.github.io/ton-client-js/)
+
+[Core Types and Methods (API Reference)](https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md)     
+
+[Guides](https://docs.ton.dev/86757ecb2/p/783f9d-sdk)  
 
 # What is Core Free TON Client Library
 
@@ -50,9 +54,9 @@ Client Library exposes all the functionality through a few of exported functions
 interaction with library is performed using JSON-RPC like protocol.
 
 Library works over [GraphQL API](https://docs.ton.dev/86757ecb2/p/793337-ton-os-api) of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). 
-So, it can be used to interact directly with TON OS Clouds: 
-- [Freeton](https://main.ton.dev/graphql)
-- [Devnet](https://net.ton.dev/graphql)
+So, it can be used to interact directly with [TON OS Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks).  
+- [Freeton](https://main2.ton.dev/graphql)
+- [Devnet](https://net1.ton.dev/graphql)
 
 # SDKs in other languages (bindings over TON-SDK)
 
@@ -61,7 +65,7 @@ a client library and an application code written on that language.
 
 ## Official Javascript(Typescript) SDK
 Platforms: Node.js, Web, React-Native for IOS/Android
-- [ton-client-js](https://github.com/tonlabs/ton-client-js)  
+- [JavaScript Types and Methods (API Reference)](https://tonlabs.github.io/ton-client-js/) 
 
 ## Community bindings
 
