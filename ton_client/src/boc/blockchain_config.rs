@@ -46,12 +46,10 @@ pub async fn get_blockchain_config(
         extract_config_from_zerostate(zerostate.object)?
     };
 
-    let cell = config
-        .write_to_new_cell()
+    let cell = config.serialize()
         .map_err(|err| Error::serialization_error(err, "config to cells"))?;
 
-    let bytes = ton_types::serialize_toc(&cell.into_cell()
-        .map_err(|err| Error::serialization_error(err, "config cells to bytes"))?)
+    let bytes = ton_types::serialize_toc(&cell)
         .map_err(|err| Error::serialization_error(err, "config cells to bytes"))?;
 
     Ok(ResultOfGetBlockchainConfig {
