@@ -9,12 +9,13 @@ use crate::crypto::{
     chacha20, hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
     hdkey_secret_from_xprv, hdkey_xprv_from_mnemonic, mnemonic_derive_sign_keys,
     mnemonic_from_random, mnemonic_verify, nacl_box, nacl_box_keypair_from_secret_key,
-    nacl_box_open, nacl_sign_keypair_from_secret_key, signing_box_sign, ParamsOfChaCha20,
+    nacl_box_open, nacl_sign_keypair_from_secret_key, signing_box_sign, 
+    encryption_box_encrypt, encryption_box_decrypt, EncryptionBoxHandle, ParamsOfChaCha20,
     ParamsOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyPublicFromXPrv,
     ParamsOfHDKeySecretFromXPrv, ParamsOfHDKeyXPrvFromMnemonic, ParamsOfMnemonicDeriveSignKeys,
     ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfNaclBox,
     ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen, ParamsOfNaclSignKeyPairFromSecret,
-    ParamsOfSigningBoxSign
+    ParamsOfSigningBoxSign, ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt
 };
 use crate::encoding::decode_abi_bigint;
 use crate::net::{query_collection, OrderBy, ParamsOfQueryCollection, SortDirection};
@@ -571,6 +572,47 @@ impl SdkInterface {
         ))
     }
 
+    async fn encrypt(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let encryption_box = EncryptionBoxHandle(get_num_arg::<u32>(args, "boxHandle")?);
+        let data = base64::encode(
+            &hex::decode(&get_arg(args, "data")?).map_err(|e| format!("{}", e))?,
+        );
+        let result = encryption_box_encrypt(
+            self.ton.clone(),
+            ParamsOfEncryptionBoxEncrypt { encryption_box, data },
+        ).await.map_err(|e| format!("{}", e))?;
+        
+        let encrypted = base64::decode(&result.data)
+            .map(|x| hex::encode(x))
+            .map_err(|e| format!("failed to decode base64: {}", e))?;
+        Ok((
+            answer_id,
+            json!({ "encrypted": encrypted }),
+        ))
+    }
+
+    async fn decrypt(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let encryption_box = EncryptionBoxHandle(get_num_arg::<u32>(args, "boxHandle")?);
+        let data = base64::encode(
+            &hex::decode(&get_arg(args, "data")?).map_err(|e| format!("{}", e))?,
+        );
+
+        let result = encryption_box_decrypt(
+            self.ton.clone(),
+            ParamsOfEncryptionBoxDecrypt { encryption_box, data },
+        ).await.map_err(|e| format!("{}", e))?;
+        
+        let decrypted = base64::decode(&result.data)
+            .map(|x| hex::encode(x))
+            .map_err(|e| format!("failed to decode base64: {}", e))?;
+        Ok((
+            answer_id,
+            json!({ "decrypted": decrypted }),
+        ))
+    }
+
     async fn query_accounts(&self, args: &Value, result: &str) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let code_hash = get_arg(args, "codeHash")?;
@@ -666,9 +708,12 @@ impl DebotInterface for SdkInterface {
             "naclBoxOpen" => self.nacl_box_open(args),
             "naclKeypairFromSecret" => self.nacl_box_keypair_from_secret_key(args),
             "chacha20" => self.chacha20(args),
-            
+
+            "encrypt" => self.encrypt(args).await,
+            "decrypt" => self.decrypt(args).await,
+
             "getAccountsDataByHash" => self.get_accounts_data_by_hash(args).await,
-            
+
             _ => Err(format!("function \"{}\" is not implemented", func)),
         }
     }
