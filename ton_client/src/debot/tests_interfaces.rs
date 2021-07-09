@@ -10,18 +10,24 @@
 * See the License for the specific TON DEV software governing permissions and
 * limitations under the License.
 */
-use crate::crypto::{KeyPair, SigningBoxHandle, RegisteredSigningBox};
+use crate::crypto::{KeyPair, SigningBoxHandle, EncryptionBoxHandle, 
+    RegisteredSigningBox, RegisteredEncryptionBox, EncryptionBoxInfo,  boxes::EncryptionBox};
 use crate::encoding::decode_abi_number;
 use std::sync::Arc;
 use crate::tests::TestClient;
+use crate::client::ParamsOfAppRequest;
 use serde_json::Value;
+use crate::error::ClientResult;
+use crate::json_interface::crypto::*;
+use crate::json_interface::interop::ResponseType;
 //use super::*;
 
 
 pub const SUPPORTED_INTERFACES: &[&str] = &[
     "f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d", // echo
     "8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3", // terminal
-    "c13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a", // signing box input
+    "c13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a", // signing box input,
+    "5b5f76b54d976d72f1ada3063d1af2e5352edaf1ba86b3b311170d4d81056d61", // encryption box input
 ];
 
 pub const ECHO_ABI: &str = r#"
@@ -108,6 +114,150 @@ pub const SIGNING_BOX_ABI: &str = r#"
 	]
 }
 "#;
+
+
+pub const ENCRYPTION_BOX_ABI: &str = r#"{
+	"ABI version": 2,
+	"header": ["time"],
+	"functions": [
+		{
+			"name": "getNaclBox",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"prompt","type":"bytes"},
+				{"name":"nonce","type":"bytes"},
+				{"name":"theirPubkey","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"handle","type":"uint32"}
+			]
+		},
+		{
+			"name": "remove",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"handle","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"removed","type":"bool"}
+			]
+		},
+		{
+			"name": "getSupportedAlgorithms",
+			"inputs": [
+				{"name":"answerId","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"names","type":"bytes[]"}
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	]
+}"#;
+
+pub(crate) struct EncryptionBoxInput {
+    client: Arc<TestClient>,
+    keys: KeyPair,
+}
+
+impl EncryptionBoxInput {
+    pub(crate) async fn new(client: Arc<TestClient>, keys: KeyPair) -> Self {
+        Self{  client, keys }
+    }
+
+    pub async fn call(&self, func: &str, args: &Value) -> (u32, Value) {
+        match func {
+            "getNaclBox" => {
+                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                let nonce = args["nonce"].as_str().unwrap().to_owned();
+                let their_key = args["theirPubkey"].as_str().unwrap().to_owned();
+                let client_copy = self.client.clone();
+                let callback = move |params, response_type| {
+                    let client = client_copy.clone();
+                    let nonce = nonce.clone();
+                    let their_key = their_key.clone();
+                    async move {
+                        match response_type {
+                            ResponseType::AppRequest => {
+                                tokio::spawn(async move {
+                                    let request: ParamsOfAppRequest = serde_json::from_value(params).unwrap();
+                                    let result = Self::process_call(
+                                        NaclBoxEncryption::new(nonce, their_key),
+                                        serde_json::from_value(request.request_data).unwrap()
+                                    ).await;
+                                    client.resolve_app_request(request.app_request_id, result).await;
+                                });
+                            },
+                            _ => panic!("Wrong response type"),
+                        }
+                    }
+                };
+                let box_handle: EncryptionBoxHandle = self.client.request_async_callback(
+                    "crypto.register_encryption_box",
+                    json!({}),
+                    callback,
+                )
+                .await
+                .map(|x: RegisteredEncryptionBox| x.handle).unwrap_or(EncryptionBoxHandle(0));
+
+                ( answer_id, json!({ "handle": box_handle.clone() }) )
+            },
+            "getSupportedInterfaces" => {
+                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                ( answer_id, json!({ "names": vec![hex::encode("NaclBox")] }) )
+            },
+            _ => panic!("interface function not found"),
+        }
+    }
+
+    async fn process_call(enbox: impl EncryptionBox + Send + Sync + 'static, params: ParamsOfAppEncryptionBox) -> ResultOfAppEncryptionBox {
+        match params {
+            ParamsOfAppEncryptionBox::GetInfo => {
+                ResultOfAppEncryptionBox::GetInfo { info: enbox.get_info().await.unwrap() }
+            },
+            ParamsOfAppEncryptionBox::Encrypt {data} => {
+                ResultOfAppEncryptionBox::Encrypt { data: enbox.encrypt(&data).await.unwrap() }
+            },
+            ParamsOfAppEncryptionBox::Decrypt {data} => {
+                ResultOfAppEncryptionBox::Decrypt { data: enbox.decrypt(&data).await.unwrap() }
+            },
+        }
+    }
+}
+
+struct NaclBoxEncryption {
+    nonce: String,
+    their_key: String,
+}
+
+impl NaclBoxEncryption {
+    fn new(nonce: String, their_key: String) -> Self {
+        Self{ nonce, their_key }
+    }
+}
+
+#[async_trait::async_trait]
+impl EncryptionBox for NaclBoxEncryption {
+    async fn get_info(&self) -> ClientResult<EncryptionBoxInfo> {
+        Ok(EncryptionBoxInfo {
+            hdpath: Some(format!("m/44'/396'/0'/0/1")),
+            algorithm: Some(format!("NaclBox")),
+            options: Some(json!({"nonce": self.nonce, "theirPubkey": self.their_key })),
+            public: None,
+        })
+    }
+
+    async fn encrypt(&self, data: &String) -> ClientResult<String> {
+        Ok(data.clone())
+    }
+
+    async fn decrypt(&self, data: &String) -> ClientResult<String> {
+        Ok(data.clone())
+    }
+}
 
 pub(crate) struct SingingBoxInput {
     box_handle: SigningBoxHandle,
