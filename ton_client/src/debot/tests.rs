@@ -1347,7 +1347,7 @@ async fn test_debot_encryption_box() {
         debot_addr.clone(),
         keys,
         steps,
-        vec![format!("Test passed")],
+        vec![format!("Encryption Box Handle: 3"), format!("Test passed")],
         build_info(abi, 10, vec![
             format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
             format!("0x5b5f76b54d976d72f1ada3063d1af2e5352edaf1ba86b3b311170d4d81056d61")

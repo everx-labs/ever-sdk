@@ -581,14 +581,21 @@ impl SdkInterface {
         let result = encryption_box_encrypt(
             self.ton.clone(),
             ParamsOfEncryptionBoxEncrypt { encryption_box, data },
-        ).await.map_err(|e| format!("{}", e))?;
+        ).await.map_err(|e| e.code as u32);
         
-        let encrypted = base64::decode(&result.data)
-            .map(|x| hex::encode(x))
-            .map_err(|e| format!("failed to decode base64: {}", e))?;
+        let (result, data) = match result {
+            Ok(res) => {
+                let data = base64::decode(&res.data)
+                .map(|x| hex::encode(x))
+                .map_err(|e| format!("failed to decode base64: {}", e))?;
+                (0, data)
+            },
+            Err(code) => (code, "".to_owned()),
+        };
+
         Ok((
             answer_id,
-            json!({ "encrypted": encrypted }),
+            json!({ "result": result, "encrypted": data }),
         ))
     }
 
@@ -602,14 +609,21 @@ impl SdkInterface {
         let result = encryption_box_decrypt(
             self.ton.clone(),
             ParamsOfEncryptionBoxDecrypt { encryption_box, data },
-        ).await.map_err(|e| format!("{}", e))?;
+        ).await.map_err(|e| e.code as u32);
         
-        let decrypted = base64::decode(&result.data)
-            .map(|x| hex::encode(x))
-            .map_err(|e| format!("failed to decode base64: {}", e))?;
+        let (result, data) = match result {
+            Ok(res) => {
+                let data = base64::decode(&res.data)
+                .map(|x| hex::encode(x))
+                .map_err(|e| format!("failed to decode base64: {}", e))?;
+                (0, data)
+            },
+            Err(code) => (code, "".to_owned()),
+        };
+
         Ok((
             answer_id,
-            json!({ "decrypted": decrypted }),
+            json!({ "result": result, "decrypted": data }),
         ))
     }
 

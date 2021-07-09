@@ -209,6 +209,10 @@ impl EncryptionBoxInput {
                 let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
                 ( answer_id, json!({ "names": vec![hex::encode("NaclBox")] }) )
             },
+            "remove" => {
+                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                ( answer_id, json!({ "removed": true }) )
+            },
             _ => panic!("interface function not found"),
         }
     }
