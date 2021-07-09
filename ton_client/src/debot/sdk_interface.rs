@@ -56,59 +56,6 @@ const ABI: &str = r#"
 			]
 		},
 		{
-			"name": "chacha20",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"data","type":"bytes"},
-				{"name":"nonce","type":"bytes"},
-				{"name":"key","type":"uint256"}
-			],
-			"outputs": [
-				{"name":"output","type":"bytes"}
-			]
-		},
-		{
-			"name": "signHash",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"sbHandle","type":"uint32"},
-				{"name":"hash","type":"uint256"}
-			],
-			"outputs": [
-				{"name":"signature","type":"bytes"}
-			]
-		},
-		{
-			"name": "genRandom",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"length","type":"uint32"}
-			],
-			"outputs": [
-				{"name":"buffer","type":"bytes"}
-			]
-		},
-		{
-			"name": "compress7z",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"uncompressed","type":"bytes"}
-			],
-			"outputs": [
-				{"name":"comp","type":"bytes"}
-			]
-		},
-		{
-			"name": "uncompress7z",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"compressed","type":"bytes"}
-			],
-			"outputs": [
-				{"name":"uncomp","type":"bytes"}
-			]
-		},
-		{
 			"name": "mnemonicFromRandom",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
@@ -218,6 +165,27 @@ const ABI: &str = r#"
 			]
 		},
 		{
+			"name": "signHash",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"sbHandle","type":"uint32"},
+				{"name":"hash","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"signature","type":"bytes"}
+			]
+		},
+		{
+			"name": "genRandom",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"length","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"buffer","type":"bytes"}
+			]
+		},
+		{
 			"name": "naclBox",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
@@ -254,7 +222,43 @@ const ABI: &str = r#"
 				{"name":"secretKey","type":"uint256"}
 			]
 		},
-        {
+		{
+			"name": "chacha20",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"data","type":"bytes"},
+				{"name":"nonce","type":"bytes"},
+				{"name":"key","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"output","type":"bytes"}
+			]
+		},
+		{
+			"name": "encrypt",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"},
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"encrypted","type":"bytes"}
+			]
+		},
+		{
+			"name": "decrypt",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"},
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"decrypted","type":"bytes"}
+			]
+		},
+		{
 			"name": "getAccountsDataByHash",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
@@ -264,14 +268,7 @@ const ABI: &str = r#"
 			"outputs": [
 				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accounts","type":"tuple[]"}
 			]
-		},
-		{
-			"name": "constructor",
-			"inputs": [
-			],
-			"outputs": [
-			]
-        }
+		}
 	],
 	"data": [
 	],
@@ -645,26 +642,33 @@ impl DebotInterface for SdkInterface {
 
     async fn call(&self, func: &str, args: &Value) -> InterfaceResult {
         match func {
+            
             "getBalance" => self.get_balance(args).await,
             "getAccountType" => self.get_account_type(args).await,
             "getAccountCodeHash" => self.get_account_code_hash(args).await,
-            "chacha20" => self.chacha20(args),
-            "genRandom" => self.get_random(args),
+            
             "mnemonicFromRandom" => self.mnemonic_from_random(args),
             "mnemonicDeriveSignKeys" => self.mnemonic_derive_sign_keys(args),
             "mnemonicVerify" => self.mnemonic_verify(args),
+            
             "hdkeyXprvFromMnemonic" => self.hdkey_xprv_from_mnemonic(args),
             "hdkeyDeriveFromXprv" => self.hdkey_derive_from_xprv(args),
             "hdkeyDeriveFromXprvPath" => self.hdkey_derive_from_xprv_path(args),
             "hdkeySecretFromXprv" => self.hdkey_secret_from_xprv(args),
             "hdkeyPublicFromXprv" => self.hdkey_public_from_xprv(args),
             "naclSignKeypairFromSecretKey" => self.nacl_sign_keypair_from_secret_key(args),
+            
             "substring" => self.substring(args),
+            
+            "genRandom" => self.get_random(args),
+            "signHash" => self.sign_hash(args).await,
             "naclBox" => self.nacl_box(args),
             "naclBoxOpen" => self.nacl_box_open(args),
             "naclKeypairFromSecret" => self.nacl_box_keypair_from_secret_key(args),
+            "chacha20" => self.chacha20(args),
+            
             "getAccountsDataByHash" => self.get_accounts_data_by_hash(args).await,
-            "signHash" => self.sign_hash(args).await,
+            
             _ => Err(format!("function \"{}\" is not implemented", func)),
         }
     }
