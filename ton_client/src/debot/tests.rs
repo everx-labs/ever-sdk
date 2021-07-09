@@ -81,6 +81,7 @@ struct BrowserData {
     pub terminal: Mutex<Terminal>,
     pub echo: Echo,
     pub sign_box_input: SingingBoxInput,
+    pub encrypt_box_input: EncryptionBoxInput,
     pub bots: Mutex<HashMap<String, RegisteredDebot>>,
     pub info: DebotInfo,
     pub activity: Mutex<Vec<ExpectedTransaction>>,
@@ -218,6 +219,7 @@ impl TestBrowser {
             terminal: Mutex::new(Terminal::new(terminal_outputs)),
             echo: Echo::new(),
             sign_box_input: SingingBoxInput::new(client.clone(), keys.clone()).await,
+            encrypt_box_input: EncryptionBoxInput::new(client.clone(), keys.clone()).await,
             bots: Mutex::new(HashMap::new()),
             info,
             activity: Mutex::new(vec![]),
@@ -247,6 +249,7 @@ impl TestBrowser {
             terminal: Mutex::new(Terminal::new(terminal_outputs)),
             echo: Echo::new(),
             sign_box_input: SingingBoxInput::new(client.clone(), keys.clone()).await,
+            encrypt_box_input: EncryptionBoxInput::new(client.clone(), keys.clone()).await,
             bots: Mutex::new(HashMap::new()),
             info,
             activity: Mutex::new(activity),
@@ -322,6 +325,7 @@ impl TestBrowser {
                     terminal: Mutex::new(Terminal::new(vec![])),
                     echo: Echo::new(),
                     sign_box_input: SingingBoxInput::new(client.clone(), state.keys.clone()).await,
+                    encrypt_box_input: EncryptionBoxInput::new(client.clone(), state.keys.clone()).await,
                     bots: Mutex::new(HashMap::new()),
                     info: Default::default(),
                     activity: Mutex::new(vec![]),
@@ -376,6 +380,8 @@ impl TestBrowser {
                     Abi::Json(TERMINAL_ABI.to_owned())
                 } else if SUPPORTED_INTERFACES[2] == interface_id {
                     Abi::Json(SIGNING_BOX_ABI.to_owned())
+                } else if SUPPORTED_INTERFACES[3] == interface_id {
+                    Abi::Json(ENCRYPTION_BOX_ABI.to_owned())
                 } else {
                     panic!("unsupported interface");
                 };
@@ -390,8 +396,10 @@ impl TestBrowser {
                     state.echo.call(&func, &args)
                 } else if SUPPORTED_INTERFACES[1] == interface_id {
                     state.terminal.lock().await.call(&func, &args)
-                } else {
+                } else if SUPPORTED_INTERFACES[2] == interface_id {
                     state.sign_box_input.call(&func, &args)
+                } else {
+                    state.encrypt_box_input.call(&func, &args).await
                 };
                 log::info!("response: {} ({})", func_id, return_args);
 
@@ -1325,6 +1333,25 @@ async fn test_debot_transaction_chain() {
         steps,
         vec![format!("Test passed")],
         build_info(abi, 9, vec!["0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned()]),
+        vec![],
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_encryption_box() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot10").await;
+    let steps = vec![];
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![format!("Test passed")],
+        build_info(abi, 10, vec![
+            format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
+            format!("0x5b5f76b54d976d72f1ada3063d1af2e5352edaf1ba86b3b311170d4d81056d61")
+        ]),
         vec![],
     ).await;
 }
