@@ -2,9 +2,9 @@ pragma ton-solidity >=0.40.0;
 pragma AbiHeader expire;
 pragma AbiHeader time;
 pragma AbiHeader pubkey;
-import "../Debot.sol";
-import "../Terminal.sol";
-import "../Network.sol";
+import "https://raw.githubusercontent.com/tonlabs/debots/main/Debot.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Network/Network.sol";
 import "../Json.sol";
 
 contract TestDebot8 is Debot {
@@ -78,16 +78,15 @@ contract TestDebot8 is Debot {
     }
 
     function getDebotInfo() public functionID(0xDEB) view override returns(
-        string name, string version, string publisher, string key, string author,
+        string name, string version, string publisher, string caption, string author,
         address support, string hello, string language, string dabi, bytes icon) {
-        name = "Test DeBot 8";
+        name = "TestDeBot8";
         version = "0.1.0";
         publisher = "TON Labs";
-        string iface = "Network";
-        key = format("Test for {} interface", iface);
+        caption = "TestDeBot8";
         author = "TON Labs";
         support = address(0);
-        hello = "Test DeBot 8";
+        hello = "TestDeBot8";
         language = "en";
         dabi = m_debotAbi.get();
         icon = "";

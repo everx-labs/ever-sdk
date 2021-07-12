@@ -10,49 +10,55 @@
 			]
 		},
 		{
-			"name": "setResponse",
+			"name": "setEncryptionBox",
 			"inputs": [
-				{"name":"statusCode","type":"int32"},
-				{"name":"retHeaders","type":"bytes[]"},
-				{"name":"content","type":"bytes"}
+				{"name":"handle","type":"uint32"}
 			],
 			"outputs": [
 			]
 		},
 		{
-			"name": "setGetResponse",
+			"name": "setEncryptionError",
 			"inputs": [
-				{"name":"statusCode","type":"int32"},
-				{"name":"retHeaders","type":"bytes[]"},
-				{"name":"content","type":"bytes"}
+				{"name":"result","type":"uint32"},
+				{"name":"encrypted","type":"bytes"}
 			],
 			"outputs": [
 			]
 		},
 		{
-			"name": "setResult",
+			"name": "setEncryptionResult",
 			"inputs": [
-				{"name":"result","type":"bool"},
-				{"components":[{"components":[{"name":"ProviderCode","type":"uint32"},{"name":"CountryIso","type":"bytes"},{"name":"Name","type":"bytes"},{"name":"LogoUrl","type":"bytes"}],"name":"Result","type":"tuple[]"},{"name":"Status","type":"bytes"}],"name":"obj","type":"tuple"}
+				{"name":"result","type":"uint32"},
+				{"name":"encrypted","type":"bytes"}
 			],
 			"outputs": [
 			]
 		},
 		{
-			"name": "setResult2",
+			"name": "setDecryptionError",
 			"inputs": [
-				{"name":"result","type":"bool"},
-				{"components":[{"components":[{"name":"name1","type":"bytes"}],"name":"args","type":"tuple"},{"components":[{"name":"Accept","type":"bytes"},{"name":"Host","type":"bytes"},{"name":"X_Amzn_Trace_Id","type":"bytes"}],"name":"headers","type":"tuple"},{"name":"origin","type":"bytes"},{"name":"url","type":"bytes"}],"name":"obj","type":"tuple"}
+				{"name":"result","type":"uint32"},
+				{"name":"decrypted","type":"bytes"}
 			],
 			"outputs": [
 			]
 		},
 		{
-			"name": "getRequiredInterfaces",
+			"name": "setDecryptionResult",
 			"inputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"decrypted","type":"bytes"}
 			],
 			"outputs": [
-				{"name":"interfaces","type":"uint256[]"}
+			]
+		},
+		{
+			"name": "setRemoveResult",
+			"inputs": [
+				{"name":"removed","type":"bool"}
+			],
+			"outputs": [
 			]
 		},
 		{
@@ -71,6 +77,14 @@
 				{"name":"language","type":"bytes"},
 				{"name":"dabi","type":"bytes"},
 				{"name":"icon","type":"bytes"}
+			]
+		},
+		{
+			"name": "getRequiredInterfaces",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"interfaces","type":"uint256[]"}
 			]
 		},
 		{
