@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [1.19.1] – 2021-07-09
 
+### New
+- **Debot module**:
+    - added `encrypt`, `decrypt` functions to Sdk interface which accept encryption box handles.
+
 ### Fixed
 - Support `ton_types` library
 
