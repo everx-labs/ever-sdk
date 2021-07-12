@@ -573,47 +573,34 @@ impl SdkInterface {
     }
 
     async fn encrypt(&self, args: &Value) -> InterfaceResult {
-        let answer_id = decode_answer_id(args)?;
-        let encryption_box = EncryptionBoxHandle(get_num_arg::<u32>(args, "boxHandle")?);
-        let data = base64::encode(
-            &hex::decode(&get_arg(args, "data")?).map_err(|e| format!("{}", e))?,
-        );
-        let result = encryption_box_encrypt(
-            self.ton.clone(),
-            ParamsOfEncryptionBoxEncrypt { encryption_box, data },
-        ).await.map_err(|e| e.code as u32);
-        
-        let (result, data) = match result {
-            Ok(res) => {
-                let data = base64::decode(&res.data)
-                .map(|x| hex::encode(x))
-                .map_err(|e| format!("failed to decode base64: {}", e))?;
-                (0, data)
-            },
-            Err(code) => (code, "".to_owned()),
-        };
-
-        Ok((
-            answer_id,
-            json!({ "result": result, "encrypted": data }),
-        ))
+        self.encrypt_or_decrypt(args, true).await
     }
 
     async fn decrypt(&self, args: &Value) -> InterfaceResult {
+        self.encrypt_or_decrypt(args, false).await
+    }
+
+    async fn encrypt_or_decrypt(&self, args: &Value, encrypt: bool) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let encryption_box = EncryptionBoxHandle(get_num_arg::<u32>(args, "boxHandle")?);
         let data = base64::encode(
             &hex::decode(&get_arg(args, "data")?).map_err(|e| format!("{}", e))?,
         );
-
-        let result = encryption_box_decrypt(
-            self.ton.clone(),
-            ParamsOfEncryptionBoxDecrypt { encryption_box, data },
-        ).await.map_err(|e| e.code as u32);
+        let result = if encrypt {
+            encryption_box_encrypt(
+                self.ton.clone(),
+                ParamsOfEncryptionBoxEncrypt { encryption_box, data },
+            ).await.map_err(|e| e.code as u32).map(|x| x.data)
+        } else {
+            encryption_box_decrypt(
+                self.ton.clone(),
+                ParamsOfEncryptionBoxDecrypt { encryption_box, data },
+            ).await.map_err(|e| e.code as u32).map(|x| x.data)
+        };
         
         let (result, data) = match result {
-            Ok(res) => {
-                let data = base64::decode(&res.data)
+            Ok(data) => {
+                let data = base64::decode(&data)
                 .map(|x| hex::encode(x))
                 .map_err(|e| format!("failed to decode base64: {}", e))?;
                 (0, data)
@@ -621,10 +608,12 @@ impl SdkInterface {
             Err(code) => (code, "".to_owned()),
         };
 
-        Ok((
-            answer_id,
-            json!({ "result": result, "decrypted": data }),
-        ))
+        let return_args = if encrypt {
+            json!({ "result": result, "encrypted": data })
+        } else {
+            json!({ "result": result, "decrypted": data })
+        };
+        Ok(( answer_id, return_args ))
     }
 
     async fn query_accounts(&self, args: &Value, result: &str) -> InterfaceResult {

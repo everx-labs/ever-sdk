@@ -246,6 +246,7 @@ impl NaclBoxEncryption {
 #[async_trait::async_trait]
 impl EncryptionBox for NaclBoxEncryption {
     async fn get_info(&self) -> ClientResult<EncryptionBoxInfo> {
+        // emulate getnifo
         Ok(EncryptionBoxInfo {
             hdpath: Some(format!("m/44'/396'/0'/0/1")),
             algorithm: Some(format!("NaclBox")),
@@ -255,11 +256,13 @@ impl EncryptionBox for NaclBoxEncryption {
     }
 
     async fn encrypt(&self, data: &String) -> ClientResult<String> {
-        Ok(data.clone())
+        // emulate encryption
+        Ok(hex::encode(data))
     }
 
     async fn decrypt(&self, data: &String) -> ClientResult<String> {
-        Ok(data.clone())
+        // emulate decryption
+        Ok(String::from_utf8(hex::decode(data).unwrap()).unwrap())
     }
 }
 
