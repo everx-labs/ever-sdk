@@ -33,11 +33,23 @@ contract ExampleContract is Debot {
         
         m_openedData = "Data to encrypt";
         Sdk.encrypt(tvm.functionId(setEncryptionResult), m_boxHandle, bytes(m_openedData));
+        Sdk.encrypt(tvm.functionId(setEncryptionError), 100, bytes(m_openedData));
+    }
+
+    function setEncryptionError(uint32 result, bytes encrypted) public pure {
+        require(result != 0, 406);
+        encrypted;
     }
 
     function setEncryptionResult(uint32 result, bytes encrypted) public {
         require(result == 0, 402);
         Sdk.decrypt(tvm.functionId(setDecryptionResult), m_boxHandle, encrypted);
+        Sdk.decrypt(tvm.functionId(setDecryptionError), 100, encrypted);
+    }
+
+    function setDecryptionError(uint32 result, bytes decrypted) public pure {
+        require(result != 0, 405);
+        decrypted;
     }
 
     function setDecryptionResult(uint32 result, bytes decrypted) public {

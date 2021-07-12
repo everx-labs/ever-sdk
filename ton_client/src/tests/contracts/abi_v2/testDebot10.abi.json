@@ -18,10 +18,28 @@
 			]
 		},
 		{
+			"name": "setEncryptionError",
+			"inputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"encrypted","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "setEncryptionResult",
 			"inputs": [
 				{"name":"result","type":"uint32"},
 				{"name":"encrypted","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setDecryptionError",
+			"inputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"decrypted","type":"bytes"}
 			],
 			"outputs": [
 			]
