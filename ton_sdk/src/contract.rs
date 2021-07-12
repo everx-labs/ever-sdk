@@ -185,7 +185,7 @@ impl ContractImage {
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>> {
-        ton_types::serialize_toc(&(self.state_init.write_to_new_cell()?).into())
+        ton_types::serialize_toc(&self.state_init.serialize()?)
     }
 
     // Returns future contract's state_init struct
@@ -316,7 +316,7 @@ impl Contract {
             key_pair,
         )?;
 
-        let msg = Self::create_ext_in_message(address.clone(), msg_body.into())?;
+        let msg = Self::create_ext_in_message(address.clone(), msg_body.into_cell()?.into())?;
         let (body, id) = Self::serialize_message(&msg)?;
         Ok(SdkMessage {
             id,
@@ -353,7 +353,7 @@ impl Contract {
             ihr_disabled,
             bounce,
             value,
-            Some(msg_body.into()),
+            Some(msg_body.into_cell()?.into()),
         )
     }
 
@@ -390,7 +390,7 @@ impl Contract {
             params.input,
         )?;
 
-        let msg = Self::create_ext_in_message(address, msg_body.into())?;
+        let msg = Self::create_ext_in_message(address, msg_body.into_cell()?.into())?;
 
         Self::serialize_message(&msg).map(|(msg_data, _id)| MessageToSign {
             message: msg_data,
@@ -418,7 +418,7 @@ impl Contract {
             key_pair,
         )?;
 
-        let cell = msg_body.into();
+        let cell: SliceData = msg_body.into_cell()?.into();
         let msg = Self::create_ext_deploy_message(Some(cell), image, workchain_id)?;
 
         let address = match msg.dst_ref() {
@@ -488,7 +488,7 @@ impl Contract {
             params.input,
         )?;
 
-        let cell = msg_body.into();
+        let cell: SliceData = msg_body.into_cell()?.into();
         let msg = Self::create_ext_deploy_message(Some(cell), image, workchain_id)?;
 
         Self::serialize_message(&msg).map(|(msg_data, _id)| MessageToSign {
@@ -516,7 +516,7 @@ impl Contract {
             None,
         )?;
 
-        let cell = msg_body.into();
+        let cell: SliceData = msg_body.into_cell()?.into();
         let msg = Self::create_int_deploy_message(src, Some(cell), image, workchain_id, ihr_disabled, bounce)?;
 
         Self::serialize_message(&msg)
@@ -541,7 +541,7 @@ impl Contract {
         }))?;
 
         let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
-        message.set_body(signed_body.into());
+        message.set_body(signed_body.into_cell()?.into());
 
         let address = match message.dst_ref() {
             Some(address) => address.clone(),
@@ -577,7 +577,7 @@ impl Contract {
         }))?;
 
         let signed_body = abi.add_sign_to_encoded_input(signature, public_key, body)?;
-        message.set_body(signed_body.into());
+        message.set_body(signed_body.into_cell()?.into());
 
         let address = match message.dst_ref() {
             Some(address) => address.clone(),
@@ -669,7 +669,7 @@ impl Contract {
     }
 
     pub fn serialize_message(msg: &TvmMessage) -> Result<(Vec<u8>, MessageId)> {
-        let cells = msg.write_to_new_cell()?.into();
+        let cells = msg.write_to_new_cell()?.into_cell()?;
         Ok((
             ton_types::serialize_toc(&cells)?,
             (&cells.repr_hash().as_slice()[..]).into(),

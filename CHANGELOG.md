@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.19.1] – 2021-07-09
+
+### Fixed
+- Support `ton_types` library
+
 ## [1.19.0] – 2021-07-07
 
 ### New
