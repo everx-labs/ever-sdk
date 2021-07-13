@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.0] – 2021-07-16
+### Fixed
+- Deployment with empty signer in cases of public key set in TVC or deploy set.
+
 ## [1.19.0] – 2021-07-07
 
 ### New
