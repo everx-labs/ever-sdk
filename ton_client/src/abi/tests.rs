@@ -5,7 +5,10 @@ use crate::abi::encode_message::{
 };
 use crate::abi::internal::{create_tvc_image, is_empty_pubkey, resolve_pubkey};
 use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
-use crate::boc::internal::{get_boc_hash, serialize_object_to_base64};
+use crate::boc::internal::{
+    deserialize_object_from_base64, get_boc_hash, serialize_cell_to_base64,
+    serialize_object_to_base64
+};
 use crate::boc::{ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfGetCodeFromTvc};
 use crate::crypto::KeyPair;
 use crate::encoding::account_decode;
@@ -872,38 +875,45 @@ fn test_tips() {
     );
 }
 
-const DEPOOL_DATA: &str = "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";
+const ACCOUNT_STATE: &str = "te6ccgECGgEAAx0AAgE0BQEEWeix2Dmr4nsqu51KKUOpFDqcfirgZ5m9JN7B16iJGuXdAAABeqRZIJYAAAAW4AwDCwIBQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPDwHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACBABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEJIrtUyDjAyDA/+MCIMD+4wLyCxcHBg8Ciu1E0NdJwwH4ZiHbPNMAAZ+BAgDXGCD5AVj4QvkQ8qje0z8B+EMhufK0IPgjgQPoqIIIG3dAoLnytPhj0x8B2zz4R27yfA0IA1DtRNDXScMB+GYi0NcLA6k4ANwhxwDjAiHXDR/yvCHjAwHbPPhHbvJ8FhYIAiggghAclg/zuuMCIIIQaLVfP7rjAhEJBDow+EJu4wD4RvJz0YAW+GqI+GtyeHJwbwT4bIj4bQ0MCwoCIoj4boAP+G/4QvLgZNs8f/hnDxIAFEkgbGlrZSBpdC4ACkhlbGxvAhbtRNDXScIBio6A4hAOAlZw7UTQ9AWCEP/////4am34a234bIj4bYj4bnD4b4BA9A7yvdcL//hicPhjDw8AAACQ7UTQ0//TP9Mf0gABkdSSbQHi0gABjhXV0//T/9P/1w3/ldTR0NP/39FvBAGSbQHi1NTR0NTT/9H4b/hu+G34bPhr+Gr4Y/hiAiww+Eby4EzTH/QEWW8CAdHbPOMAf/hnFRIBcPhP+E74TfhM+Ev4SvhD+ELIy//LP8sfASBukzDPgZQBz4PM4gEgbpMwz4GOgOLMWcjMy//Nye1UEwEOAc+DAds8zRQAIG8kXiDIy//L/8v/AcjL/80AUHGVUwFvELmOHXAibxGAIPQP8rL5AFMSbxGAIPQP8rL5ALry4GWk6FsACvhG8uBMAgr0pCD0oRkYABRzb2wgMC40OC4wABKgAAAAFoBgbCE=";
+const ACCOUNT_ABI: &str = r#"{
+	"ABI version": 2,
+	"version": "2.1",
+	"header": ["time"],
+	"functions": [],
+	"data": [],
+	"events": [],
+	"fields": [
+		{"name":"__pubkey","type":"uint256"},
+		{"name":"__timestamp","type":"uint64"},
+		{"name":"fun","type":"uint32"},
+		{"name":"opt","type":"optional(bytes)"},
+        {
+            "name":"big",
+            "type":"optional(tuple)",
+            "components":[
+                {"name":"value0","type":"uint256"},
+                {"name":"value1","type":"uint256"},
+                {"name":"value2","type":"uint256"},
+                {"name":"value3","type":"uint256"}
+            ]
+        },
+		{"name":"a","type":"bytes"},
+		{"name":"b","type":"bytes"},
+		{"name":"length","type":"uint256"}
+	]
+}"#;
 
 #[tokio::test]
-async fn decode_depool_data() {
-    let abi = Abi::Json(
-        json!({
-            "ABI version": 2,
-            "header": ["time", "expire"],
-            "fields": [
-                { "name": "m_validatorWallet", "type": "address" },
-                { "name": "m_proxies", "type": "address[]" },
-                { "name": "m_participants", "type": "map(address,tuple)", "components": [
-                    { "name": "roundQty", "type": "uint8" },
-                    { "name": "reward", "type": "uint64" },
-                    { "name": "vestingParts", "type": "uint8" },
-                    { "name": "lockParts", "type": "uint8" },
-                    { "name": "reinvest", "type": "bool" },
-                    { "name": "withdrawValue", "type": "uint64" },
-                    { "name": "vestingDonor", "type": "address" },
-                    { "name": "lockDonor", "type": "address" },
-                ] },
-            ]
-        })
-        .to_string(),
-    );
+async fn test_decode_account_data() {
+    let abi = Abi::Json(ACCOUNT_ABI.to_owned());
+    let state = deserialize_object_from_base64::<ton_block::StateInit>(ACCOUNT_STATE, "state").unwrap();
+    let data = serialize_cell_to_base64(&state.object.data.unwrap(), "data").unwrap();
+
     let context = Arc::new(ClientContext::new(Default::default()).unwrap());
     let decoded = decode_account_data(
         context,
-        ParamsOfDecodeAccountData {
-            data: DEPOOL_DATA.to_string(),
-            abi,
-        },
+        ParamsOfDecodeAccountData { data, abi },
     )
     .await
     .unwrap()
@@ -912,56 +922,19 @@ async fn decode_depool_data() {
     assert_eq!(
         decoded,
         json!({
-          "pubkey": "0xf33e06c497a6d9b7adf237b6dd17752738cd00372019c83e2168120e2d863174",
-          "time": "1612210661999",
-          "someFlag": true,
-          "m_validatorWallet": "0:27da7884e032ede0f7d5758bb58bcab9942dfb6c1b764a38bb6377a47a0822de",
-          "m_proxies": [
-            "-1:ca9eb496d0a0857811a320c2ce567bde893964aa7e70069b0ffbafa6a0483a21",
-            "-1:0c4af2d629cbf29de1d8f9e2e4a86aec2e8c8f9f13d7847f17ecdf3846d243be"
-          ],
-          "m_participants": {
-            "0:12ef7a258af50c75712839c2b930d8d759642a9ca87d359d7cd9a34968dcc8ae": {
-              "roundQty": "1",
-              "reward": "630629900074",
-              "vestingParts": "0",
-              "lockParts": "0",
-              "reinvest": true,
-              "withdrawValue": "0",
-              "vestingDonor": "0:0000000000000000000000000000000000000000000000000000000000000000",
-              "lockDonor": "0:0000000000000000000000000000000000000000000000000000000000000000"
+            "__pubkey": "0xe8b1d839abe27b2abb9d4a2943a9143a9c7e2ae06799bd24dec1d7a8891ae5dd",
+            "__timestamp": "1626254942358",
+            "fun": "22",
+            "opt": "48656c6c6f",
+            "big": {
+              "value0": "0x0000000000000000000000000000000000000000000000000000000000000002",
+              "value1": "0x0000000000000000000000000000000000000000000000000000000000000008",
+              "value2": "0x0000000000000000000000000000000000000000000000000000000000000002",
+              "value3": "0x0000000000000000000000000000000000000000000000000000000000000000"
             },
-            "0:0005e3c1f00e627930dfba997449015f834582a5b9a11eb9433cdb6af16498d8": {
-              "roundQty": "2",
-              "reward": "3106852502805",
-              "vestingParts": "0",
-              "lockParts": "0",
-              "reinvest": true,
-              "withdrawValue": "0",
-              "vestingDonor": "0:0000000000000000000000000000000000000000000000000000000000000000",
-              "lockDonor": "0:0000000000000000000000000000000000000000000000000000000000000000"
-            },
-            "0:27da7884e032ede0f7d5758bb58bcab9942dfb6c1b764a38bb6377a47a0822de": {
-              "roundQty": "2",
-              "reward": "21704779866320",
-              "vestingParts": "2",
-              "lockParts": "2",
-              "reinvest": true,
-              "withdrawValue": "0",
-              "vestingDonor": "0:e17ac4e77f46626579c7c4fefe35286117384c5ccfc8745c9780cdf056c378bf",
-              "lockDonor": "0:e17ac4e77f46626579c7c4fefe35286117384c5ccfc8745c9780cdf056c378bf"
-            },
-            "-1:f6967e2ce65843a5cc450362b898e87a0fab3925bdc507195fa5003465cd62af": {
-              "roundQty": "2",
-              "reward": "6188183108212",
-              "vestingParts": "0",
-              "lockParts": "0",
-              "reinvest": true,
-              "withdrawValue": "0",
-              "vestingDonor": "0:0000000000000000000000000000000000000000000000000000000000000000",
-              "lockDonor": "0:0000000000000000000000000000000000000000000000000000000000000000"
-            }
-          }
+            "a": "49206c696b652069742e",
+            "b": "",
+            "length": "0x000000000000000000000000000000000000000000000000000000000000000f"
         })
     );
 }
