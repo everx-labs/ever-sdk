@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.0] – 2021-07-19
+
+### New
+- ABI version `2.1` supported.
+
 ## [1.19.1] – 2021-07-09
 
 ### New
