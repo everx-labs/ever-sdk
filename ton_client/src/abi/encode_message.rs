@@ -1,9 +1,8 @@
 use crate::abi;
-use crate::abi::internal::{add_sign_to_message, add_sign_to_message_body, create_tvc_image, try_to_sign_message, resolve_pubkey, update_pubkey};
+use crate::abi::internal::{add_sign_to_message, add_sign_to_message_body, create_tvc_image, try_to_sign_message, update_pubkey};
 use crate::abi::{Abi, Error, FunctionHeader, Signer};
 use crate::boc::internal::{get_boc_hash, deserialize_cell_from_boc};
 use crate::client::ClientContext;
-use crate::crypto::internal::decode_public_key;
 use crate::encoding::{account_decode, account_encode, decode_abi_number, hex_decode};
 use crate::error::ClientResult;
 use serde_json::Value;
@@ -429,12 +428,8 @@ pub async fn encode_message(
             &deploy_set.tvc,
         ).await?;
 
-        if let Some(tvc_public) = resolve_pubkey(&deploy_set, &image, &public)? {
-            image.set_public_key(&decode_public_key(&tvc_public)?)
-                .map_err(|err| Error::invalid_tvc_image(err))?;
-        }
+        required_public_key(update_pubkey(&deploy_set, &mut image, &public)?)?;
 
-        let public = required_public_key(public)?;
         if let Some(call_set) = &params.call_set {
             encode_deploy(
                 context.clone(),
@@ -442,7 +437,7 @@ pub async fn encode_message(
                 image,
                 workchain,
                 call_set,
-                Some(&public),
+                public.as_ref().map(|x| x.as_str()),
                 params.processing_try_index,
             )?
         } else {

@@ -9,7 +9,6 @@ use crate::boc::internal::{get_boc_hash, serialize_object_to_base64};
 use crate::boc::{ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfGetCodeFromTvc};
 use crate::crypto::KeyPair;
 use crate::encoding::account_decode;
-use crate::error::ClientError;
 use crate::tests::{TestClient, EVENTS, HELLO};
 use crate::utils::conversion::abi_uint;
 use crate::{
@@ -486,21 +485,16 @@ async fn test_encode_message_pubkey() -> Result<()> {
     )
     .await?;
 
-    // Expected error, if signer's public key is not provided:
-    let error = test_encode_message_pubkey_internal(
+    test_encode_message_pubkey_internal(
         &client,
         &abi,
         &tvc,
         &initial_pubkey,
         &tvc_pubkey,
         &None,
-        &None,
+        &initial_pubkey,
     )
-    .await
-    .unwrap_err()
-    .downcast::<ClientError>()?;
-
-    assert_eq!(error.code, 305);
+    .await?;
 
     Ok(())
 }
