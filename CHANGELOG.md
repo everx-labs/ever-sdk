@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### New
 - Now all requests to GraphQL are limited with timeout to react on unexpected server unavailability.
 Existing timeouts in waiting functions keep the same behaviour. All other requests timeout now can 
-be set with `net.default_http_timeout` config parameter
+be set with `net.default_http_timeout` config parameter. Its default value is 60000 ms
 
 ### Fixed
 - Deployment with empty signer in cases of public key set in TVC or deploy set.

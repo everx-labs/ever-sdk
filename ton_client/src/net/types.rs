@@ -59,7 +59,7 @@ pub fn default_max_latency() -> u32 {
 }
 
 pub fn default_default_http_timeout() -> u32 {
-    10000
+    60000
 }
 
 fn deserialize_network_retries_count<'de, D: Deserializer<'de>>(
@@ -242,7 +242,7 @@ pub struct NetworkConfig {
     /// limit the answer waiting time. If no answer received during the timeout requests ends with
     /// error.
     ///
-    /// Must be specified in milliseconds. Default is 10000 (10 sec).
+    /// Must be specified in milliseconds. Default is 60000 (1 min).
     #[serde(
         default = "default_default_http_timeout",
         deserialize_with = "deserialize_default_http_timeout"
