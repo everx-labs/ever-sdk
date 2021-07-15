@@ -3,8 +3,18 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.20.0] – 2021-07-16
+
 ### Fixed
 - Deployment with empty signer in cases of public key set in TVC or deploy set.
+
+## [1.19.1] – 2021-07-09
+
+### New
+- **Debot module**:
+    - added `encrypt`, `decrypt` functions to Sdk interface which accept encryption box handles.
+
+### Fixed
+- Support `ton_types` library
 
 ## [1.19.0] – 2021-07-07
 
@@ -28,6 +38,7 @@ All notable changes to this project will be documented in this file.
   isn't specified in config.
 - **Debot module**:
     - added tests for Json interface.
+
 ## [1.17.0] – 2021-06-21
 
 ### New
@@ -42,7 +53,6 @@ All notable changes to this project will be documented in this file.
   message and transaction in the transaction tree.
   
 ### Improved
-
 - Improved error messages regarding ABI and JSON interface. SDK now shows additional tips for the user in cases of 
   errors.
 
@@ -54,19 +64,16 @@ All notable changes to this project will be documented in this file.
 ## [1.16.0] – 2021-05-25
 
 ### New
-
 - `query_transaction_tree` function that returns messages and transactions tree produced 
   by the specified message was added to `net` module. [See the documentation](docs/mod_net.md#query_transaction_tree)
 
 ### Fixed
-
 - `AbiData.key` type changed to u32.
 - attempt to use `orderBy` instead of `order` in `query_collection` will raise error.
 
 ## [1.15.0] – 2021-05-18
 
 ### New
-
 - Sync latency detection increases connection reliability. Library will change the current endpoint 
   when it detects data sync latency on it.
   
@@ -81,19 +88,16 @@ All notable changes to this project will be documented in this file.
 ## [1.14.1] – 2021-04-29
 
 ### Fixed
-
 - Fixed building under Rust versions older than 1.51.
 
 ## [1.14.0] – 2021-04-28
 
 ### New
-
 - **Debot module**:
     - implementation of Network DeBot interface in DEngine.
     - implementation of `signHash` function in Sdk interface.
 
 ### Fixed
-
 - **Debot module**:
     - fixed bug in Json interface with supporting nested structures and arrays of structures.
     - fixed bug in Json interface with keys containing hyphens.
@@ -101,7 +105,6 @@ All notable changes to this project will be documented in this file.
 ## [1.13.0] – 2021-04-23
 
 ### New
-
 - [`net.query_counterparties`](docs/mod_net.md#query_counterparties) - allows to query and paginate through the list of accounts that the specified account 
  has interacted with, sorted by the time of the last internal message between accounts.   
   Subscription to counterparties collection is available via `net.subscribe_collection` function.
@@ -120,7 +123,6 @@ All notable changes to this project will be documented in this file.
     - Implementation of `Json` DeBot interface in DEngine.
 
 ### Fixed
-
 - `BuilderOp::Integer.size` type has changed from `u8` to `u32`.  
 - **Debot Module**:
     - `Sdk` interface function `getAccountsDataByHash` didn't find accounts by `code_hash` with leading zero.
@@ -128,7 +130,6 @@ All notable changes to this project will be documented in this file.
 ## [1.12.0] – 2021-04-01
 
 ### New
-
 - [`utils.compress_zstd`](docs/mod_utils.md#compress_zstd) compresses data using Facebook's Zstandard algorithm.
 - [`utils.decompress_zstd`](docs/mod_utils.md#decompress_zstd) decompresses data using Facebook's Zstandard algorithm.
 - **Debot module**:
@@ -137,7 +138,6 @@ All notable changes to this project will be documented in this file.
     - `approve` DeBot Browser callback which is called by DEngine to request permission for DeBot activities.
 
 ### Changed
-
 - **Debot Module**:
     - [breaking] `fetch` function does't create an instance of debot. It returns DeBot metadata (`DebotInfo`).
     - [breaking] `start` function does't create an instance of debot. It accepts DeBot handle created in `init` function.
@@ -186,14 +186,12 @@ DApp Server endpoints. Otherwise [default configuration](https://github.com/tonl
 - functions-helpers for enum type variable creation for [Signer](docs/mod_abi.md#signer), [Abi](docs/mod_abi.md#abi), [ParamsOfAppDebotBrowser](mod_debot.md#paramsofappdebotbrowser)
 
 ### Fixed
-
 -  doc generator: app object interface description, constructor functions-helpers for enum type variable creation, added new line in the end if api.json
 - library libsecp256k1 upgraded to fix https://rustsec.org/advisories/RUSTSEC-2019-0027
 
 ## 1.9.0 Feb 19, 2021
 
 ### New
-
 - `tuple_list_as_array` parameter in `tvm.run_get` function which controls lists representation.
 Default is stack-like based on nested tuples. If set to `true` then returned lists are encoded as plain arrays.  Use this option if you receive this error on Web: "Runtime error. Unreachable code should not be executed..."
 This reduces stack size requirements for long lists.
@@ -201,25 +199,21 @@ This reduces stack size requirements for long lists.
 - Fields `config_servers`, `query_url`, `account_address`, `gas_used` added into specific errors' `ClientError.data` object.
 
 ### Fixed
-
 - Binaries download links are now under https protocol
 - If you receive this error on Web: "Runtime error. Unreachable code should not be executed..." in `run_get`, use the new parameter `tuple_list_as_array = true`. [See the documentation](docs/mod_tvm.md#run_get). This may happen, for example, when elector contract contains too many participants
 
 ## 1.8.0 Feb 11, 2021
 
 ### New
-
 - **Debot Module**:
     - Added new built-in interface `Msg` which allows to send external message to blockchain and sign it with supplied keypair.
 
 ### Fixed
-
 - `crypto.hdkey_public_from_xprv` used compressed 33-byte form instead of normal 32-byte.
 
 ## 1.7.0 Feb 9, 2021
 
 ### New
-
 - BOC cache management functions were introduced:
   - `boc.cache_set`,
   - `boc.cache_get`
