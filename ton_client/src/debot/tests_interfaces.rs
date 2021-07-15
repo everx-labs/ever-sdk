@@ -160,12 +160,11 @@ pub const ENCRYPTION_BOX_ABI: &str = r#"{
 
 pub(crate) struct EncryptionBoxInput {
     client: Arc<TestClient>,
-    keys: KeyPair,
 }
 
 impl EncryptionBoxInput {
-    pub(crate) async fn new(client: Arc<TestClient>, keys: KeyPair) -> Self {
-        Self{  client, keys }
+    pub(crate) async fn new(client: Arc<TestClient>) -> Self {
+        Self{  client }
     }
 
     pub async fn call(&self, func: &str, args: &Value) -> (u32, Value) {
