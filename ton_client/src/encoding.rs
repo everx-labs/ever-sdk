@@ -81,7 +81,7 @@ pub(crate) fn decode_std_base64(data: &str) -> ClientResult<MsgAddressInt> {
         return Err(client::Error::invalid_address("CRC mismatch", &data).into());
     };
 
-    MsgAddressInt::with_standart(None, vec[1] as i8, SliceData::new(vec[2..34].to_vec()))
+    MsgAddressInt::with_standart(None, vec[1] as i8, SliceData::from_raw(vec[2..34].to_vec(), 256))
         .map_err(|err| client::Error::invalid_address(err, &data).into())
 }
 
