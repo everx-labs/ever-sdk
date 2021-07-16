@@ -6,15 +6,14 @@ All notable changes to this project will be documented in this file.
 
 ### New
 - ABI version `2.1` supported.
+- **Debot module**:
+    - added `encrypt`, `decrypt` functions to Sdk interface which accept encryption box handles.
 
 ### Fixed
 - Deployment with empty signer in cases of public key set in TVC or deploy set.
 
-## [1.19.1] – 2021-07-09
-
 ### New
-- **Debot module**:
-    - added `encrypt`, `decrypt` functions to Sdk interface which accept encryption box handles.
+
 
 ### Fixed
 - Support `ton_types` library
