@@ -15,12 +15,6 @@ be set with `net.query_timeout` config parameter. Its default value is 60000 ms
 ### Fixed
 - Deployment with empty signer in cases of public key set in TVC or deploy set.
 
-### New
-
-
-### Fixed
-- Support `ton_types` library
-
 ## [1.19.0] – 2021-07-07
 
 ### New
