@@ -578,6 +578,10 @@ function scrypt(
 
 Generates a key pair for signing from the secret key
 
+**NOTE:** In the result the secret key is actually the concatenation
+of secret and public keys (128 symbols hex string) by design of [NaCL](http://nacl.cr.yp.to/sign.html).
+See also [the stackexchange question](https://crypto.stackexchange.com/questions/54353/).
+
 ```ts
 type ParamsOfNaclSignKeyPairFromSecret = {
     secret: string
@@ -622,7 +626,7 @@ function nacl_sign(
 ```
 ### Parameters
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-- `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 64 symbols hex string
+- `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
 
 
 ### Result
@@ -687,7 +691,7 @@ function nacl_sign_detached(
 ```
 ### Parameters
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-- `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 64 symbols hex string
+- `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
 
 
 ### Result
@@ -1772,7 +1776,7 @@ type ParamsOfNaclSign = {
 }
 ```
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-- `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 64 symbols hex string
+- `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
 
 
 ## ResultOfNaclSign

@@ -473,8 +473,7 @@ function decode_account_data(
 ```
 ### Parameters
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
-- `data`: _string_ – Data BOC
-<br>Must be encoded with base64
+- `data`: _string_ – Data BOC or BOC handle
 
 
 ### Result
@@ -868,6 +867,7 @@ type AbiFunction = {
 type AbiContract = {
     'ABI version'?: number,
     abi_version?: number,
+    version?: string | null,
     header?: string[],
     functions?: AbiFunction[],
     events?: AbiEvent[],
@@ -877,6 +877,7 @@ type AbiContract = {
 ```
 - `ABI version`?: _number_
 - `abi_version`?: _number_
+- `version`?: _string?_
 - `header`?: _string[]_
 - `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
 - `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
@@ -1125,8 +1126,7 @@ type ParamsOfDecodeAccountData = {
 }
 ```
 - `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
-- `data`: _string_ – Data BOC
-<br>Must be encoded with base64
+- `data`: _string_ – Data BOC or BOC handle
 
 
 ## ResultOfDecodeData
