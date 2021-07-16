@@ -31,6 +31,10 @@ pub struct ParamsOfNaclSignKeyPairFromSecret {
 }
 
 /// Generates a key pair for signing from the secret key
+/// 
+/// **NOTE:** In the result the secret key is actually the concatenation 
+/// of secret and public keys (128 symbols hex string) by design of [NaCL](http://nacl.cr.yp.to/sign.html).
+/// See also [the stackexchange question](https://crypto.stackexchange.com/questions/54353/).
 #[api_function]
 pub fn nacl_sign_keypair_from_secret_key(
     _context: std::sync::Arc<ClientContext>,
@@ -51,7 +55,9 @@ pub fn nacl_sign_keypair_from_secret_key(
 pub struct ParamsOfNaclSign {
     /// Data that must be signed encoded in `base64`.
     pub unsigned: String,
-    /// Signer's secret key - unprefixed 0-padded to 64 symbols hex string
+    /// Signer's secret key - unprefixed 0-padded to 128 symbols hex string
+    /// (concatenation of 64 symbols secret and 64 symbols public keys).
+    /// See `nacl_sign_keypair_from_secret_key`.
     pub secret: String,
 }
 
@@ -81,7 +87,9 @@ pub fn nacl_sign(
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed encoded in `base64`.
     pub unsigned: String,
-    /// Signer's secret key - unprefixed 0-padded to 64 symbols hex string
+    /// Signer's secret key - unprefixed 0-padded to 128 symbols hex string
+    /// (concatenation of 64 symbols secret and 64 symbols public keys).
+    /// See `nacl_sign_keypair_from_secret_key`.
     pub secret: String,
 }
 
