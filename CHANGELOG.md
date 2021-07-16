@@ -5,18 +5,18 @@ All notable changes to this project will be documented in this file.
 ## [1.20.0] – 2021-07-16
 
 ### New
+- ABI version `2.1` supported.
 - Now all requests to GraphQL are limited with timeout to react on unexpected server unavailability.
 Existing timeouts in waiting functions keep the same behaviour. All other requests timeout now can 
 be set with `net.query_timeout` config parameter. Its default value is 60000 ms
+- **Debot module**:
+    - added `encrypt`, `decrypt` functions to Sdk interface which accept encryption box handles.
 
 ### Fixed
 - Deployment with empty signer in cases of public key set in TVC or deploy set.
 
-## [1.19.1] – 2021-07-09
-
 ### New
-- **Debot module**:
-    - added `encrypt`, `decrypt` functions to Sdk interface which accept encryption box handles.
+
 
 ### Fixed
 - Support `ton_types` library

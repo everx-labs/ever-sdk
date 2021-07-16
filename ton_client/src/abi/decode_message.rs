@@ -49,7 +49,7 @@ impl DecodedMessageBody {
         decoded: DecodedMessage,
         header: Option<FunctionHeader>,
     ) -> ClientResult<Self> {
-        let value = Detokenizer::detokenize_to_json_value(&decoded.params, &decoded.tokens)
+        let value = Detokenizer::detokenize_to_json_value(&decoded.tokens)
             .map_err(|x| Error::invalid_message_for_decode(x))?;
         Ok(Self {
             body_type,
@@ -137,15 +137,8 @@ fn decode_body(
             DecodedMessageBody::new(MessageBodyType::Output, output, None)
         }
     } else if let Ok(input) = abi.decode_input(body.clone(), is_internal) {
-        // TODO: add pub access to `abi_version` field of `Contract` struct.
-        let abi_version = abi
-            .functions()
-            .values()
-            .next()
-            .map(|x| x.abi_version)
-            .unwrap_or(1);
         let (header, _, _) =
-            ton_abi::Function::decode_header(abi_version, body.clone(), abi.header(), is_internal)
+            ton_abi::Function::decode_header(abi.version().major, body.clone(), abi.header(), is_internal)
                 .map_err(|err| {
                     Error::invalid_message_for_decode(format!(
                         "Can't decode function header: {}",
