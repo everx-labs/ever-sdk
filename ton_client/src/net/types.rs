@@ -58,7 +58,7 @@ pub fn default_max_latency() -> u32 {
     60000
 }
 
-pub fn default_default_http_timeout() -> u32 {
+pub fn default_query_timeout() -> u32 {
     60000
 }
 
@@ -122,10 +122,10 @@ fn deserialize_latency_detection_frequency<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_latency_detection_frequency()))
 }
 
-fn deserialize_default_http_timeout<'de, D: Deserializer<'de>>(
+fn deserialize_query_timeout<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<u32, D::Error> {
-    Ok(Option::deserialize(deserializer)?.unwrap_or(default_default_http_timeout()))
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_query_timeout()))
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
@@ -244,10 +244,10 @@ pub struct NetworkConfig {
     ///
     /// Must be specified in milliseconds. Default is 60000 (1 min).
     #[serde(
-        default = "default_default_http_timeout",
-        deserialize_with = "deserialize_default_http_timeout"
+        default = "default_query_timeout",
+        deserialize_with = "deserialize_query_timeout"
     )]
-    pub default_http_timeout: u32,
+    pub query_timeout: u32,
 
     /// Access key to GraphQL API. At the moment is not used in production.
     pub access_key: Option<String>,
@@ -268,7 +268,7 @@ impl Default for NetworkConfig {
             sending_endpoint_count: default_sending_endpoint_count(),
             latency_detection_interval: default_latency_detection_frequency(),
             max_latency: default_max_latency(),
-            default_http_timeout: default_default_http_timeout(),
+            query_timeout: default_query_timeout(),
             access_key: None,
         }
     }

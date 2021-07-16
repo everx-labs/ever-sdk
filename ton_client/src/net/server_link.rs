@@ -490,7 +490,7 @@ impl ServerLink {
                     FetchMethod::Post,
                     Some(headers.clone()),
                     Some(request.clone()),
-                    query.timeout.or(Some(self.config.default_http_timeout)),
+                    query.timeout.or(Some(self.config.query_timeout)),
                 )
                 .await;
 
