@@ -483,7 +483,6 @@ impl ServerLink {
                 current_endpoint = Some(self.state.get_query_endpoint().await?.clone());
                 current_endpoint.as_ref().unwrap()
             };
-
             let result = self
                 .client_env
                 .fetch(
@@ -491,7 +490,7 @@ impl ServerLink {
                     FetchMethod::Post,
                     Some(headers.clone()),
                     Some(request.clone()),
-                    query.timeout,
+                    query.timeout.or(Some(self.config.query_timeout)),
                 )
                 .await;
 

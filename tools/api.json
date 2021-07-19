@@ -1,5 +1,5 @@
 {
-  "version": "1.19.0",
+  "version": "1.20.0",
   "modules": [
     {
       "name": "client",
@@ -463,6 +463,17 @@
               },
               "summary": "Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data syncronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.",
               "description": "Must be specified in milliseconds. Default is 60000 (1 min)."
+            },
+            {
+              "name": "query_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Default timeout for http requests.",
+              "description": "Is is used when no timeout specified for the request to limit the answer waiting time. If no answer received during the timeout requests ends with\nerror.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
               "name": "access_key",
@@ -1465,7 +1476,7 @@
             {
               "name": "secret",
               "type": "String",
-              "summary": "Signer's secret key - unprefixed 0-padded to 64 symbols hex string",
+              "summary": "Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.",
               "description": null
             }
           ],
@@ -2930,7 +2941,7 @@
         {
           "name": "nacl_sign_keypair_from_secret_key",
           "summary": "Generates a key pair for signing from the secret key",
-          "description": null,
+          "description": "**NOTE:** In the result the secret key is actually the concatenation\nof secret and public keys (128 symbols hex string) by design of [NaCL](http://nacl.cr.yp.to/sign.html).\nSee also [the stackexchange question](https://crypto.stackexchange.com/questions/54353/).",
           "params": [
             {
               "name": "_context",
@@ -4872,6 +4883,18 @@
               "description": null
             },
             {
+              "name": "version",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Optional",
+                "optional_inner": {
+                  "type": "String"
+                }
+              },
+              "summary": null,
+              "description": null
+            },
+            {
               "name": "header",
               "type": "Optional",
               "optional_inner": {
@@ -5492,8 +5515,8 @@
             {
               "name": "data",
               "type": "String",
-              "summary": "Data BOC",
-              "description": "Must be encoded with base64"
+              "summary": "Data BOC or BOC handle",
+              "description": null
             }
           ],
           "summary": null,
@@ -5826,7 +5849,7 @@
           "description": "Note: this feature requires ABI 2.1 or higher.",
           "params": [
             {
-              "name": "_context",
+              "name": "context",
               "type": "Generic",
               "generic_name": "Arc",
               "generic_args": [

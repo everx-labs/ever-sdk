@@ -32,6 +32,8 @@ mod run_output;
 mod sdk_interface;
 #[cfg(test)]
 mod tests;
+#[cfg(test)]
+mod tests_interfaces;
 
 pub use action::DAction;
 pub use activity::{DebotActivity, Spending};
