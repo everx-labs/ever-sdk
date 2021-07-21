@@ -94,6 +94,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
                 &context,
                 &shard_block_id,
                 &message_id,
+                &params.message,
                 &transaction_id,
                 &params.abi,
                 address.clone(),

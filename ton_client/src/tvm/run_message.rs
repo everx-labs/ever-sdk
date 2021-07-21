@@ -25,6 +25,7 @@ use crate::error::ClientResult;
 use crate::processing::{parsing::decode_output, DecodedOutput};
 use crate::tvm::{check_transaction::calc_transaction_fees, Error};
 use serde_json::Value;
+use std::convert::TryFrom;
 use std::sync::{atomic::AtomicU64, Arc};
 use ton_block::{Account, Message, Serializable, MsgAddressInt, CurrencyCollection, Transaction};
 use ton_executor::{ExecutorError, OrdinaryTransactionExecutor, TransactionExecutor};
@@ -130,7 +131,9 @@ pub struct ParamsOfRunExecutor {
     /// Cache type to put the result. The BOC itself returned if no cache type provided
     pub boc_cache: Option<BocCacheType>,
     /// Return updated account flag. Empty string is returned if the flag is `false`
-    pub return_updated_account: Option<bool>
+    pub return_updated_account: Option<bool>,
+    /// Show tips, if error occurs. Default value is `true`.
+    pub show_tips_on_error: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone, Default)]
@@ -254,14 +257,26 @@ pub async fn run_executor(
         }
     };
 
+    let show_tips = params.show_tips_on_error.unwrap_or(true);
+
     let (transaction, modified_account) =
-        call_executor(account.clone(), message, options, contract_info.clone()).await?;
+        call_executor(
+            account.clone(),
+            message,
+            options,
+            contract_info.clone(),
+            show_tips,
+        ).await?;
+
+    let sdk_transaction = ton_sdk::Transaction::try_from(&transaction)
+        .map_err(|err| crate::tvm::Error::can_not_read_transaction(err))?;
 
     let fees = calc_transaction_fees(
-        &transaction,
+        &sdk_transaction,
         false,
         params.skip_transaction_check.unwrap_or_default(),
         contract_info,
+        show_tips,
     )
     .await?;
 
@@ -355,6 +370,7 @@ async fn call_executor<F>(
     msg: Message,
     options: ResolvedExecutionOptions,
     contract_info: impl FnOnce() -> F,
+    show_tips_on_error: bool,
 ) -> ClientResult<(Transaction, Cell)>
 where
     F: futures::Future<Output = ClientResult<(MsgAddressInt, u64)>>,
@@ -375,7 +391,6 @@ where
     let transaction = match result {
         Ok(transaction) => transaction,
         Err(err) => {
-            let err_message = err.to_string();
             let err = match contract_info().await {
                 Ok((address, balance)) => match &err.downcast_ref::<ExecutorError>() {
                     Some(ExecutorError::NoAcceptError(code, exit_arg)) => {
@@ -383,7 +398,14 @@ where
                             .as_ref()
                             .map(|item| serialize_item(item))
                             .transpose()?;
-                        Error::tvm_execution_failed(err_message, *code, exit_arg, &address, None)
+                        Error::tvm_execution_failed(
+                            "Error during local execution",
+                            *code,
+                            exit_arg,
+                            &address,
+                            None,
+                            show_tips_on_error,
+                        )
                     }
                     Some(ExecutorError::NoFundsToImportMsg) => {
                         Error::low_balance(&address, balance)

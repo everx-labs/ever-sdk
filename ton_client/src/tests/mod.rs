@@ -85,6 +85,7 @@ pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
 pub const TEST_DEBOT: &str = "testDebot";
 pub const TEST_DEBOT_TARGET: &str = "testDebotTarget";
+pub const EXCEPTION: &str = "Exception";
 
 struct RequestData {
     sender: Option<Sender<ClientResult<Value>>>,

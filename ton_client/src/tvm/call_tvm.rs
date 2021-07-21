@@ -81,11 +81,12 @@ pub(crate) fn call_tvm(
 
             let exit_arg = super::stack::serialize_item(&exception.value)?;
             Err(Error::tvm_execution_failed(
-                exception.to_string(),
+                "Error during local execution",
                 code,
                 Some(exit_arg),
                 addr,
                 None,
+                true,
             ))
         }
         Ok(_) => {

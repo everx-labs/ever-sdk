@@ -97,6 +97,7 @@ async fn get_local_error(
                 ..Default::default()
             }),
             message,
+            show_tips_on_error: Some(false),
             ..Default::default()
         },
     )
@@ -115,13 +116,35 @@ pub(crate) async fn resolve_error(
 
     match result {
         Err(err) => {
-            original_error.message = format!(
-                "{}. Possible reason: {}",
-                original_error.message.trim_end_matches("."),
-                err.message
-            );
+            let contract_error = err.data.as_object()
+                .map(|map| map.get("contract_error").map(|v| v.as_str()).flatten())
+                .flatten();
+            let local_error_msg = match contract_error {
+                None => err.message.as_str(),
+                Some(contract_error) => {
+                    original_error.data["contract_error"] = contract_error.into();
+                    contract_error
+                },
+            };
             original_error.data["local_error"] =
-                serde_json::to_value(err).map_err(crate::client::Error::cannot_serialize_result)?;
+                serde_json::to_value(&err).map_err(crate::client::Error::cannot_serialize_result)?;
+
+            match original_error.message.find("\nTip:") {
+                Some(insert_position) => {
+                    original_error.message = format!(
+                        "{}. Possible reason: {}.{}",
+                        &original_error.message[..insert_position].trim_end().trim_end_matches("."),
+                        local_error_msg.trim_end_matches("."),
+                        &original_error.message[insert_position..],
+                    )
+                },
+                None => original_error.message = format!(
+                    "{}. Possible reason: {}",
+                    original_error.message.trim_end_matches("."),
+                    err.message
+                )
+            }
+
             Err(original_error)
         }
         Ok(_) => {
