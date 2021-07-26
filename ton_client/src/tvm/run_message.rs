@@ -391,6 +391,7 @@ where
     let transaction = match result {
         Ok(transaction) => transaction,
         Err(err) => {
+            let err_message = err.to_string();
             let err = match contract_info().await {
                 Ok((address, balance)) => match &err.downcast_ref::<ExecutorError>() {
                     Some(ExecutorError::NoAcceptError(code, exit_arg)) => {
@@ -399,7 +400,7 @@ where
                             .map(|item| serialize_item(item))
                             .transpose()?;
                         Error::tvm_execution_failed(
-                            "Error during local execution",
+                            err_message,
                             *code,
                             exit_arg,
                             &address,

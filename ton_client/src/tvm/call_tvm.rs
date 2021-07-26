@@ -81,7 +81,7 @@ pub(crate) fn call_tvm(
 
             let exit_arg = super::stack::serialize_item(&exception.value)?;
             Err(Error::tvm_execution_failed(
-                "Error during local execution",
+                exception.to_string(),
                 code,
                 Some(exit_arg),
                 addr,
@@ -95,7 +95,7 @@ pub(crate) fn call_tvm(
                     account.set_data(data);
                     Ok(engine)
                 }
-                _ => Err(Error::internal_error("invalid commited state"))
+                _ => Err(Error::internal_error("invalid committed state"))
             }
         }
     }

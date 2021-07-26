@@ -191,6 +191,7 @@ pub async fn fetch_transaction_result(
             message.to_string(),
             error,
             expiration_time - 1,
+            false,
         )
             .await
             .add_network_url_from_context(&context)
@@ -206,16 +207,17 @@ pub async fn fetch_transaction_result(
     let fees = calc_transaction_fees(&transaction, true, false, get_contract_info, true)
         .await
         .map_err(|err| {
+            const EXIT_CODE_FIELD: &str = "exit_code";
+            let exit_code = &err.data[EXIT_CODE_FIELD];
             if err.code == crate::tvm::ErrorCode::ContractExecutionError as u32
-                && (err.data["exit_code"] == crate::tvm::StdContractError::ReplayProtection as i32
-                    || err.data["exit_code"]
-                        == crate::tvm::StdContractError::ExtMessageExpired as i32)
+                && (exit_code == crate::tvm::StdContractError::ReplayProtection as i32
+                    || exit_code == crate::tvm::StdContractError::ExtMessageExpired as i32)
             {
                 Error::message_expired(&message_id, shard_block_id, expiration_time, block_time, &address)
             } else {
                 if let Some(local_result) = local_result {
                     if let Err(local_error) = local_result {
-                        if local_error.code == err.code {
+                        if local_error.data[EXIT_CODE_FIELD] == *exit_code {
                             return local_error;
                         }
                     }

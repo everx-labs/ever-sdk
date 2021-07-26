@@ -100,6 +100,10 @@ impl Error {
         gas_used: Option<u64>,
         show_tips: bool,
     ) -> ClientError {
+        let mut err = err.to_string();
+        if err.starts_with("code ") {
+            err = "Unknown error".to_string();
+        }
         let mut error = error(
             ErrorCode::ContractExecutionError,
             if show_tips {
@@ -171,12 +175,16 @@ impl Error {
             }
         } else if let Some(ref exit_arg) = exit_arg {
             if let Some(error_message) = Self::read_error_message(exit_arg) {
+                error.message.push_str(&format!(", contract error: \"{}\"", error_message));
                 error.data["contract_error"] = error_message.into();
             }
         }
 
         if show_tips {
-            error.message.push_str(".\nTip: For more information about exit code check the contract source code or ask the contract developer");
+            error.message = error.message.trim_end_matches('.').to_string();
+            error.message.push_str(
+                ".\nTip: For more information about exit code check the contract source code \
+                or ask the contract developer");
         }
 
         error
@@ -300,7 +308,7 @@ impl Error {
             None => return None,
         };
 
-        Some(String::from_utf8_lossy(&Self::load_boc_data(&cell)).to_string())
+        String::from_utf8(Self::load_boc_data(&cell)).ok()
     }
 
     fn extract_cell(exit_arg: &Value) -> Option<Cell> {
