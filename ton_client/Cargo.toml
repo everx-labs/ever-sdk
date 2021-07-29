@@ -67,7 +67,7 @@ tokio-tungstenite = { version =  "0.11.0", features = ["tls"], optional = true }
 
 # optional for wasm
 js-sys = { version = "0.3.50", optional = true }
-wasm-bindgen = { version = "0.2.73", features = ["serde-serialize"], optional = true }
+wasm-bindgen = { version = "0.2.73", optional = true }
 wasm-bindgen-futures = { version = "0.4.15", optional = true }
 
 [dependencies.web-sys]
