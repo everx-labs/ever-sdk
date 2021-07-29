@@ -19,19 +19,14 @@ use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
 use web_sys::{Event, MessageEvent, Request, RequestInit, Response, Window};
+use js_sys::JSON;
 
-fn js_value_to_value(js_value: JsValue) -> ClientResult<serde_json::Value> {
-    js_value
-        .into_serde::<serde_json::Value>()
-        .map_err(|_| Error::cannot_convert_jsvalue_to_json(js_value))
-}
-
-fn js_value_to_string(js_value: JsValue) -> String {
+fn js_error_to_string(js_value: JsValue) -> String {
     if let Ok(txt) = js_value.clone().dyn_into::<js_sys::Error>() {
         String::from(txt.message())
     } else {
-        js_value_to_value(js_value)
-            .map(|val| format!("{:#}", val))
+        JSON::stringify(&js_value)
+            .map(|val| String::from(val))
             .unwrap_or("Unserializable value".to_owned())
     }
 }
@@ -214,7 +209,7 @@ impl ClientEnv {
                 log::trace!("Websocket send: {}", string);
                 let result = ws
                     .send_with_str(&string)
-                    .map_err(|err| Error::websocket_send_error(js_value_to_string(err)));
+                    .map_err(|err| Error::websocket_send_error(js_error_to_string(err)));
                 let _ = sender.send(result);
             }
             let _ = ws.close();
@@ -285,7 +280,7 @@ impl ClientEnv {
         let mut resp_future = JsFuture::from(window.fetch_with_request(&request))
             .map(|result| match result {
                 Ok(result) => Ok(result),
-                Err(err) => Err(Error::http_request_send_error(js_value_to_string(err))),
+                Err(err) => Err(Error::http_request_send_error(js_error_to_string(err))),
             });
 
         let resp_result = match timeout_ms {
