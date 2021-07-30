@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.20.1] – 2021-07-30
+### Fixed
+- Fixed building wasm
+
 ## [1.20.0] – 2021-07-16
 
 ### New
