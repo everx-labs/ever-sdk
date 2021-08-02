@@ -85,7 +85,7 @@ async fn get_local_error(
         .ok_or(Error::invalid_data("Account doesn't contain 'boc'"))?
         .to_owned();
 
-    crate::tvm::run_executor(
+    crate::tvm::run_executor_internal(
         context,
         ParamsOfRunExecutor {
             abi: None,
@@ -98,9 +98,9 @@ async fn get_local_error(
                 ..Default::default()
             }),
             message,
-            show_tips_on_error: Some(show_tips_on_error),
             ..Default::default()
         },
+        show_tips_on_error,
     )
     .await
     .map(|_| ())

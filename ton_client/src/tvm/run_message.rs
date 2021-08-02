@@ -132,8 +132,6 @@ pub struct ParamsOfRunExecutor {
     pub boc_cache: Option<BocCacheType>,
     /// Return updated account flag. Empty string is returned if the flag is `false`
     pub return_updated_account: Option<bool>,
-    /// Show tips, if error occurs. Default value is `true`.
-    pub show_tips_on_error: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone, Default)]
@@ -242,6 +240,18 @@ pub async fn run_executor(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfRunExecutor,
 ) -> ClientResult<ResultOfRunExecutor> {
+    run_executor_internal(
+        context,
+        params,
+        true,
+    ).await
+}
+
+pub async fn run_executor_internal(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfRunExecutor,
+    show_tips_on_error: bool,
+) -> ClientResult<ResultOfRunExecutor> {
     let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
     let msg_address = message.dst_ref().ok_or_else(|| Error::invalid_message_type())?.clone();
     let (account, _) = params.account.get_account(&context, msg_address.clone()).await?;
@@ -257,15 +267,13 @@ pub async fn run_executor(
         }
     };
 
-    let show_tips = params.show_tips_on_error.unwrap_or(true);
-
     let (transaction, modified_account) =
         call_executor(
             account.clone(),
             message,
             options,
             contract_info.clone(),
-            show_tips,
+            show_tips_on_error,
         ).await?;
 
     let sdk_transaction = ton_sdk::Transaction::try_from(&transaction)
@@ -276,7 +284,7 @@ pub async fn run_executor(
         false,
         params.skip_transaction_check.unwrap_or_default(),
         contract_info,
-        show_tips,
+        show_tips_on_error,
     )
     .await?;
 
