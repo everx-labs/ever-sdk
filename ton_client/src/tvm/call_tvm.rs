@@ -86,6 +86,7 @@ pub(crate) fn call_tvm(
                 Some(exit_arg),
                 addr,
                 None,
+                true,
             ))
         }
         Ok(_) => {
@@ -94,7 +95,7 @@ pub(crate) fn call_tvm(
                     account.set_data(data);
                     Ok(engine)
                 }
-                _ => Err(Error::internal_error("invalid commited state"))
+                _ => Err(Error::internal_error("invalid committed state"))
             }
         }
     }

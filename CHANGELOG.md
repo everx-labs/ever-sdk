@@ -3,6 +3,13 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.20.1] – 2021-07-30
+
+## New
+- Added support of contract error messages. Error messages (for example, require(...) in Solidity) now parsed by SDK
+  and returned in error message, as well, as in the new `contract_error` field of error's `data`. The only way to 
+  obtain these errors is running contract locally, so SDK reruns contract locally on every unsuccessful running on 
+  blockchain.
+
 ### Fixed
 - Fixed building wasm
 

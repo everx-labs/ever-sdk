@@ -11,11 +11,12 @@
 * limitations under the License.
 */
 
+use crate::boc::internal::deserialize_cell_from_base64;
 use crate::error::ClientError;
 use serde_json::Value;
 use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
-use ton_types::ExceptionCode;
+use ton_types::{ExceptionCode, Cell};
 
 #[derive(ApiType)]
 pub enum ErrorCode {
@@ -97,15 +98,22 @@ impl Error {
         exit_arg: Option<Value>,
         address: &MsgAddressInt,
         gas_used: Option<u64>,
+        show_tips: bool,
     ) -> ClientError {
+        let mut err = err.to_string();
+        if err.starts_with("code ") {
+            err = "Unknown error".to_string();
+        }
         let mut error = error(
             ErrorCode::ContractExecutionError,
-            format!("Contract execution was terminated with error: {}", err),
+            if show_tips {
+                format!("Contract execution was terminated with error: {}", err)
+            } else {
+                err.to_string()
+            },
         );
 
-        if !error.message.contains("exit code") &&
-            !error.message.contains("Exit code")
-        {
+        if show_tips && !error.message.to_lowercase().contains("exit code") {
             error.message.push_str(&format!(", exit code: {}", exit_code));
 
             let tip = match exit_code {
@@ -162,9 +170,19 @@ impl Error {
                 error.message.push_str(". ");
                 error.message.push_str(tip);
             }
+        } else if let Some(ref exit_arg) = exit_arg {
+            if let Some(error_message) = Self::read_error_message(exit_arg) {
+                error.message.push_str(&format!(", contract error: \"{}\"", error_message));
+                error.data["contract_error"] = error_message.into();
+            }
         }
 
-        error.message.push_str(". For more information about exit code check the contract source code or ask the contract developer");
+        if show_tips {
+            error.message = error.message.trim_end_matches('.').to_string();
+            error.message.push_str(
+                ".\nTip: For more information about exit code check the contract source code \
+                or ask the contract developer");
+        }
 
         error
     }
@@ -203,7 +221,7 @@ impl Error {
                 "Transaction failed at action phase".to_owned(),
             );
             if !valid {
-                error.data["description"] = "Contract tried to send invalid oubound message".into();
+                error.data["description"] = "Contract tried to send invalid outbound message".into();
             }
             error
         };
@@ -279,6 +297,53 @@ impl Error {
             ErrorCode::InternalError,
             format!("TVM internal error: {}", err),
         )
+    }
+
+    fn read_error_message(exit_arg: &Value) -> Option<String> {
+        let cell = match Self::extract_cell(exit_arg) {
+            Some(cell) => cell,
+            None => return None,
+        };
+
+        String::from_utf8(Self::load_boc_data(&cell)).ok()
+    }
+
+    fn extract_cell(exit_arg: &Value) -> Option<Cell> {
+        let map = match exit_arg {
+            Value::Object(map) => map,
+            _ => return None,
+        };
+
+        if let Some(arg_type) = map.get("type") {
+            match arg_type {
+                Value::String(arg_type) if arg_type == "Cell" => {},
+                _ => return None,
+            }
+        }
+
+        let base64_value = match map.get("value") {
+            Some(value) => {
+                match value {
+                    Value::String(base64_value) => base64_value,
+                    _ => return None,
+                }
+            },
+            None => return None,
+        };
+
+        deserialize_cell_from_base64(&base64_value, "contract_error")
+            .map(|(_bytes, cell)| cell)
+            .ok()
+    }
+
+    fn load_boc_data(cell: &Cell) -> Vec<u8> {
+        let mut result = cell.data().to_vec()[..(cell.bit_length() >> 3)].to_vec();
+        for i in 0..cell.references_count() {
+            if let Ok(cell) = cell.reference(i) {
+                result.append(&mut Self::load_boc_data(&cell));
+            }
+        }
+        result
     }
 }
 
