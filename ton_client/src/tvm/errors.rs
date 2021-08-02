@@ -113,10 +113,7 @@ impl Error {
             },
         );
 
-        if show_tips
-            && !error.message.contains("exit code")
-            && !error.message.contains("Exit code")
-        {
+        if show_tips && !error.message.to_lowercase().contains("exit code") {
             error.message.push_str(&format!(", exit code: {}", exit_code));
 
             let tip = match exit_code {
@@ -224,7 +221,7 @@ impl Error {
                 "Transaction failed at action phase".to_owned(),
             );
             if !valid {
-                error.data["description"] = "Contract tried to send invalid oubound message".into();
+                error.data["description"] = "Contract tried to send invalid outbound message".into();
             }
             error
         };

@@ -215,11 +215,9 @@ pub async fn fetch_transaction_result(
             {
                 Error::message_expired(&message_id, shard_block_id, expiration_time, block_time, &address)
             } else {
-                if let Some(local_result) = local_result {
-                    if let Err(local_error) = local_result {
-                        if local_error.data[EXIT_CODE_FIELD] == *exit_code {
-                            return local_error;
-                        }
+                if let Some(Err(local_error)) = local_result {
+                    if local_error.data[EXIT_CODE_FIELD] == *exit_code {
+                        return local_error;
                     }
                 }
                 err
