@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["ErrorCode",""],["ProcessingEvent",""],["ProcessingResponseType",""]],"fn":[["process_message",""],["send_message",""],["wait_for_transaction",""]],"struct":[["DecodedOutput",""],["Error",""],["ParamsOfProcessMessage",""],["ParamsOfSendMessage",""],["ParamsOfWaitForTransaction",""],["ResultOfProcessMessage",""],["ResultOfSendMessage",""]]});
