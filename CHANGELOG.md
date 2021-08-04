@@ -9,7 +9,7 @@ All notable changes to this project will be documented in this file.
   and returned in error message. New field `contract_error` was added to error's `data`. 
 
 ### Fixed
-- wasm build was fixed
+- Fixed problem with WASM binaries (https://github.com/tonlabs/ton-labs-types/pull/42)
 
 ## [1.20.0] – 2021-07-16
 
