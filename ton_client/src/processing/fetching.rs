@@ -1,18 +1,19 @@
 use crate::abi::Abi;
 use crate::boc::internal::deserialize_object_from_base64;
 use crate::client::ClientContext;
-use crate::error::ClientResult;
+use crate::error::{ClientResult, AddNetworkUrl};
 use crate::net::{
     wait_for_collection, ParamsOfWaitForCollection, MAX_TIMEOUT, TRANSACTIONS_COLLECTION,
 };
 use crate::processing::blocks_walking::wait_next_block;
-use crate::processing::internal::can_retry_network_error;
+use crate::processing::internal::{can_retry_network_error, resolve_error};
 use crate::processing::parsing::{decode_output, parse_transaction_boc};
 use crate::processing::{
     Error, ParamsOfWaitForTransaction, ProcessingEvent, ResultOfProcessMessage,
 };
-use crate::tvm::check_transaction::calc_transaction_fees;
+use crate::tvm::check_transaction::{calc_transaction_fees, extract_error};
 use serde_json::Value;
+use std::convert::TryFrom;
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_sdk::Block;
@@ -158,6 +159,7 @@ pub async fn fetch_transaction_result(
     context: &Arc<ClientContext>,
     shard_block_id: &String,
     message_id: &str,
+    message: &str,
     transaction_id: &str,
     abi: &Option<Abi>,
     address: MsgAddressInt,
@@ -174,16 +176,50 @@ pub async fn fetch_transaction_result(
     };
     let transaction_object = deserialize_object_from_base64(&transaction_boc.boc, "transaction")?;
 
-    let fees = calc_transaction_fees(&transaction_object.object, true, false, get_contract_info)
+    let transaction = ton_sdk::Transaction::try_from(&transaction_object.object)
+        .map_err(|err| crate::tvm::Error::can_not_read_transaction(err))?;
+
+    let local_result = if transaction.is_aborted() {
+        let error = match extract_error(&transaction, get_contract_info.clone(), true).await {
+            Err(err) => err,
+            Ok(_) => crate::tvm::Error::transaction_aborted(),
+        };
+
+        Some(resolve_error(
+            Arc::clone(context),
+            &address,
+            message.to_string(),
+            error,
+            expiration_time - 1,
+            false,
+        )
+            .await
+            .add_network_url_from_context(&context)
+            .await
+            .map_err(|mut error| {
+                error.data["transaction_id"] = transaction.id().to_string().into();
+                error
+            }))
+    } else {
+        None
+    };
+
+    let fees = calc_transaction_fees(&transaction, true, false, get_contract_info, true)
         .await
         .map_err(|err| {
+            const EXIT_CODE_FIELD: &str = "exit_code";
+            let exit_code = &err.data[EXIT_CODE_FIELD];
             if err.code == crate::tvm::ErrorCode::ContractExecutionError as u32
-                && (err.data["exit_code"] == crate::tvm::StdContractError::ReplayProtection as i32
-                    || err.data["exit_code"]
-                        == crate::tvm::StdContractError::ExtMessageExpired as i32)
+                && (exit_code == crate::tvm::StdContractError::ReplayProtection as i32
+                    || exit_code == crate::tvm::StdContractError::ExtMessageExpired as i32)
             {
                 Error::message_expired(&message_id, shard_block_id, expiration_time, block_time, &address)
             } else {
+                if let Some(Err(local_error)) = local_result {
+                    if local_error.data[EXIT_CODE_FIELD] == *exit_code {
+                        return local_error;
+                    }
+                }
                 err
             }
         })?;

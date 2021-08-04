@@ -26,7 +26,7 @@
 
 [Quick Start (Javascript)](https://docs.ton.dev/86757ecb2/p/33b76d-quick-start)    
 
-[JavaScript Types and Methods (API Reference)](https://tonlabs.github.io/ton-client-js/)
+[JavaScript SDK Types and Methods (API Reference)](https://tonlabs.github.io/ton-client-js/)
 
 [Core Types and Methods (API Reference)](https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md)     
 
@@ -55,8 +55,6 @@ interaction with library is performed using JSON-RPC like protocol.
 
 Library works over [GraphQL API](https://docs.ton.dev/86757ecb2/p/793337-ton-os-api) of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). 
 So, it can be used to interact directly with [TON OS Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks).  
-- [Freeton](https://main2.ton.dev/graphql)
-- [Devnet](https://net1.ton.dev/graphql)
 
 # SDKs in other languages (bindings over TON-SDK)
 
@@ -64,12 +62,14 @@ Binding is a thin client library written on the specific language that acts like
 a client library and an application code written on that language.
 
 ## Official Javascript(Typescript) SDK
-Platforms: Node.js, Web, React-Native for IOS/Android
-- [JavaScript Types and Methods (API Reference)](https://tonlabs.github.io/ton-client-js/) 
+
+Supported platforms: Node.js, Web, React-Native for IOS/Android
+
+Repository: [JavaScript SDK](https://github.com/tonlabs/ton-client-js) 
 
 ## Community bindings
 
-Language | Repo
+Language | Repository
 -------- | --------------
 Clojure | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)
 Dart | [freetonsurfer/ton_client_dart](https://github.com/freetonsurfer/ton_client_dart)

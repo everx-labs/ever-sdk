@@ -1,0 +1,32 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><meta name="generator" content="rustdoc"><meta name="description" content="Encodes an ABI-compatible message"><meta name="keywords" content="rust, rustlang, rust-lang, encode_message"><title>ton_client::abi::encode_message - Rust</title><link rel="stylesheet" type="text/css" href="../../normalize.css"><link rel="stylesheet" type="text/css" href="../../rustdoc.css" id="mainThemeStyle"><link rel="stylesheet" type="text/css" href="../../light.css"  id="themeStyle"><link rel="stylesheet" type="text/css" href="../../dark.css" disabled ><link rel="stylesheet" type="text/css" href="../../ayu.css" disabled ><script id="default-settings"></script><script src="../../storage.js"></script><script src="../../crates.js"></script><noscript><link rel="stylesheet" href="../../noscript.css"></noscript><link rel="icon" type="image/svg+xml" href="../../favicon.svg">
+<link rel="alternate icon" type="image/png" href="../../favicon-16x16.png">
+<link rel="alternate icon" type="image/png" href="../../favicon-32x32.png"><style type="text/css">#crate-search{background-image:url("../../down-arrow.svg");}</style></head><body class="rustdoc fn"><!--[if lte IE 8]><div class="warning">This old browser is unsupported and will most likely display funky things.</div><![endif]--><nav class="sidebar"><div class="sidebar-menu" role="button">&#9776;</div><a href='../../ton_client/index.html'><div class='logo-container rust-logo'><img src='../../rust-logo.png' alt='logo'></div></a><div class="sidebar-elems"><p class="location"><a href="../index.html">ton_client</a>::<wbr><a href="index.html">abi</a></p><div id="sidebar-vars" data-name="encode_message" data-ty="fn" data-relpath=""></div><script defer src="sidebar-items.js"></script></div></nav><div class="theme-picker"><button id="theme-picker" aria-label="Pick another theme!" aria-haspopup="menu"><img src="../../brush.svg" width="18" height="18" alt="Pick another theme!"></button><div id="theme-choices" role="menu"></div></div><script src="../../theme.js"></script><nav class="sub"><form class="search-form"><div class="search-container"><div><select id="crate-search"><option value="All crates">All crates</option></select><input class="search-input" name="search" disabled autocomplete="off" spellcheck="false" placeholder="Click or press ‘S’ to search, ‘?’ for more options…" type="search"></div><button type="button" class="help-button">?</button>
+                <a id="settings-menu" href="../../settings.html"><img src="../../wheel.svg" width="18" height="18" alt="Change settings"></a></div></form></nav><section id="main" class="content"><h1 class="fqn"><span class="in-band">Function <a href="../index.html">ton_client</a>::<wbr><a href="index.html">abi</a>::<wbr><a class="fn" href="">encode_message</a></span><span class="out-of-band"><span id="render-detail"><a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">[<span class="inner">&#x2212;</span>]</a></span><a class="srclink" href="../../src/ton_client/abi/encode_message.rs.html#413-469" title="goto source code">[src]</a></span></h1><pre class="rust fn">pub async fn encode_message(<br>&nbsp;&nbsp;&nbsp;&nbsp;context: <a class="struct" href="https://doc.rust-lang.org/nightly/alloc/sync/struct.Arc.html" title="struct alloc::sync::Arc">Arc</a>&lt;<a class="struct" href="../../ton_client/client/struct.ClientContext.html" title="struct ton_client::client::ClientContext">ClientContext</a>&gt;, <br>&nbsp;&nbsp;&nbsp;&nbsp;params: <a class="struct" href="../../ton_client/abi/struct.ParamsOfEncodeMessage.html" title="struct ton_client::abi::ParamsOfEncodeMessage">ParamsOfEncodeMessage</a><br>) -&gt; <a class="type" href="../../ton_client/error/type.ClientResult.html" title="type ton_client::error::ClientResult">ClientResult</a>&lt;<a class="struct" href="../../ton_client/abi/struct.ResultOfEncodeMessage.html" title="struct ton_client::abi::ResultOfEncodeMessage">ResultOfEncodeMessage</a>&gt;</pre><div class="docblock"><p>Encodes an ABI-compatible message</p>
+<p>Allows to encode deploy and function call messages,
+both signed and unsigned.</p>
+<p>Use cases include messages of any possible type:</p>
+<ul>
+<li>deploy with initial function call (i.e. <code>constructor</code> or any other function that is used for some kind
+of initialization);</li>
+<li>deploy without initial function call;</li>
+<li>signed/unsigned + data for signing.</li>
+</ul>
+<p><code>Signer</code> defines how the message should or shouldn’t be signed:</p>
+<p><code>Signer::None</code> creates an unsigned message. This may be needed in case of some public methods,
+that do not require authorization by pubkey.</p>
+<p><code>Signer::External</code> takes public key and returns <code>data_to_sign</code> for later signing.
+Use <code>attach_signature</code> method with the result signature to get the signed message.</p>
+<p><code>Signer::Keys</code> creates a signed message with provided key pair.</p>
+<p>[SOON] <code>Signer::SigningBox</code> Allows using a special interface to implement signing
+without private key disclosure to SDK. For instance, in case of using a cold wallet or HSM,
+when application calls some API to sign data.</p>
+<p>There is an optional public key can be provided in deploy set in order to substitute one
+in TVM file.</p>
+<p>Public key resolving priority:</p>
+<ol>
+<li>Public key from deploy set.</li>
+<li>Public key, specified in TVM file.</li>
+<li>Public key, provided by signer.</li>
+</ol>
+</div></section><section id="search" class="content hidden"></section><section class="footer"></section><div id="rustdoc-vars" data-root-path="../../" data-current-crate="ton_client" data-search-js="../../search-index.js"></div>
+    <script src="../../main.js"></script></body></html>

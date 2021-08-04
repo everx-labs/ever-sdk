@@ -1,5 +1,5 @@
 {
-  "version": "1.20.0",
+  "version": "1.20.1",
   "modules": [
     {
       "name": "client",
@@ -7727,7 +7727,7 @@
         {
           "name": "get_address_type",
           "summary": "Validates and returns the type of any TON address.",
-          "description": "Address types are the following\n\n`0:919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - standart TON address most\ncommonly used in all cases. Also called as hex addres\n`919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - account ID. A part of full\naddress. Identifies account inside particular workchain\n`EQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H9wam` - base64 address. Also called \"user-friendly\".\nWas used at the beginning of TON. Now it is supported for compatibility",
+          "description": "Address types are the following\n\n`0:919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - standard TON address most\ncommonly used in all cases. Also called as hex address\n`919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - account ID. A part of full\naddress. Identifies account inside particular workchain\n`EQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H9wam` - base64 address. Also called \"user-friendly\".\nWas used at the beginning of TON. Now it is supported for compatibility",
           "params": [
             {
               "name": "_context",

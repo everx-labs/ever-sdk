@@ -1,0 +1,3 @@
+(function() {var implementors = {};
+implementors["ton_client"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/core/cmp/trait.Eq.html\" title=\"trait core::cmp::Eq\">Eq</a> for <a class=\"enum\" href=\"ton_client/encoding/enum.AccountAddressType.html\" title=\"enum ton_client::encoding::AccountAddressType\">AccountAddressType</a>","synthetic":false,"types":["ton_client::encoding::AccountAddressType"]}];
+if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

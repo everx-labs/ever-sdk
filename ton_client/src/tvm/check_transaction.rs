@@ -13,26 +13,24 @@
 
 use super::errors::Error;
 use crate::error::ClientResult;
-use std::convert::TryFrom;
 use ton_block::AccStatusChange;
+use ton_sdk::Transaction;
 
 pub(crate) async fn calc_transaction_fees<F>(
-    transaction: &ton_block::Transaction,
+    transaction: &Transaction,
     real_tr: bool,
     skip_check: bool,
     contract_info: impl FnOnce() -> F,
+    show_tips_on_error: bool,
 ) -> ClientResult<ton_sdk::TransactionFees>
 where
     F: futures::Future<Output = ClientResult<(ton_block::MsgAddressInt, u64)>>,
 {
-    let transaction = ton_sdk::Transaction::try_from(transaction)
-        .map_err(|err| Error::can_not_read_transaction(err))?;
-
     if !transaction.is_aborted() || skip_check {
         return Ok(transaction.calc_fees());
     }
 
-    let mut error = match extract_error(&transaction, contract_info).await {
+    let mut error = match extract_error(&transaction, contract_info, show_tips_on_error).await {
         Err(err) => err,
         Ok(_) => Error::transaction_aborted(),
     };
@@ -44,9 +42,10 @@ where
     Err(error)
 }
 
-async fn extract_error<F>(
+pub(crate) async fn extract_error<F>(
     transaction: &ton_sdk::Transaction,
     contract_info: impl FnOnce() -> F,
+    show_tips: bool,
 ) -> ClientResult<()>
 where
     F: futures::Future<Output = ClientResult<(ton_block::MsgAddressInt, u64)>>,
@@ -70,11 +69,12 @@ where
     if transaction.compute.success.is_none() || !transaction.compute.success.unwrap() {
         let (address, _) = contract_info().await?;
         return Err(Error::tvm_execution_failed(
-            "compute phase isn't succeeded",
+            "Compute phase isn't succeeded",
             transaction.compute.exit_code.unwrap_or(-1),
             transaction.compute.exit_arg.map(i32::into),
             &address,
             Some(transaction.compute.gas_used),
+            show_tips,
         ));
     }
 

@@ -76,6 +76,7 @@ async fn get_local_error(
     address: &MsgAddressInt,
     message: String,
     time: u32,
+    show_tips_on_error: bool,
 ) -> ClientResult<()> {
     let account = fetch_account(context.clone(), address, "boc").await?;
 
@@ -84,7 +85,7 @@ async fn get_local_error(
         .ok_or(Error::invalid_data("Account doesn't contain 'boc'"))?
         .to_owned();
 
-    crate::tvm::run_executor(
+    crate::tvm::run_executor_internal(
         context,
         ParamsOfRunExecutor {
             abi: None,
@@ -99,6 +100,7 @@ async fn get_local_error(
             message,
             ..Default::default()
         },
+        show_tips_on_error,
     )
     .await
     .map(|_| ())
@@ -110,18 +112,47 @@ pub(crate) async fn resolve_error(
     message: String,
     mut original_error: ClientError,
     time: u32,
+    without_transaction: bool,
 ) -> ClientResult<()> {
-    let result = get_local_error(context, address, message, time).await;
+    let result = get_local_error(context, address, message, time, without_transaction).await;
 
     match result {
         Err(err) => {
-            original_error.message = format!(
-                "{}. Possible reason: {}",
-                original_error.message.trim_end_matches("."),
-                err.message
-            );
-            original_error.data["local_error"] =
-                serde_json::to_value(err).map_err(crate::client::Error::cannot_serialize_result)?;
+            const EXIT_CODE_FIELD: &str = "exit_code";
+            const EXIT_ARG_FIELD: &str = "exit_arg";
+            const CONTRACT_ERROR_FIELD: &str = "contract_error";
+
+            let exit_code = original_error.data[EXIT_CODE_FIELD].as_i64();
+            let local_exit_code = err.data[EXIT_CODE_FIELD].as_i64();
+
+            if !without_transaction && exit_code != local_exit_code {
+                return Err(original_error);
+            }
+
+            if without_transaction {
+                original_error.data["local_error"] =
+                    serde_json::to_value(&err).map_err(crate::client::Error::cannot_serialize_result)?;
+            } else {
+                original_error.data[EXIT_ARG_FIELD] = err.data[EXIT_ARG_FIELD].clone();
+                original_error.data[CONTRACT_ERROR_FIELD] = err.data[CONTRACT_ERROR_FIELD].clone();
+            }
+
+            match original_error.message.find("\nTip:") {
+                Some(insert_position) => {
+                    original_error.message = format!(
+                        "{}.\nPossible reason: {}.{}",
+                        &original_error.message[..insert_position].trim_end().trim_end_matches("."),
+                        remove_exit_code(&exit_code, err.message.trim_end_matches(".")),
+                        &original_error.message[insert_position..],
+                    )
+                },
+                None => original_error.message = format!(
+                    "{}.\nPossible reason: {}",
+                    original_error.message.trim_end_matches("."),
+                    remove_exit_code(&exit_code, &err.message),
+                )
+            }
+
             Err(original_error)
         }
         Ok(_) => {
@@ -131,5 +162,15 @@ pub(crate) async fn resolve_error(
             );
             Err(original_error)
         }
+    }
+}
+
+/// Removes exit code from internal error only if it matches exit code of original error
+fn remove_exit_code(exit_code: &Option<i64>, internal_error: &str) -> String {
+    if let Some(exit_code) = exit_code {
+        regex::Regex::new(&format!(r#"(?i)([,\.]\s*)?exit\s+code(:\s*|\s+){}"#, exit_code)).unwrap()
+            .replace(internal_error, "").to_string()
+    } else {
+        internal_error.to_string()
     }
 }

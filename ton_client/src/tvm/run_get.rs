@@ -63,7 +63,7 @@ pub async fn run_get(
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
     if account.is_none() {
-        return Err(Error::invalid_account_boc("Acount is None"))
+        return Err(Error::invalid_account_boc("Account is None"))
     }
 
     let mut crc = crc_any::CRC::crc16xmodem();
