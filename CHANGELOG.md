@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 
 ## [1.20.1] – 2021-07-30
 
-## New
+### New
 - Added support of contract error messages. Error messages (for example, require(...) in Solidity) are now parsed by SDK
   and returned in error message. New field `contract_error` was added to error's `data`. 
 
