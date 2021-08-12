@@ -17,7 +17,7 @@ mod base64_interface;
 mod hex_interface;
 mod json_interface;
 mod browser;
-mod calltype;
+pub mod calltype;
 mod context;
 mod debot_abi;
 mod dengine;
