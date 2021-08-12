@@ -33,7 +33,7 @@ fn msg_err(e: impl Display) -> ClientError {
 }
 
 #[derive(Default)]
-struct Metadata {
+pub struct Metadata {
     answer_id: u32,
     onerror_id: u32,
     is_timestamp: bool,
@@ -82,6 +82,97 @@ impl TryFrom<MsgAddressExt> for Metadata {
             }
         }
     }
+}
+
+
+pub(crate) async fn prepare_ext_in_message(
+    msg: &Message,
+    signer: &Signer,
+    is_timestamp: bool,
+    is_expire: bool,
+    is_pubkey: bool,
+    ton: &TonClient
+    ) -> ClientResult<(u32, String)> {
+    // find function id in message body: parse signature, pubkey and abi headers
+    let mut message = msg.clone();
+    let mut in_body_slice = message.body().ok_or(msg_err("empty body"))?;
+    // skip signature bit and signature if present
+    let sign_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
+    if let Signer::SigningBox { handle: _ } = signer {
+        if !sign_bit {
+            return Err(msg_err("signature bit is zero"));
+        }
+        in_body_slice.get_next_bits(512).map_err(msg_err)?;
+    }
+    if is_pubkey {
+        let pubkey_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
+        if pubkey_bit {
+            in_body_slice.get_next_bits(256).map_err(msg_err)?;
+        }
+    }
+    if is_timestamp {
+        // skip `timestamp` header
+        in_body_slice.get_next_u64().map_err(msg_err)?;
+    }
+    if is_expire {
+        // skip `expire` header
+        in_body_slice.get_next_u32().map_err(msg_err)?;
+    }
+    // remember function id
+    let func_id = in_body_slice.get_next_u32().map_err(msg_err)?;
+
+    // rebuild msg body - insert correct `timestamp` and `expire` headers if they are present,
+    // then sign body with signing box
+
+    let mut new_body = BuilderData::new();
+    let pubkey = signer.resolve_public_key(ton.clone()).await?;
+    if is_pubkey {
+        if let Some(ref key) = pubkey {
+            new_body
+                .append_bit_one()
+                .and_then(|b| b.append_raw(&hex::decode(key).unwrap(), 256))
+                .map_err(msg_err)?;
+        } else {
+            // pubkey bit = 0
+            new_body.append_bit_zero().map_err(msg_err)?;
+        }
+    }
+    let now = ton.env.now_ms();
+    let expired_at = ((now / 1000) as u32) + ton.config.abi.message_expiration_timeout;
+    if is_timestamp {
+        new_body.append_u64(now).map_err(msg_err)?;
+    }
+    if is_expire {
+        new_body.append_u32(expired_at).map_err(msg_err)?;
+    }
+    new_body
+        .append_u32(func_id)
+        .and_then(|b| b.append_builder(&BuilderData::from_slice(&in_body_slice)))
+        .map_err(msg_err)?;
+
+    let mut signed_body = BuilderData::new();
+    match signer {
+        Signer::SigningBox { handle: _ } => {
+            let hash = new_body.clone().into_cell().map_err(msg_err)?.repr_hash().as_slice().to_vec();
+            let signature = signer.sign(ton.clone(), &hash).await?;
+            if let Some(signature) = signature {
+                signed_body
+                    .append_bit_one()
+                    .and_then(|b| b.append_raw(&signature, signature.len() * 8))
+                    .map_err(msg_err)?;
+            } else {
+                signed_body.append_bit_zero().map_err(msg_err)?;
+            }
+        },
+        _ => {
+            signed_body.append_bit_zero().map_err(msg_err)?;
+        }
+    }
+    signed_body.append_builder(&new_body).map_err(msg_err)?;
+
+    message.set_body(signed_body.into_cell().map_err(msg_err)?.into());
+    let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
+    Ok((func_id, msg))
 }
 
 pub(crate) struct ContractCall {
@@ -275,86 +366,8 @@ impl ContractCall {
     }
 
     async fn decode_and_fix_ext_msg(&self) -> ClientResult<(u32, String)> {
-        // find function id in message body: parse signature, pubkey and abi headers
-        let mut message = self.msg.clone();
-        let mut in_body_slice = message.body().ok_or(msg_err("empty body"))?;
-        // skip signature bit and signature if present
-        let sign_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
-        if let Signer::SigningBox { handle: _ } = self.signer {
-            if !sign_bit {
-                return Err(msg_err("signature bit is zero"));
-            }
-            in_body_slice.get_next_bits(512).map_err(msg_err)?;
-        }
-        if self.meta.is_pubkey {
-            let pubkey_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
-            if pubkey_bit {
-                in_body_slice.get_next_bits(256).map_err(msg_err)?;
-            }
-        }
-        if self.meta.is_timestamp {
-            // skip `timestamp` header
-            in_body_slice.get_next_u64().map_err(msg_err)?;
-        }
-        if self.meta.is_expire {
-            // skip `expire` header
-            in_body_slice.get_next_u32().map_err(msg_err)?;
-        }
-        // remember function id
-        let func_id = in_body_slice.get_next_u32().map_err(msg_err)?;
-    
-        // rebuild msg body - insert correct `timestamp` and `expire` headers if they are present,
-        // then sign body with signing box
-    
-        let mut new_body = BuilderData::new();
-        let pubkey = self.signer.resolve_public_key(self.ton.clone()).await?;
-        if self.meta.is_pubkey {
-            if let Some(ref key) = pubkey {
-                new_body
-                    .append_bit_one()
-                    .and_then(|b| b.append_raw(&hex::decode(key).unwrap(), 256))
-                    .map_err(msg_err)?;
-            } else {
-                // pubkey bit = 0
-                new_body.append_bit_zero().map_err(msg_err)?;
-            }
-        }
-        let now = self.ton.env.now_ms();
-        let expired_at = ((now / 1000) as u32) + self.ton.config.abi.message_expiration_timeout;
-        if self.meta.is_timestamp {
-            new_body.append_u64(now).map_err(msg_err)?;
-        }
-        if self.meta.is_expire {
-            new_body.append_u32(expired_at).map_err(msg_err)?;
-        }
-        new_body
-            .append_u32(func_id)
-            .and_then(|b| b.append_builder(&BuilderData::from_slice(&in_body_slice)))
-            .map_err(msg_err)?;
-    
-        let mut signed_body = BuilderData::new();
-        match self.signer {
-            Signer::SigningBox { handle: _ } => {
-                let hash = new_body.clone().into_cell().map_err(msg_err)?.repr_hash().as_slice().to_vec();
-                let signature = self.signer.sign(self.ton.clone(), &hash).await?;
-                if let Some(signature) = signature {
-                    signed_body
-                        .append_bit_one()
-                        .and_then(|b| b.append_raw(&signature, signature.len() * 8))
-                        .map_err(msg_err)?;
-                } else {
-                    signed_body.append_bit_zero().map_err(msg_err)?;
-                }
-            },
-            _ => {
-                signed_body.append_bit_zero().map_err(msg_err)?;
-            }
-        }
-        signed_body.append_builder(&new_body).map_err(msg_err)?;
-    
-        message.set_body(signed_body.into_cell().map_err(msg_err)?.into());
-        let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
-        Ok((func_id, msg))
+        let result: ClientResult<(u32, String)> = prepare_ext_in_message(&self.msg, &self.signer, self.meta.is_timestamp, self.meta.is_expire, self.meta.is_pubkey, &self.ton).await;
+        result
     }
 
     fn build_error_answer_msg(&self, e: ClientError) -> ClientResult<String> {
