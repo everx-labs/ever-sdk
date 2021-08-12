@@ -85,7 +85,7 @@ impl TryFrom<MsgAddressExt> for Metadata {
 }
 
 
-pub(crate) async fn prepare_ext_in_message(
+pub async fn prepare_ext_in_message(
     msg: &Message,
     signer: &Signer,
     is_timestamp: bool,
