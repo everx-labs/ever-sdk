@@ -4,7 +4,7 @@ use super::{BrowserCallbacks, DebotActivity, Spending, TonClient};
 use crate::abi::Signer;
 use crate::boc::internal::{deserialize_object_from_base64, serialize_object_to_base64};
 use crate::boc::{get_boc_hash, parse_message, ParamsOfParse, ParamsOfGetBocHash};
-use crate::crypto::{SigningBoxHandle};
+use crate::crypto::{KeyPair, SigningBoxHandle, get_signing_box};
 use crate::encoding::decode_abi_number;
 use crate::error::{ClientError, ClientResult};
 use crate::processing::{
@@ -87,11 +87,20 @@ impl TryFrom<MsgAddressExt> for Metadata {
 pub fn prepare_ext_in_message(
     msg: &Message,
     now_ms: u64,
-    // signer: &Signer,
+    keypair: Option<KeyPair>,
 ) -> Result<(u32, u32, MsgAddressInt, Message), String> {
     let config = crate::ClientConfig::default();
     let ton_client = Arc::new(crate::ClientContext::new(config).unwrap());
-    let signer = Signer::default();
+
+    let signer = if let Some(keypair) = keypair {
+        let future = get_signing_box(ton_client.clone(), keypair);
+        let signing_box = ton_client.env.block_on(future).unwrap();
+        Signer::SigningBox { 
+            handle: signing_box.handle.clone(),
+        }
+    } else {
+        Signer::default()
+    };
 
     let hdr = msg.ext_in_header().unwrap();
     let dst_addr: MsgAddressInt = hdr.dst.clone();
