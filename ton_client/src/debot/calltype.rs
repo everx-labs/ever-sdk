@@ -15,7 +15,7 @@ use crate::tvm::{run_executor, run_tvm, AccountForExecutor, ParamsOfRunExecutor,
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::sync::Arc;
-use ton_block::{Message, MsgAddressExt};
+use ton_block::{Message, MsgAddressExt, MsgAddressInt};
 use ton_types::{BuilderData, IBitstring, SliceData};
 use crate::net::{query_transaction_tree, ParamsOfQueryTransactionTree};
 
@@ -84,15 +84,35 @@ impl TryFrom<MsgAddressExt> for Metadata {
     }
 }
 
-
-pub async fn prepare_ext_in_message(
+pub fn prepare_ext_in_message(
     msg: &Message,
+    now_ms: u64,
+    // signer: &Signer,
+) -> Result<(u32, u32, MsgAddressInt, Message), String> {
+    let config = crate::ClientConfig::default();
+    let ton_client = Arc::new(crate::ClientContext::new(config).unwrap());
+    let signer = Signer::default();
+
+    let hdr = msg.ext_in_header().unwrap();
+    let dst_addr: MsgAddressInt = hdr.dst.clone();
+    let meta = Metadata::try_from(hdr.src.clone()).unwrap();
+
+    let future = 
+        decode_and_fix_ext_msg(msg, now_ms, &signer, &meta, &ton_client);
+
+    let (func_id, msg) = ton_client.env.block_on(future)
+            .map_err(|e| format!("prepare_ext_in_message: {:?}", e))?;
+    
+    Ok((func_id, meta.answer_id, dst_addr, msg))
+}
+
+pub async fn decode_and_fix_ext_msg(
+    msg: &Message,
+    now_ms: u64,
     signer: &Signer,
-    is_timestamp: bool,
-    is_expire: bool,
-    is_pubkey: bool,
+    meta: &Metadata,
     ton: &TonClient
-    ) -> ClientResult<(u32, String)> {
+) -> ClientResult<(u32, Message)> {
     // find function id in message body: parse signature, pubkey and abi headers
     let mut message = msg.clone();
     let mut in_body_slice = message.body().ok_or(msg_err("empty body"))?;
@@ -104,17 +124,17 @@ pub async fn prepare_ext_in_message(
         }
         in_body_slice.get_next_bits(512).map_err(msg_err)?;
     }
-    if is_pubkey {
+    if meta.is_pubkey {
         let pubkey_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
         if pubkey_bit {
             in_body_slice.get_next_bits(256).map_err(msg_err)?;
         }
     }
-    if is_timestamp {
+    if meta.is_timestamp {
         // skip `timestamp` header
         in_body_slice.get_next_u64().map_err(msg_err)?;
     }
-    if is_expire {
+    if meta.is_expire {
         // skip `expire` header
         in_body_slice.get_next_u32().map_err(msg_err)?;
     }
@@ -126,7 +146,7 @@ pub async fn prepare_ext_in_message(
 
     let mut new_body = BuilderData::new();
     let pubkey = signer.resolve_public_key(ton.clone()).await?;
-    if is_pubkey {
+    if meta.is_pubkey {
         if let Some(ref key) = pubkey {
             new_body
                 .append_bit_one()
@@ -137,12 +157,11 @@ pub async fn prepare_ext_in_message(
             new_body.append_bit_zero().map_err(msg_err)?;
         }
     }
-    let now = ton.env.now_ms();
-    let expired_at = ((now / 1000) as u32) + ton.config.abi.message_expiration_timeout;
-    if is_timestamp {
-        new_body.append_u64(now).map_err(msg_err)?;
+    let expired_at = ((now_ms / 1000) as u32) + ton.config.abi.message_expiration_timeout;
+    if meta.is_timestamp {
+        new_body.append_u64(now_ms).map_err(msg_err)?;
     }
-    if is_expire {
+    if meta.is_expire {
         new_body.append_u32(expired_at).map_err(msg_err)?;
     }
     new_body
@@ -171,8 +190,7 @@ pub async fn prepare_ext_in_message(
     signed_body.append_builder(&new_body).map_err(msg_err)?;
 
     message.set_body(signed_body.into_cell().map_err(msg_err)?.into());
-    let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
-    Ok((func_id, msg))
+    Ok((func_id, message))
 }
 
 pub(crate) struct ContractCall {
@@ -366,8 +384,11 @@ impl ContractCall {
     }
 
     async fn decode_and_fix_ext_msg(&self) -> ClientResult<(u32, String)> {
-        let result: ClientResult<(u32, String)> = prepare_ext_in_message(&self.msg, &self.signer, self.meta.is_timestamp, self.meta.is_expire, self.meta.is_pubkey, &self.ton).await;
-        result
+        let now_ms = self.ton.env.now_ms();
+        let result: (u32, Message) = decode_and_fix_ext_msg(&self.msg, now_ms, &self.signer, &self.meta, &self.ton).await?;
+        let (func_id, message) = result;
+        let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
+        Ok((func_id, msg))
     }
 
     fn build_error_answer_msg(&self, e: ClientError) -> ClientResult<String> {
