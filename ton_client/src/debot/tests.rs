@@ -74,7 +74,6 @@ struct BrowserData {
     pub next: Mutex<Vec<DebotStep>>,
     pub keys: KeyPair,
     pub address: String,
-    pub client: Arc<TestClient>,
     pub finished: AtomicBool,
     pub switch_started: AtomicBool,
     pub msg_queue: Mutex<VecDeque<String>>,
@@ -210,7 +209,6 @@ impl TestBrowser {
         let state = Arc::new(BrowserData {
             current: Mutex::new(Default::default()),
             next: Mutex::new(steps),
-            client: client.clone(),
             keys: keys.clone(),
             address: address.clone(),
             finished: AtomicBool::new(false),
@@ -240,7 +238,6 @@ impl TestBrowser {
         let state = Arc::new(BrowserData {
             current: Mutex::new(Default::default()),
             next: Mutex::new(steps),
-            client: client.clone(),
             keys: keys.clone(),
             address: address.clone(),
             finished: AtomicBool::new(false),
@@ -316,7 +313,6 @@ impl TestBrowser {
                 let state = Arc::new(BrowserData {
                     current: Mutex::new(current),
                     next: Mutex::new(steps),
-                    client: client.clone(),
                     keys: state.keys.clone(),
                     address: debot_addr,
                     finished: AtomicBool::new(false),

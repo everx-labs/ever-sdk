@@ -44,9 +44,9 @@ impl Signer {
             },
             Signer::External { .. } => Ok(None),
             Signer::SigningBox { handle } => {
-                let result = crate::crypto::boxes::signing_box_sign(
+                let result = crate::crypto::signing_box_sign(
                     context,
-                    crate::crypto::boxes::ParamsOfSigningBoxSign {
+                    crate::crypto::ParamsOfSigningBoxSign {
                         signing_box: handle.clone(),
                         unsigned: base64::encode(data_to_sign)
                     }
@@ -64,9 +64,9 @@ impl Signer {
             Signer::Keys { keys } => Ok(Some(keys.public.clone())),
             Signer::External { public_key } => Ok(Some(public_key.clone())),
             Signer::SigningBox { handle } => {
-                crate::crypto::boxes::signing_box_get_public_key(
+                crate::crypto::signing_box_get_public_key(
                     context,
-                    crate::crypto::boxes::RegisteredSigningBox {
+                    crate::crypto::RegisteredSigningBox {
                         handle: handle.clone()
                     }
                 )

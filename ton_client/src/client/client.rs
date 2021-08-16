@@ -22,7 +22,7 @@ use super::{AppRequestResult, Error, ParamsOfAppRequest};
 use crate::abi::AbiConfig;
 use crate::boc::{BocConfig, cache::Bocs};
 use crate::crypto::CryptoConfig;
-use crate::crypto::boxes::{SigningBox, EncryptionBox};
+use crate::crypto::boxes::{signing_box::SigningBox, encryption_box::EncryptionBox};
 use crate::debot::DEngine;
 use crate::error::ClientResult;
 use crate::json_interface::interop::ResponseType;

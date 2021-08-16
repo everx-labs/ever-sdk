@@ -1,3 +1,4 @@
+use crate::crypto::boxes::encryption_box::ParamsOfCreateEncryptionBox;
 use crate::crypto::encscrypt::{ParamsOfScrypt, ResultOfScrypt};
 use crate::crypto::hash::{ParamsOfHash, ResultOfHash};
 use crate::crypto::hdkey::{
@@ -750,7 +751,7 @@ async fn test_signing_box() {
     let keys = client.generate_sign_keys();
 
     let keys_box_handle = client
-        .request_async::<_, boxes::RegisteredSigningBox>(
+        .request_async::<_, RegisteredSigningBox>(
             "crypto.get_signing_box",
             keys.clone(),
         )
@@ -765,10 +766,10 @@ async fn test_signing_box() {
         tokio::spawn(async move {
             match serde_json::from_value(request.request_data).unwrap() {
                 ParamsOfAppSigningBox::GetPublicKey => {
-                    let result: boxes::ResultOfSigningBoxGetPublicKey = client
+                    let result: ResultOfSigningBoxGetPublicKey = client
                         .request_async(
                             "crypto.signing_box_get_public_key",
-                            boxes::RegisteredSigningBox {
+                            RegisteredSigningBox {
                                 handle: keys_box_handle.into()
                             },
                         ).await.unwrap();
@@ -778,10 +779,10 @@ async fn test_signing_box() {
                     ).await;
                 },
                 ParamsOfAppSigningBox::Sign { unsigned } => {
-                    let result: boxes::ResultOfSigningBoxSign = client
+                    let result: ResultOfSigningBoxSign = client
                         .request_async(
                             "crypto.signing_box_sign",
-                            boxes::ParamsOfSigningBoxSign {
+                            ParamsOfSigningBoxSign {
                                 signing_box: keys_box_handle.into(),
                                 unsigned,
                             },
@@ -796,17 +797,17 @@ async fn test_signing_box() {
         futures::future::ready(())
     };
 
-    let external_box: boxes::RegisteredSigningBox = client.request_async_callback(
+    let external_box: RegisteredSigningBox = client.request_async_callback(
         "crypto.register_signing_box",
         (),
         callback
     ).await.unwrap();
 
 
-    let box_pubkey: super::boxes::ResultOfSigningBoxGetPublicKey = client
+    let box_pubkey: ResultOfSigningBoxGetPublicKey = client
         .request_async(
             "crypto.signing_box_get_public_key",
-            super::boxes::RegisteredSigningBox {
+            RegisteredSigningBox {
                 handle: external_box.handle.clone(),
             },
         ).await.unwrap();
@@ -814,10 +815,10 @@ async fn test_signing_box() {
     assert_eq!(box_pubkey.pubkey, keys.public);
 
     let unsigned = base64::encode("Test Message");
-    let box_sign: super::boxes::ResultOfSigningBoxSign = client
+    let box_sign: ResultOfSigningBoxSign = client
         .request_async(
             "crypto.signing_box_sign",
-            super::boxes::ParamsOfSigningBoxSign {
+            ParamsOfSigningBoxSign {
                 signing_box: external_box.handle.clone(),
                 unsigned: unsigned.clone(),
             },
@@ -837,7 +838,7 @@ async fn test_signing_box() {
     let _: () = client
         .request_async(
             "crypto.remove_signing_box",
-            super::boxes::RegisteredSigningBox {
+            RegisteredSigningBox {
                 handle: external_box.handle,
         },
     ).await.unwrap();
@@ -845,7 +846,7 @@ async fn test_signing_box() {
     let _: () = client
         .request_async(
             "crypto.remove_signing_box",
-            super::boxes::RegisteredSigningBox {
+            RegisteredSigningBox {
                 handle: keys_box_handle.into(),
         },
     ).await.unwrap();
@@ -878,4 +879,76 @@ fn test_debug_keypair_secret_stripped() {
             secret: \"91234567...\" (64 chars) \
         }"
     )
+}
+
+async fn test_aes_params(key: &str, data: &str, encrypted: &str) {
+    let client = std::sync::Arc::new(TestClient::new());
+
+    let iv = hex::encode(&std::fs::read("src/crypto/test_data/aes.iv.bin").unwrap());
+    let key = hex::encode(&std::fs::read(key).unwrap());
+    let data = std::fs::read(data).unwrap();
+    let encrypted = base64::encode(&std::fs::read(encrypted).unwrap());
+
+    let box_handle = client
+        .request_async::<_, RegisteredEncryptionBox>(
+            "crypto.create_encryption_box",
+            ParamsOfCreateEncryptionBox {
+                algorithm: EncryptionAlgorithm::AES(AesParams {
+                    key: key.clone(),
+                    initial_vector: Some(iv.clone()),
+                    mode: CipherMode::CBC,
+                })
+            },
+        )
+        .await
+        .unwrap()
+        .handle;
+
+    let result: ResultOfEncryptionBoxEncrypt = client
+        .request_async(
+            "crypto.encryption_box_encrypt",
+            ParamsOfEncryptionBoxEncrypt {
+                encryption_box: box_handle.clone(),
+                data: base64::encode(&data.clone()),
+            },
+        ).await.unwrap();
+
+    assert_eq!(result.data, encrypted);
+
+    let result: ResultOfEncryptionBoxDecrypt = client
+        .request_async(
+            "crypto.encryption_box_decrypt",
+            ParamsOfEncryptionBoxDecrypt {
+                encryption_box: box_handle.clone(),
+                data: encrypted,
+            },
+        ).await.unwrap();
+
+    assert_eq!(
+        base64::decode(&result.data).unwrap()[..data.len()],
+        data
+    );
+
+    let _: () = client
+        .request_async(
+            "crypto.remove_encryption_box",
+            RegisteredEncryptionBox {
+                handle: box_handle,
+        },
+    ).await.unwrap();
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_aes_encryption_box() {
+    test_aes_params(
+        "src/crypto/test_data/aes128.key.bin",
+        "src/crypto/test_data/aes.plaintext.bin",
+        "src/crypto/test_data/cbc-aes128.ciphertext.bin"
+    ).await;
+
+    test_aes_params(
+        "src/crypto/test_data/aes256.key.bin",
+        "src/crypto/test_data/aes.plaintext.for.padding.bin",
+        "src/crypto/test_data/cbc-aes256.ciphertext.padded.bin"
+    ).await;
 }
