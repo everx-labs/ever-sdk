@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.0] – 2021-08-18
+
+### New
+- `crypto.create_encryption_box` function for creating SDK-defined encryption boxes. First supported 
+algorithm - AES with CBC mode.
+
 ## [1.20.1] – 2021-07-30
 
 ### New

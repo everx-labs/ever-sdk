@@ -10,8 +10,8 @@
 * See the License for the specific TON DEV software governing permissions and
 * limitations under the License.
 */
-use crate::crypto::{KeyPair, SigningBoxHandle, EncryptionBoxHandle, 
-    RegisteredSigningBox, RegisteredEncryptionBox, EncryptionBoxInfo,  boxes::EncryptionBox};
+use crate::crypto::{KeyPair, SigningBoxHandle, EncryptionBoxHandle, RegisteredSigningBox,
+    RegisteredEncryptionBox, EncryptionBoxInfo,boxes::encryption_box::EncryptionBox};
 use crate::encoding::decode_abi_number;
 use std::sync::Arc;
 use crate::tests::TestClient;

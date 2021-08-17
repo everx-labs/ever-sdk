@@ -59,6 +59,10 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::crypto::SigningBoxHandle>();
     module.register_type::<crate::crypto::EncryptionBoxHandle>();
     module.register_type::<crate::crypto::EncryptionBoxInfo>();
+    module.register_type::<crate::crypto::EncryptionAlgorithm>();
+    module.register_type::<crate::crypto::CipherMode>();
+    module.register_type::<crate::crypto::AesParams>();
+    module.register_type::<crate::crypto::AesInfo>();
 
     // Math
 
@@ -206,19 +210,19 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     );
     module.register_async_fn(
         crate::crypto::get_signing_box,
-        crate::crypto::boxes::get_signing_box_api,
+        crate::crypto::boxes::signing_box::get_signing_box_api,
     );
     module.register_async_fn(
         crate::crypto::signing_box_get_public_key,
-        crate::crypto::boxes::signing_box_get_public_key_api,
+        crate::crypto::boxes::signing_box::signing_box_get_public_key_api,
     );
     module.register_async_fn(
         crate::crypto::signing_box_sign,
-        crate::crypto::boxes::signing_box_sign_api,
+        crate::crypto::boxes::signing_box::signing_box_sign_api,
     );
     module.register_sync_fn(
         crate::crypto::remove_signing_box,
-        crate::crypto::boxes::remove_signing_box_api,
+        crate::crypto::boxes::signing_box::remove_signing_box_api,
     );
 
     // Encryption box
@@ -228,19 +232,23 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     );
     module.register_sync_fn(
         crate::crypto::remove_encryption_box,
-        crate::crypto::boxes::remove_encryption_box_api,
+        crate::crypto::boxes::encryption_box::remove_encryption_box_api,
     );
     module.register_async_fn(
         crate::crypto::encryption_box_get_info,
-        crate::crypto::boxes::encryption_box_get_info_api,
+        crate::crypto::boxes::encryption_box::encryption_box_get_info_api,
     );
     module.register_async_fn(
         crate::crypto::encryption_box_encrypt,
-        crate::crypto::boxes::encryption_box_encrypt_api,
+        crate::crypto::boxes::encryption_box::encryption_box_encrypt_api,
     );
     module.register_async_fn(
         crate::crypto::encryption_box_decrypt,
-        crate::crypto::boxes::encryption_box_decrypt_api,
+        crate::crypto::boxes::encryption_box::encryption_box_decrypt_api,
+    );
+    module.register_async_fn(
+        crate::crypto::create_encryption_box,
+        crate::crypto::boxes::encryption_box::create_encryption_box_api,
     );
 
     module.register();
