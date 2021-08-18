@@ -171,7 +171,8 @@ pub async fn encode_account(
     let address = MsgAddressInt::with_standart(None, 0, id.clone().into()).unwrap();
     let mut account = Account::with_address(address);
     account.set_balance(CurrencyCollection::from(params.balance.unwrap_or(100000000000)));
-    account.activate(state_init);
+    account.try_activate_by_init_code_hash(&state_init, false)
+        .map_err(|err| Error::invalid_tvc_image(err))?;
     account.set_last_tr_time(params.last_trans_lt.unwrap_or(0));
     Ok(ResultOfEncodeAccount {
         account: serialize_object_to_boc(&context, &account, "account", params.boc_cache).await?,
