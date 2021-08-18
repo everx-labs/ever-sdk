@@ -895,7 +895,7 @@ async fn test_aes_params(key: &str, data: &str, encrypted: &str) {
             ParamsOfCreateEncryptionBox {
                 algorithm: EncryptionAlgorithm::AES(AesParams {
                     key: key.clone(),
-                    initial_vector: Some(iv.clone()),
+                    iv: Some(iv.clone()),
                     mode: CipherMode::CBC,
                 })
             },

@@ -1,6 +1,8 @@
 use crate::error::ClientError;
 use std::fmt::Display;
 
+use super::CipherMode;
+
 #[derive(ApiType)]
 pub enum ErrorCode {
     InvalidPublicKey = 100,
@@ -29,6 +31,7 @@ pub enum ErrorCode {
     CannotCreateCipher = 126,
     EncryptDataError = 127,
     DecryptDataError = 128,
+    IvRequired = 129,
 }
 
 pub struct Error;
@@ -218,6 +221,13 @@ impl Error {
         error(
             ErrorCode::DecryptDataError,
             format!("Can not decrypt data: {}", err),
+        )
+    }
+
+    pub fn iv_required(mode: &CipherMode) -> ClientError {
+        error(
+            ErrorCode::DecryptDataError,
+            format!("initialization vector is required for {:?} cipher mode", mode),
         )
     }
 }

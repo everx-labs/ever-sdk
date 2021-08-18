@@ -181,7 +181,7 @@ pub async fn encryption_box_decrypt(
     })
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 pub enum CipherMode {
     CBC,
     CFB,
@@ -196,7 +196,7 @@ impl Default for CipherMode {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 #[serde(tag = "type", content = "value")]
 pub enum EncryptionAlgorithm {
     AES(aes::AesParams),
@@ -208,7 +208,7 @@ impl Default for EncryptionAlgorithm {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct ParamsOfCreateEncryptionBox {
     /// Encryption algorithm specifier including cipher parameters (key, IV, etc)
     pub algorithm: EncryptionAlgorithm,

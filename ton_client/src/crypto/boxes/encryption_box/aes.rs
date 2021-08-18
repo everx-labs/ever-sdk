@@ -19,17 +19,17 @@ use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 use super::{CipherMode, EncryptionBox, EncryptionBoxInfo};
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AesParams {
     pub mode: CipherMode,
     pub key: String,
-    pub initial_vector: Option<String>,
+    pub iv: Option<String>,
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AesInfo {
     pub mode: CipherMode,
-    pub initial_vector: Option<String>,
+    pub iv: Option<String>,
 }
 
 pub(crate) struct AesEncryptionBox {
@@ -40,9 +40,12 @@ pub(crate) struct AesEncryptionBox {
 
 impl AesEncryptionBox {
     pub fn new(params: AesParams) -> ClientResult<Self> {
-        match params.mode {
-            CipherMode::CBC => {},
+        let iv_required = match params.mode {
+            CipherMode::CBC => true,
             _ => return Err(Error::unsupported_cipher_mode(&format!("{:?}", params.mode)))
+        };
+        if iv_required && params.iv.is_none() {
+            return Err(Error::iv_required(&params.mode));
         }
         let key = hex_decode(&params.key)?;
         if  key.len() != 16 &&
@@ -51,7 +54,7 @@ impl AesEncryptionBox {
         {
             return Err(Error::invalid_key_size(key.len(), &[128, 192, 256]));
         }
-        let iv = params.initial_vector
+        let iv = params.iv
             .map(|string| {
                 let iv = hex_decode(&string)?;
                 if iv.len() == aes::BLOCK_SIZE {
@@ -113,7 +116,7 @@ impl AesEncryptionBox {
 impl EncryptionBox for AesEncryptionBox {
     /// Gets encryption box information
     async fn get_info(&self) -> ClientResult<EncryptionBoxInfo> {
-        let initial_vector = if self.iv.len() != 0 {
+        let iv = if self.iv.len() != 0 {
             Some(hex::encode(&self.iv))
         } else {
             None
@@ -121,7 +124,7 @@ impl EncryptionBox for AesEncryptionBox {
 
         let aes_info = AesInfo {
             mode: self.mode.clone(),
-            initial_vector
+            iv
         };
 
         Ok(EncryptionBoxInfo {
