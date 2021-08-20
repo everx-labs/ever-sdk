@@ -43,20 +43,25 @@ pub enum ProcessingResponseType {
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum ProcessingEvent {
-    /// Notifies the app that the current shard block will be fetched
+    /// Notifies the application that the account's current shard block will be fetched
     /// from the network.
+    /// This step is performed before the message sending so that sdk knows starting 
+    /// from which block it will search for the transaction.
     ///
     /// Fetched block will be used later in waiting phase.
     WillFetchFirstBlock {},
 
-    /// Notifies the app that the client has failed to fetch current
-    /// shard block.
-    ///
-    /// Message processing has finished.
+    /// Notifies the app that the client has failed to fetch the account's current
+    /// shard block. This may happen due to the network issues.
+    /// Receiving this event means that message processing will not proceed - 
+    /// message was not sent, and Developer can try to run `process_message` again,
+    /// in the hope that the connection is restored.
     FetchFirstBlockFailed { error: ClientError },
 
-    /// Notifies the app that the message will be sent to the
-    /// network.
+    /// Notifies the app that the message will be sent to the network.
+    /// This event means that the account's current shard block was successfully fetched
+    /// and the message was successfully created (`abi.encode_message` function was executed successfully).
+    /// Developer gets the boc of the message, block id and message id which they can use
     WillSend {
         shard_block_id: String,
         message_id: String,
@@ -64,6 +69,11 @@ pub enum ProcessingEvent {
     },
 
     /// Notifies the app that the message was sent to the network.
+    /// Now, the message is in the blockchain. 
+    /// If your application exits at this phase, you need to proceed with processing
+    /// after the application is restored with `wait_for_transaction` function, passing
+    /// shard_block_id and message from this event. Do not forget to specify abi of your contract
+    /// as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation.
     DidSend {
         shard_block_id: String,
         message_id: String,
@@ -76,6 +86,8 @@ pub enum ProcessingEvent {
     /// Nevertheless the processing will be continued at the waiting
     /// phase because the message possibly has been delivered to the
     /// node.
+    /// So, if you Application exits on this phase, perform the same algorithm with
+    /// `wait_for_transaction` as described in `DidSend` event. 
     SendFailed {
         shard_block_id: String,
         message_id: String,
@@ -94,10 +106,14 @@ pub enum ProcessingEvent {
         message: String,
     },
 
-    /// Notifies the app that the next block can't be fetched due to
-    /// error.
+    /// Notifies the app that the next block can't be fetched.
     ///
-    /// Processing will be continued after `network_resume_timeout`.
+    /// If no block was fetched within `NetworkConfig.wait_for_timeout` that processing stops.
+    /// This may happen when the shard stops, or there are other network issues. 
+    /// In this case Developer should resume message processing with `wait_for_transaction`, passing shard_block_id,
+    /// message and contract abi to it. Note that passing ABI is crucial, because it will influence the processing strategy.
+    /// 
+    /// Another way to tune this is to specify long timeout in `NetworkConfig.wait_for_timeout` 
     FetchNextBlockFailed {
         shard_block_id: String,
         message_id: String,
@@ -105,12 +121,16 @@ pub enum ProcessingEvent {
         error: ClientError,
     },
 
-    /// Notifies the app that the message was expired.
+    /// Notifies the app that the message was not executed within expire timeout on-chain and will 
+    /// never be because it is already expired.
+    /// The expiration timeout can be configured with `AbiConfig` parameters. 
     ///
-    /// Event occurs for contracts which ABI includes header "expire"
+    /// This event occurs only for the contracts which ABI includes "expire" header. 
     ///
-    /// Processing will be continued from encoding phase after
-    /// `expiration_retries_timeout`.
+    /// If Application specifies `NetworkConfig.message_retries_count` > 0, then `process_message`
+    /// will perform retries: will create a new message and send it again and repeat it untill it reaches
+    /// the maximum retries count or receives a successful result.  All the processing 
+    /// events will be repeated.
     MessageExpired {
         message_id: String,
         message: String,
