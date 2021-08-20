@@ -61,16 +61,15 @@ pub enum ProcessingEvent {
     /// Notifies the app that the message will be sent to the network.
     /// This event means that the account's current shard block was successfully fetched
     /// and the message was successfully created (`abi.encode_message` function was executed successfully).
-    /// Developer gets the boc of the message, block id and message id which they can use
     WillSend {
         shard_block_id: String,
         message_id: String,
         message: String,
     },
 
-    /// Notifies the app that the message was sent to the network.
+    /// Notifies the app that the message was sent to the network, i.e `processing.send_message` was successfuly executed.
     /// Now, the message is in the blockchain. 
-    /// If your application exits at this phase, you need to proceed with processing
+    /// If Application exits at this phase, Developer needs to proceed with processing
     /// after the application is restored with `wait_for_transaction` function, passing
     /// shard_block_id and message from this event. Do not forget to specify abi of your contract
     /// as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation.
@@ -86,8 +85,10 @@ pub enum ProcessingEvent {
     /// Nevertheless the processing will be continued at the waiting
     /// phase because the message possibly has been delivered to the
     /// node.
-    /// So, if you Application exits on this phase, perform the same algorithm with
-    /// `wait_for_transaction` as described in `DidSend` event. 
+    /// If Application exits at this phase, Developer needs to proceed with processing
+    /// after the application is restored with `wait_for_transaction` function, passing
+    /// shard_block_id and message from this event. Do not forget to specify abi of your contract
+    /// as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation.
     SendFailed {
         shard_block_id: String,
         message_id: String,
@@ -100,6 +101,10 @@ pub enum ProcessingEvent {
     ///
     /// Event can occurs more than one time due to block walking
     /// procedure.
+    /// If Application exits at this phase, Developer needs to proceed with processing
+    /// after the application is restored with `wait_for_transaction` function, passing
+    /// shard_block_id and message from this event. Do not forget to specify abi of your contract
+    /// as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation.
     WillFetchNextBlock {
         shard_block_id: String,
         message_id: String,
