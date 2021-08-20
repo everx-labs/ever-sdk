@@ -113,7 +113,7 @@ pub enum ProcessingEvent {
 
     /// Notifies the app that the next block can't be fetched.
     ///
-    /// If no block was fetched within `NetworkConfig.wait_for_timeout` that processing stops.
+    /// If no block was fetched within `NetworkConfig.wait_for_timeout` then processing stops.
     /// This may happen when the shard stops, or there are other network issues. 
     /// In this case Developer should resume message processing with `wait_for_transaction`, passing shard_block_id,
     /// message and contract abi to it. Note that passing ABI is crucial, because it will influence the processing strategy.
