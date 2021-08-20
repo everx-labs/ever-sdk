@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.0] – 2021-08-18
+
+### New
+- `crypto.create_encryption_box` function for creating SDK-defined encryption boxes. First supported 
+algorithm - AES with CBC mode.
+
+### Fixed
+- `tvm.run_executor` did not work when SDK is configured to use TONOS SE, because of incomplete default
+blockchain configuration. Now mainnet config from key block 10660619 (last key block at the moment of fix)
+is used as default.
+
 ## [1.20.1] – 2021-07-30
 
 ### New

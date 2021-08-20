@@ -42,7 +42,7 @@ fn encode_v2() {
     let time: u64 = 1599458364291;
     let expire: u32 = 1599458404;
 
-    let signing_box: crate::crypto::boxes::RegisteredSigningBox = client
+    let signing_box: crate::crypto::RegisteredSigningBox = client
         .request("crypto.get_signing_box", keys.clone())
         .unwrap();
 

@@ -27,17 +27,21 @@ pub(crate) mod encryption;
 #[cfg(test)]
 mod tests;
 
-pub use crate::crypto::boxes::{
+pub use crate::crypto::boxes::signing_box::{
     get_signing_box, register_signing_box, remove_signing_box, signing_box_get_public_key,
-    signing_box_sign, register_encryption_box, remove_encryption_box,
-    encryption_box_get_info, encryption_box_encrypt, encryption_box_decrypt,
+    signing_box_sign,
     ParamsOfSigningBoxSign, RegisteredSigningBox, ResultOfSigningBoxGetPublicKey,
     ResultOfSigningBoxSign, SigningBox, SigningBoxHandle,
-    RegisteredEncryptionBox, EncryptionBoxHandle, EncryptionBoxInfo,
+};
+pub use crate::crypto::boxes::encryption_box::{
+    register_encryption_box, remove_encryption_box, create_encryption_box,
+    encryption_box_get_info, encryption_box_encrypt, encryption_box_decrypt,
+    CipherMode, RegisteredEncryptionBox, EncryptionBoxHandle, EncryptionBoxInfo, EncryptionAlgorithm,
     ParamsOfEncryptionBoxGetInfo, ResultOfEncryptionBoxGetInfo,
     ParamsOfEncryptionBoxEncrypt, ResultOfEncryptionBoxEncrypt,
     ParamsOfEncryptionBoxDecrypt, ResultOfEncryptionBoxDecrypt,
 };
+pub use crate::crypto::boxes::encryption_box::aes::{AesInfo, AesParams};
 pub use crate::crypto::encscrypt::{scrypt, ParamsOfScrypt, ResultOfScrypt};
 pub use crate::crypto::hash::{sha256, sha512, ParamsOfHash, ResultOfHash};
 pub use crate::crypto::hdkey::{

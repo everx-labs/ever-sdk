@@ -38,7 +38,7 @@ fn parse_key(s: &String) -> ClientResult<Vec<u8>> {
 
 pub(crate) fn key512(slice: &[u8]) -> ClientResult<Key512> {
     if slice.len() != 64 {
-        return Err(crypto::Error::invalid_key_size(slice.len(), 64));
+        return Err(crypto::Error::invalid_key_size(slice.len(), &[64]));
     }
     let mut key = [0u8; 64];
     for (place, element) in key.iter_mut().zip(slice.iter()) {
@@ -49,7 +49,7 @@ pub(crate) fn key512(slice: &[u8]) -> ClientResult<Key512> {
 
 pub(crate) fn key256(slice: &[u8]) -> ClientResult<Key256> {
     if slice.len() != 32 {
-        return Err(crypto::Error::invalid_key_size(slice.len(), 32));
+        return Err(crypto::Error::invalid_key_size(slice.len(), &[32]));
     }
     let mut key = [0u8; 32];
     for (place, element) in key.iter_mut().zip(slice.iter()) {
@@ -60,7 +60,7 @@ pub(crate) fn key256(slice: &[u8]) -> ClientResult<Key256> {
 
 pub(crate) fn key192(slice: &[u8]) -> ClientResult<Key192> {
     if slice.len() != 24 {
-        return Err(crypto::Error::invalid_key_size(slice.len(), 24));
+        return Err(crypto::Error::invalid_key_size(slice.len(), &[24]));
     }
     let mut key = [0u8; 24];
     for (place, element) in key.iter_mut().zip(slice.iter()) {

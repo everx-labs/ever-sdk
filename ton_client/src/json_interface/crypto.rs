@@ -14,8 +14,8 @@
 
 use crate::client::{AppObject, ClientContext, Error};
 use crate::error::ClientResult;
-use crate::crypto::{RegisteredSigningBox, SigningBox};
-use crate::crypto::boxes::{EncryptionBoxInfo, EncryptionBox, RegisteredEncryptionBox};
+use crate::crypto::{EncryptionBoxInfo, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox};
+use crate::crypto::boxes::encryption_box::EncryptionBox;
 
 /// Signing box callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]

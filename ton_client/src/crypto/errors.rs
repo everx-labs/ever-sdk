@@ -1,6 +1,8 @@
 use crate::error::ClientError;
 use std::fmt::Display;
 
+use super::CipherMode;
+
 #[derive(ApiType)]
 pub enum ErrorCode {
     InvalidPublicKey = 100,
@@ -24,6 +26,12 @@ pub enum ErrorCode {
     SigningBoxNotRegistered = 121,
     InvalidSignature = 122,
     EncryptionBoxNotRegistered = 123,
+    InvalidIvSize = 124,
+    UnsupportedCipherMode = 125,
+    CannotCreateCipher = 126,
+    EncryptDataError = 127,
+    DecryptDataError = 128,
+    IvRequired = 129,
 }
 
 pub struct Error;
@@ -57,10 +65,14 @@ impl Error {
         )
     }
 
-    pub fn invalid_key_size(actual: usize, expected: usize) -> ClientError {
+    pub fn invalid_key_size(actual: usize, expected: &[usize]) -> ClientError {
         error(
             ErrorCode::InvalidKeySize,
-            format!("Invalid key size {}. Expected {}.", actual, expected),
+            format!(
+                "Invalid key size {}. Expected {}.",
+                actual,
+                expected.iter().map(|val| val.to_string()).collect::<Vec<String>>().join(" or ")
+            ),
         )
     }
 
@@ -174,6 +186,48 @@ impl Error {
         error(
             ErrorCode::EncryptionBoxNotRegistered,
             format!("Encryption box is not registered. ID {}", id),
+        )
+    }
+
+    pub fn invalid_iv_size(actual: usize, expected: usize) -> ClientError {
+        error(
+            ErrorCode::InvalidIvSize,
+            format!("Invalid IV size {}. Expected {}.", actual, expected),
+        )
+    }
+
+    pub fn unsupported_cipher_mode(mode: &str) -> ClientError {
+        error(
+            ErrorCode::UnsupportedCipherMode,
+            format!("Unsupported cipher mode: {}", mode),
+        )
+    }
+
+    pub fn cannot_create_cipher(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::CannotCreateCipher,
+            format!("Can not create cipher: {}", err),
+        )
+    }
+
+    pub fn encrypt_data_error(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::EncryptDataError,
+            format!("Can not encrypt data: {}", err),
+        )
+    }
+
+    pub fn decrypt_data_error(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DecryptDataError,
+            format!("Can not decrypt data: {}", err),
+        )
+    }
+
+    pub fn iv_required(mode: &CipherMode) -> ClientError {
+        error(
+            ErrorCode::DecryptDataError,
+            format!("initialization vector is required for {:?} cipher mode", mode),
         )
     }
 }

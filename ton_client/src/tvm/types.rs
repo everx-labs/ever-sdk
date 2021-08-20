@@ -22,6 +22,7 @@ use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::net::{OrderBy, SortDirection};
 use std::sync::Arc;
+use ton_block::Deserializable;
 use ton_executor::BlockchainConfig;
 
 #[derive(Serialize, Deserialize, ApiType, Clone, Default)]
@@ -86,6 +87,13 @@ pub async fn resolve_blockchain_config(
     }
 }
 
+fn mainnet_config() -> BlockchainConfig {
+    let bytes = include_bytes!("../mainnet_config_10660619.boc");
+    BlockchainConfig::with_config(
+        ton_block::ConfigParams::construct_from_bytes(bytes).unwrap()
+    ).unwrap()
+}
+
 pub(crate) async fn get_default_config(context: &Arc<ClientContext>) -> ClientResult<Arc<BlockchainConfig>> {
     if let Some(config) = &*context.blockchain_config.read().await {
         return Ok(config.clone());
@@ -99,9 +107,9 @@ pub(crate) async fn get_default_config(context: &Arc<ClientContext>) -> ClientRe
     let config = if let Ok(link) = context.get_server_link() {
         get_network_config(link)
             .await
-            .unwrap_or_default()
+            .unwrap_or_else(|_| mainnet_config())
     } else {
-        Default::default()
+        mainnet_config()
     };
     let config = Arc::new(config);
 

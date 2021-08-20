@@ -1,5 +1,5 @@
 {
-  "version": "1.20.1",
+  "version": "1.21.0",
   "modules": [
     {
       "name": "client",
@@ -1032,6 +1032,41 @@
               "name": "EncryptionBoxNotRegistered",
               "type": "Number",
               "value": "123",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidIvSize",
+              "type": "Number",
+              "value": "124",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "UnsupportedCipherMode",
+              "type": "Number",
+              "value": "125",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CannotCreateCipher",
+              "type": "Number",
+              "value": "126",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "EncryptDataError",
+              "type": "Number",
+              "value": "127",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DecryptDataError",
+              "type": "Number",
+              "value": "128",
               "summary": null,
               "description": null
             }
@@ -2483,8 +2518,8 @@
             {
               "name": "data",
               "type": "String",
-              "summary": "Encrypted data, encoded in Base64",
-              "description": null
+              "summary": "Encrypted data, encoded in Base64.",
+              "description": "Padded to cipher block size"
             }
           ],
           "summary": null,
@@ -2518,7 +2553,22 @@
             {
               "name": "data",
               "type": "String",
-              "summary": "Decrypted data, encoded in Base64",
+              "summary": "Decrypted data, encoded in Base64.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfCreateEncryptionBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "algorithm",
+              "type": "Ref",
+              "ref_name": "EncryptionAlgorithm",
+              "summary": null,
               "description": null
             }
           ],
@@ -4091,8 +4141,8 @@
         },
         {
           "name": "encryption_box_encrypt",
-          "summary": "Encrypts data using given encryption box",
-          "description": null,
+          "summary": "Encrypts data using given encryption box Note.",
+          "description": "Block cipher algorithms pad data to cipher block size so encrypted data can be longer then original data. Client should store the original data size after encryption and use it after\ndecryption to retrieve the original data from decrypted data.",
           "params": [
             {
               "name": "context",
@@ -4129,8 +4179,8 @@
         },
         {
           "name": "encryption_box_decrypt",
-          "summary": "Decrypts data using given encryption box",
-          "description": null,
+          "summary": "Decrypts data using given encryption box Note.",
+          "description": "Block cipher algorithms pad data to cipher block size so encrypted data can be longer then original data. Client should store the original data size after encryption and use it after\ndecryption to retrieve the original data from decrypted data.",
           "params": [
             {
               "name": "context",
@@ -4160,6 +4210,44 @@
               {
                 "type": "Ref",
                 "ref_name": "crypto.ResultOfEncryptionBoxDecrypt"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "create_encryption_box",
+          "summary": "Creates encryption box with specified algorithm",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.ParamsOfCreateEncryptionBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.RegisteredEncryptionBox"
               }
             ]
           },
