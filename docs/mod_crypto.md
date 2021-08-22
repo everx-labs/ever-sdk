@@ -86,9 +86,11 @@ Crypto functions.
 
 [encryption_box_get_info](#encryption_box_get_info) – Queries info from the given encryption box
 
-[encryption_box_encrypt](#encryption_box_encrypt) – Encrypts data using given encryption box
+[encryption_box_encrypt](#encryption_box_encrypt) – Encrypts data using given encryption box Note.
 
-[encryption_box_decrypt](#encryption_box_decrypt) – Decrypts data using given encryption box
+[encryption_box_decrypt](#encryption_box_decrypt) – Decrypts data using given encryption box Note.
+
+[create_encryption_box](#create_encryption_box) – Creates encryption box with specified algorithm
 
 ## Types
 [CryptoErrorCode](#CryptoErrorCode)
@@ -98,6 +100,14 @@ Crypto functions.
 [EncryptionBoxHandle](#EncryptionBoxHandle)
 
 [EncryptionBoxInfo](#EncryptionBoxInfo) – Encryption box information
+
+[EncryptionAlgorithm](#EncryptionAlgorithm)
+
+[CipherMode](#CipherMode)
+
+[AesParams](#AesParams)
+
+[AesInfo](#AesInfo)
 
 [ParamsOfFactorize](#ParamsOfFactorize)
 
@@ -238,6 +248,8 @@ Crypto functions.
 [ParamsOfEncryptionBoxDecrypt](#ParamsOfEncryptionBoxDecrypt)
 
 [ResultOfEncryptionBoxDecrypt](#ResultOfEncryptionBoxDecrypt)
+
+[ParamsOfCreateEncryptionBox](#ParamsOfCreateEncryptionBox)
 
 [AppSigningBox](#AppSigningBox)
 
@@ -1427,7 +1439,10 @@ function encryption_box_get_info(
 
 ## encryption_box_encrypt
 
-Encrypts data using given encryption box
+Encrypts data using given encryption box Note.
+
+Block cipher algorithms pad data to cipher block size so encrypted data can be longer then original data. Client should store the original data size after encryption and use it after
+decryption to retrieve the original data from decrypted data.
 
 ```ts
 type ParamsOfEncryptionBoxEncrypt = {
@@ -1450,12 +1465,16 @@ function encryption_box_encrypt(
 
 ### Result
 
-- `data`: _string_ – Encrypted data, encoded in Base64
+- `data`: _string_ – Encrypted data, encoded in Base64.
+<br>Padded to cipher block size
 
 
 ## encryption_box_decrypt
 
-Decrypts data using given encryption box
+Decrypts data using given encryption box Note.
+
+Block cipher algorithms pad data to cipher block size so encrypted data can be longer then original data. Client should store the original data size after encryption and use it after
+decryption to retrieve the original data from decrypted data.
 
 ```ts
 type ParamsOfEncryptionBoxDecrypt = {
@@ -1478,7 +1497,33 @@ function encryption_box_decrypt(
 
 ### Result
 
-- `data`: _string_ – Decrypted data, encoded in Base64
+- `data`: _string_ – Decrypted data, encoded in Base64.
+
+
+## create_encryption_box
+
+Creates encryption box with specified algorithm
+
+```ts
+type ParamsOfCreateEncryptionBox = {
+    algorithm: EncryptionAlgorithm
+}
+
+type RegisteredEncryptionBox = {
+    handle: EncryptionBoxHandle
+}
+
+function create_encryption_box(
+    params: ParamsOfCreateEncryptionBox,
+): Promise<RegisteredEncryptionBox>;
+```
+### Parameters
+- `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#EncryptionAlgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
+
+
+### Result
+
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
 
 
 # Types
@@ -1505,7 +1550,13 @@ enum CryptoErrorCode {
     MnemonicFromEntropyFailed = 120,
     SigningBoxNotRegistered = 121,
     InvalidSignature = 122,
-    EncryptionBoxNotRegistered = 123
+    EncryptionBoxNotRegistered = 123,
+    InvalidIvSize = 124,
+    UnsupportedCipherMode = 125,
+    CannotCreateCipher = 126,
+    EncryptDataError = 127,
+    DecryptDataError = 128,
+    IvRequired = 129
 }
 ```
 One of the following value:
@@ -1531,6 +1582,12 @@ One of the following value:
 - `SigningBoxNotRegistered = 121`
 - `InvalidSignature = 122`
 - `EncryptionBoxNotRegistered = 123`
+- `InvalidIvSize = 124`
+- `UnsupportedCipherMode = 125`
+- `CannotCreateCipher = 126`
+- `EncryptDataError = 127`
+- `DecryptDataError = 128`
+- `IvRequired = 129`
 
 
 ## SigningBoxHandle
@@ -1560,6 +1617,70 @@ type EncryptionBoxInfo = {
 - `algorithm`?: _string_ – Cryptographic algorithm, used by this encryption box
 - `options`?: _any_ – Options, depends on algorithm and specific encryption box implementation
 - `public`?: _any_ – Public information, depends on algorithm
+
+
+## EncryptionAlgorithm
+```ts
+type EncryptionAlgorithm = ({
+    type: 'AES'
+} & AesParams)
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'AES'_
+
+- `mode`: _[CipherMode](mod_crypto.md#CipherMode)_
+- `key`: _string_
+- `iv`?: _string_
+
+
+Variant constructors:
+
+```ts
+function encryptionAlgorithmAES(params: AesParams): EncryptionAlgorithm;
+```
+
+## CipherMode
+```ts
+enum CipherMode {
+    CBC = "CBC",
+    CFB = "CFB",
+    CTR = "CTR",
+    ECB = "ECB",
+    OFB = "OFB"
+}
+```
+One of the following value:
+
+- `CBC = "CBC"`
+- `CFB = "CFB"`
+- `CTR = "CTR"`
+- `ECB = "ECB"`
+- `OFB = "OFB"`
+
+
+## AesParams
+```ts
+type AesParams = {
+    mode: CipherMode,
+    key: string,
+    iv?: string
+}
+```
+- `mode`: _[CipherMode](mod_crypto.md#CipherMode)_
+- `key`: _string_
+- `iv`?: _string_
+
+
+## AesInfo
+```ts
+type AesInfo = {
+    mode: CipherMode,
+    iv?: string
+}
+```
+- `mode`: _[CipherMode](mod_crypto.md#CipherMode)_
+- `iv`?: _string_
 
 
 ## ParamsOfFactorize
@@ -2397,7 +2518,8 @@ type ResultOfEncryptionBoxEncrypt = {
     data: string
 }
 ```
-- `data`: _string_ – Encrypted data, encoded in Base64
+- `data`: _string_ – Encrypted data, encoded in Base64.
+<br>Padded to cipher block size
 
 
 ## ParamsOfEncryptionBoxDecrypt
@@ -2417,7 +2539,16 @@ type ResultOfEncryptionBoxDecrypt = {
     data: string
 }
 ```
-- `data`: _string_ – Decrypted data, encoded in Base64
+- `data`: _string_ – Decrypted data, encoded in Base64.
+
+
+## ParamsOfCreateEncryptionBox
+```ts
+type ParamsOfCreateEncryptionBox = {
+    algorithm: EncryptionAlgorithm
+}
+```
+- `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#EncryptionAlgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
 
 
 ## AppSigningBox
