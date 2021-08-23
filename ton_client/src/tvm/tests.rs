@@ -681,7 +681,10 @@ fn test_stack_serialization() {
 
 #[tokio::test]
 async fn test_tvm_error_message() {
-    let client = Arc::new(TestClient::new());
+    let client = Arc::new(TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": TestClient::endpoints(),
+        }})));
 
     let (abi, tvc) = TestClient::package(EXCEPTION, None);
     let keys = client.generate_sign_keys();
@@ -782,7 +785,11 @@ async fn test_tvm_error_message() {
         .await
         .unwrap_err();
 
-    assert_eq!(error.data["contract_error"].as_str().unwrap(), EXPECTED_ERROR);
+    if TestClient::node_se() {
+        assert_eq!(error.data["contract_error"].as_str().unwrap(), EXPECTED_ERROR);
+    } else {
+        assert_eq!(error.data["local_error"]["data"]["contract_error"].as_str().unwrap(), EXPECTED_ERROR);
+    }
 }
 
 #[tokio::test(core_threads = 2)]
