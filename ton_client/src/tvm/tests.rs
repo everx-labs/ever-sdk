@@ -18,6 +18,7 @@ use crate::abi::{
     Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
     encode_account::{ParamsOfEncodeAccount, StateInitSource},
 };
+use crate::tvm::types::mainnet_config;
 use crate::boc::{
     BocCacheType,
     internal::{deserialize_object_from_base64, serialize_cell_to_base64},
@@ -29,7 +30,6 @@ use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
 use crate::tests::{TestClient, HELLO, SUBSCRIBE, EXCEPTION};
 use api_info::ApiModule;
 use serde_json::Value;
-use ton_executor::BlockchainConfig;
 use ton_types::{BuilderData, Cell};
 use ton_vm::stack::{StackItem, continuation::ContinuationData};
 use std::sync::Arc;
@@ -798,14 +798,13 @@ async fn test_resolve_blockchain_config() {
     let local_context = Arc::new(crate::ClientContext::new(crate::ClientConfig::default()).unwrap());
 
     let custom_config_params = deserialize_object_from_base64(BLOCK_CONFIG, "config").unwrap();
-    let default_config = BlockchainConfig::default();
 
     let config = resolve_blockchain_config(&local_context, Some(BLOCK_CONFIG.to_owned())).await.unwrap();
     assert_eq!(config.raw_config(), &custom_config_params.object);
 
     let config = resolve_blockchain_config(&local_context, None).await.unwrap();
-    assert_eq!(config.raw_config(), default_config.raw_config());
+    assert_eq!(config.raw_config(), mainnet_config().raw_config());
 
     let config = resolve_blockchain_config(&net_context, None).await.unwrap();
-    assert_ne!(config.raw_config(), default_config.raw_config());
+    assert_ne!(config.raw_config(), mainnet_config().raw_config());
 }
