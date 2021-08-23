@@ -3,7 +3,7 @@ use tokio::sync::Mutex;
 use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer};
 use crate::error::ClientError;
 use crate::processing::ParamsOfProcessMessage;
-use crate::tests::{TestClient, EVENTS, HELLO, SUBSCRIBE, TEST_DEBOT, TEST_DEBOT_TARGET};
+use crate::tests::{TestClient, HELLO};
 
 use super::*;
 use crate::client::NetworkMock;
@@ -956,21 +956,31 @@ fn collect(loaded_messages: &Vec<Value>, messages: &mut Vec<Value>, transactions
 
 #[tokio::test(core_threads = 2)]
 async fn transaction_tree() {
-    let client = Arc::new(
-        ClientContext::new(ClientConfig {
-            network: NetworkConfig {
-                endpoints: Some(TestClient::endpoints()),
-                ..Default::default()
+    let client = TestClient::new();
+
+    let run_result = client
+        .net_process_function(
+            client.giver_address().await,
+            TestClient::giver_abi(),
+            "sendTransaction",
+            json!({
+                "dest": "0:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+                "value": 500_000_000,
+                "bounce": true,
+            }),
+            Signer::Keys {
+                keys: TestClient::giver_keys(),
             },
-            ..Default::default()
-        })
-        .unwrap(),
-    );
-    let messages = query_collection(
-        client.clone(),
+        )
+        .await
+        .unwrap();
+
+    let messages: ResultOfQueryCollection = client.request_async(
+        "net.query_collection",
         ParamsOfQueryCollection {
-            collection: MESSAGES_COLLECTION.to_string(),
+            collection: "messages".to_owned(),
             filter: Some(json!({
+                "id": { "eq": run_result.transaction["in_msg"].as_str() },
                 "msg_type": { "eq": 1 },
             })),
             result: r#"
@@ -987,8 +997,8 @@ async fn transaction_tree() {
             }
         "#
             .to_string(),
-            order: None,
             limit: None,
+            order: None,
         },
     )
     .await
@@ -996,53 +1006,47 @@ async fn transaction_tree() {
 
     let abi_registry = vec![
         TestClient::giver_abi(),
-        TestClient::abi(SUBSCRIBE, None),
-        TestClient::abi(HELLO, None),
-        TestClient::abi(EVENTS, None),
-        TestClient::abi(TEST_DEBOT, None),
-        TestClient::abi(TEST_DEBOT_TARGET, None),
     ];
 
     let mut has_decoded_bodies = false;
-    for message in messages.result {
-        let result = query_transaction_tree(
-            client.clone(),
-            ParamsOfQueryTransactionTree {
-                in_msg: message["id"].as_str().unwrap().to_string(),
-                abi_registry: Some(abi_registry.clone()),
-                ..Default::default()
-            },
-        )
-        .await
-        .unwrap();
-        let mut ref_messages = Vec::new();
-        let mut ref_transactions = Vec::new();
-        collect(&vec![message], &mut ref_messages, &mut ref_transactions);
-        let ref_message_ids = ref_messages
-            .iter()
-            .map(|x| x["id"].as_str().unwrap().to_string())
-            .collect::<HashSet<String>>();
-        let ref_transaction_ids = ref_transactions
-            .iter()
-            .map(|x| x["id"].as_str().unwrap().to_string())
-            .collect::<HashSet<String>>();
-        let actual_message_ids = result
-            .messages
-            .iter()
-            .map(|x| x.id.clone())
-            .collect::<HashSet<String>>();
-        let actual_transaction_ids = result
-            .transactions
-            .iter()
-            .map(|x| x.id.clone())
-            .collect::<HashSet<String>>();
+    let result: ResultOfQueryTransactionTree = client.request_async(
+        "net.query_transaction_tree",
+        ParamsOfQueryTransactionTree {
+            in_msg: messages.result[0]["id"].as_str().unwrap().to_string(),
+            abi_registry: Some(abi_registry.clone()),
+            ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+    let mut ref_messages = Vec::new();
+    let mut ref_transactions = Vec::new();
+    collect(&messages.result, &mut ref_messages, &mut ref_transactions);
+    let ref_message_ids = ref_messages
+        .iter()
+        .map(|x| x["id"].as_str().unwrap().to_string())
+        .collect::<HashSet<String>>();
+    let ref_transaction_ids = ref_transactions
+        .iter()
+        .map(|x| x["id"].as_str().unwrap().to_string())
+        .collect::<HashSet<String>>();
+    let actual_message_ids = result
+        .messages
+        .iter()
+        .map(|x| x.id.clone())
+        .collect::<HashSet<String>>();
+    assert_eq!(actual_message_ids.len(), 3);
+    let actual_transaction_ids = result
+        .transactions
+        .iter()
+        .map(|x| x.id.clone())
+        .collect::<HashSet<String>>();
 
-        assert_eq!(ref_message_ids, actual_message_ids);
-        assert_eq!(ref_transaction_ids, actual_transaction_ids);
-        for msg in result.messages {
-            if msg.decoded_body.is_some() {
-                has_decoded_bodies = true;
-            }
+    assert_eq!(ref_message_ids, actual_message_ids);
+    assert_eq!(ref_transaction_ids, actual_transaction_ids);
+    for msg in result.messages {
+        if msg.decoded_body.is_some() {
+            has_decoded_bodies = true;
         }
     }
     assert!(has_decoded_bodies);

@@ -105,9 +105,11 @@ Where:
 
 [encryption_box_get_info](mod_crypto.md#encryption_box_get_info) – Queries info from the given encryption box
 
-[encryption_box_encrypt](mod_crypto.md#encryption_box_encrypt) – Encrypts data using given encryption box
+[encryption_box_encrypt](mod_crypto.md#encryption_box_encrypt) – Encrypts data using given encryption box Note.
 
-[encryption_box_decrypt](mod_crypto.md#encryption_box_decrypt) – Decrypts data using given encryption box
+[encryption_box_decrypt](mod_crypto.md#encryption_box_decrypt) – Decrypts data using given encryption box Note.
+
+[create_encryption_box](mod_crypto.md#create_encryption_box) – Creates encryption box with specified algorithm
 
 ## [abi](mod_abi.md) – Provides message encoding and decoding according to the ABI specification.
 
