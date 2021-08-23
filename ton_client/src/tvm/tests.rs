@@ -681,10 +681,7 @@ fn test_stack_serialization() {
 
 #[tokio::test]
 async fn test_tvm_error_message() {
-    let client = Arc::new(TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": TestClient::endpoints(),
-        }})));
+    let client = Arc::new(TestClient::new());
 
     let (abi, tvc) = TestClient::package(EXCEPTION, None);
     let keys = client.generate_sign_keys();
