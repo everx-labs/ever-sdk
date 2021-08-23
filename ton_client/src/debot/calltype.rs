@@ -33,7 +33,7 @@ fn msg_err(e: impl Display) -> ClientError {
 }
 
 #[derive(Default)]
-pub struct Metadata {
+struct Metadata {
     answer_id: u32,
     onerror_id: u32,
     is_timestamp: bool,
@@ -115,7 +115,7 @@ pub fn prepare_ext_in_message(
     Ok((func_id, meta.answer_id, dst_addr, msg))
 }
 
-pub async fn decode_and_fix_ext_msg(
+async fn decode_and_fix_ext_msg(
     msg: &Message,
     now_ms: u64,
     signer: &Signer,
