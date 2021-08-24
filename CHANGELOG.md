@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.1] – 2021-08-24
+
+### Fixed
+- http errors were not processed as network errors and didn't lead to endpoint reconnect and request retry
+
 ## [1.21.0] – 2021-08-18
 
 ### New
