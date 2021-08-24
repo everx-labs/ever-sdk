@@ -35,7 +35,9 @@ mod tests;
 #[cfg(test)]
 mod tests_interfaces;
 
+#[cfg(not(feature = "wasm"))]
 pub use calltype::prepare_ext_in_message;
+
 pub use action::DAction;
 pub use activity::{DebotActivity, Spending};
 pub use browser::BrowserCallbacks;
