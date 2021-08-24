@@ -494,17 +494,21 @@ impl ServerLink {
                 )
                 .await;
 
-            if let Err(err) = &result {
-                if crate::client::Error::is_network_error(err) {
-                    self.state.internal_suspend().await;
-                    self.websocket_link.suspend().await;
-                    self.websocket_link.resume().await;
-                    retry_count += 1;
-                    if retry_count <= network_retries_count {
-                        continue 'retries;
-                    }
+            let is_network_error = match &result {
+                Err(err) => crate::client::Error::is_network_error(err),
+                Ok(response) => !response.is_success()
+            };
+
+            if is_network_error {
+                self.state.internal_suspend().await;
+                self.websocket_link.suspend().await;
+                self.websocket_link.resume().await;
+                retry_count += 1;
+                if retry_count <= network_retries_count {
+                    continue 'retries;
                 }
             }
+
             let response = result?.body_as_json()?;
 
             return if let Some(error) = Self::try_extract_error(&response) {

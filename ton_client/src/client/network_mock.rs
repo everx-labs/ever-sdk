@@ -265,6 +265,16 @@ impl NetworkMockBuilder {
         }))
     }
 
+    pub fn status(&mut self, status: u16, body: &str) -> &mut Self {
+        self.push_fetch(Ok(FetchResult {
+            url: self.url.clone(),
+            status,
+            body: body.to_string(),
+            headers: HashMap::new(),
+            remote_address: None,
+        }))
+    }
+
     pub fn network_err(&mut self) -> &mut Self {
         self.push_fetch(Err(crate::client::Error::http_request_send_error(
             "Network error",

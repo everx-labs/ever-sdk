@@ -88,7 +88,7 @@ async fn iterate(
             )
             .await
             .unwrap();
-        println!(">>> {:?}", next.items);
+        //println!(">>> {:?}", next.items);
         iterated_items += next.items.len();
         for item in next.items {
             let id = item["id"].as_str().unwrap();
