@@ -87,7 +87,7 @@ pub async fn resolve_blockchain_config(
     }
 }
 
-fn mainnet_config() -> BlockchainConfig {
+pub(crate) fn mainnet_config() -> BlockchainConfig {
     let bytes = include_bytes!("../mainnet_config_10660619.boc");
     BlockchainConfig::with_config(
         ton_block::ConfigParams::construct_from_bytes(bytes).unwrap()

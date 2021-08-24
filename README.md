@@ -26,6 +26,8 @@
 
 [Quick Start (Javascript)](https://docs.ton.dev/86757ecb2/p/33b76d-quick-start)    
 
+[Error descriptions](https://docs.ton.dev/86757ecb2/p/443ce4-errors)
+
 [JavaScript SDK Types and Methods (API Reference)](https://tonlabs.github.io/ton-client-js/)
 
 [Core Types and Methods (API Reference)](https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md)     
