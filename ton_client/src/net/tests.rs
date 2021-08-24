@@ -690,10 +690,14 @@ async fn retry_query_on_network_errors() {
         .network_err()
         .election(now, 1000)
         .blocks("2")
+        .status(502, "")
+        .election(now, 1000)
+        .blocks("3")
         .reset_client(&client)
         .await;
     assert_eq!(query_block_id(&client).await, "1");
     assert_eq!(query_block_id(&client).await, "2");
+    assert_eq!(query_block_id(&client).await, "3");
 }
 
 #[tokio::test(core_threads = 2)]

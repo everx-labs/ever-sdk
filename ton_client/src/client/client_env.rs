@@ -37,10 +37,24 @@ impl FetchResult {
     }
 
     pub fn body_as_json(&self) -> ClientResult<serde_json::Value> {
+        self.check_success()?;
         let text = self.body_as_text()?;
         serde_json::from_str(text).map_err(|err| {
             Error::http_request_parse_error(format!("Body is not a valid JSON: {}\n{}", err, text))
         })
+    }
+
+    pub fn is_success(&self) -> bool {
+        self.status >= 200 && self.status < 300
+    }
+
+    pub fn check_success(&self) -> ClientResult<()> {
+        if self.is_success() {
+            Ok(())
+        } else {
+            log::debug!("Server responded with code {}. Body \n{}", self.status, self.body);
+            Err(Error::http_request_send_error(format!("Server responded with code {}", self.status)))
+        }
     }
 }
 
