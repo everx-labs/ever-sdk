@@ -17,7 +17,7 @@ mod base64_interface;
 mod hex_interface;
 mod json_interface;
 mod browser;
-mod calltype;
+pub mod calltype;
 mod context;
 mod debot_abi;
 mod dengine;
@@ -35,6 +35,7 @@ mod tests;
 #[cfg(test)]
 mod tests_interfaces;
 
+pub use calltype::prepare_ext_in_message;
 pub use action::DAction;
 pub use activity::{DebotActivity, Spending};
 pub use browser::BrowserCallbacks;

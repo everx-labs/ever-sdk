@@ -7,6 +7,8 @@ All notable changes to this project will be documented in this file.
 ### New
 - `crypto.create_encryption_box` function for creating SDK-defined encryption boxes. First supported 
 algorithm - AES with CBC mode.
+- **Debot module**:
+    - Аdded public `prepare_ext_in_message` function.
 
 ### Fixed
 - `tvm.run_executor` did not work when SDK is configured to use TONOS SE, because of incomplete default
