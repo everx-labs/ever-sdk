@@ -363,7 +363,7 @@ impl TonMnemonic {
         hmac_sha512(string.as_bytes(), &[])
     }
 
-    fn seed_from_string(string: &String, salt: &str, c: usize) -> [u8; 64] {
+    fn seed_from_string(string: &String, salt: &str, c: u32) -> [u8; 64] {
         let entropy = Self::entropy_from_string(&string);
         pbkdf2_hmac_sha512(&entropy, salt.as_bytes(), c)
     }

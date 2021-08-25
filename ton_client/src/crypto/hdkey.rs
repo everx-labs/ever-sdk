@@ -20,7 +20,7 @@ use base58::*;
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use hmac::*;
 use pbkdf2::pbkdf2;
-use secp256k1::{PublicKey, SecretKey};
+use libsecp256k1::{SecretKey, PublicKey};
 use sha2::{Digest, Sha512};
 use crate::crypto::default_hdkey_compliant;
 
@@ -204,9 +204,9 @@ impl HDPrivateKey {
         let salt = "mnemonic";
         let mut seed = vec![0u8; 64];
         pbkdf2::<Hmac<Sha512>>(phrase.as_bytes(), salt.as_bytes(), 2048, &mut seed);
-        let mut hmac: Hmac<Sha512> = Hmac::new_varkey(b"Bitcoin seed").unwrap();
-        hmac.input(&seed);
-        let child_chain_with_key = key512(&hmac.result().code())?;
+        let mut hmac: Hmac<Sha512> = Hmac::new_from_slice(b"Bitcoin seed").unwrap();
+        hmac.update(&seed);
+        let child_chain_with_key = key512(&hmac.finalize().into_bytes())?;
         Ok(HDPrivateKey::master(
             &key256(&child_chain_with_key[32..])?,
             &key256(&child_chain_with_key[..32])?,
@@ -223,25 +223,25 @@ impl HDPrivateKey {
         public_key.serialize_compressed()
     }
 
-    fn map_secp_error(error: secp256k1::Error) -> ClientError {
+    fn map_secp_error(error: libsecp256k1::Error) -> ClientError {
         match error {
-            secp256k1::Error::InvalidSignature => {
+            libsecp256k1::Error::InvalidSignature => {
                 crypto::Error::bip32_invalid_key("InvalidSignature")
             }
-            secp256k1::Error::InvalidPublicKey => {
+            libsecp256k1::Error::InvalidPublicKey => {
                 crypto::Error::bip32_invalid_key("InvalidPublicKey")
             }
-            secp256k1::Error::InvalidSecretKey => {
+            libsecp256k1::Error::InvalidSecretKey => {
                 crypto::Error::bip32_invalid_key("InvalidSecretKey")
             }
-            secp256k1::Error::InvalidRecoveryId => {
+            libsecp256k1::Error::InvalidRecoveryId => {
                 crypto::Error::bip32_invalid_key("InvalidRecoveryId")
             }
-            secp256k1::Error::InvalidMessage => crypto::Error::bip32_invalid_key("InvalidMessage"),
-            secp256k1::Error::InvalidInputLength => {
+            libsecp256k1::Error::InvalidMessage => crypto::Error::bip32_invalid_key("InvalidMessage"),
+            libsecp256k1::Error::InvalidInputLength => {
                 crypto::Error::bip32_invalid_key("InvalidInputLength")
             }
-            secp256k1::Error::TweakOutOfRange => {
+            libsecp256k1::Error::TweakOutOfRange => {
                 crypto::Error::bip32_invalid_key("TweakOutOfRange")
             }
         }
@@ -258,8 +258,8 @@ impl HDPrivateKey {
 
         let public = self.public();
         let mut sha_hasher = sha2::Sha256::new();
-        sha_hasher.input(&public.as_ref());
-        let sha: Key256 = sha_hasher.result().into();
+        sha_hasher.update(&public.as_ref());
+        let sha: Key256 = sha_hasher.finalize().into();
         let fingerprint = Ripemd160::new().update(&sha).digest();
 
         child.parent_fingerprint.copy_from_slice(&fingerprint[0..4]);
@@ -271,24 +271,24 @@ impl HDPrivateKey {
         };
         BigEndian::write_u32(&mut child.child_number, child_index);
 
-        let mut hmac: Hmac<Sha512> = Hmac::new_varkey(&self.child_chain)
+        let mut hmac: Hmac<Sha512> = Hmac::new_from_slice(&self.child_chain)
             .map_err(|err| crypto::Error::bip32_invalid_key(err))?;
 
         let secret_key = SecretKey::parse(&self.key).unwrap();
         if hardened && !compliant {
             // The private key serialization in this case will not be exactly 32 bytes and can be
             // any smaller value, and the value is not zero-padded.
-            hmac.input(&[0]);
-            hmac.input(&secret_key.serialize());
+            hmac.update(&[0]);
+            hmac.update(&secret_key.serialize());
         } else if hardened {
             // This will use a 32 byte zero padded serialization of the private key
-            hmac.input(&[0]);
-            hmac.input(&secret_key.serialize());
+            hmac.update(&[0]);
+            hmac.update(&secret_key.serialize());
         } else {
-            hmac.input(&public);
+            hmac.update(&public);
         }
-        hmac.input(&child.child_number);
-        let result = hmac.result().code();
+        hmac.update(&child.child_number);
+        let result = hmac.finalize().into_bytes();
         let (child_key_bytes, chain_code) = result.split_at(32);
 
         let mut child_secret_key =
