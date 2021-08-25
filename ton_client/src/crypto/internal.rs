@@ -77,9 +77,9 @@ pub(crate) fn hmac_sha512(key: &[u8], data: &[u8]) -> [u8; 64] {
     result
 }
 
-pub(crate) fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], c: usize) -> [u8; 64] {
+pub(crate) fn pbkdf2_hmac_sha512(password: &[u8], salt: &[u8], c: u32) -> [u8; 64] {
     let mut result = [0u8; 64];
-    pbkdf2::pbkdf2::<Hmac<Sha512>>(password, salt, c as u32, &mut result);
+    pbkdf2::pbkdf2::<Hmac<Sha512>>(password, salt, c, &mut result);
     result
 }
 
