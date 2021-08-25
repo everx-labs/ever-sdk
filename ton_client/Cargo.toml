@@ -27,7 +27,6 @@ ton_executor = { git = "https://github.com/tonlabs/ton-labs-executor.git", defau
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
 ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
 
-bip39 = { git = "https://github.com/tonlabs/bip39-rs.git" }
 lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
 sodalite = { git = "https://github.com/tonlabs/sodalite.git", features = ["rand"] }
 
@@ -45,22 +44,23 @@ ed25519-dalek = "1.0.0"
 failure = "0.1"
 futures = "0.3.4"
 hex = "0.3.2"
-hmac = "0.7.1"
+hmac = "0.11.0"
 lazy_static = "1.1.0"
-libsecp256k1 = "0.3.5"
+libsecp256k1 = "0.6.0"
 log = "0.4.11"
 lru = "0.6.3"
 num-bigint = "0.2.2"
 num-derive = "0.3"
 num-traits = "0.2"
-pbkdf2 = { version = "0.3.0", default-features = false }
+pbkdf2 = { version = "0.8.0", default-features = false }
 rand = "0.7.3"
 regex = "1.5.4"
-scrypt = { version = "0.2.0", default-features = false }
+scrypt = { version = "0.7.0", default-features = false }
 serde = "1.0.91"
 serde_derive = "1.0.91"
 serde_json = "1.0.41"
-sha2 = "0.8"
+sha2 = "0.9.5"
+tiny-bip39 = "0.8.0"
 tokio = { version = "0.2.13", features = ["sync", "stream"], default-features = false }
 zstd = { version = "0.7.0", default-features = false }
 

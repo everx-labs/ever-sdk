@@ -37,9 +37,9 @@ pub fn sha256(
     params: ParamsOfHash,
 ) -> ClientResult<ResultOfHash> {
     let mut hasher = sha2::Sha256::new();
-    hasher.input(base64_decode(&params.data)?);
+    hasher.update(base64_decode(&params.data)?);
     Ok(ResultOfHash {
-        hash: hex::encode(hasher.result().to_vec()),
+        hash: hex::encode(hasher.finalize().to_vec()),
     })
 }
 
@@ -50,8 +50,8 @@ pub fn sha512(
     params: ParamsOfHash,
 ) -> ClientResult<ResultOfHash> {
     let mut hasher = sha2::Sha512::new();
-    hasher.input(base64_decode(&params.data)?);
+    hasher.update(base64_decode(&params.data)?);
     Ok(ResultOfHash {
-        hash: hex::encode(hasher.result().to_vec()),
+        hash: hex::encode(hasher.finalize().to_vec()),
     })
 }

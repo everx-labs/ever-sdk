@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.2] – 2021-08-25
+
+### Fixed
+- Updated crypto libraries in order to fix building.
+
 ## [1.21.1] – 2021-08-24
 
 ### Fixed
