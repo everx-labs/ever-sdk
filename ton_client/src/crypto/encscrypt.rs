@@ -67,7 +67,7 @@ pub fn scrypt(
 ) -> ClientResult<ResultOfScrypt> {
     let mut key = Vec::new();
     key.resize(params.dk_len as usize, 0);
-    let scrypt_params = scrypt::ScryptParams::new(params.log_n, params.r, params.p)
+    let scrypt_params = scrypt::Params::new(params.log_n, params.r, params.p)
         .map_err(|err| crypto::Error::scrypt_failed(err))?;
     let password = base64_decode(&params.password)?;
     let salt = base64_decode(&params.salt)?;
