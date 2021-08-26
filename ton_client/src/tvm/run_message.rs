@@ -28,7 +28,7 @@ use serde_json::Value;
 use std::convert::TryFrom;
 use std::sync::{atomic::AtomicU64, Arc};
 use ton_block::{Account, Message, Serializable, MsgAddressInt, CurrencyCollection, Transaction};
-use ton_executor::{ExecutorError, OrdinaryTransactionExecutor, TransactionExecutor};
+use ton_executor::{ExecutorError, ExecuteParams, OrdinaryTransactionExecutor, TransactionExecutor};
 use ton_sdk::TransactionFees;
 use ton_types::Cell;
 
@@ -374,7 +374,7 @@ pub async fn run_tvm(
 }
 
 async fn call_executor<F>(
-    mut account: Cell,
+    mut account_root: Cell,
     msg: Message,
     options: ResolvedExecutionOptions,
     contract_info: impl FnOnce() -> F,
@@ -387,16 +387,13 @@ where
         Arc::try_unwrap(options.blockchain_config)
             .unwrap_or_else(|arc| arc.as_ref().clone())
     );
-    let result = executor.execute(
-        Some(&msg),
-        &mut account,
-        options.block_time,
-        options.block_lt,
-        Arc::new(AtomicU64::new(options.transaction_lt)),
-        false,
-    );
-
-    let transaction = match result {
+    let params = ExecuteParams {
+        block_unixtime: options.block_time,
+        block_lt: options.block_lt,
+        last_tr_lt: Arc::new(AtomicU64::new(options.transaction_lt)),
+        ..ExecuteParams::default()
+    };
+    let transaction = match executor.execute_with_libs_and_params(Some(&msg), &mut account_root, params) {
         Ok(transaction) => transaction,
         Err(err) => {
             let err_message = err.to_string();
@@ -430,5 +427,5 @@ where
         }
     };
 
-    Ok((transaction, account))
+    Ok((transaction, account_root))
 }
