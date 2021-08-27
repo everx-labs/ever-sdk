@@ -455,8 +455,10 @@ async fn subscribe_for_transactions_with_addresses() {
     // and both subscriptions received notification about resume
     let notifications = notifications.lock().await;
     assert_eq!(notifications.len(), 4);
-    assert_eq!(notifications[2], Error::network_module_resumed());
-    assert_eq!(notifications[3], Error::network_module_resumed());
+    assert_eq!(notifications[2].code, Error::network_module_resumed().code);
+    assert!(!notifications[2].data["query_url"].is_null());
+    assert_eq!(notifications[3].code, Error::network_module_resumed().code);
+    assert!(!notifications[3].data["query_url"].is_null());
 
     let _: () = subscription_client
         .request_async("net.unsubscribe", handle1)
