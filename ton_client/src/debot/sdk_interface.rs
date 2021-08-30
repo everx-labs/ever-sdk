@@ -6,7 +6,8 @@ use super::routines;
 use super::TonClient;
 use crate::abi::Abi;
 use crate::crypto::{
-    chacha20, hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
+    chacha20, encryption_box_decrypt, encryption_box_encrypt, encryption_box_get_info,
+    hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
     hdkey_secret_from_xprv, hdkey_xprv_from_mnemonic, mnemonic_derive_sign_keys,
     mnemonic_from_random, mnemonic_verify, nacl_box, nacl_box_keypair_from_secret_key,
     nacl_box_open, nacl_sign_keypair_from_secret_key, signing_box_sign, signing_box_get_public_key,
@@ -590,31 +591,73 @@ impl SdkInterface {
         self.encrypt_or_decrypt(args, false).await
     }
 
+    async fn get_info(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let encryption_box = EncryptionBoxHandle(get_num_arg::<u32>(args, "boxHandle")?);
+
+        let result = encryption_box_get_info(
+            self.ton.clone(),
+            ParamsOfEncryptionBoxGetInfo { encryption_box },
+        )
+        .await
+        .map_err(|e| e.code as u32)
+        .map(|x| x.info);
+
+        let (result, data) = match result {
+            Ok(info) => {
+                let hdpath = match info.hdpath {
+                    Some(value) => value,
+                    None => String::new(),
+                };
+                let algorithm = match info.algorithm {
+                    Some(value) => value,
+                    None => String::new(),
+                };
+                (0, format!("{} {}", algorithm, hdpath))
+            }
+            Err(code) => (code, "".to_owned()),
+        };
+
+        let return_args = json!({ "result": result });
+        Ok((answer_id, return_args))
+    }
+
     async fn encrypt_or_decrypt(&self, args: &Value, encrypt: bool) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let encryption_box = EncryptionBoxHandle(get_num_arg::<u32>(args, "boxHandle")?);
-        let data = base64::encode(
-            &hex::decode(&get_arg(args, "data")?).map_err(|e| format!("{}", e))?,
-        );
+        let data =
+            base64::encode(&hex::decode(&get_arg(args, "data")?).map_err(|e| format!("{}", e))?);
         let result = if encrypt {
             encryption_box_encrypt(
                 self.ton.clone(),
-                ParamsOfEncryptionBoxEncrypt { encryption_box, data },
-            ).await.map_err(|e| e.code as u32).map(|x| x.data)
+                ParamsOfEncryptionBoxEncrypt {
+                    encryption_box,
+                    data,
+                },
+            )
+            .await
+            .map_err(|e| e.code as u32)
+            .map(|x| x.data)
         } else {
             encryption_box_decrypt(
                 self.ton.clone(),
-                ParamsOfEncryptionBoxDecrypt { encryption_box, data },
-            ).await.map_err(|e| e.code as u32).map(|x| x.data)
+                ParamsOfEncryptionBoxDecrypt {
+                    encryption_box,
+                    data,
+                },
+            )
+            .await
+            .map_err(|e| e.code as u32)
+            .map(|x| x.data)
         };
-        
+
         let (result, data) = match result {
             Ok(data) => {
                 let data = base64::decode(&data)
-                .map(|x| hex::encode(x))
-                .map_err(|e| format!("failed to decode base64: {}", e))?;
+                    .map(|x| hex::encode(x))
+                    .map_err(|e| format!("failed to decode base64: {}", e))?;
                 (0, data)
-            },
+            }
             Err(code) => (code, "".to_owned()),
         };
 
@@ -623,7 +666,7 @@ impl SdkInterface {
         } else {
             json!({ "result": result, "decrypted": data })
         };
-        Ok(( answer_id, return_args ))
+        Ok((answer_id, return_args))
     }
 
     async fn query_accounts(&self, args: &Value, result: &str) -> InterfaceResult {
@@ -707,24 +750,23 @@ impl DebotInterface for SdkInterface {
 
     async fn call(&self, func: &str, args: &Value) -> InterfaceResult {
         match func {
-            
             "getBalance" => self.get_balance(args).await,
             "getAccountType" => self.get_account_type(args).await,
             "getAccountCodeHash" => self.get_account_code_hash(args).await,
-            
+
             "mnemonicFromRandom" => self.mnemonic_from_random(args),
             "mnemonicDeriveSignKeys" => self.mnemonic_derive_sign_keys(args),
             "mnemonicVerify" => self.mnemonic_verify(args),
-            
+
             "hdkeyXprvFromMnemonic" => self.hdkey_xprv_from_mnemonic(args),
             "hdkeyDeriveFromXprv" => self.hdkey_derive_from_xprv(args),
             "hdkeyDeriveFromXprvPath" => self.hdkey_derive_from_xprv_path(args),
             "hdkeySecretFromXprv" => self.hdkey_secret_from_xprv(args),
             "hdkeyPublicFromXprv" => self.hdkey_public_from_xprv(args),
             "naclSignKeypairFromSecretKey" => self.nacl_sign_keypair_from_secret_key(args),
-            
+
             "substring" => self.substring(args),
-            
+
             "genRandom" => self.get_random(args),
             "signHash" => self.sign_hash(args).await,
             "getSigningBoxInfo" => self.signing_box_get_key(args).await,
@@ -735,6 +777,7 @@ impl DebotInterface for SdkInterface {
 
             "encrypt" => self.encrypt(args).await,
             "decrypt" => self.decrypt(args).await,
+            "get_info" => self.get_info(args).await,
 
             "getAccountsDataByHash" => self.get_accounts_data_by_hash(args).await,
 
