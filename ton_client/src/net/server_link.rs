@@ -209,10 +209,12 @@ impl NetworkState {
         *self.query_endpoint.write().await = None
     }
 
-    pub async fn refresh_query_endpoint(&self) {
+    pub async fn refresh_query_endpoint(&self) -> ClientResult<()> {
         let endpoint_guard = self.query_endpoint.write().await;
         if let Some(endpoint) = endpoint_guard.as_ref() {
-            let _ = endpoint.refresh(&self.client_env, &self.config).await;
+            endpoint.refresh(&self.client_env, &self.config).await
+        } else {
+            Ok(())
         }
     }
 
@@ -385,8 +387,8 @@ impl ServerLink {
         self.state.config_servers().await
     }
 
-    pub async fn query_endpoint(&self) -> Option<Arc<Endpoint>> {
-        self.state.query_endpoint().await
+    pub async fn state(&self) -> Arc<NetworkState> {
+        self.state.clone()
     }
 
     // Returns Stream with updates database fields by provided filter
