@@ -81,7 +81,7 @@ impl Error {
         )
     }
 
-    fn try_get_message(server_errors: &[Value]) -> (Option<String>, Option<i64>) {
+    fn try_get_message_and_code(server_errors: &[Value]) -> (Option<String>, Option<i64>) {
         for error in server_errors.iter() {
             if let Some(message) = error["message"].as_str() {
                 return (Some(message.to_string()), error["extensions"]["exception"]["code"].as_i64());
@@ -91,7 +91,7 @@ impl Error {
     }
 
     pub fn graphql_server_error(operation: Option<&str>, errors: &[Value]) -> ClientError {
-        let (message, code) = Self::try_get_message(errors);
+        let (message, code) = Self::try_get_message_and_code(errors);
         let operation = operation.unwrap_or("server returned");
         let mut err = error(
             ErrorCode::GraphqlError,
