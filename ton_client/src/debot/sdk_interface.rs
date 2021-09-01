@@ -782,7 +782,7 @@ impl DebotInterface for SdkInterface {
 
             "encrypt" => self.encrypt(args).await,
             "decrypt" => self.decrypt(args).await,
-            "get_info" => self.get_info(args).await,
+            "getInfo" => self.get_info(args).await,
 
             "getAccountsDataByHash" => self.get_accounts_data_by_hash(args).await,
 
