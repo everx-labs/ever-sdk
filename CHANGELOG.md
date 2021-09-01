@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### New
 - Information about used endpoint is added to subscription errors.
+- Graphql response error codes 500-599 are treated as retriable network errors
 
 ## [1.21.2] – 2021-08-25
 

@@ -373,7 +373,7 @@ impl LinkHandler {
             GraphQLMessageFromServer::ConnectionError { error } => {
                 next_phase = self
                     .handle_network_error(
-                        Error::graphql_server_error("connection", &vec![error]),
+                        Error::graphql_server_error(Some("connection"), &vec![error]),
                         false,
                     )
                     .await;
@@ -381,7 +381,7 @@ impl LinkHandler {
             GraphQLMessageFromServer::Data { id, data, errors } => {
                 let event = if let Some(errors) = errors {
                     GraphQLQueryEvent::Error(
-                        Error::graphql_server_error("operation", &errors)
+                        Error::graphql_server_error(Some("operation"), &errors)
                             .add_network_url_from_state(&self.state)
                             .await,
                     )
@@ -394,7 +394,7 @@ impl LinkHandler {
                 self.notify_with_remove(
                     true,
                     &id,
-                    GraphQLQueryEvent::Error(Error::graphql_error(error)),
+                    GraphQLQueryEvent::Error(Error::graphql_server_error(None, &[error])),
                 )
                 .await;
             }
