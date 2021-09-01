@@ -81,31 +81,32 @@ impl Error {
         )
     }
 
-    pub fn graphql_error<E: Display>(err: E) -> ClientError {
-        error(
-            ErrorCode::GraphqlError,
-            format!("Graphql server returned error: {}", err),
-        )
-    }
-
-    fn try_get_message(server_errors: &Vec<Value>) -> Option<String> {
+    fn try_get_message(server_errors: &[Value]) -> (Option<String>, Option<i64>) {
         for error in server_errors.iter() {
             if let Some(message) = error["message"].as_str() {
-                return Some(message.to_string());
+                return (Some(message.to_string()), error["extensions"]["exception"]["code"].as_i64());
             }
         }
-        None
+        (None, None)
     }
 
-    pub fn graphql_server_error(operation: &str, errors: &Vec<Value>) -> ClientError {
-        error(
+    pub fn graphql_server_error(operation: Option<&str>, errors: &[Value]) -> ClientError {
+        let (message, code) = Self::try_get_message(errors);
+        let operation = operation.unwrap_or("server returned");
+        let mut err = error(
             ErrorCode::GraphqlError,
-            if let Some(message) = Self::try_get_message(errors) {
+            if let Some(message) = message {
                 format!("Graphql {} error: {}.", operation, message)
             } else {
                 format!("Graphql {} error.", operation)
             },
-        )
+        );
+
+        if let Some(code) = code {
+            err.data["server_code"] = code.into();
+        }
+
+        err
     }
 
     pub fn websocket_disconnected<E: Display>(err: E) -> ClientError {
