@@ -309,7 +309,7 @@ impl SdkInterface {
     async fn get_account_type(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let value = routines::get_account_state(self.ton.clone(), args).await;
-        Ok((answer_id, json!({ "acc_type": value.acc_type })))
+        Ok((answer_id, json!({ "acc_type": argsvalue.acc_type })))
     }
 
     async fn get_account_code_hash(&self, args: &Value) -> InterfaceResult {
@@ -604,18 +604,23 @@ impl SdkInterface {
         .map(|x| x.info);
 
         let (result, data) = match result {
-            Ok(info) => {
-                let hdpath = match info.hdpath {
+            Ok(info) => (
+                0,
+                json!({"hdpath" : match info.hdpath {
                     Some(value) => value,
                     None => String::new(),
-                };
-                let algorithm = match info.algorithm {
+                }, "algorithm" : match info.algorithm {
                     Some(value) => value,
                     None => String::new(),
-                };
-                (0, format!("{} {}", algorithm, hdpath))
-            }
-            Err(code) => (code, "".to_owned()),
+                }, "options" : match info.options {
+                    Some(value) => value.to_string(),
+                    None => "".to_string(),
+                }, "publicInfo" : match info.public {
+                    Some(value) => value.to_string(),
+                    None => "".to_string(),
+                }}),
+            ),
+            Err(code) => (code, Value::Null),
         };
 
         let return_args = json!({ "result": result });
