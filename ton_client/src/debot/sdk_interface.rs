@@ -309,7 +309,7 @@ impl SdkInterface {
     async fn get_account_type(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let value = routines::get_account_state(self.ton.clone(), args).await;
-        Ok((answer_id, json!({ "acc_type": argsvalue.acc_type })))
+        Ok((answer_id, json!({ "acc_type": value.acc_type })))
     }
 
     async fn get_account_code_hash(&self, args: &Value) -> InterfaceResult {
