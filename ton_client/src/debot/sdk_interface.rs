@@ -1,7 +1,9 @@
+use crate::crypto::ParamsOfSigningBoxSign;
 use super::dinterface::{
     decode_answer_id, get_arg, get_bool_arg, get_num_arg, get_string_arg, DebotInterface,
     InterfaceResult,
 };
+use std::fmt;
 use super::routines;
 use super::TonClient;
 use crate::abi::Abi;
@@ -293,6 +295,19 @@ const SDK_ID: &str = "8fc6454f90072c9f1f6d3313ae1608f64f4a0660c6ae9f42c68b6a79e2
 
 pub struct SdkInterface {
     ton: TonClient,
+}
+
+pub struct EncryptionBoxInfoResult {
+    pub hdpath: String,
+    pub algorithm: String,
+    pub options: String,
+    pub public_info: String,
+}
+
+impl fmt::Display for EncryptionBoxInfoResult {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{{\"hdpath\":{},\"algorithm\":{},\"options\":{},\"public_info\":{}}}", self.hdpath, self.algorithm, self.options, self.public_info)
+    }
 }
 
 impl SdkInterface {
@@ -604,26 +619,34 @@ impl SdkInterface {
         .map(|x| x.info);
 
         let (result, data) = match result {
-            Ok(info) => (
-                0,
-                json!({"hdpath" : match info.hdpath {
-                    Some(value) => value,
-                    None => String::new(),
-                }, "algorithm" : match info.algorithm {
-                    Some(value) => value,
-                    None => String::new(),
-                }, "options" : match info.options {
-                    Some(value) => value.to_string(),
-                    None => "".to_string(),
-                }, "publicInfo" : match info.public {
-                    Some(value) => value.to_string(),
-                    None => "".to_string(),
-                }}),
-            ),
-            Err(code) => (code, Value::Null),
+            Ok(info) => (0, EncryptionBoxInfoResult{
+            	algorithm: match info.algorithm {
+            		Some(value) => value,
+            		None => String::from(""),
+            	},
+            	hdpath: match info.hdpath {
+            		Some(value) => value,
+            		None => String::from(""),
+            	},
+            	options: match info.options{
+            		Some(value) => match value {
+            			Value::Null => String::from(""),
+            			_ => value.to_string(),
+            		},
+            		None => String::from(""),
+            	},
+            	public_info: match info.public{
+            		Some(value) => match value {
+            			Value::Null => String::from(""),
+            			_ => value.to_string(),
+            		},
+            		None => String::from(""),
+            	},
+            }.to_string()),
+            Err(code) => (code, "".to_string()),
         };
 
-        let return_args = json!({ "result": result });
+        let return_args = json!({ "result": result, "data": hex::encode(data)});
         Ok((answer_id, return_args))
     }
 
