@@ -45,6 +45,7 @@ failure = "0.1"
 futures = "0.3.4"
 hex = "0.3.2"
 hmac = "0.11.0"
+home = "0.5.3"
 lazy_static = "1.1.0"
 libsecp256k1 = "0.6.0"
 log = "0.4.11"
@@ -61,7 +62,7 @@ serde_derive = "1.0.91"
 serde_json = "1.0.41"
 sha2 = "0.9.5"
 tiny-bip39 = "0.8.0"
-tokio = { version = "0.2.13", features = ["sync", "stream"], default-features = false }
+tokio = { version = "0.2.13", features = ["sync", "stream", "fs"], default-features = false }
 zstd = { version = "0.7.0", default-features = false }
 
 # optional for std
@@ -85,6 +86,7 @@ features = [
     "Request",
     "RequestInit",
     "Response",
+    "Storage",
     "Window",
     "WebSocket",
 ]

@@ -12,14 +12,19 @@
 */
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
+use crate::client::{LOCAL_STORAGE_DEFAULT_DIR_NAME, is_storage_key_correct};
 use crate::error::ClientResult;
 use futures::{Future, FutureExt, SinkExt, StreamExt};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Event, MessageEvent, Request, RequestInit, Response, Window};
+use web_sys::{Event, MessageEvent, Request, RequestInit, Response, Storage, Window};
 use js_sys::JSON;
+
+#[cfg(test)]
+#[path = "client_env_tests.rs"]
+mod client_env_tests;
 
 fn js_error_to_string(js_value: JsValue) -> String {
     if let Ok(txt) = js_value.clone().dyn_into::<js_sys::Error>() {
@@ -320,6 +325,30 @@ impl ClientEnv {
             remote_address: None,
         })
     }
+
+    fn calc_storage_path(local_storage_path: &Option<String>, key: &str) -> String {
+        let local_storage_path = local_storage_path
+            .clone()
+            .unwrap_or(LOCAL_STORAGE_DEFAULT_DIR_NAME.to_string());
+
+        format!("{}/{}", local_storage_path, key)
+    }
+
+    fn key_to_path(local_storage_path: &Option<String>, key: &str) -> ClientResult<String> {
+        if !is_storage_key_correct(key) {
+            Error::invalid_storage_key(key);
+        }
+
+        Ok(Self::calc_storage_path(local_storage_path, key))
+    }
+
+    fn local_storage(&self) -> ClientResult<Storage> {
+        let window = web_sys::window()
+            .ok_or_else(|| Error::internal_error("Can not get `window` object"))?;
+        window.local_storage()
+            .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))?
+            .ok_or_else(|| Error::internal_error("Local storage is not available"))
+    }
 }
 
 impl ClientEnv {
@@ -365,5 +394,42 @@ impl ClientEnv {
             Self::fetch_internal(&url, method, headers, body, timeout_ms).await
         })
         .await?
+    }
+
+    /// Read value by a given key from the local storage
+    pub async fn read_local_storage(
+        &self,
+        local_storage_path: &Option<String>,
+        key: &str
+    ) -> ClientResult<Option<String>> {
+        let path = Self::key_to_path(local_storage_path, key)?;
+
+        self.local_storage()?.get_item(&path)
+            .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
+    }
+
+    /// Write value by a given key into the local storage
+    pub async fn write_local_storage(
+        &self,
+        local_storage_path: &Option<String>,
+        key: &str,
+        value: &str
+    ) -> ClientResult<()> {
+        let path = Self::key_to_path(local_storage_path, key)?;
+
+        self.local_storage()?.set_item(&path, value)
+            .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
+    }
+
+    /// Remove value by a given key out of the local storage
+    pub async fn remove_local_storage(
+        &self,
+        local_storage_path: &Option<String>,
+        key: &str
+    ) -> ClientResult<()> {
+        let path = Self::key_to_path(local_storage_path, key)?;
+
+        self.local_storage()?.remove_item(&path)
+            .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
     }
 }
