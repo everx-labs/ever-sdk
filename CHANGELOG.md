@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.21.3] – 2021-08-31
+## [1.21.3] – 2021-09-02
 
 ### New
 - Information about used endpoint is added to subscription errors.
