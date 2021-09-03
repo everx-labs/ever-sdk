@@ -177,6 +177,16 @@ const ABI: &str = r#"
 			]
 		},
 		{
+			"name": "getSigningBoxInfo",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"sbHandle","type":"uint32"},
+			],
+			"outputs": [
+				{"name":"key","type":"uint256"}
+			]
+		},
+		{
 			"name": "genRandom",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
@@ -661,7 +671,7 @@ impl SdkInterface {
         .await
         .map_err(|e| format!("{}", e))?
         .pubkey;
-    	Ok((answer_id, json!({ "key": result })))
+    	Ok((answer_id, json!({ "key": format!("0x{}",result) })))
     }
 
     async fn sign_hash(&self, args: &Value) -> InterfaceResult {
@@ -717,7 +727,7 @@ impl DebotInterface for SdkInterface {
             
             "genRandom" => self.get_random(args),
             "signHash" => self.sign_hash(args).await,
-            "signGetKey" => self.signing_box_get_key(args).await,
+            "getSigningBoxInfo" => self.signing_box_get_key(args).await,
             "naclBox" => self.nacl_box(args),
             "naclBoxOpen" => self.nacl_box_open(args),
             "naclKeypairFromSecret" => self.nacl_box_keypair_from_secret_key(args),
