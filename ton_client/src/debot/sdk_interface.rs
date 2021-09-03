@@ -180,7 +180,7 @@ const ABI: &str = r#"
 			"name": "getSigningBoxInfo",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"sbHandle","type":"uint32"},
+				{"name":"sbHandle","type":"uint32"}
 			],
 			"outputs": [
 				{"name":"key","type":"uint256"}
