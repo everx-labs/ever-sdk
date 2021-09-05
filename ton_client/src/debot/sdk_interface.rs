@@ -273,6 +273,17 @@ const ABI: &str = r#"
 			]
 		},
 		{
+			"name": "getEncryptionBoxInfo",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"components":[{"name":"hdpath","type":"bytes"},{"name":"algorithm","type":"bytes"},{"name":"options","type":"bytes"},{"name":"public_info","type":"bytes"}],"name":"info","type":"tuple"}
+			]
+		},
+		{
 			"name": "getAccountsDataByHash",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
@@ -805,7 +816,7 @@ impl DebotInterface for SdkInterface {
 
             "encrypt" => self.encrypt(args).await,
             "decrypt" => self.decrypt(args).await,
-            "getInfo" => self.get_info(args).await,
+            "getEncryptionBoxInfo" => self.get_info(args).await,
 
             "getAccountsDataByHash" => self.get_accounts_data_by_hash(args).await,
 
