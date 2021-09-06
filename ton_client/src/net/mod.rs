@@ -31,7 +31,7 @@ pub use queries::{
     ParamsOfQuery, ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery,
     ResultOfQueryCollection, ResultOfWaitForCollection,
 };
-pub(crate) use server_link::{EndpointStat, ServerLink, MAX_TIMEOUT};
+pub(crate) use server_link::{EndpointStat, NetworkState, ServerLink, MAX_TIMEOUT};
 pub use subscriptions::{
     subscribe_collection, unsubscribe, ParamsOfSubscribeCollection, ResultOfSubscribeCollection,
     ResultOfSubscription, SubscriptionResponseType,

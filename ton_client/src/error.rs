@@ -13,19 +13,38 @@ pub struct ClientError {
 pub type ClientResult<T> = Result<T, ClientError>;
 
 #[async_trait::async_trait]
-pub(crate) trait AddNetworkUrl {
+pub(crate) trait AddNetworkUrl: Sized {
+    async fn add_endpoint_from_context(
+        self,
+        context: &crate::ClientContext,
+        endpoint: &crate::net::Endpoint,
+    ) -> Self {
+        if let Some(link) = &context.net.server_link {
+            self.add_endpoint(link, endpoint).await
+        } else {
+            self
+        }
+    }
+
+    async fn add_network_url(self, client: &crate::net::ServerLink) -> Self {
+        self.add_network_url_from_state(client.state().await.as_ref()).await
+    }
+
+    async fn add_network_url_from_context(self, client: &crate::ClientContext) -> Self {
+        if let Some(client) = &client.net.server_link {
+            self.add_network_url(client).await
+        } else {
+            self
+        }
+    }
+
     async fn add_endpoint(
         self,
         link: &crate::net::ServerLink,
         endpoint: &crate::net::Endpoint,
     ) -> Self;
-    async fn add_endpoint_from_context(
-        self,
-        context: &crate::ClientContext,
-        endpoint: &crate::net::Endpoint,
-    ) -> Self;
-    async fn add_network_url(self, link: &crate::net::ServerLink) -> Self;
-    async fn add_network_url_from_context(self, client: &crate::ClientContext) -> Self;
+
+    async fn add_network_url_from_state(self, state: &crate::net::NetworkState) -> Self;
 }
 
 #[async_trait::async_trait]
@@ -36,48 +55,44 @@ impl<T: Send> AddNetworkUrl for ClientResult<T> {
         endpoint: &crate::net::Endpoint,
     ) -> Self {
         match self {
-            Err(mut err) => {
-                err.data["config_servers"] = link.config_servers().await.into();
-                err.data["endpoint"] = Value::String(endpoint.query_url.clone());
-                Err(err)
+            Err(err) => {
+                Err(err.add_endpoint(link, endpoint).await)
             }
             _ => self,
         }
     }
 
-    async fn add_endpoint_from_context(
-        self,
-        client: &crate::ClientContext,
+    async fn add_network_url_from_state(self, state: &crate::net::NetworkState) -> Self {
+        match self {
+            Err(err) => {
+                Err(err.add_network_url_from_state(state).await)
+            }
+            _ => self,
+        }
+    }
+}
+
+#[async_trait::async_trait]
+impl AddNetworkUrl for ClientError {
+    async fn add_endpoint(
+        mut self,
+        link: &crate::net::ServerLink,
         endpoint: &crate::net::Endpoint,
     ) -> Self {
-        if let Some(link) = &client.net.server_link {
-            self.add_endpoint(link, endpoint).await
-        } else {
-            self
-        }
-    }
-    async fn add_network_url(self, client: &crate::net::ServerLink) -> Self {
-        match self {
-            Err(mut err) => {
-                err.data["config_servers"] = client.config_servers().await.into();
-                if let Some(endpoint) = client.query_endpoint().await {
-                    err.data["query_url"] = endpoint.query_url.as_str().into();
-                    if let Some(ip_address) = &endpoint.ip_address {
-                        err.data["query_ip_address"] = ip_address.as_str().into();
-                    }
-                }
-                Err(err)
-            }
-            _ => self,
-        }
+        self.data["config_servers"] = link.config_servers().await.into();
+        self.data["endpoint"] = Value::String(endpoint.query_url.clone());
+        self
     }
 
-    async fn add_network_url_from_context(self, client: &crate::ClientContext) -> Self {
-        if let Some(client) = &client.net.server_link {
-            self.add_network_url(client).await
-        } else {
-            self
+    async fn add_network_url_from_state(mut self, state: &crate::net::NetworkState) -> Self {
+        self.data["config_servers"] = state.config_servers().await.into();
+        if let Some(endpoint) = state.query_endpoint().await {
+            self.data["query_url"] = endpoint.query_url.as_str().into();
+            if let Some(ip_address) = &endpoint.ip_address {
+                self.data["query_ip_address"] = ip_address.as_str().into();
+            }
         }
+        self
     }
 }
 

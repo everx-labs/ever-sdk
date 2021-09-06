@@ -455,8 +455,10 @@ async fn subscribe_for_transactions_with_addresses() {
     // and both subscriptions received notification about resume
     let notifications = notifications.lock().await;
     assert_eq!(notifications.len(), 4);
-    assert_eq!(notifications[2], Error::network_module_resumed());
-    assert_eq!(notifications[3], Error::network_module_resumed());
+    assert_eq!(notifications[2].code, Error::network_module_resumed().code);
+    assert!(!notifications[2].data["query_url"].is_null());
+    assert_eq!(notifications[3].code, Error::network_module_resumed().code);
+    assert!(!notifications[3].data["query_url"].is_null());
 
     let _: () = subscription_client
         .request_async("net.unsubscribe", handle1)
@@ -693,11 +695,41 @@ async fn retry_query_on_network_errors() {
         .status(502, "")
         .election(now, 1000)
         .blocks("3")
+        .ok(&json!({
+            "errors": [
+              {
+                "message": "Service Unavailable",
+                "locations": [
+                  {
+                    "line": 2,
+                    "column": 3
+                  }
+                ],
+                "path": [
+                  "counterparties"
+                ],
+                "extensions": {
+                  "code": "INTERNAL_SERVER_ERROR",
+                  "exception": {
+                    "source": "graphql",
+                    "code": 503
+                  }
+                }
+              }
+            ],
+            "data": {
+              "blocks": null
+            }
+          })
+        .to_string())
+        .election(now, 1000)
+        .blocks("4")
         .reset_client(&client)
         .await;
     assert_eq!(query_block_id(&client).await, "1");
     assert_eq!(query_block_id(&client).await, "2");
     assert_eq!(query_block_id(&client).await, "3");
+    assert_eq!(query_block_id(&client).await, "4");
 }
 
 #[tokio::test(core_threads = 2)]
