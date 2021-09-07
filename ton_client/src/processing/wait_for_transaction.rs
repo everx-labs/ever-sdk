@@ -50,7 +50,7 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
     let message =
         deserialize_object_from_boc::<ton_block::Message>(&context, &params.message, "message")
             .await?;
-    let message_id = message.cell.repr_hash().to_hex_string();
+    let message_id = message.cell.repr_hash().as_hex_string();
     let address = message
         .object
         .dst_ref().cloned()

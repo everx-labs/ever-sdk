@@ -14,6 +14,7 @@
 use crate::{ClientContext};
 use crate::boc::{BocCacheType, Error};
 use crate::error::ClientResult;
+use std::str::FromStr;
 use ton_block::{Deserializable, Serializable};
 use ton_types::{UInt256, deserialize_tree_of_cells};
 
@@ -162,7 +163,7 @@ pub(crate) async fn serialize_cell_to_boc(
     if let Some(cache_type) = boc_cache {
         context.bocs.add(cache_type, cell, None)
             .await
-            .map(|hash| format!("*{}", hash.to_hex_string()))
+            .map(|hash| format!("*{:x}", hash))
     } else {
         serialize_cell_to_base64(&cell, name)
     }

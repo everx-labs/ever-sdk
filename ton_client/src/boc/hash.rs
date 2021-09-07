@@ -34,8 +34,6 @@ pub async fn get_boc_hash(
     params: ParamsOfGetBocHash,
 ) -> ClientResult<ResultOfGetBocHash> {
     let (_, cell) = deserialize_cell_from_boc(&context, &params.boc, "").await?;
-
-    Ok(ResultOfGetBocHash {
-        hash: cell.repr_hash().to_hex_string(),
-    })
+    let hash = cell.repr_hash().as_hex_string();
+    Ok(ResultOfGetBocHash { hash })
 }

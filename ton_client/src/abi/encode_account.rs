@@ -176,6 +176,6 @@ pub async fn encode_account(
     account.set_last_tr_time(params.last_trans_lt.unwrap_or(0));
     Ok(ResultOfEncodeAccount {
         account: serialize_object_to_boc(&context, &account, "account", params.boc_cache).await?,
-        id: id.to_hex_string(),
+        id: id.as_hex_string(),
     })
 }
