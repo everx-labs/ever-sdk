@@ -32,20 +32,20 @@ contract ExampleContract is Debot {
     }
 
     function printInfoResult(uint32 result, EncryptionBoxInfoResult info) public {
-        Terminal.print(0, format("{} {}", info.hdpath, info.algorithm));//, info.options, info.public_info));
+        Terminal.print(0, info.algorithm);
     }
 
     function getDebotInfo() public functionID(0xDEB) override view returns(
         string name, string version, string publisher, string caption, string author,
         address support, string hello, string language, string dabi, bytes icon
     ) {
-        name = "TestDeBot10";
+        name = "TestDeBot11";
         version = "0.1.0";
         publisher = "TON Labs";
-        caption = "TestDeBot10";
+        caption = "TestDeBot11";
         author = "TON Labs";
         support = address(0);
-        hello = "TestDeBot10";
+        hello = "TestDeBot11";
         language = "en";
         dabi = m_debotAbi.get();
         icon = "";
