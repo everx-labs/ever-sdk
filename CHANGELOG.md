@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.21.5] – 2021-09-13
 
 ### Fixed
-- `abi.encode_message` or `processing.process_message` created invalid deploy message in case of
+- `abi.encode_message` and `processing.process_message` created invalid deploy message in case of
 `Signer::None` was used, and contract could not be deployed.
 
 ## [1.21.4] – 2021-09-08
