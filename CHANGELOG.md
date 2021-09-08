@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.21.4] – 2021-09-08
+
+### New
+- Support MacOS aarch64 target
+
 ## [1.21.3] – 2021-09-02
 
 ### New
