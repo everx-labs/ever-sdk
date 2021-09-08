@@ -1,6 +1,6 @@
 [package]
 name = "ton_sdk"
-version = "1.21.4"
+version = "1.21.5"
 edition = "2018"
 license = "Apache-2.0"
 authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
