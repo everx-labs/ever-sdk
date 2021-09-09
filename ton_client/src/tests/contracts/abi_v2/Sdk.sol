@@ -9,7 +9,7 @@ struct EncryptionBoxInfoResult {
     string hdpath;
     string algorithm;
     string options;
-    string public_info;
+    string publicInfo;
 }
 
 interface ISdk {

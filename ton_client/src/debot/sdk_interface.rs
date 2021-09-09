@@ -1,12 +1,11 @@
-use crate::crypto::ParamsOfSigningBoxSign;
 use super::dinterface::{
     decode_answer_id, get_arg, get_bool_arg, get_num_arg, get_string_arg, DebotInterface,
     InterfaceResult,
 };
-use std::fmt;
 use super::routines;
 use super::TonClient;
 use crate::abi::Abi;
+use crate::crypto::ParamsOfSigningBoxSign;
 use crate::crypto::{
     chacha20, encryption_box_decrypt, encryption_box_encrypt, encryption_box_get_info,
     hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
@@ -280,7 +279,7 @@ const ABI: &str = r#"
 			],
 			"outputs": [
 				{"name":"result","type":"uint32"},
-				{"components":[{"name":"hdpath","type":"bytes"},{"name":"algorithm","type":"bytes"},{"name":"options","type":"bytes"},{"name":"public_info","type":"bytes"}],"name":"info","type":"tuple"}
+				{"components":[{"name":"hdpath","type":"bytes"},{"name":"algorithm","type":"bytes"},{"name":"options","type":"bytes"},{"name":"publicInfo","type":"bytes"}],"name":"info","type":"tuple"}
 			]
 		},
 		{
@@ -308,18 +307,27 @@ pub struct SdkInterface {
     ton: TonClient,
 }
 
-pub struct EncryptionBoxInfoResult {
+#[derive(Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct EncryptionBoxInfoResult {
     pub hdpath: String,
     pub algorithm: String,
     pub options: String,
     pub public_info: String,
 }
 
-impl fmt::Display for EncryptionBoxInfoResult {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{{\"hdpath\":{},\"algorithm\":{},\"options\":{},\"public_info\":{}}}", self.hdpath, self.algorithm, self.options, self.public_info)
+use std::convert::From;
+impl From<EncryptionBoxInfo> for EncryptionBoxInfoResult {
+    fn from(info: EncryptionBoxInfo) -> Self {
+        Self {
+            algorithm: info.algorithm.map(|v| hex::encode(v)).unwrap_or_default(),
+            hdpath: info.hdpath.map(|v| hex::encode(v)).unwrap_or_default(),
+            options: info.options.map(|v| hex::encode(v.to_string())).unwrap_or_default(),
+            public_info: info.public.map(|v| hex::encode(v.to_string())).unwrap_or_default(),
+        }
     }
 }
+
 
 impl SdkInterface {
     pub fn new(ton: TonClient) -> Self {
@@ -629,35 +637,12 @@ impl SdkInterface {
         .map_err(|e| e.code as u32)
         .map(|x| x.info);
 
-        let (result, data) = match result {
-            Ok(info) => (0, EncryptionBoxInfoResult{
-            	algorithm: match info.algorithm {
-            		Some(value) => value,
-            		None => String::from(""),
-            	},
-            	hdpath: match info.hdpath {
-            		Some(value) => value,
-            		None => String::from(""),
-            	},
-            	options: match info.options{
-            		Some(value) => match value {
-            			Value::Null => String::from(""),
-            			_ => value.to_string(),
-            		},
-            		None => String::from(""),
-            	},
-            	public_info: match info.public{
-            		Some(value) => match value {
-            			Value::Null => String::from(""),
-            			_ => value.to_string(),
-            		},
-            		None => String::from(""),
-            	},
-            }.to_string()),
-            Err(code) => (code, "".to_string()),
+        let (result, info) = match result {
+            Ok(info) => (0, EncryptionBoxInfoResult::from(info)),
+            Err(code) => (code, EncryptionBoxInfoResult::default()),
         };
 
-        let return_args = json!({ "result": result, "data": hex::encode(data)});
+        let return_args = json!({ "result": result, "info": info});
         Ok((answer_id, return_args))
     }
 

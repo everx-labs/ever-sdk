@@ -4,8 +4,10 @@ pragma AbiHeader time;
 pragma AbiHeader pubkey;
 import "https://raw.githubusercontent.com/tonlabs/debots/main/Debot.sol";
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/JsonDeserialize/Json.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Hex/Hex.sol";
 import "./EncryptionBoxInput.sol";
-import "./Sdk.sol";
+import "./Sdk.sol"; 
 
 contract ExampleContract is Debot {
 
@@ -15,14 +17,16 @@ contract ExampleContract is Debot {
 
     uint256 m_public = 0x5f88dfedff20eef951ff26f4e5a88526929b195af091791a45cc8c6cb14961e4;
     uint256 m_private= 0xdcfe6f38f47ffbea6a2a51981c33ed655f7b849706544838101ea789ac7845ea;
+    uint256 m_myTestPubkey = 0xb7cb10668eb106f91293014f6f47657f2f6b1b47332b4c865a874905271e95b3;
+    string m_nonce;
 
     function start() public override {
-        string nonce = "abcdefghijklmnopqrstuvwx";
+        m_nonce = "abcdefghijklmnopqrstuvwx";
         uint256 theirPubkey = m_public;
         EncryptionBoxInput.getNaclBox(
             tvm.functionId(setEncryptionBox), 
             "Choose encryption keys", 
-            bytes(nonce),
+            bytes(m_nonce),
             theirPubkey
         );
     }
@@ -32,7 +36,32 @@ contract ExampleContract is Debot {
     }
 
     function printInfoResult(uint32 result, EncryptionBoxInfoResult info) public {
-        Terminal.print(0, info.algorithm);
+        require(tvm.hash(info.hdpath) == tvm.hash("m/44'/396'/0'/0/1"), 201);
+        require(tvm.hash(info.algorithm) == tvm.hash("NaclBox"), 202);
+        Json.deserialize(tvm.functionId(setOptions), info.options);
+        Json.deserialize(tvm.functionId(setPublicInfo), info.publicInfo);
+    }
+
+    struct Options {
+        string nonce;
+        uint256 theirPubkey;
+    }
+    function setOptions(bool result, Options obj) public {
+        require(result, 203);
+        require(obj.theirPubkey == m_public, 205);
+        Hex.decode(tvm.functionId(setNonce), obj.nonce);
+    }
+
+    struct Info {
+        uint256 key;
+    }
+    function setPublicInfo(bool result, Info obj) public {
+        require(result, 206);
+        require(obj.key == m_myTestPubkey, 207);
+    }
+
+    function setNonce(bytes data) public {
+        require(tvm.hash(data) == tvm.hash(m_nonce), 204);
     }
 
     function getDebotInfo() public functionID(0xDEB) override view returns(

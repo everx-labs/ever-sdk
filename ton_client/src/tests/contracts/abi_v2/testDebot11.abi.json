@@ -21,7 +21,33 @@
 			"name": "printInfoResult",
 			"inputs": [
 				{"name":"result","type":"uint32"},
-				{"components":[{"name":"hdpath","type":"bytes"},{"name":"algorithm","type":"bytes"},{"name":"options","type":"bytes"},{"name":"public_info","type":"bytes"}],"name":"info","type":"tuple"}
+				{"components":[{"name":"hdpath","type":"bytes"},{"name":"algorithm","type":"bytes"},{"name":"options","type":"bytes"},{"name":"publicInfo","type":"bytes"}],"name":"info","type":"tuple"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setOptions",
+			"inputs": [
+				{"name":"result","type":"bool"},
+				{"components":[{"name":"nonce","type":"bytes"},{"name":"theirPubkey","type":"uint256"}],"name":"obj","type":"tuple"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setPublicInfo",
+			"inputs": [
+				{"name":"result","type":"bool"},
+				{"components":[{"name":"key","type":"uint256"}],"name":"obj","type":"tuple"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "setNonce",
+			"inputs": [
+				{"name":"data","type":"bytes"}
 			],
 			"outputs": [
 			]
