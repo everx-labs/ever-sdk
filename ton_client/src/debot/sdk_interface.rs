@@ -9,11 +9,11 @@ use crate::crypto::{
     chacha20, hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
     hdkey_secret_from_xprv, hdkey_xprv_from_mnemonic, mnemonic_derive_sign_keys,
     mnemonic_from_random, mnemonic_verify, nacl_box, nacl_box_keypair_from_secret_key,
-    nacl_box_open, nacl_sign_keypair_from_secret_key, signing_box_sign, 
+    nacl_box_open, nacl_sign_keypair_from_secret_key, signing_box_sign, signing_box_get_public_key,
     encryption_box_encrypt, encryption_box_decrypt, EncryptionBoxHandle, ParamsOfChaCha20,
     ParamsOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyPublicFromXPrv,
     ParamsOfHDKeySecretFromXPrv, ParamsOfHDKeyXPrvFromMnemonic, ParamsOfMnemonicDeriveSignKeys,
-    ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfNaclBox,
+    ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfNaclBox, RegisteredSigningBox,
     ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen, ParamsOfNaclSignKeyPairFromSecret,
     ParamsOfSigningBoxSign, ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt
 };
@@ -174,6 +174,16 @@ const ABI: &str = r#"
 			],
 			"outputs": [
 				{"name":"signature","type":"bytes"}
+			]
+		},
+		{
+			"name": "getSigningBoxInfo",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"sbHandle","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"key","type":"uint256"}
 			]
 		},
 		{
@@ -654,6 +664,16 @@ impl SdkInterface {
         Ok(res)
     }
 
+    async fn signing_box_get_key(&self, args: &Value) -> InterfaceResult {
+    	let answer_id = decode_answer_id(args)?;
+        let box_handle = get_num_arg::<u32>(args, "sbHandle")?;
+        let result = signing_box_get_public_key(self.ton.clone(), RegisteredSigningBox{handle : box_handle.into()})
+        .await
+        .map_err(|e| format!("{}", e))?
+        .pubkey;
+    	Ok((answer_id, json!({ "key": format!("0x{}",result) })))
+    }
+
     async fn sign_hash(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let box_handle = get_num_arg::<u32>(args, "sbHandle")?;
@@ -707,6 +727,7 @@ impl DebotInterface for SdkInterface {
             
             "genRandom" => self.get_random(args),
             "signHash" => self.sign_hash(args).await,
+            "getSigningBoxInfo" => self.signing_box_get_key(args).await,
             "naclBox" => self.nacl_box(args),
             "naclBoxOpen" => self.nacl_box_open(args),
             "naclKeypairFromSecret" => self.nacl_box_keypair_from_secret_key(args),
