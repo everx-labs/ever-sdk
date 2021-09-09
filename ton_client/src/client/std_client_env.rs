@@ -102,7 +102,7 @@ impl ClientEnv {
             .collect()
     }
 
-    fn calc_storage_path(local_storage_path: &Option<String>, key: &str) -> PathBuf {
+    pub(crate) fn calc_storage_path(local_storage_path: &Option<String>, key: &str) -> PathBuf {
         let local_storage_path = local_storage_path
             .clone()
             .map(|path| PathBuf::from(path))

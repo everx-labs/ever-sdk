@@ -1,11 +1,9 @@
 use ton_types::Result;
 
-use crate::client::{ClientEnv, is_storage_key_correct};
+use crate::client::{ClientEnv, is_storage_key_correct, LOCAL_STORAGE_DEFAULT_DIR_NAME};
 
 #[cfg(not(feature = "wasm"))]
 mod env {
-    use ton_types::Result;
-
     pub struct LocalStoragePathManager {
         path: Option<String>,
     }
@@ -74,8 +72,20 @@ fn test_storage_key_validation() {
 
 #[cfg(not(feature = "wasm"))]
 #[test]
-fn test_storage_path_calculation() -> Result<()> {
-    ClientEnv::calc_storage_path()
+fn test_storage_path_calculation() {
+    assert_eq!(
+        ClientEnv::calc_storage_path(&None, "test"),
+        home::home_dir()
+            .unwrap_or(std::path::PathBuf::from("/"))
+            .join(LOCAL_STORAGE_DEFAULT_DIR_NAME)
+            .join("test"),
+    );
+
+    const LOCAL_STORAGE_PATH: &str = "/local-storage";
+    assert_eq!(
+        ClientEnv::calc_storage_path(&Some(LOCAL_STORAGE_PATH.to_string()), "test"),
+        std::path::Path::new(LOCAL_STORAGE_PATH).join("test"),
+    );
 }
 
 #[tokio::test]
