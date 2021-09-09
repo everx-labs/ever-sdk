@@ -24,7 +24,7 @@ pub type BlockId = StringId;
 
 impl From<UInt256> for StringId {
     fn from(id: UInt256) -> Self {
-        StringId(hex::encode(id.as_slice()))
+        StringId(id.as_hex_string())
     }
 }
 
