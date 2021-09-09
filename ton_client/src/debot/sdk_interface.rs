@@ -5,14 +5,13 @@ use super::dinterface::{
 use super::routines;
 use super::TonClient;
 use crate::abi::Abi;
-use crate::crypto::ParamsOfSigningBoxSign;
 use crate::crypto::{
     chacha20, encryption_box_decrypt, encryption_box_encrypt, encryption_box_get_info,
     hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
     hdkey_secret_from_xprv, hdkey_xprv_from_mnemonic, mnemonic_derive_sign_keys,
     mnemonic_from_random, mnemonic_verify, nacl_box, nacl_box_keypair_from_secret_key,
     nacl_box_open, nacl_sign_keypair_from_secret_key, signing_box_sign, signing_box_get_public_key,
-    encryption_box_encrypt, encryption_box_decrypt, EncryptionBoxHandle, ParamsOfChaCha20,
+    EncryptionBoxHandle, EncryptionBoxInfo, ParamsOfChaCha20, ParamsOfEncryptionBoxGetInfo,
     ParamsOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyPublicFromXPrv,
     ParamsOfHDKeySecretFromXPrv, ParamsOfHDKeyXPrvFromMnemonic, ParamsOfMnemonicDeriveSignKeys,
     ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfNaclBox, RegisteredSigningBox,
