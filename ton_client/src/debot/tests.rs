@@ -1371,6 +1371,25 @@ async fn test_debot_encryption_box_get_info() {
     ).await;
 }
 
+#[tokio::test(core_threads = 2)]
+async fn test_debot_signing_box_get_info() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot12").await;
+    let steps = vec![];
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![],
+        build_info(abi, 12, vec![
+            format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
+            format!("0xc13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a")
+        ]),
+        vec![],
+    ).await;
+}
+
 fn build_info(abi: String, n: u32, interfaces: Vec<String>) -> DebotInfo {
     let name = format!("TestDeBot{}", n);
     DebotInfo {

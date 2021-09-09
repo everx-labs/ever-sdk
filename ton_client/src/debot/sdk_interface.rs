@@ -58,6 +58,96 @@ const ABI: &str = r#"
 			]
 		},
 		{
+			"name": "getAccountsDataByHash",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"codeHash","type":"uint256"},
+				{"name":"gt","type":"address"}
+			],
+			"outputs": [
+				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accounts","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "encrypt",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"},
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"encrypted","type":"bytes"}
+			]
+		},
+		{
+			"name": "decrypt",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"},
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"decrypted","type":"bytes"}
+			]
+		},
+		{
+			"name": "getEncryptionBoxInfo",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"components":[{"name":"hdpath","type":"bytes"},{"name":"algorithm","type":"bytes"},{"name":"options","type":"bytes"},{"name":"publicInfo","type":"bytes"}],"name":"info","type":"tuple"}
+			]
+		},
+		{
+			"name": "signHash",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"},
+				{"name":"hash","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"signature","type":"bytes"}
+			]
+		},
+		{
+			"name": "getSigningBoxInfo",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"key","type":"uint256"}
+			]
+		},
+		{
+			"name": "genRandom",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"length","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"buffer","type":"bytes"}
+			]
+		},
+		{
+			"name": "substring",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"str","type":"bytes"},
+				{"name":"start","type":"uint32"},
+				{"name":"count","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"substr","type":"bytes"}
+			]
+		},
+		{
 			"name": "mnemonicFromRandom",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
@@ -155,49 +245,6 @@ const ABI: &str = r#"
 			]
 		},
 		{
-			"name": "substring",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"str","type":"bytes"},
-				{"name":"start","type":"uint32"},
-				{"name":"count","type":"uint32"}
-			],
-			"outputs": [
-				{"name":"substr","type":"bytes"}
-			]
-		},
-		{
-			"name": "signHash",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"sbHandle","type":"uint32"},
-				{"name":"hash","type":"uint256"}
-			],
-			"outputs": [
-				{"name":"signature","type":"bytes"}
-			]
-		},
-		{
-			"name": "getSigningBoxInfo",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"sbHandle","type":"uint32"}
-			],
-			"outputs": [
-				{"name":"key","type":"uint256"}
-			]
-		},
-		{
-			"name": "genRandom",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"length","type":"uint32"}
-			],
-			"outputs": [
-				{"name":"buffer","type":"bytes"}
-			]
-		},
-		{
 			"name": "naclBox",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
@@ -247,49 +294,10 @@ const ABI: &str = r#"
 			]
 		},
 		{
-			"name": "encrypt",
+			"name": "constructor",
 			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"boxHandle","type":"uint32"},
-				{"name":"data","type":"bytes"}
 			],
 			"outputs": [
-				{"name":"result","type":"uint32"},
-				{"name":"encrypted","type":"bytes"}
-			]
-		},
-		{
-			"name": "decrypt",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"boxHandle","type":"uint32"},
-				{"name":"data","type":"bytes"}
-			],
-			"outputs": [
-				{"name":"result","type":"uint32"},
-				{"name":"decrypted","type":"bytes"}
-			]
-		},
-		{
-			"name": "getEncryptionBoxInfo",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"boxHandle","type":"uint32"}
-			],
-			"outputs": [
-				{"name":"result","type":"uint32"},
-				{"components":[{"name":"hdpath","type":"bytes"},{"name":"algorithm","type":"bytes"},{"name":"options","type":"bytes"},{"name":"publicInfo","type":"bytes"}],"name":"info","type":"tuple"}
-			]
-		},
-		{
-			"name": "getAccountsDataByHash",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"codeHash","type":"uint256"},
-				{"name":"gt","type":"address"}
-			],
-			"outputs": [
-				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accounts","type":"tuple[]"}
 			]
 		}
 	],
@@ -629,7 +637,7 @@ impl SdkInterface {
         self.encrypt_or_decrypt(args, false).await
     }
 
-    async fn get_info(&self, args: &Value) -> InterfaceResult {
+    async fn get_encryption_box_info(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let encryption_box = EncryptionBoxHandle(get_num_arg::<u32>(args, "boxHandle")?);
 
@@ -735,19 +743,21 @@ impl SdkInterface {
         Ok(res)
     }
 
-    async fn signing_box_get_key(&self, args: &Value) -> InterfaceResult {
+    async fn get_signing_box_info(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let box_handle = get_num_arg::<u32>(args, "sbHandle")?;
+        let box_handle = get_num_arg::<u32>(args, "boxHandle")?;
         let result = signing_box_get_public_key(
             self.ton.clone(),
             RegisteredSigningBox {
                 handle: box_handle.into(),
             },
-        )
-        .await
-        .map_err(|e| format!("{}", e))?
-        .pubkey;
-        Ok((answer_id, json!({ "key": format!("0x{}", result) })))
+        ).await;
+
+        let (result, key) = match result {
+            Ok(val) => (0, format!("0x{}", val.pubkey)),
+            Err(e) => (e.code as u32, format!("0")),
+        };
+        Ok((answer_id, json!({ "result": result, "key": key})))
     }
 
     async fn sign_hash(&self, args: &Value) -> InterfaceResult {
@@ -802,7 +812,7 @@ impl DebotInterface for SdkInterface {
 
             "genRandom" => self.get_random(args),
             "signHash" => self.sign_hash(args).await,
-            "getSigningBoxInfo" => self.signing_box_get_key(args).await,
+            "getSigningBoxInfo" => self.get_signing_box_info(args).await,
             "naclBox" => self.nacl_box(args),
             "naclBoxOpen" => self.nacl_box_open(args),
             "naclKeypairFromSecret" => self.nacl_box_keypair_from_secret_key(args),
@@ -810,7 +820,7 @@ impl DebotInterface for SdkInterface {
 
             "encrypt" => self.encrypt(args).await,
             "decrypt" => self.decrypt(args).await,
-            "getEncryptionBoxInfo" => self.get_info(args).await,
+            "getEncryptionBoxInfo" => self.get_encryption_box_info(args).await,
 
             "getAccountsDataByHash" => self.get_accounts_data_by_hash(args).await,
 
