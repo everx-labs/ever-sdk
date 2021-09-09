@@ -10,13 +10,13 @@ use crate::crypto::{
     hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
     hdkey_secret_from_xprv, hdkey_xprv_from_mnemonic, mnemonic_derive_sign_keys,
     mnemonic_from_random, mnemonic_verify, nacl_box, nacl_box_keypair_from_secret_key,
-    nacl_box_open, nacl_sign_keypair_from_secret_key, signing_box_sign, signing_box_get_public_key,
-    EncryptionBoxHandle, EncryptionBoxInfo, ParamsOfChaCha20, ParamsOfEncryptionBoxGetInfo,
-    ParamsOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyPublicFromXPrv,
-    ParamsOfHDKeySecretFromXPrv, ParamsOfHDKeyXPrvFromMnemonic, ParamsOfMnemonicDeriveSignKeys,
-    ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfNaclBox, RegisteredSigningBox,
-    ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen, ParamsOfNaclSignKeyPairFromSecret,
-    ParamsOfSigningBoxSign, ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt
+    nacl_box_open, nacl_sign_keypair_from_secret_key, signing_box_get_public_key, signing_box_sign,
+    EncryptionBoxHandle, EncryptionBoxInfo, ParamsOfChaCha20, ParamsOfEncryptionBoxDecrypt,
+    ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxGetInfo, ParamsOfHDKeyDeriveFromXPrv,
+    ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyPublicFromXPrv, ParamsOfHDKeySecretFromXPrv,
+    ParamsOfHDKeyXPrvFromMnemonic, ParamsOfMnemonicDeriveSignKeys, ParamsOfMnemonicFromRandom,
+    ParamsOfMnemonicVerify, ParamsOfNaclBox, ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen,
+    ParamsOfNaclSignKeyPairFromSecret, ParamsOfSigningBoxSign, RegisteredSigningBox,
 };
 use crate::encoding::decode_abi_bigint;
 use crate::net::{query_collection, OrderBy, ParamsOfQueryCollection, SortDirection};
@@ -321,12 +321,17 @@ impl From<EncryptionBoxInfo> for EncryptionBoxInfoResult {
         Self {
             algorithm: info.algorithm.map(|v| hex::encode(v)).unwrap_or_default(),
             hdpath: info.hdpath.map(|v| hex::encode(v)).unwrap_or_default(),
-            options: info.options.map(|v| hex::encode(v.to_string())).unwrap_or_default(),
-            public_info: info.public.map(|v| hex::encode(v.to_string())).unwrap_or_default(),
+            options: info
+                .options
+                .map(|v| hex::encode(v.to_string()))
+                .unwrap_or_default(),
+            public_info: info
+                .public
+                .map(|v| hex::encode(v.to_string()))
+                .unwrap_or_default(),
         }
     }
 }
-
 
 impl SdkInterface {
     pub fn new(ton: TonClient) -> Self {
@@ -731,13 +736,18 @@ impl SdkInterface {
     }
 
     async fn signing_box_get_key(&self, args: &Value) -> InterfaceResult {
-    	let answer_id = decode_answer_id(args)?;
+        let answer_id = decode_answer_id(args)?;
         let box_handle = get_num_arg::<u32>(args, "sbHandle")?;
-        let result = signing_box_get_public_key(self.ton.clone(), RegisteredSigningBox{handle : box_handle.into()})
+        let result = signing_box_get_public_key(
+            self.ton.clone(),
+            RegisteredSigningBox {
+                handle: box_handle.into(),
+            },
+        )
         .await
         .map_err(|e| format!("{}", e))?
         .pubkey;
-    	Ok((answer_id, json!({ "key": format!("0x{}",result) })))
+        Ok((answer_id, json!({ "key": format!("0x{}", result) })))
     }
 
     async fn sign_hash(&self, args: &Value) -> InterfaceResult {
