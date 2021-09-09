@@ -1,8 +1,10 @@
+use serde_json::Value;
 use ton_block::{BinTreeType, Block, BlockIdExt, Deserializable, InRefValue, MASTERCHAIN_ID, ShardHashes, ShardIdent};
 use ton_types::Result;
 
-use crate::proofs::BlockProof;
+use crate::proofs::{BlockProof, get_current_network_zerostate_root_hash, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_zerostate_root_hash, resolve_initial_trusted_key_block};
 use crate::proofs::validators::{calc_subset_for_workchain, calc_workchain_id, calc_workchain_id_by_adnl_id};
+use crate::tests::TestClient;
 
 #[test]
 fn test_check_master_blocks_proof() -> Result<()> {
@@ -158,3 +160,105 @@ fn check_any_keyblock_validator_set(file_name: &str) -> Result<()> {
 
     Ok(())
 }
+
+const MAINNET_ZEROSTATE_ROOT_HASH: &str =
+    "58ffca1a178daff705de54216e5433c9bd2e7d850070d334d38997847ab9e845";
+
+lazy_static! {
+    static ref MAINNET_CONFIG: Value = json!({
+        "network": {
+            "server_address": "main.ton.dev",
+        }
+    });
+}
+
+#[tokio::test]
+async fn test_query_current_network_zerostate_root_hash() -> Result<()> {
+    let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
+
+    assert_eq!(
+        query_current_network_zerostate_root_hash(client.context()).await?.as_str(),
+        MAINNET_ZEROSTATE_ROOT_HASH,
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_get_current_network_zerostate_root_hash() -> Result<()> {
+    let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
+    let context = client.context();
+
+    assert!(context.net.zerostate_root_hash.read().await.is_none());
+
+    assert_eq!(
+        get_current_network_zerostate_root_hash(&context).await?.as_str(),
+        MAINNET_ZEROSTATE_ROOT_HASH,
+    );
+
+    assert_eq!(
+        context.net.zerostate_root_hash.read().await.as_ref().unwrap().as_str(),
+        MAINNET_ZEROSTATE_ROOT_HASH,
+    );
+
+    // Second time in order to ensure that value wasn't broken after caching:
+    assert_eq!(
+        get_current_network_zerostate_root_hash(&context).await?.as_str(),
+        MAINNET_ZEROSTATE_ROOT_HASH,
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_resolve_initial_trusted_key_block_main() -> Result<()> {
+    let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
+
+    let config = serde_json::from_value(MAINNET_CONFIG.clone())?;
+    let trusted_block_id = resolve_initial_trusted_key_block(
+        &client.context(),
+        &config,
+    ).await?;
+
+    assert_eq!(
+        trusted_block_id,
+        &INITIAL_TRUSTED_KEY_BLOCKS.get(&MAINNET_ZEROSTATE_ROOT_HASH.to_string())
+            .unwrap()
+            .trusted_key_block,
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_resolve_initial_trusted_key_block_custom() -> Result<()> {
+    const FLDNET_ZEROSTATE_HASH: &str =
+        "ea2ccbdd761fd4b5fa1ead71ee1496ccfddff63593bad4587986ae7d3f93756d";
+    let config = json!({
+        "network": {
+            "server_address": "https://gql.custler.net/graphql",
+            "trusted_key_blocks": {
+                FLDNET_ZEROSTATE_HASH: {
+                    "seq_no": 2683519,
+                    "root_hash": "10f59f1d6c964dfdefb0b685131ad5fc838d6d335a0e0288a75e46509a7ccfee",
+                }
+            }
+        }
+    });
+    let client = TestClient::new_with_config(config.clone());
+
+    let config = serde_json::from_value(config)?;
+    let trusted_block_id = resolve_initial_trusted_key_block(
+        &client.context(),
+        &config,
+    ).await?;
+
+    assert_eq!(
+        trusted_block_id,
+        config.network.trusted_key_blocks.as_ref().unwrap()
+            .get(FLDNET_ZEROSTATE_HASH).unwrap(),
+    );
+
+    Ok(())
+}
+

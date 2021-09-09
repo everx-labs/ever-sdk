@@ -12,6 +12,7 @@
 */
 
 use serde::{Deserialize, Deserializer};
+use std::collections::HashMap;
 
 pub const MESSAGES_COLLECTION: &str = "messages";
 pub const ACCOUNTS_COLLECTION: &str = "accounts";
@@ -126,6 +127,15 @@ fn deserialize_query_timeout<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<u32, D::Error> {
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_query_timeout()))
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ApiType)]
+pub struct TrustedMcBlockId {
+    /// Trusted key-block sequence number
+    pub seq_no: u32,
+
+    /// Trusted key-block root hash, encoded as HEX
+    pub root_hash: String,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
@@ -251,6 +261,12 @@ pub struct NetworkConfig {
 
     /// Access key to GraphQL API. At the moment is not used in production.
     pub access_key: Option<String>,
+
+    /// Trusted key-blocks for different networks, used for proof-checking. It is the initial point
+    /// of trust chain. There are trusted key-blocks already hardcoded into SDK:
+    /// for mainnet and devnet, for other networks developers has to provide their own by using
+    /// zerostate's root_hash as key.
+    pub trusted_key_blocks: Option<HashMap<String, TrustedMcBlockId>>,
 }
 
 impl Default for NetworkConfig {
@@ -270,6 +286,7 @@ impl Default for NetworkConfig {
             max_latency: default_max_latency(),
             query_timeout: default_query_timeout(),
             access_key: None,
+            trusted_key_blocks: None,
         }
     }
 }

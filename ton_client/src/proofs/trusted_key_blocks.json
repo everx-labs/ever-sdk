@@ -1,0 +1,17 @@
+{
+  "58ffca1a178daff705de54216e5433c9bd2e7d850070d334d38997847ab9e845": {
+    "description": "Free TON MainNet",
+    "trusted_key_block": {
+      "seq_no": 11102621,
+      "root_hash": "e769ff37b4e6dc2feefb66a381f4e9ea51d185861397ab115a2487734354d986"
+    }
+  },
+
+  "b2e99a7505eda599aead9f2323ea905fb6ba9e26d261937e9d7c80535f0fb992": {
+    "description": "Free TON DevNet",
+    "trusted_key_block": {
+      "seq_no": 1363146,
+      "root_hash": "364dc51e6124fcb2d8fb2c167858de32b018fb2022acabe5c655fe3dc8da7b66"
+    }
+  }
+}

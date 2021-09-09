@@ -1,6 +1,8 @@
+use std::collections::HashMap;
 use std::ops::Deref;
 #[cfg(test)]
 use std::path::Path;
+use std::sync::Arc;
 
 use failure::{bail, err_msg};
 use ton_block::{
@@ -10,6 +12,10 @@ use ton_block::{
 use ton_types::{Cell, deserialize_tree_of_cells, HashmapType};
 use ton_types::Result;
 
+use crate::{ClientConfig, ClientContext};
+use crate::error::{ClientResult, ClientError};
+use crate::net::{ParamsOfQueryCollection, query_collection};
+use crate::net::types::TrustedMcBlockId;
 use crate::proofs::errors::Error;
 use crate::proofs::validators::{calc_subset_for_workchain, check_crypto_signatures};
 
@@ -18,6 +24,20 @@ mod validators;
 
 #[cfg(test)]
 mod tests;
+
+// TODO: Update this JSON-file contents using CI:
+static INITIAL_TRUSTED_KEY_BLOCKS_JSON: &str = include_str!("trusted_key_blocks.json");
+
+#[derive(serde::Deserialize)]
+pub(crate) struct TrustedKeyBlockJsonEntry {
+    trusted_key_block: TrustedMcBlockId,
+}
+
+lazy_static! {
+    pub(crate) static ref INITIAL_TRUSTED_KEY_BLOCKS: HashMap<String, TrustedKeyBlockJsonEntry> =
+        serde_json::from_str(INITIAL_TRUSTED_KEY_BLOCKS_JSON)
+            .expect("FATAL: failed to parse trusted key-blocks JSON!");
+}
 
 pub struct BlockProof(ton_block::BlockProof);
 
@@ -468,4 +488,78 @@ impl BlockProof {
 
         Ok((validators, hash_short))
     }
+}
+
+async fn get_current_network_zerostate_root_hash(context: &Arc<ClientContext>) -> ClientResult<Arc<String>> {
+    if let Some(ref root_hash) = *context.net.zerostate_root_hash.read().await {
+        return Ok(Arc::clone(root_hash));
+    }
+
+    let queried_root_hash = query_current_network_zerostate_root_hash(Arc::clone(context)).await?;
+
+    let mut write_guard = context.net.zerostate_root_hash.write().await;
+    if let Some(ref stored_root_hash) = *write_guard {
+        return Ok(Arc::clone(stored_root_hash));
+    }
+
+    *write_guard = Some(Arc::clone(&queried_root_hash));
+
+    Ok(queried_root_hash)
+}
+
+async fn query_current_network_zerostate_root_hash(context: Arc<ClientContext>) -> ClientResult<Arc<String>> {
+    let blocks = query_collection(context, ParamsOfQueryCollection {
+        collection: "blocks".to_string(),
+        filter: Some(json!({
+            "workchain_id": {
+                "eq": -1
+            },
+            "seq_no": {
+                "eq": 1
+            },
+        })),
+        result: "prev_ref{root_hash}".to_string(),
+        limit: Some(1),
+        ..Default::default()
+    }).await?.result;
+
+    if blocks.is_empty() {
+        return Err(Error::unable_to_resolve_zerostate_root_hash("Can't get masterchain block #1"));
+    }
+
+    let prev_ref = &blocks[0]["prev_ref"];
+    if prev_ref.is_null() {
+        return Err(Error::unable_to_resolve_zerostate_root_hash("prev_ref of the block #1 is not set"));
+    }
+
+    let root_hash_json = &prev_ref["root_hash"];
+    root_hash_json.as_str()
+        .map(|v| Arc::new(v.to_string()))
+        .ok_or_else::<ClientError, _>(|| Error::unable_to_resolve_zerostate_root_hash(
+            format!(
+                "root_hash of the prev_ref of the block #1 is not a string: {:?}",
+                root_hash_json,
+            ),
+        ))
+}
+
+async fn resolve_initial_trusted_key_block<'config>(
+    context: &Arc<ClientContext>,
+    config: &'config ClientConfig,
+) -> ClientResult<&'config TrustedMcBlockId> {
+    let zerostate_root_hash = get_current_network_zerostate_root_hash(context).await?;
+
+    if let Some(ref trusted_mc_blocks) = config.network.trusted_key_blocks {
+        if let Some(trusted_mc_blocks_from_config) =
+            trusted_mc_blocks.get(zerostate_root_hash.as_ref())
+        {
+            return Ok(trusted_mc_blocks_from_config);
+        }
+    }
+
+    if let Some(hardcoded_mc_block) = INITIAL_TRUSTED_KEY_BLOCKS.get(zerostate_root_hash.as_ref()) {
+        return Ok(&hardcoded_mc_block.trusted_key_block);
+    }
+
+    Err(Error::unable_to_resolve_trusted_key_block(&zerostate_root_hash))
 }

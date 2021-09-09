@@ -46,6 +46,7 @@ pub struct NetworkContext {
     pub(crate) server_link: Option<ServerLink>,
     pub(crate) subscriptions: Mutex<HashMap<u32, mpsc::Sender<SubscriptionAction>>>,
     pub(crate) iterators: Mutex<HashMap<u32, Arc<Mutex<Box<dyn ChainIterator + Send + Sync>>>>>,
+    pub(crate) zerostate_root_hash: RwLock<Option<Arc<String>>>,
 }
 
 pub struct ClientContext {
@@ -98,6 +99,7 @@ Note that default values are used if parameters are omitted in config"#,
                 server_link,
                 subscriptions: Default::default(),
                 iterators: Default::default(),
+                zerostate_root_hash: Default::default(),
             },
             env,
             debots: LockfreeMap::new(),
