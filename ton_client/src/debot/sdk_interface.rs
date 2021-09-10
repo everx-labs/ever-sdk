@@ -762,7 +762,7 @@ impl SdkInterface {
 
     async fn sign_hash(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let box_handle = get_num_arg::<u32>(args, "sbHandle")?;
+        let box_handle = get_num_arg::<u32>(args, "boxHandle")?;
         let hash_to_sign =
             decode_abi_bigint(&get_arg(&args, "hash")?).map_err(|e| e.to_string())?;
 
