@@ -7,7 +7,7 @@ import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Termi
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/JsonDeserialize/Json.sol";
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Hex/Hex.sol";
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/EncryptionBoxInput/EncryptionBoxInput.sol";
-import "./Sdk.sol"; 
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
 
 contract ExampleContract is Debot {
 
@@ -36,6 +36,7 @@ contract ExampleContract is Debot {
     }
 
     function printInfoResult(uint32 result, EncryptionBoxInfoResult info) public {
+        require(result == 0, 220);
         require(tvm.hash(info.hdpath) == tvm.hash("m/44'/396'/0'/0/1"), 201);
         require(tvm.hash(info.algorithm) == tvm.hash("NaclBox"), 202);
         Json.deserialize(tvm.functionId(setOptions), info.options);
