@@ -292,13 +292,6 @@ const ABI: &str = r#"
 			"outputs": [
 				{"name":"output","type":"bytes"}
 			]
-		},
-		{
-			"name": "constructor",
-			"inputs": [
-			],
-			"outputs": [
-			]
 		}
 	],
 	"data": [
