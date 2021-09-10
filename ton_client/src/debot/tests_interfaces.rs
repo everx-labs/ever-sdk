@@ -30,6 +30,8 @@ pub const SUPPORTED_INTERFACES: &[&str] = &[
     "5b5f76b54d976d72f1ada3063d1af2e5352edaf1ba86b3b311170d4d81056d61", // encryption box input
 ];
 
+pub const MY_TEST_PUBKEY: &str = "0xb7cb10668eb106f91293014f6f47657f2f6b1b47332b4c865a874905271e95b3";
+
 pub const ECHO_ABI: &str = r#"
 {
 	"ABI version": 2,
@@ -246,12 +248,12 @@ impl NaclBoxEncryption {
 impl EncryptionBox for NaclBoxEncryption {
     async fn get_info(&self) -> ClientResult<EncryptionBoxInfo> {
         // emulate getnifo
-        Ok(EncryptionBoxInfo {
+        Ok(dbg!(EncryptionBoxInfo {
             hdpath: Some(format!("m/44'/396'/0'/0/1")),
             algorithm: Some(format!("NaclBox")),
             options: Some(json!({"nonce": self.nonce, "theirPubkey": self.their_key })),
-            public: None,
-        })
+            public: Some(json!({"key": MY_TEST_PUBKEY})),
+        }))
     }
 
     async fn encrypt(&self, data: &String) -> ClientResult<String> {

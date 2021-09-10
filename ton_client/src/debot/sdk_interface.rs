@@ -6,16 +6,17 @@ use super::routines;
 use super::TonClient;
 use crate::abi::Abi;
 use crate::crypto::{
-    chacha20, hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
+    chacha20, encryption_box_decrypt, encryption_box_encrypt, encryption_box_get_info,
+    hdkey_derive_from_xprv, hdkey_derive_from_xprv_path, hdkey_public_from_xprv,
     hdkey_secret_from_xprv, hdkey_xprv_from_mnemonic, mnemonic_derive_sign_keys,
     mnemonic_from_random, mnemonic_verify, nacl_box, nacl_box_keypair_from_secret_key,
-    nacl_box_open, nacl_sign_keypair_from_secret_key, signing_box_sign, signing_box_get_public_key,
-    encryption_box_encrypt, encryption_box_decrypt, EncryptionBoxHandle, ParamsOfChaCha20,
-    ParamsOfHDKeyDeriveFromXPrv, ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyPublicFromXPrv,
-    ParamsOfHDKeySecretFromXPrv, ParamsOfHDKeyXPrvFromMnemonic, ParamsOfMnemonicDeriveSignKeys,
-    ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfNaclBox, RegisteredSigningBox,
-    ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen, ParamsOfNaclSignKeyPairFromSecret,
-    ParamsOfSigningBoxSign, ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxDecrypt
+    nacl_box_open, nacl_sign_keypair_from_secret_key, signing_box_get_public_key, signing_box_sign,
+    EncryptionBoxHandle, EncryptionBoxInfo, ParamsOfChaCha20, ParamsOfEncryptionBoxDecrypt,
+    ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxGetInfo, ParamsOfHDKeyDeriveFromXPrv,
+    ParamsOfHDKeyDeriveFromXPrvPath, ParamsOfHDKeyPublicFromXPrv, ParamsOfHDKeySecretFromXPrv,
+    ParamsOfHDKeyXPrvFromMnemonic, ParamsOfMnemonicDeriveSignKeys, ParamsOfMnemonicFromRandom,
+    ParamsOfMnemonicVerify, ParamsOfNaclBox, ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen,
+    ParamsOfNaclSignKeyPairFromSecret, ParamsOfSigningBoxSign, RegisteredSigningBox,
 };
 use crate::encoding::decode_abi_bigint;
 use crate::net::{query_collection, OrderBy, ParamsOfQueryCollection, SortDirection};
@@ -54,6 +55,96 @@ const ABI: &str = r#"
 			],
 			"outputs": [
 				{"name":"code_hash","type":"uint256"}
+			]
+		},
+		{
+			"name": "getAccountsDataByHash",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"codeHash","type":"uint256"},
+				{"name":"gt","type":"address"}
+			],
+			"outputs": [
+				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accounts","type":"tuple[]"}
+			]
+		},
+		{
+			"name": "encrypt",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"},
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"encrypted","type":"bytes"}
+			]
+		},
+		{
+			"name": "decrypt",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"},
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"decrypted","type":"bytes"}
+			]
+		},
+		{
+			"name": "getEncryptionBoxInfo",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"components":[{"name":"hdpath","type":"bytes"},{"name":"algorithm","type":"bytes"},{"name":"options","type":"bytes"},{"name":"publicInfo","type":"bytes"}],"name":"info","type":"tuple"}
+			]
+		},
+		{
+			"name": "signHash",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"},
+				{"name":"hash","type":"uint256"}
+			],
+			"outputs": [
+				{"name":"signature","type":"bytes"}
+			]
+		},
+		{
+			"name": "getSigningBoxInfo",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"boxHandle","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"result","type":"uint32"},
+				{"name":"key","type":"uint256"}
+			]
+		},
+		{
+			"name": "genRandom",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"length","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"buffer","type":"bytes"}
+			]
+		},
+		{
+			"name": "substring",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"str","type":"bytes"},
+				{"name":"start","type":"uint32"},
+				{"name":"count","type":"uint32"}
+			],
+			"outputs": [
+				{"name":"substr","type":"bytes"}
 			]
 		},
 		{
@@ -154,49 +245,6 @@ const ABI: &str = r#"
 			]
 		},
 		{
-			"name": "substring",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"str","type":"bytes"},
-				{"name":"start","type":"uint32"},
-				{"name":"count","type":"uint32"}
-			],
-			"outputs": [
-				{"name":"substr","type":"bytes"}
-			]
-		},
-		{
-			"name": "signHash",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"sbHandle","type":"uint32"},
-				{"name":"hash","type":"uint256"}
-			],
-			"outputs": [
-				{"name":"signature","type":"bytes"}
-			]
-		},
-		{
-			"name": "getSigningBoxInfo",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"sbHandle","type":"uint32"}
-			],
-			"outputs": [
-				{"name":"key","type":"uint256"}
-			]
-		},
-		{
-			"name": "genRandom",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"length","type":"uint32"}
-			],
-			"outputs": [
-				{"name":"buffer","type":"bytes"}
-			]
-		},
-		{
 			"name": "naclBox",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
@@ -244,41 +292,6 @@ const ABI: &str = r#"
 			"outputs": [
 				{"name":"output","type":"bytes"}
 			]
-		},
-		{
-			"name": "encrypt",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"boxHandle","type":"uint32"},
-				{"name":"data","type":"bytes"}
-			],
-			"outputs": [
-				{"name":"result","type":"uint32"},
-				{"name":"encrypted","type":"bytes"}
-			]
-		},
-		{
-			"name": "decrypt",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"boxHandle","type":"uint32"},
-				{"name":"data","type":"bytes"}
-			],
-			"outputs": [
-				{"name":"result","type":"uint32"},
-				{"name":"decrypted","type":"bytes"}
-			]
-		},
-		{
-			"name": "getAccountsDataByHash",
-			"inputs": [
-				{"name":"answerId","type":"uint32"},
-				{"name":"codeHash","type":"uint256"},
-				{"name":"gt","type":"address"}
-			],
-			"outputs": [
-				{"components":[{"name":"id","type":"address"},{"name":"data","type":"cell"}],"name":"accounts","type":"tuple[]"}
-			]
 		}
 	],
 	"data": [
@@ -292,6 +305,33 @@ const SDK_ID: &str = "8fc6454f90072c9f1f6d3313ae1608f64f4a0660c6ae9f42c68b6a79e2
 
 pub struct SdkInterface {
     ton: TonClient,
+}
+
+#[derive(Default, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(super) struct EncryptionBoxInfoResult {
+    pub hdpath: String,
+    pub algorithm: String,
+    pub options: String,
+    pub public_info: String,
+}
+
+use std::convert::From;
+impl From<EncryptionBoxInfo> for EncryptionBoxInfoResult {
+    fn from(info: EncryptionBoxInfo) -> Self {
+        Self {
+            algorithm: info.algorithm.map(|v| hex::encode(v)).unwrap_or_default(),
+            hdpath: info.hdpath.map(|v| hex::encode(v)).unwrap_or_default(),
+            options: info
+                .options
+                .map(|v| hex::encode(v.to_string()))
+                .unwrap_or_default(),
+            public_info: info
+                .public
+                .map(|v| hex::encode(v.to_string()))
+                .unwrap_or_default(),
+        }
+    }
 }
 
 impl SdkInterface {
@@ -590,31 +630,63 @@ impl SdkInterface {
         self.encrypt_or_decrypt(args, false).await
     }
 
+    async fn get_encryption_box_info(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let encryption_box = EncryptionBoxHandle(get_num_arg::<u32>(args, "boxHandle")?);
+
+        let result = encryption_box_get_info(
+            self.ton.clone(),
+            ParamsOfEncryptionBoxGetInfo { encryption_box },
+        )
+        .await
+        .map_err(|e| e.code as u32)
+        .map(|x| x.info);
+
+        let (result, info) = match result {
+            Ok(info) => (0, EncryptionBoxInfoResult::from(info)),
+            Err(code) => (code, EncryptionBoxInfoResult::default()),
+        };
+
+        let return_args = json!({ "result": result, "info": info});
+        Ok((answer_id, return_args))
+    }
+
     async fn encrypt_or_decrypt(&self, args: &Value, encrypt: bool) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let encryption_box = EncryptionBoxHandle(get_num_arg::<u32>(args, "boxHandle")?);
-        let data = base64::encode(
-            &hex::decode(&get_arg(args, "data")?).map_err(|e| format!("{}", e))?,
-        );
+        let data =
+            base64::encode(&hex::decode(&get_arg(args, "data")?).map_err(|e| format!("{}", e))?);
         let result = if encrypt {
             encryption_box_encrypt(
                 self.ton.clone(),
-                ParamsOfEncryptionBoxEncrypt { encryption_box, data },
-            ).await.map_err(|e| e.code as u32).map(|x| x.data)
+                ParamsOfEncryptionBoxEncrypt {
+                    encryption_box,
+                    data,
+                },
+            )
+            .await
+            .map_err(|e| e.code as u32)
+            .map(|x| x.data)
         } else {
             encryption_box_decrypt(
                 self.ton.clone(),
-                ParamsOfEncryptionBoxDecrypt { encryption_box, data },
-            ).await.map_err(|e| e.code as u32).map(|x| x.data)
+                ParamsOfEncryptionBoxDecrypt {
+                    encryption_box,
+                    data,
+                },
+            )
+            .await
+            .map_err(|e| e.code as u32)
+            .map(|x| x.data)
         };
-        
+
         let (result, data) = match result {
             Ok(data) => {
                 let data = base64::decode(&data)
-                .map(|x| hex::encode(x))
-                .map_err(|e| format!("failed to decode base64: {}", e))?;
+                    .map(|x| hex::encode(x))
+                    .map_err(|e| format!("failed to decode base64: {}", e))?;
                 (0, data)
-            },
+            }
             Err(code) => (code, "".to_owned()),
         };
 
@@ -623,7 +695,7 @@ impl SdkInterface {
         } else {
             json!({ "result": result, "decrypted": data })
         };
-        Ok(( answer_id, return_args ))
+        Ok((answer_id, return_args))
     }
 
     async fn query_accounts(&self, args: &Value, result: &str) -> InterfaceResult {
@@ -664,19 +736,26 @@ impl SdkInterface {
         Ok(res)
     }
 
-    async fn signing_box_get_key(&self, args: &Value) -> InterfaceResult {
-    	let answer_id = decode_answer_id(args)?;
-        let box_handle = get_num_arg::<u32>(args, "sbHandle")?;
-        let result = signing_box_get_public_key(self.ton.clone(), RegisteredSigningBox{handle : box_handle.into()})
-        .await
-        .map_err(|e| format!("{}", e))?
-        .pubkey;
-    	Ok((answer_id, json!({ "key": format!("0x{}",result) })))
+    async fn get_signing_box_info(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let box_handle = get_num_arg::<u32>(args, "boxHandle")?;
+        let result = signing_box_get_public_key(
+            self.ton.clone(),
+            RegisteredSigningBox {
+                handle: box_handle.into(),
+            },
+        ).await;
+
+        let (result, key) = match result {
+            Ok(val) => (0, format!("0x{}", val.pubkey)),
+            Err(e) => (e.code as u32, format!("0")),
+        };
+        Ok((answer_id, json!({ "result": result, "key": key})))
     }
 
     async fn sign_hash(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let box_handle = get_num_arg::<u32>(args, "sbHandle")?;
+        let box_handle = get_num_arg::<u32>(args, "boxHandle")?;
         let hash_to_sign =
             decode_abi_bigint(&get_arg(&args, "hash")?).map_err(|e| e.to_string())?;
 
@@ -707,27 +786,26 @@ impl DebotInterface for SdkInterface {
 
     async fn call(&self, func: &str, args: &Value) -> InterfaceResult {
         match func {
-            
             "getBalance" => self.get_balance(args).await,
             "getAccountType" => self.get_account_type(args).await,
             "getAccountCodeHash" => self.get_account_code_hash(args).await,
-            
+
             "mnemonicFromRandom" => self.mnemonic_from_random(args),
             "mnemonicDeriveSignKeys" => self.mnemonic_derive_sign_keys(args),
             "mnemonicVerify" => self.mnemonic_verify(args),
-            
+
             "hdkeyXprvFromMnemonic" => self.hdkey_xprv_from_mnemonic(args),
             "hdkeyDeriveFromXprv" => self.hdkey_derive_from_xprv(args),
             "hdkeyDeriveFromXprvPath" => self.hdkey_derive_from_xprv_path(args),
             "hdkeySecretFromXprv" => self.hdkey_secret_from_xprv(args),
             "hdkeyPublicFromXprv" => self.hdkey_public_from_xprv(args),
             "naclSignKeypairFromSecretKey" => self.nacl_sign_keypair_from_secret_key(args),
-            
+
             "substring" => self.substring(args),
-            
+
             "genRandom" => self.get_random(args),
             "signHash" => self.sign_hash(args).await,
-            "getSigningBoxInfo" => self.signing_box_get_key(args).await,
+            "getSigningBoxInfo" => self.get_signing_box_info(args).await,
             "naclBox" => self.nacl_box(args),
             "naclBoxOpen" => self.nacl_box_open(args),
             "naclKeypairFromSecret" => self.nacl_box_keypair_from_secret_key(args),
@@ -735,6 +813,7 @@ impl DebotInterface for SdkInterface {
 
             "encrypt" => self.encrypt(args).await,
             "decrypt" => self.decrypt(args).await,
+            "getEncryptionBoxInfo" => self.get_encryption_box_info(args).await,
 
             "getAccountsDataByHash" => self.get_accounts_data_by_hash(args).await,
 
