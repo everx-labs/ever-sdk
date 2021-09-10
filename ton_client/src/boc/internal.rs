@@ -14,7 +14,6 @@
 use crate::{ClientContext};
 use crate::boc::{BocCacheType, Error};
 use crate::error::ClientResult;
-use std::str::FromStr;
 use ton_block::{Deserializable, Serializable};
 use ton_types::{UInt256, deserialize_tree_of_cells};
 
