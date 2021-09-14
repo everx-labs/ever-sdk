@@ -342,7 +342,7 @@ impl ClientEnv {
         Ok(Self::calc_storage_path(local_storage_path, key))
     }
 
-    fn local_storage(&self) -> ClientResult<Storage> {
+    fn local_storage() -> ClientResult<Storage> {
         let window = web_sys::window()
             .ok_or_else(|| Error::internal_error("Can not get `window` object"))?;
         window.local_storage()
@@ -398,38 +398,38 @@ impl ClientEnv {
 
     /// Read value by a given key from the local storage
     pub async fn read_local_storage(
-        &self,
         local_storage_path: &Option<String>,
-        key: &str
-    ) -> ClientResult<Option<String>> {
+        key: &str,
+    ) -> ClientResult<Option<Vec<u8>>> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
-        self.local_storage()?.get_item(&path)
-            .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
+        Ok(Self::local_storage()?.get_item(&path)
+            .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))?
+            .map(|content_base64| base64::decode(&content_base64))
+            .transpose()?
+        )
     }
 
     /// Write value by a given key into the local storage
     pub async fn write_local_storage(
-        &self,
         local_storage_path: &Option<String>,
         key: &str,
-        value: &str
+        value: &[u8],
     ) -> ClientResult<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
-        self.local_storage()?.set_item(&path, value)
+        Self::local_storage()?.set_item(&path, &base64::encode(value))
             .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
     }
 
     /// Remove value by a given key out of the local storage
     pub async fn remove_local_storage(
-        &self,
         local_storage_path: &Option<String>,
-        key: &str
+        key: &str,
     ) -> ClientResult<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
-        self.local_storage()?.remove_item(&path)
+        Self::local_storage()?.remove_item(&path)
             .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
     }
 }
