@@ -1,4 +1,6 @@
 use std::ops::Deref;
+#[cfg(test)]
+use std::path::Path;
 
 use failure::{bail, err_msg};
 use ton_block::{

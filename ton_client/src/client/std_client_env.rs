@@ -12,20 +12,27 @@
 */
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
+use crate::client::{is_storage_key_correct, LOCAL_STORAGE_DEFAULT_DIR_NAME};
 #[cfg(test)]
 use crate::client::network_mock::NetworkMock;
 use crate::error::ClientResult;
 use futures::{Future, SinkExt, StreamExt};
+use lazy_static::lazy_static;
 use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
     Client as HttpClient, ClientBuilder, Method,
 };
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::str::FromStr;
 use tokio::runtime::Runtime;
 #[cfg(test)]
 use tokio::sync::RwLock;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
+
+#[cfg(test)]
+#[path = "client_env_tests.rs"]
+mod client_env_tests;
 
 lazy_static! {
     static ref RUNTIME_CONTAINER: ClientResult<Runtime> = create_runtime();
@@ -93,6 +100,27 @@ impl ClientEnv {
                 }
             })
             .collect()
+    }
+
+    pub(crate) fn calc_storage_path(local_storage_path: &Option<String>, key: &str) -> PathBuf {
+        let local_storage_path = local_storage_path
+            .clone()
+            .map(|path| PathBuf::from(path))
+            .unwrap_or_else(|| {
+                home::home_dir()
+                    .unwrap_or(PathBuf::from("/"))
+                    .join(LOCAL_STORAGE_DEFAULT_DIR_NAME)
+            });
+
+        local_storage_path.join(key)
+    }
+
+    fn key_to_path(local_storage_path: &Option<String>, key: &str) -> ClientResult<PathBuf> {
+        if !is_storage_key_correct(key) {
+            Error::invalid_storage_key(key);
+        }
+
+        Ok(Self::calc_storage_path(local_storage_path, key))
     }
 }
 
@@ -223,5 +251,53 @@ impl ClientEnv {
                 .await
                 .map_err(|err| Error::http_request_parse_error(err))?,
         })
+    }
+
+    /// Read value by a given key from the local storage
+    pub async fn read_local_storage(
+        &self,
+        local_storage_path: &Option<String>,
+        key: &str
+    ) -> ClientResult<Option<String>> {
+        let path = Self::key_to_path(local_storage_path, key)?;
+
+        match tokio::fs::read_to_string(&path).await {
+            Ok(value) => Ok(Some(value)),
+            Err(err) => if err.kind() == std::io::ErrorKind::NotFound {
+                Ok(None)
+            } else {
+                Err(Error::internal_error(err))
+            }
+        }
+    }
+
+    /// Write value by a given key into the local storage
+    pub async fn write_local_storage(
+        &self,
+        local_storage_path: &Option<String>,
+        key: &str,
+        value: &str
+    ) -> ClientResult<()> {
+        let path = Self::key_to_path(local_storage_path, key)?;
+
+        if let Some(path) = path.parent() {
+            tokio::fs::create_dir_all(path).await
+                .map_err(|err| Error::internal_error(err))?;
+        }
+
+        tokio::fs::write(&path, value).await
+            .map_err(|err| Error::internal_error(err))
+    }
+
+    /// Remove value by a given key out of the local storage
+    pub async fn remove_local_storage(
+        &self,
+        local_storage_path: &Option<String>,
+        key: &str
+    ) -> ClientResult<()> {
+        let path = Self::key_to_path(local_storage_path, key)?;
+
+        tokio::fs::remove_file(&path).await
+            .map_err(|err| Error::internal_error(err))
     }
 }

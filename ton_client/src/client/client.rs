@@ -154,6 +154,15 @@ pub struct ClientConfig {
     pub abi: AbiConfig,
     #[serde(default, deserialize_with = "deserialize_boc_config")]
     pub boc: BocConfig,
+
+    /// For file based storage is a folder name where SDK will store its data.
+    /// For browser based is a browser async storage key prefix.
+    /// Default (recommended) value is "~/.tonclient" for native environments and ".tonclient"
+    /// for web-browser.
+    pub local_storage_path: Option<String>,
+
+    /// Cache proofs in the local storage. Default is `true`.
+    pub cache_proofs: Option<bool>,
 }
 
 fn deserialize_network_config<'de, D: Deserializer<'de>>(
@@ -187,6 +196,8 @@ impl Default for ClientConfig {
             crypto: Default::default(),
             abi: Default::default(),
             boc: Default::default(),
+            local_storage_path: Default::default(),
+            cache_proofs: Default::default(),
         }
     }
 }
