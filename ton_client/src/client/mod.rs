@@ -23,12 +23,14 @@ mod wasm_client_env;
 #[cfg(feature = "wasm")]
 pub(crate) use wasm_client_env::ClientEnv;
 
+#[cfg(not(feature = "wasm"))]
 #[cfg(test)]
 pub(crate) use crate::client::network_mock::{NetworkMock};
 
 #[cfg(test)]
 mod tests;
 
+#[cfg(not(feature = "wasm"))]
 #[cfg(test)]
 mod network_mock;
 

@@ -406,7 +406,8 @@ impl ClientEnv {
         Ok(Self::local_storage()?.get_item(&path)
             .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))?
             .map(|content_base64| base64::decode(&content_base64))
-            .transpose()?
+            .transpose()
+            .map_err(|err| Error::internal_error(err))?
         )
     }
 
