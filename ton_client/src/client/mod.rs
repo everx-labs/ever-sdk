@@ -46,7 +46,7 @@ use std::sync::Arc;
 pub(crate) const LOCAL_STORAGE_DEFAULT_DIR_NAME: &str = ".tonclient";
 
 lazy_static! {
-    static ref KEY_FORMAT_RE: regex::Regex = regex::Regex::new("^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
+    static ref KEY_FORMAT_RE: regex::Regex = regex::Regex::new("^[a-zA-Z0-9_]+$").unwrap();
 }
 
 pub(crate) fn is_storage_key_correct(key: &str) -> bool {
