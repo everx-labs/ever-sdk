@@ -2,6 +2,7 @@ use super::base64_interface::Base64Interface;
 use super::hex_interface::HexInterface;
 use super::sdk_interface::SdkInterface;
 use super::network_interface::NetworkInterface;
+use super::query_interface::QueryInterface;
 use crate::abi::{decode_message_body, Abi, ParamsOfDecodeMessageBody};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
@@ -115,6 +116,9 @@ impl BuiltinInterfaces {
         interfaces.insert(iface.get_id(), iface);
 
         let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(NetworkInterface::new(client.clone()));
+        interfaces.insert(iface.get_id(), iface);
+
+        let iface: Arc<dyn DebotInterface + Send + Sync> = Arc::new(QueryInterface::new(client.clone()));
         interfaces.insert(iface.get_id(), iface);
 
         let iface: Arc<dyn DebotInterface + Send + Sync> =
