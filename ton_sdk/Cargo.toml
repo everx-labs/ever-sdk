@@ -6,7 +6,7 @@ license = "Apache-2.0"
 authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 
 [dependencies]
-ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git" }
+ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git", branch = "fixed-encoding" }
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
 ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
