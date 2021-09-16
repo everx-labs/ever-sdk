@@ -40,15 +40,16 @@ const ABI: &str = r#"
 
 const ID: &str = "5c6fd81616cdfb963632109c42144a3a885c8d0f2e8deb5d8e15872fb92f2811";
 
-#[derive(Serialize, Deserialize)]
+use serde_repr::{Serialize_repr, Deserialize_repr};
+#[derive(Serialize_repr, Deserialize_repr)]
 #[repr(u8)]
 enum ValKind {
-    String,
-    Number,
-    Bool,
-    Array,
-    Object,
-    Null
+    String = 0,
+    Number = 1,
+    Bool = 2,
+    Array = 3,
+    Object = 4,
+    Null = 5,
 }
 
 impl Default for ValKind {
@@ -96,7 +97,7 @@ impl Value {
         println!("new_string");
         let mut val = Self::default();
         val.kind = ValKind::String;
-        val.value = Self::serialize(ParamType::Bytes, json!(hex::encode(v)))?;
+        val.value = hex::encode(v);
         Some(val)
     }
 
@@ -118,10 +119,10 @@ impl Value {
                 )),
                 Param::new("array", ParamType::Array(Box::new(ParamType::Cell))),
             ];
-            let tokens = Tokenizer::tokenize_all_params(&params, &json).ok()?;
-            let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], 2).ok()?;
+            let tokens = Tokenizer::tokenize_all_params(&params, &json).unwrap();
+            let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], 2).unwrap();
             let serialized = serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()?;
-            val.object.insert(hex::encode(&hash[..]), serialized);
+            val.object.insert(format!("0x{}", hex::encode(&hash[..])), serialized);
         }
         Some(val)
     }
@@ -132,7 +133,8 @@ impl Value {
             &json!({"arg0": json})
         ).ok()?;
         let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], 2).ok()?;
-        serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()
+        Some(hex::encode(builder.data()))
+        //serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()
     }
 }
 
@@ -261,8 +263,8 @@ mod tests {
     use super::pack;
 
     #[test]
-    fn test_query_pack() {
-        pack(json!({
+    fn test_pack() {
+        let result_val = pack(json!({
           "a": true,
           "b": 1234567,
           "c": "Hello, world",
@@ -274,5 +276,6 @@ mod tests {
               }
           }
         })).unwrap();
+        println!("{}", serde_json::to_string(&result_val).unwrap());
     }
 }
