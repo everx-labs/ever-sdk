@@ -1,14 +1,14 @@
 use super::dinterface::{
-    get_num_arg, decode_answer_id, get_string_arg, DebotInterface, InterfaceResult,
+    decode_answer_id, get_num_arg, get_string_arg, DebotInterface, InterfaceResult,
 };
-use crate::abi::Abi;
-use serde_json::{Value as JsonValue};
-use ton_abi::{ParamType, Param, token::Tokenizer, TokenValue};
-use crate::net::{ParamsOfQueryCollection, OrderBy, SortDirection, query_collection};
 use super::TonClient;
-use std::collections::HashMap;
+use crate::abi::Abi;
 use crate::boc::internal::{deserialize_cell_from_base64, serialize_cell_to_base64};
+use crate::net::{query_collection, OrderBy, ParamsOfQueryCollection, SortDirection};
+use serde_json::Value as JsonValue;
 use sha2::Digest;
+use std::collections::HashMap;
+use ton_abi::{token::Tokenizer, Param, ParamType, TokenValue};
 
 const ABI: &str = r#"
 {
@@ -40,7 +40,7 @@ const ABI: &str = r#"
 
 const ID: &str = "5c6fd81616cdfb963632109c42144a3a885c8d0f2e8deb5d8e15872fb92f2811";
 
-use serde_repr::{Serialize_repr, Deserialize_repr};
+use serde_repr::{Deserialize_repr, Serialize_repr};
 #[derive(Serialize_repr, Deserialize_repr)]
 #[repr(u8)]
 enum ValKind {
@@ -114,32 +114,34 @@ impl Value {
             let params = [
                 Param::new("kind", ParamType::Uint(8)),
                 Param::new("value", ParamType::Cell),
-                Param::new("object", ParamType::Map(
-                    Box::new(ParamType::Uint(256)),
-                    Box::new(ParamType::Cell),
-                )),
+                Param::new(
+                    "object",
+                    ParamType::Map(Box::new(ParamType::Uint(256)), Box::new(ParamType::Cell)),
+                ),
                 Param::new("array", ParamType::Array(Box::new(ParamType::Cell))),
             ];
             let tokens = Tokenizer::tokenize_all_params(&params, &json).unwrap();
             let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], 2).unwrap();
-            let serialized = serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()?;
-            val.object.insert(format!("0x{}", hex::encode(&hash[..])), serialized);
+            let serialized =
+                serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()?;
+            val.object
+                .insert(format!("0x{}", hex::encode(&hash[..])), serialized);
         }
         Some(val)
     }
 
     fn serialize(param_type: ParamType, json: JsonValue) -> Option<String> {
         let tokens = Tokenizer::tokenize_all_params(
-            &[Param::new("arg0", param_type)], 
-            &json!({"arg0": json})
-        ).ok()?;
+            &[Param::new("arg0", param_type)],
+            &json!({ "arg0": json }),
+        )
+        .ok()?;
         let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], 2).ok()?;
         serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()
     }
 }
 
-
-fn pack(json_obj: JsonValue)-> Option<Value> {
+fn pack(json_obj: JsonValue) -> Option<Value> {
     match json_obj {
         JsonValue::Null => Some(Value::new_null()),
         JsonValue::Bool(v) => Value::new_bool(v),
@@ -174,7 +176,6 @@ impl QueryInterface {
         let query_filter = get_string_arg(args, "queryFilter")?;
         let return_filter = get_string_arg(args, "returnFilter")?;
         let limit = get_num_arg::<u32>(args, "limit")?;
-        
         let order_by = OrderBy {
             path: get_string_arg(&args["orderBy"], "path")?,
             direction: match get_num_arg::<u8>(&args["orderBy"], "direction")? {
@@ -188,15 +189,22 @@ impl QueryInterface {
             1 => "messages",
             2 => "transactions",
             _ => "unknown",
-        }.to_owned();
+        }
+        .to_owned();
 
-        let result = self.query(collection_name, query_filter, return_filter, limit, order_by).await;
+        let result = self
+            .query(
+                collection_name,
+                query_filter,
+                return_filter,
+                limit,
+                order_by,
+            )
+            .await;
         let (status, objects) = match result {
-            Ok(json_objects) => {
-                match Self::pack_objects(json_objects) {
-                    Some(objects) => (QueryStatus::Success, objects),
-                    None => (QueryStatus::PackingError, vec![]),
-                }
+            Ok(json_objects) => match Self::pack_objects(json_objects) {
+                Some(objects) => (QueryStatus::Success, objects),
+                None => (QueryStatus::PackingError, vec![]),
             },
             Err(status) => (status, vec![]),
         };
@@ -210,20 +218,28 @@ impl QueryInterface {
         ))
     }
 
-    async fn query(&self, collection: String, filter: String, result: String, limit: u32, order_by: OrderBy) -> Result<Vec<JsonValue>, QueryStatus> {
-        let filter: Option<JsonValue> = Some(
-            serde_json::from_str(&filter).map_err(|_| QueryStatus::FilterError)?
-        );
+    async fn query(
+        &self,
+        collection: String,
+        filter: String,
+        result: String,
+        limit: u32,
+        order_by: OrderBy,
+    ) -> Result<Vec<JsonValue>, QueryStatus> {
+        let filter: Option<JsonValue> =
+            Some(serde_json::from_str(&filter).map_err(|_| QueryStatus::FilterError)?);
         let result = query_collection(
             self.ton.clone(),
-            ParamsOfQueryCollection{
+            ParamsOfQueryCollection {
                 collection,
                 filter,
                 result,
                 order: Some(vec![order_by]),
                 limit: Some(limit),
             },
-        ).await.map_err(|_| QueryStatus::NetworkError)?;
+        )
+        .await
+        .map_err(|_| QueryStatus::NetworkError)?;
         Ok(result.result)
     }
 
@@ -271,7 +287,8 @@ mod tests {
                   "aaa": "Buy buy!"
               }
           }
-        })).unwrap();
+        }))
+        .unwrap();
         println!("{}", serde_json::to_string(&result_val).unwrap());
     }
 }
