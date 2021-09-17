@@ -261,12 +261,6 @@ pub struct NetworkConfig {
 
     /// Access key to GraphQL API. At the moment is not used in production.
     pub access_key: Option<String>,
-
-    /// Trusted key-blocks for different networks, used for proof-checking. It is the initial point
-    /// of trust chain. There are trusted key-blocks already hardcoded into SDK:
-    /// for mainnet and devnet, for other networks developers has to provide their own by using
-    /// zerostate's root_hash as key.
-    pub trusted_key_blocks: Option<HashMap<String, TrustedMcBlockId>>,
 }
 
 impl Default for NetworkConfig {
@@ -286,7 +280,6 @@ impl Default for NetworkConfig {
             max_latency: default_max_latency(),
             query_timeout: default_query_timeout(),
             access_key: None,
-            trusted_key_blocks: None,
         }
     }
 }

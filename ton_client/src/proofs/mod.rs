@@ -587,14 +587,6 @@ async fn resolve_initial_trusted_key_block(
 ) -> ClientResult<&TrustedMcBlockId> {
     let zerostate_root_hash = get_current_network_zerostate_root_hash(context).await?;
 
-    if let Some(ref trusted_mc_blocks) = context.config.network.trusted_key_blocks {
-        if let Some(trusted_mc_blocks_from_config) =
-            trusted_mc_blocks.get(zerostate_root_hash.as_ref())
-        {
-            return Ok(trusted_mc_blocks_from_config);
-        }
-    }
-
     if let Some(hardcoded_mc_block) =
         INITIAL_TRUSTED_KEY_BLOCKS.get(zerostate_root_hash.as_ref())
     {

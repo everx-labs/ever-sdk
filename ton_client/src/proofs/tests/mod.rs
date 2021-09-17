@@ -226,31 +226,3 @@ async fn test_resolve_initial_trusted_key_block_main() -> Result<()> {
 
     Ok(())
 }
-
-#[tokio::test]
-async fn test_resolve_initial_trusted_key_block_custom() -> Result<()> {
-    let config = json!({
-        "network": {
-            "server_address": "main.ton.dev",
-            "trusted_key_blocks": {
-                MAINNET_ZEROSTATE_ROOT_HASH: {
-                    "seq_no": 2683519,
-                    "root_hash": "10f59f1d6c964dfdefb0b685131ad5fc838d6d335a0e0288a75e46509a7ccfee",
-                }
-            }
-        }
-    });
-    let client = TestClient::new_with_config(config.clone());
-    let context = client.context();
-
-    let trusted_block_id = resolve_initial_trusted_key_block(&context).await?;
-
-    assert_eq!(
-        trusted_block_id,
-        context.config.network.trusted_key_blocks.as_ref().unwrap()
-            .get(MAINNET_ZEROSTATE_ROOT_HASH).unwrap(),
-    );
-
-    Ok(())
-}
-
