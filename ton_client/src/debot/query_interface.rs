@@ -21,13 +21,13 @@ const ABI: &str = r#"
 				{"name":"answerId","type":"uint32"},
 				{"name":"collectionType","type":"uint8"},
 				{"name":"queryFilter","type":"bytes"},
+				{"name":"returnFilter","type":"bytes"},
 				{"name":"limit","type":"uint32"},
-				{"name":"paginationId","type":"uint256"}
+				{"components":[{"name":"path","type":"bytes"},{"name":"direction","type":"uint8"}],"name":"orderBy","type":"tuple"}
 			],
 			"outputs": [
 				{"name":"status","type":"uint8"},
-				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"bytes"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"objects","type":"tuple[]"},
-				{"name":"nextId","type":"uint256"}
+				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"bytes"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"objects","type":"tuple[]"}
 			]
 		}
 	],
@@ -150,15 +150,15 @@ fn pack(json_obj: JsonValue)-> Option<Value> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Clone)]
 #[repr(u8)]
 enum QueryStatus {
-    Success,
-    InvalidFilter,
-    InvalidLimit,
-    InvalidSorting,
-    NetworkError,
-    UnknownError
+    Success = 0,
+    InvalidFilter = 1,
+    InvalidLimit = 2,
+    InvalidSorting = 3,
+    NetworkError = 4,
+    UnknownError = 5,
 }
 
 pub struct QueryInterface {
@@ -172,10 +172,18 @@ impl QueryInterface {
 
     async fn collection(&self, args: &JsonValue) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let query_filter = get_string_arg(args, "queryFilter")?;
         let collection_type = get_num_arg::<u8>(args, "collectionType")?;
+        let query_filter = get_string_arg(args, "queryFilter")?;
+        let return_filter = get_string_arg(args, "returnFilter")?;
         let limit = get_num_arg::<u32>(args, "limit")?;
-        let _pagination_id = get_arg(args, "paginationId")?;
+        
+        let order_by = OrderBy {
+            path: get_string_arg(&args["orderBy"], "path")?,
+            direction: match get_num_arg::<u8>(&args["orderBy"], "direction")? {
+                0 => SortDirection::ASC,
+                _ => SortDirection::DESC,
+            },
+        };
 
         let collection_name = match collection_type {
             0 => "accounts",
@@ -184,35 +192,29 @@ impl QueryInterface {
             _ => "unknown",
         }.to_owned();
 
-        let result = self.query(collection_name, query_filter, limit).await;
-        let (status, objects, id) = match result {
+        let result = self.query(collection_name, query_filter, return_filter, limit, order_by).await;
+        let (status, objects) = match result {
             Ok(json_objects) => {
-                let nextid = json_objects.last().unwrap()["id"]
-                    .as_str()
-                    .map(|v| v.to_owned())
-                    .unwrap_or_default();
-                
                 match Self::pack_objects(json_objects) {
-                    Some(objects) => (QueryStatus::Success, objects, nextid),
-                    None => (QueryStatus::UnknownError, vec![], format!("0")),
+                    Some(objects) => (QueryStatus::Success, objects),
+                    None => (QueryStatus::UnknownError, vec![]),
                 }
             },
-            Err(status) => {
-                (status, vec![], format!("0"))
-            },
+            Err(status) => (status, vec![]),
         };
 
+        println!("{}, {}", status.clone() as u8, serde_json::to_string(&objects).unwrap());
         Ok((
             answer_id,
             json!({
                 "status": status as u8,
-                "objects": serde_json::to_string(&objects).unwrap(),
-                "nextId": id,
+                "objects": objects,
             }),
         ))
     }
 
-    async fn query(&self, collection: String, filter: String, limit: u32) -> Result<Vec<JsonValue>, QueryStatus> {
+    async fn query(&self, collection: String, filter: String, result: String, limit: u32, order_by: OrderBy) -> Result<Vec<JsonValue>, QueryStatus> {
+        println!("{}", filter);
         let filter: Option<JsonValue> = Some(
             serde_json::from_str(&filter).map_err(|_| QueryStatus::InvalidFilter)?
         );
@@ -221,10 +223,8 @@ impl QueryInterface {
             ParamsOfQueryCollection{
                 collection,
                 filter,
-                result: format!("id boc"),
-                order: Some(vec![OrderBy { 
-                    path: format!("id"), direction: SortDirection::ASC 
-                }]),
+                result,
+                order: Some(vec![order_by]),
                 limit: Some(limit),
             },
         ).await.map_err(|_| QueryStatus::NetworkError)?;

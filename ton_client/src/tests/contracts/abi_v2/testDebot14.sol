@@ -7,15 +7,16 @@ import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Termi
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/SigningBoxInput/SigningBoxInput.sol";
 
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/query/libraries/JsonLib.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/query/Query/Query.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/libraries/JsonLib.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Query/Query.sol";
 
 contract TestDebot14 is Debot {
 
     using JsonLib for JsonLib.Value;
-    using JsonLib for mapping(uint256 => JsonLib.Value);
+    using JsonLib for mapping(uint256 => TvmCell);
 
     uint32 m_limit;
+    uint m_index;
     struct Recipient {
         address dst;
         uint128 val;
@@ -48,6 +49,14 @@ contract TestDebot14 is Debot {
         dst.transfer(val, true, 3);
         m_recipients.push(Recipient(dst, val));
     }
+
+    //
+    // Getter
+    //
+
+    function getRecipients() public returns (Recipient[] recipients) {
+        recipients = m_recipients;
+    }
     //
     // DeBot functions
     //
@@ -77,11 +86,27 @@ contract TestDebot14 is Debot {
     }
 
     function onSuccess() public {
+        optional(uint256) none;
+        this.getRecipients{
+            abiVer: 2,
+            extMsg: true,
+            sign: false,
+            time: 0,
+            expire: 0,
+            pubkey: none,
+            callbackId: tvm.functionId(onGetter),
+            onErrorId: tvm.functionId(onError)
+        }();
+    }
+
+    function onGetter(Recipient[] recipients) public {
+        m_recipients = recipients;
+        m_index = 0;
         m_limit = 3;
         Query.collection(
             tvm.functionId(setQueryResult), 
             QueryCollection.Messages, 
-            format("{ src: { eq: \"{}\" } msg_type: { eq: 0 } }", address(this)),
+            format("{\"src\":{\"eq\":\"{}\"},\"msg_type\":{\"eq\":0}}", address(this)),
             "created_lt value dst",
             m_limit,
             QueryOrderBy("created_lt", SortDirection.Ascending)
@@ -95,33 +120,57 @@ contract TestDebot14 is Debot {
         }
 
         if (objects.length != 0) {
-            mapping(uint256 => JsonLib.Value) jsonObj;
+            mapping(uint256 => TvmCell) jsonObj;
+            optional(JsonLib.Value) jsonv;
             for (JsonLib.Value obj: objects) {
                 jsonObj = obj.as_object().get();
-                optional(JsonLib.Value) balance = jsonObj.get("value");
-                optional(JsonLib.Value) dst = jsonObj.get("dst");
-                Terminal.print(0, format(
-                    "Sent {:t} tons to address {}", 
-                    balance.get().as_number().get(), 
-                    dst.get().as_string().get()
-                ));
+                jsonv = jsonObj.get("value");
+                string balanceStr = jsonv.get().as_string().get();
+                (uint balance, bool ok) = stoi(balanceStr);
+                
+                require(ok, 103);
+                jsonv = jsonObj.get("dst");
+                string dstStr = jsonv.get().as_string().get();
+                address dst = stringToAddress(dstStr);
+
+                require(m_recipients.length == 5, 300);
+                Recipient rec = m_recipients[m_index];
+                require(rec.dst == dst, 101);
+                require(rec.val == uint128(balance), 102);
+
+                m_index += 1;
             }
             
             jsonObj = objects[objects.length - 1].as_object().get();
             m_limit = 50;
+            /*
             optional(JsonLib.Value) createdLT = jsonObj.get("created_lt");
             uint32 lastLT = uint32(createdLT.get().as_number().get());
             Query.collection(
                 tvm.functionId(setQueryResult),
                 QueryCollection.Messages,
-                format("{ src: { eq: \"{}\" } msg_type: { eq: 0 } created_lt: {gt: {} } }", address(this), lastLT),
+                format("{\"src\":{\"eq\":\"{}\"},\"msg_type\":{\"eq\":0},\"created_lt\":{\"gt\":{}}}", address(this), lastLT),
                 "created_lt value dst",
                 m_limit,
                 QueryOrderBy("created_lt", SortDirection.Ascending)
             );
+            */
         } else {
             Terminal.print(0, "Done.");
         }
+    }
+
+    function stringToAddress(string str) private returns (address) {
+        require(str.byteLength() >= 66, 201);
+        optional(uint32) semicolon =  1; //str[1].find(byte(':'));
+        require(semicolon.hasValue(), 202);
+        string wcPart = str.substr(0, semicolon.get());
+        string addrPart = str.substr(semicolon.get() + 1);
+        (uint wc, bool ok) = stoi(wcPart);
+        require(ok, 203);
+        (uint addr, bool ok2) = stoi(format("0x{}", addrPart));
+        require(ok2, 204);
+        return address.makeAddrStd(int8(wc), addr);
     }
 
     function getDebotInfo() public functionID(0xDEB) override view returns(

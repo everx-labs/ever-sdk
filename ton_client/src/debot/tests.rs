@@ -1364,7 +1364,7 @@ async fn test_debot_query() {
         vec![],
         build_info(abi, 14, vec![
             format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
-            format!("0x5b5f76b54d976d72f1ada3063d1af2e5352edaf1ba86b3b311170d4d81056d61")
+            format!("0x5c6fd81616cdfb963632109c42144a3a885c8d0f2e8deb5d8e15872fb92f2811")
         ]),
         vec![],
     ).await;
