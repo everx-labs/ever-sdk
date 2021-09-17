@@ -167,6 +167,12 @@ pub struct ClientConfig {
     pub cache_proofs: Option<bool>,
 }
 
+impl ClientConfig {
+    pub fn cache_proofs(&self) -> bool {
+        self.cache_proofs.unwrap_or(true)
+    }
+}
+
 fn deserialize_network_config<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<NetworkConfig, D::Error> {

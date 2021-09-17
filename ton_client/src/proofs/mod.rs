@@ -12,14 +12,16 @@ use ton_block::{
 use ton_types::{Cell, deserialize_tree_of_cells, HashmapType};
 use ton_types::Result;
 
-use crate::{ClientConfig, ClientContext};
-use crate::error::{ClientResult, ClientError};
+use crate::ClientContext;
+use crate::error::{ClientError, ClientResult};
 use crate::net::{ParamsOfQueryCollection, query_collection};
 use crate::net::types::TrustedMcBlockId;
 use crate::proofs::errors::Error;
 use crate::proofs::validators::{calc_subset_for_workchain, check_crypto_signatures};
 
 mod errors;
+mod engine;
+pub(crate) mod storage;
 mod validators;
 
 #[cfg(test)]
@@ -56,8 +58,8 @@ impl From<ton_block::BlockProof> for BlockProof {
 }
 
 impl BlockProof {
-    pub fn deserialize(data: Vec<u8>) -> Result<Self> {
-        let root = deserialize_tree_of_cells(&mut std::io::Cursor::new(&data))?;
+    pub fn deserialize(data: &[u8]) -> Result<Self> {
+        let root = deserialize_tree_of_cells(&mut std::io::Cursor::new(data))?;
         let internal = ton_block::BlockProof::construct_from(&mut root.clone().into())?;
 
         Ok(Self(internal))
@@ -65,7 +67,7 @@ impl BlockProof {
 
     #[cfg(test)]
     pub fn read_from_file(path: impl AsRef<Path>) -> Result<Self> {
-        Self::deserialize(std::fs::read(path)?)
+        Self::deserialize(&std::fs::read(path)?)
     }
 
     pub fn id(&self) -> &BlockIdExt {
@@ -130,6 +132,33 @@ impl BlockProof {
         }
         self.pre_check_block_proof()?;
 
+        Ok(())
+    }
+
+    pub async fn check_proof(&self, engine: &impl ProofHelperEngine) -> Result<()> {
+        if self.is_link() {
+            self.check_proof_link()?;
+        } else {
+            let (virt_block, virt_block_info) = self.pre_check_block_proof()?;
+            let prev_key_block_seqno = virt_block_info.prev_key_block_seqno();
+
+            if prev_key_block_seqno == 0 {
+                let zerostate = engine.load_zerostate().await?;
+                let mc_state_extra = zerostate.read_custom()?
+                    .ok_or_else(|| err_msg("Can't read custom field from the zerostate"))?;
+                self.check_with_master_state_(
+                    self.id(),
+                    &zerostate,
+                    mc_state_extra.config(),
+                    &virt_block,
+                    &virt_block_info,
+                )?;
+            } else {
+                let prev_key_block_proof = engine.load_key_block_proof(prev_key_block_seqno).await?;
+
+                self.check_with_prev_key_block_proof_(&prev_key_block_proof, &virt_block, &virt_block_info)?;
+            }
+        }
         Ok(())
     }
 
@@ -490,12 +519,16 @@ impl BlockProof {
     }
 }
 
-async fn get_current_network_zerostate_root_hash(context: &Arc<ClientContext>) -> ClientResult<Arc<String>> {
+async fn get_current_network_zerostate_root_hash(
+    context: &Arc<ClientContext>,
+) -> ClientResult<Arc<String>> {
     if let Some(ref root_hash) = *context.net.zerostate_root_hash.read().await {
         return Ok(Arc::clone(root_hash));
     }
 
-    let queried_root_hash = query_current_network_zerostate_root_hash(Arc::clone(context)).await?;
+    let queried_root_hash = query_current_network_zerostate_root_hash(
+        Arc::clone(context)
+    ).await?;
 
     let mut write_guard = context.net.zerostate_root_hash.write().await;
     if let Some(ref stored_root_hash) = *write_guard {
@@ -507,7 +540,9 @@ async fn get_current_network_zerostate_root_hash(context: &Arc<ClientContext>) -
     Ok(queried_root_hash)
 }
 
-async fn query_current_network_zerostate_root_hash(context: Arc<ClientContext>) -> ClientResult<Arc<String>> {
+async fn query_current_network_zerostate_root_hash(
+    context: Arc<ClientContext>,
+) -> ClientResult<Arc<String>> {
     let blocks = query_collection(context, ParamsOfQueryCollection {
         collection: "blocks".to_string(),
         filter: Some(json!({
@@ -524,12 +559,16 @@ async fn query_current_network_zerostate_root_hash(context: Arc<ClientContext>) 
     }).await?.result;
 
     if blocks.is_empty() {
-        return Err(Error::unable_to_resolve_zerostate_root_hash("Can't get masterchain block #1"));
+        return Err(
+            Error::unable_to_resolve_zerostate_root_hash("Can't get masterchain block #1")
+        );
     }
 
     let prev_ref = &blocks[0]["prev_ref"];
     if prev_ref.is_null() {
-        return Err(Error::unable_to_resolve_zerostate_root_hash("prev_ref of the block #1 is not set"));
+        return Err(
+            Error::unable_to_resolve_zerostate_root_hash("prev_ref of the block #1 is not set")
+        );
     }
 
     let root_hash_json = &prev_ref["root_hash"];
@@ -543,13 +582,12 @@ async fn query_current_network_zerostate_root_hash(context: Arc<ClientContext>) 
         ))
 }
 
-async fn resolve_initial_trusted_key_block<'config>(
+async fn resolve_initial_trusted_key_block(
     context: &Arc<ClientContext>,
-    config: &'config ClientConfig,
-) -> ClientResult<&'config TrustedMcBlockId> {
+) -> ClientResult<&TrustedMcBlockId> {
     let zerostate_root_hash = get_current_network_zerostate_root_hash(context).await?;
 
-    if let Some(ref trusted_mc_blocks) = config.network.trusted_key_blocks {
+    if let Some(ref trusted_mc_blocks) = context.config.network.trusted_key_blocks {
         if let Some(trusted_mc_blocks_from_config) =
             trusted_mc_blocks.get(zerostate_root_hash.as_ref())
         {
@@ -557,9 +595,18 @@ async fn resolve_initial_trusted_key_block<'config>(
         }
     }
 
-    if let Some(hardcoded_mc_block) = INITIAL_TRUSTED_KEY_BLOCKS.get(zerostate_root_hash.as_ref()) {
+    if let Some(hardcoded_mc_block) =
+        INITIAL_TRUSTED_KEY_BLOCKS.get(zerostate_root_hash.as_ref())
+    {
         return Ok(&hardcoded_mc_block.trusted_key_block);
     }
 
     Err(Error::unable_to_resolve_trusted_key_block(&zerostate_root_hash))
+}
+
+#[async_trait::async_trait]
+pub trait ProofHelperEngine {
+    fn context(&self) -> &Arc<ClientContext>;
+    async fn load_zerostate(&self) -> Result<ShardStateUnsplit>;
+    async fn load_key_block_proof(&self, mc_seq_no: u32) -> Result<BlockProof>;
 }
