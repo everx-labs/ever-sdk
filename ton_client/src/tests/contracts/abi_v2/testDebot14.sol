@@ -1,12 +1,10 @@
-pragma ton-solidity >=0.45.0;
+pragma ton-solidity >=0.47.0;
 pragma AbiHeader expire;
 pragma AbiHeader time;
 pragma AbiHeader pubkey;
 import "https://raw.githubusercontent.com/tonlabs/debots/main/Debot.sol";
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/SigningBoxInput/SigningBoxInput.sol";
-
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/libraries/JsonLib.sol";
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Query/Query.sol";
 
@@ -35,19 +33,23 @@ contract TestDebot14 is Debot {
         address dst;
         for (uint8 i = 0; i < count - 2; i++) {
             dst = address(rnd.next());
-            dst.transfer(val, false, 3);
+            TestDebot14(dst).transfer{value: val, bounce: false, flag: 3}(val);
             m_recipients.push(Recipient(dst, val));
             val += 0.1 ton;
 
         }
 
         dst = address(this); val = 0.15 ton;
-        dst.transfer(val, true, 3);
+        TestDebot14(dst).transfer{value: val, bounce: true, flag: 3}(val);
         m_recipients.push(Recipient(dst, val));
 
         val = 0.25 ton;
-        dst.transfer(val, true, 3);
+        TestDebot14(dst).transfer{value: val, bounce: true, flag: 3}(val);
         m_recipients.push(Recipient(dst, val));
+    }
+
+    function transfer(uint128 val) public {
+
     }
 
     //
@@ -65,6 +67,7 @@ contract TestDebot14 is Debot {
     function start() public override {
         SigningBoxInput.get(tvm.functionId(setBoxHandle), "", [tvm.pubkey()]);
     }
+
     function setBoxHandle(uint32 handle) public {
         
         this.scatter{
@@ -82,7 +85,7 @@ contract TestDebot14 is Debot {
     }
 
     function onError(uint32 sdkError, uint32 exitCode) public {
-        revert(200);
+        Terminal.print(0, format("sdkerror = {} exitcode = {}", sdkError, exitCode));
     }
 
     function onSuccess() public {
@@ -107,7 +110,7 @@ contract TestDebot14 is Debot {
             tvm.functionId(setQueryResult), 
             QueryCollection.Messages, 
             format("{\"src\":{\"eq\":\"{}\"},\"msg_type\":{\"eq\":0}}", address(this)),
-            "created_lt value dst",
+            "created_lt value dst body",
             m_limit,
             QueryOrderBy("created_lt", SortDirection.Ascending)
         );
@@ -139,24 +142,31 @@ contract TestDebot14 is Debot {
                 require(rec.val == uint128(balance), 102);
 
                 m_index += 1;
+
+                jsonv = jsonObj.get("body");
+                TvmSlice s = jsonv.get().as_cell().get().toSlice();
+                s.skip(32);
+                uint128 val = s.decodeFunctionParams(transfer);
+                require(val == uint128(balance), 105);
             }
             
-            jsonObj = objects[objects.length - 1].as_object().get();
             m_limit = 50;
-            /*
-            optional(JsonLib.Value) createdLT = jsonObj.get("created_lt");
-            uint32 lastLT = uint32(createdLT.get().as_number().get());
+            jsonObj = objects[objects.length - 1].as_object().get();
+            jsonv = jsonObj.get("created_lt");
+            (uint created_lt, bool ok2) = stoi(jsonv.get().as_string().get());
+            require(ok2, 106);
+            uint64 lastLT = uint64(created_lt);
             Query.collection(
                 tvm.functionId(setQueryResult),
                 QueryCollection.Messages,
-                format("{\"src\":{\"eq\":\"{}\"},\"msg_type\":{\"eq\":0},\"created_lt\":{\"gt\":{}}}", address(this), lastLT),
-                "created_lt value dst",
+                format("{\"src\":{\"eq\":\"{}\"},\"msg_type\":{\"eq\":0},\"created_lt\":{\"gt\":\"{}\"}}", address(this), lastLT),
+                "created_lt value dst body",
                 m_limit,
                 QueryOrderBy("created_lt", SortDirection.Ascending)
             );
-            */
+            
         } else {
-            Terminal.print(0, "Done.");
+            require(m_index == uint32(m_recipients.length), 107);
         }
     }
 

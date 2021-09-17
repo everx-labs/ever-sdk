@@ -1,5 +1,5 @@
 use super::dinterface::{
-    get_arg, get_num_arg, decode_answer_id, get_string_arg, DebotInterface, InterfaceResult,
+    get_num_arg, decode_answer_id, get_string_arg, DebotInterface, InterfaceResult,
 };
 use crate::abi::Abi;
 use serde_json::{Value as JsonValue};
@@ -7,7 +7,7 @@ use ton_abi::{ParamType, Param, token::Tokenizer, TokenValue};
 use crate::net::{ParamsOfQueryCollection, OrderBy, SortDirection, query_collection};
 use super::TonClient;
 use std::collections::HashMap;
-use crate::boc::internal::{serialize_cell_to_base64};
+use crate::boc::internal::{deserialize_cell_from_base64, serialize_cell_to_base64};
 use sha2::Digest;
 
 const ABI: &str = r#"
@@ -27,7 +27,7 @@ const ABI: &str = r#"
 			],
 			"outputs": [
 				{"name":"status","type":"uint8"},
-				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"bytes"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"objects","type":"tuple[]"}
+				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"cell"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"objects","type":"tuple[]"}
 			]
 		}
 	],
@@ -50,6 +50,7 @@ enum ValKind {
     Array = 3,
     Object = 4,
     Null = 5,
+    Cell = 6,
 }
 
 impl Default for ValKind {
@@ -73,12 +74,10 @@ struct Value {
 
 impl Value {
     fn new_null() -> Self {
-        println!("new_null");
         Self::default()
     }
 
     fn new_bool(v: bool) -> Option<Self> {
-        println!("new_bool");
         let mut val = Self::default();
         val.kind = ValKind::Bool;
         val.value = Self::serialize(ParamType::Bool, json!(v))?;
@@ -86,7 +85,6 @@ impl Value {
     }
 
     fn new_number(v: i64) -> Option<Self> {
-        println!("new_number");
         let mut val = Self::default();
         val.kind = ValKind::Number;
         val.value = Self::serialize(ParamType::Int(256), json!(v))?;
@@ -94,15 +92,18 @@ impl Value {
     }
 
     fn new_string(v: String) -> Option<Self> {
-        println!("new_string");
         let mut val = Self::default();
         val.kind = ValKind::String;
-        val.value = hex::encode(v);
+        if deserialize_cell_from_base64(&v, "QueryValue").is_ok() {
+            val.value = v;
+            val.kind = ValKind::Cell;
+        } else {
+            val.value = Self::serialize(ParamType::Bytes, json!(hex::encode(v)))?;
+        }
         Some(val)
     }
 
     fn new_object(map: serde_json::map::Map<String, JsonValue>) -> Option<Self> {
-        println!("new_object");
         let mut val = Self::default();
         val.kind = ValKind::Object;
         for (k, v) in map {
@@ -112,7 +113,7 @@ impl Value {
             let json: JsonValue = serde_json::to_value(pack(v)?).ok()?;
             let params = [
                 Param::new("kind", ParamType::Uint(8)),
-                Param::new("value", ParamType::Bytes),
+                Param::new("value", ParamType::Cell),
                 Param::new("object", ParamType::Map(
                     Box::new(ParamType::Uint(256)),
                     Box::new(ParamType::Cell),
@@ -133,8 +134,7 @@ impl Value {
             &json!({"arg0": json})
         ).ok()?;
         let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], 2).ok()?;
-        Some(hex::encode(builder.data()))
-        //serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()
+        serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()
     }
 }
 
@@ -154,11 +154,9 @@ fn pack(json_obj: JsonValue)-> Option<Value> {
 #[repr(u8)]
 enum QueryStatus {
     Success = 0,
-    InvalidFilter = 1,
-    InvalidLimit = 2,
-    InvalidSorting = 3,
-    NetworkError = 4,
-    UnknownError = 5,
+    FilterError = 1,
+    NetworkError = 2,
+    PackingError = 3,
 }
 
 pub struct QueryInterface {
@@ -197,13 +195,12 @@ impl QueryInterface {
             Ok(json_objects) => {
                 match Self::pack_objects(json_objects) {
                     Some(objects) => (QueryStatus::Success, objects),
-                    None => (QueryStatus::UnknownError, vec![]),
+                    None => (QueryStatus::PackingError, vec![]),
                 }
             },
             Err(status) => (status, vec![]),
         };
 
-        println!("{}, {}", status.clone() as u8, serde_json::to_string(&objects).unwrap());
         Ok((
             answer_id,
             json!({
@@ -214,9 +211,8 @@ impl QueryInterface {
     }
 
     async fn query(&self, collection: String, filter: String, result: String, limit: u32, order_by: OrderBy) -> Result<Vec<JsonValue>, QueryStatus> {
-        println!("{}", filter);
         let filter: Option<JsonValue> = Some(
-            serde_json::from_str(&filter).map_err(|_| QueryStatus::InvalidFilter)?
+            serde_json::from_str(&filter).map_err(|_| QueryStatus::FilterError)?
         );
         let result = query_collection(
             self.ton.clone(),
