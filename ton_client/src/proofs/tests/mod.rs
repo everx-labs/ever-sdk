@@ -213,12 +213,9 @@ async fn test_get_current_network_zerostate_root_hash() -> Result<()> {
 #[tokio::test]
 async fn test_resolve_initial_trusted_key_block_main() -> Result<()> {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
+    let context = client.context();
 
-    let config = serde_json::from_value(MAINNET_CONFIG.clone())?;
-    let trusted_block_id = resolve_initial_trusted_key_block(
-        &client.context(),
-        &config,
-    ).await?;
+    let trusted_block_id = resolve_initial_trusted_key_block(&context).await?;
 
     assert_eq!(
         trusted_block_id,
@@ -244,16 +241,13 @@ async fn test_resolve_initial_trusted_key_block_custom() -> Result<()> {
         }
     });
     let client = TestClient::new_with_config(config.clone());
+    let context = client.context();
 
-    let config = serde_json::from_value(config)?;
-    let trusted_block_id = resolve_initial_trusted_key_block(
-        &client.context(),
-        &config,
-    ).await?;
+    let trusted_block_id = resolve_initial_trusted_key_block(&context).await?;
 
     assert_eq!(
         trusted_block_id,
-        config.network.trusted_key_blocks.as_ref().unwrap()
+        context.config.network.trusted_key_blocks.as_ref().unwrap()
             .get(MAINNET_ZEROSTATE_ROOT_HASH).unwrap(),
     );
 

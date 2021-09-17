@@ -424,6 +424,7 @@ impl ClientEnv {
     }
 
     /// Remove value by a given key out of the local storage
+    #[allow(dead_code)]
     pub async fn remove_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
