@@ -263,16 +263,31 @@ fn encode_deploy(
     workchain: i32,
     call_set: &CallSet,
     pubkey: Option<&str>,
+    signer: &Signer,
     processing_try_index: Option<u8>,
 ) -> ClientResult<(Vec<u8>, Option<Vec<u8>>, MsgAddressInt)> {
     let address = image.msg_address(workchain);
-    let unsigned = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
-        call_set.to_function_call_set(pubkey, processing_try_index, &context, &abi, false)?,
-        image,
-        workchain,
-    )
-    .map_err(|err| abi::Error::encode_deploy_message_failed(err))?;
-    Ok((unsigned.message, Some(unsigned.data_to_sign), address))
+    Ok(match signer {
+        Signer::None => {
+            let message = ton_sdk::Contract::construct_deploy_message_json(
+                call_set.to_function_call_set(pubkey, processing_try_index, &context, abi, false)?,
+                image, 
+                None,
+                workchain,
+            )
+            .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
+            (message.serialized_message, None, address)
+        }
+        _ => {
+            let unsigned = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
+                call_set.to_function_call_set(pubkey, processing_try_index, &context, &abi, false)?,
+                image,
+                workchain,
+            )
+            .map_err(|err| abi::Error::encode_deploy_message_failed(err))?;
+            (unsigned.message, Some(unsigned.data_to_sign), address)
+        }
+    })
 }
 
 fn encode_int_deploy(
@@ -438,6 +453,7 @@ pub async fn encode_message(
                 workchain,
                 call_set,
                 public.as_ref().map(|x| x.as_str()),
+                &params.signer,
                 params.processing_try_index,
             )?
         } else {

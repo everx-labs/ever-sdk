@@ -1,6 +1,6 @@
 [package]
 name = "api_info"
-version = "1.21.3"
+version = "1.21.5"
 authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 edition = "2018"
 
