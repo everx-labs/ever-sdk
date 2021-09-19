@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.0] – 2021-09-20
+
+### New
+- ABI v2.2 with fixed message body layout supported. Description see [here](https://github.com/tonlabs/ton-labs-abi/blob/master/docs/Fixed-layout-concepts.md)
+
 ## [1.21.5] – 2021-09-13
 
 ### Fixed
