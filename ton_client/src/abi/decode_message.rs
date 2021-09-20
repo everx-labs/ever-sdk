@@ -138,7 +138,7 @@ fn decode_body(
         }
     } else if let Ok(input) = abi.decode_input(body.clone(), is_internal) {
         let (header, _, _) =
-            ton_abi::Function::decode_header(abi.version().major, body.clone(), abi.header(), is_internal)
+            ton_abi::Function::decode_header(abi.version(), body.clone(), abi.header(), is_internal)
                 .map_err(|err| {
                     Error::invalid_message_for_decode(format!(
                         "Can't decode function header: {}",
