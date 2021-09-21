@@ -8,7 +8,7 @@ use crate::net::{query_collection, OrderBy, ParamsOfQueryCollection, SortDirecti
 use serde_json::Value as JsonValue;
 use sha2::Digest;
 use std::collections::HashMap;
-use ton_abi::{token::Tokenizer, Param, ParamType, TokenValue};
+use ton_abi::{contract::ABI_VERSION_2_0, token::Tokenizer, Param, ParamType, TokenValue};
 
 const ABI: &str = r#"
 {
@@ -121,7 +121,7 @@ impl Value {
                 Param::new("array", ParamType::Array(Box::new(ParamType::Cell))),
             ];
             let tokens = Tokenizer::tokenize_all_params(&params, &json).unwrap();
-            let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], 2).unwrap();
+            let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], &ABI_VERSION_2_0).unwrap();
             let serialized =
                 serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()?;
             val.object
@@ -136,7 +136,7 @@ impl Value {
             &json!({ "arg0": json }),
         )
         .ok()?;
-        let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], 2).ok()?;
+        let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], &ABI_VERSION_2_0).ok()?;
         serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()
     }
 }
