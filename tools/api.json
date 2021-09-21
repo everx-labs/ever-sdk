@@ -1,5 +1,5 @@
 {
-  "version": "1.21.5",
+  "version": "1.22.0",
   "modules": [
     {
       "name": "client",
@@ -6946,7 +6946,7 @@
         },
         {
           "name": "encode_boc",
-          "summary": "Encodes BOC from builder operations.",
+          "summary": "Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type",
           "description": null,
           "params": [
             {

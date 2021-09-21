@@ -155,7 +155,7 @@ Where:
 
 [cache_unpin](mod_boc.md#cache_unpin) – Unpin BOCs with specified pin.
 
-[encode_boc](mod_boc.md#encode_boc) – Encodes BOC from builder operations.
+[encode_boc](mod_boc.md#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type
 
 ## [processing](mod_processing.md) – Message processing module.
 
