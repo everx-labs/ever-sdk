@@ -11,6 +11,7 @@ const {
     devMode,
 } = require('./build-lib');
 const platform = os.platform();
+const arch = os.arch();
 
 main(async () => {
     if (!devMode) {
@@ -21,11 +22,18 @@ main(async () => {
     deleteFolderRecursive(root_path('bin'));
     fs.mkdirSync(root_path('bin'), { recursive: true });
     const platformNames = {
-        linux: [['lib{}.so', '']],
-        win32: [['{}.dll.lib', '_lib'], ['{}.dll', '_dll']],
-        darwin: [['lib{}.dylib', '']],
+        linux: {
+          x64: [['lib{}.so', '']]
+        },
+        win32: {
+          x64: [['{}.dll.lib', '_lib'], ['{}.dll', '_dll']]
+        },
+        darwin: {
+          x64: [['lib{}.dylib', '']],
+          arm64: [['lib{}.dylib', '_arm64']]
+        },
     };
-    for (const [src, dstSuffix] of platformNames[platform] || []) {
+    for (const [src, dstSuffix] of platformNames[platform][arch] || []) {
         const target = ['..', 'target', 'release', src.replace('{}', 'ton_client')];
         await postBuild(target, platform);
         await gz(

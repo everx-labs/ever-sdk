@@ -228,7 +228,8 @@ Platform | Major | Download links
 Win32    | 0     | [`ton_client.lib`](https://binaries.tonlabs.io/tonclient_0_win32_lib.gz), [`ton_client.dll`](https://binaries.tonlabs.io/tonclient_0_win32_dll.gz)
 &nbsp;   | 1     | [`ton_client.lib`](https://binaries.tonlabs.io/tonclient_1_win32_lib.gz), [`ton_client.dll`](https://binaries.tonlabs.io/tonclient_1_win32_dll.gz)
 macOS    | 0     | [`libton_client.dylib`](https://binaries.tonlabs.io/tonclient_0_darwin.gz)
-&nbsp;   | 1     | [`libton_client.dylib`](https://binaries.tonlabs.io/tonclient_1_darwin.gz)
+&nbsp;   | 1     | (x86_64)[`libton_client.dylib`](https://binaries.tonlabs.io/tonclient_1_darwin.gz)
+&nbsp;   | 1     | (aarch64)[`libton_client.dylib`](https://binaries.tonlabs.io/tonclient_1_darwin_arm64.gz)
 Linux    | 0     | [`libton_client.so`](https://binaries.tonlabs.io/tonclient_0_linux.gz)
 &nbsp;   | 1     | [`libton_client.so`](https://binaries.tonlabs.io/tonclient_1_linux.gz)
 
