@@ -61,10 +61,10 @@ serde_derive = "1.0.91"
 serde_json = "1.0.41"
 serde_repr = "0.1.7"
 sha2 = "0.9.5"
-tiny-bip39 = "0.8.0"
 tokio = { version = "0.2.13", features = ["sync", "stream"], default-features = false }
 zstd = { version = "0.7.0", default-features = false }
-# TODO: remove when tiny-bip39 compilation issue is resolved
+# TODO: remove fixed versioning when tiny-bip39 compilation issue is resolved
+tiny-bip39 = "=0.8.0"
 zeroize = "=1.4.1"
 
 # optional for std
