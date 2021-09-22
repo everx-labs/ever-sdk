@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.22.0] – 2021-09-20
+
+### New
+- ABI v2.2 with fixed message body layout supported. [See the specification](https://github.com/tonlabs/ton-labs-abi/blob/master/docs/ABI_2.2_spec.md).
+
+  Now, for contracts with ABI version < 2.2  compact layout will still be used for compatibility, for contracts with ABI version 2.2 and more - fixed layout will be used.  
+**Please, make sure that you updated the ABI if you recompiled your contract with 2.2 ABI, or you may get an inconsistent contract behaviour**.
+- **Debot module**:
+    - added `getEncryptionBoxInfo`, `getSigningBoxInfo` functions to Sdk interface.
+    - implemented Query DeBot interface in DEngine.
+
 ## [1.21.5] – 2021-09-13
 
 ### Fixed
