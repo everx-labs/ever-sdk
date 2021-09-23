@@ -12,7 +12,6 @@
 */
 
 use serde::{Deserialize, Deserializer};
-use std::collections::HashMap;
 
 pub const MESSAGES_COLLECTION: &str = "messages";
 pub const ACCOUNTS_COLLECTION: &str = "accounts";

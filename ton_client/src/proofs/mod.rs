@@ -12,6 +12,7 @@ use ton_block::{
 use ton_types::{Cell, deserialize_tree_of_cells, HashmapType};
 use ton_types::Result;
 
+use crate::client::NetworkUID;
 use crate::ClientContext;
 use crate::error::{ClientError, ClientResult};
 use crate::net::{ParamsOfQueryCollection, query_collection};
@@ -90,7 +91,8 @@ impl BlockProof {
         }
         if block_virt_root.repr_hash() != self.id().root_hash {
             bail!(
-                "proof for block {} contains a Merkle proof with incorrect root hash: expected {:x}, found: {:x} ",
+                "proof for block {} contains a Merkle proof with incorrect root hash: \
+                    expected {:x}, found: {:x} ",
                 self.id(),
                 self.id().root_hash(),
                 block_virt_root.repr_hash()
@@ -205,7 +207,8 @@ impl BlockProof {
         let prev_key_block_seqno = virt_block.read_info()?.prev_key_block_seqno();
         if prev_key_block_proof.id().seq_no as u32 != prev_key_block_seqno {
             bail!(
-                "Can't verify block {} using key block {} because the block declares different previous key block seqno {}",
+                "Can't verify block {} using key block {} because the block declares different \
+                    previous key block seqno {}",
                 self.id(),
                 prev_key_block_proof.id(),
                 prev_key_block_seqno,
@@ -258,7 +261,8 @@ impl BlockProof {
 
         if virt_block_root.repr_hash() != self.id().root_hash() {
             bail!(
-                "proof for block {} contains a Merkle proof with incorrect root hash: expected {}, found: {} ",
+                "proof for block {} contains a Merkle proof with incorrect root hash: \
+                    expected {}, found: {} ",
                 self.id(),
                 self.id().root_hash(),
                 virt_block_root.repr_hash(),
@@ -297,42 +301,48 @@ impl BlockProof {
 
         if info.read_master_ref()?.is_some() != (!info.shard().is_masterchain()) {
             bail!(
-                "proof for block {} contains a Merkle proof with invalid not_master flag in block info",
+                "proof for block {} contains a Merkle proof with invalid not_master flag \
+                    in block info",
                 self.id(),
             )
         }
 
         if self.id().shard().is_masterchain() && (info.after_merge() || info.before_split() || info.after_split()) {
             bail!(
-                "proof for block {} contains a Merkle proof with a block info which declares split/merge for a masterchain block",
+                "proof for block {} contains a Merkle proof with a block info which declares \
+                    split/merge for a masterchain block",
                 self.id(),
             )
         }
 
         if info.after_merge() && info.after_split() {
             bail!(
-                "proof for block {} contains a Merkle proof with a block info which declares both after merge and after split flags",
+                "proof for block {} contains a Merkle proof with a block info which declares both \
+                    after merge and after split flags",
                 self.id(),
             )
         }
 
         if info.after_split() && (info.shard().is_full()) {
             bail!(
-                "proof for block {} contains a Merkle proof with a block info which declares both after_split flag and non zero shard prefix",
+                "proof for block {} contains a Merkle proof with a block info which declares both \
+                    after_split flag and non zero shard prefix",
                 self.id(),
             )
         }
 
         if info.after_merge() && !info.shard().can_split() {
             bail!(
-                "proof for block {} contains a Merkle proof with a block info which declares both after_merge flag and shard prefix which can't split anymore",
+                "proof for block {} contains a Merkle proof with a block info which declares both \
+                    after_merge flag and shard prefix which can't split anymore",
                 self.id(),
             )
         }
 
         if info.key_block() && !self.id().shard().is_masterchain() {
             bail!(
-                "proof for block {} contains a Merkle proof which declares non master chain but key block",
+                "proof for block {} contains a Merkle proof which declares non master chain but \
+                    key block",
                 self.id(),
             )
         }
@@ -354,7 +364,8 @@ impl BlockProof {
             )))?;
         let _cur_validator_set = config.config(34)?
             .ok_or_else(|| Error::invalid_data(format!(
-                "proof for key block {} contains a Merkle proof without current validators config param (34)",
+                "proof for key block {} contains a Merkle proof without current validators config \
+                    param (34)",
                 self.id(),
             )))?;
         for i_config in 32..=38 {
@@ -382,7 +393,8 @@ impl BlockProof {
         let (validator_set, cc_config) = virt_key_block.read_cur_validator_set_and_cc_conf()
             .map_err(|err| {
                 Error::invalid_data(format!(
-                    "While checking proof for {}: can't extract config params from key block's proof {}: {}",
+                    "While checking proof for {}: can't extract config params from key block's \
+                        proof {}: {}",
                     self.id(),
                     prev_key_block_proof.id(),
                     err,
@@ -439,7 +451,11 @@ impl BlockProof {
             &self.id().file_hash()
         );
         let total_weight: u64 = validators_list.iter().map(|v| v.weight).sum();
-        let weight = check_crypto_signatures(&signatures.pure_signatures, &validators_list, &checked_data)
+        let weight = check_crypto_signatures(
+                &signatures.pure_signatures,
+                &validators_list,
+                &checked_data,
+        )
             .map_err(|err| {
                 Error::invalid_data(
                     format!("Proof for {}: error while check signatures: {}", self.id(), err)
@@ -489,7 +505,8 @@ impl BlockProof {
         }
         if block_id.seq_no() < block_info.prev_key_block_seqno() {
             bail!(
-                "Can't check proof for block {} using master state {}, because it is older than the previous key block with seqno {}",
+                "Can't check proof for block {} using master state {}, because it is older than \
+                    the previous key block with seqno {}",
                 self.id(),
                 block_id,
                 block_info.prev_key_block_seqno(),
@@ -519,30 +536,28 @@ impl BlockProof {
     }
 }
 
-async fn get_current_network_zerostate_root_hash(
+async fn get_current_network_uid(
     context: &Arc<ClientContext>,
-) -> ClientResult<Arc<String>> {
-    if let Some(ref root_hash) = *context.net.zerostate_root_hash.read().await {
-        return Ok(Arc::clone(root_hash));
+) -> ClientResult<Arc<NetworkUID>> {
+    if let Some(ref uid) = *context.net.network_uid.read().await {
+        return Ok(Arc::clone(uid));
     }
 
-    let queried_root_hash = query_current_network_zerostate_root_hash(
-        Arc::clone(context)
-    ).await?;
+    let queried_uid = query_current_network_uid(Arc::clone(context)).await?;
 
-    let mut write_guard = context.net.zerostate_root_hash.write().await;
-    if let Some(ref stored_root_hash) = *write_guard {
-        return Ok(Arc::clone(stored_root_hash));
+    let mut write_guard = context.net.network_uid.write().await;
+    if let Some(ref stored_uid) = *write_guard {
+        return Ok(Arc::clone(stored_uid));
     }
 
-    *write_guard = Some(Arc::clone(&queried_root_hash));
+    *write_guard = Some(Arc::clone(&queried_uid));
 
-    Ok(queried_root_hash)
+    Ok(queried_uid)
 }
 
-async fn query_current_network_zerostate_root_hash(
+async fn query_current_network_uid(
     context: Arc<ClientContext>,
-) -> ClientResult<Arc<String>> {
+) -> ClientResult<Arc<NetworkUID>> {
     let blocks = query_collection(context, ParamsOfQueryCollection {
         collection: "blocks".to_string(),
         filter: Some(json!({
@@ -553,7 +568,7 @@ async fn query_current_network_zerostate_root_hash(
                 "eq": 1
             },
         })),
-        result: "prev_ref{root_hash}".to_string(),
+        result: "id, prev_ref{root_hash}".to_string(),
         limit: Some(1),
         ..Default::default()
     }).await?.result;
@@ -571,29 +586,40 @@ async fn query_current_network_zerostate_root_hash(
         );
     }
 
-    let root_hash_json = &prev_ref["root_hash"];
-    root_hash_json.as_str()
-        .map(|v| Arc::new(v.to_string()))
+    let block_root_hash_json = &blocks[0]["id"];
+    let first_master_block_root_hash = block_root_hash_json.as_str()
+        .ok_or_else(|| Error::invalid_data(
+            format!(
+                "id of the block #1 must be a string: {:?}",
+                block_root_hash_json,
+            )
+        ))?.to_string();
+
+    let zs_root_hash_json = &prev_ref["root_hash"];
+    let zerostate_root_hash = zs_root_hash_json.as_str()
+        //.map(|v| Arc::new(v.to_string()))
         .ok_or_else::<ClientError, _>(|| Error::unable_to_resolve_zerostate_root_hash(
             format!(
                 "root_hash of the prev_ref of the block #1 is not a string: {:?}",
-                root_hash_json,
+                zs_root_hash_json,
             ),
-        ))
+        ))?.to_string();
+
+    Ok(Arc::new(NetworkUID { zerostate_root_hash, first_master_block_root_hash }))
 }
 
 async fn resolve_initial_trusted_key_block(
     context: &Arc<ClientContext>,
 ) -> ClientResult<&TrustedMcBlockId> {
-    let zerostate_root_hash = get_current_network_zerostate_root_hash(context).await?;
+    let network_uid = get_current_network_uid(context).await?;
 
     if let Some(hardcoded_mc_block) =
-        INITIAL_TRUSTED_KEY_BLOCKS.get(zerostate_root_hash.as_ref())
+        INITIAL_TRUSTED_KEY_BLOCKS.get(&network_uid.zerostate_root_hash)
     {
         return Ok(&hardcoded_mc_block.trusted_key_block);
     }
 
-    Err(Error::unable_to_resolve_trusted_key_block(&zerostate_root_hash))
+    Err(Error::unable_to_resolve_trusted_key_block(&network_uid.zerostate_root_hash))
 }
 
 #[async_trait::async_trait]

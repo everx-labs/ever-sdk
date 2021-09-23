@@ -7,18 +7,18 @@ pub trait ProofStorage {
     async fn put(&self, key: &str, value: &[u8]) -> ClientResult<()>;
 }
 
-pub struct LocalProofStorage {
+pub struct LocalStorage {
     local_storage_path: Option<String>,
 }
 
-impl LocalProofStorage {
+impl LocalStorage {
     pub const fn new(local_storage_path: Option<String>) -> Self {
         Self { local_storage_path }
     }
 }
 
 #[async_trait::async_trait]
-impl ProofStorage for LocalProofStorage {
+impl ProofStorage for LocalStorage {
     async fn get(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
         ClientEnv::read_local_storage(&self.local_storage_path, key).await
     }

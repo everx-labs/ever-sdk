@@ -2,7 +2,7 @@ use serde_json::Value;
 use ton_block::{BinTreeType, Block, BlockIdExt, Deserializable, InRefValue, MASTERCHAIN_ID, ShardHashes, ShardIdent};
 use ton_types::Result;
 
-use crate::proofs::{BlockProof, get_current_network_zerostate_root_hash, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_zerostate_root_hash, resolve_initial_trusted_key_block};
+use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_uid, resolve_initial_trusted_key_block};
 use crate::proofs::validators::{calc_subset_for_workchain, calc_workchain_id, calc_workchain_id_by_adnl_id};
 use crate::tests::TestClient;
 
@@ -177,7 +177,7 @@ async fn test_query_current_network_zerostate_root_hash() -> Result<()> {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
 
     assert_eq!(
-        query_current_network_zerostate_root_hash(client.context()).await?.as_str(),
+        query_current_network_uid(client.context()).await?.zerostate_root_hash.as_str(),
         MAINNET_ZEROSTATE_ROOT_HASH,
     );
 
@@ -189,21 +189,21 @@ async fn test_get_current_network_zerostate_root_hash() -> Result<()> {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
     let context = client.context();
 
-    assert!(context.net.zerostate_root_hash.read().await.is_none());
+    assert!(context.net.network_uid.read().await.is_none());
 
     assert_eq!(
-        get_current_network_zerostate_root_hash(&context).await?.as_str(),
+        get_current_network_uid(&context).await?.zerostate_root_hash.as_str(),
         MAINNET_ZEROSTATE_ROOT_HASH,
     );
 
     assert_eq!(
-        context.net.zerostate_root_hash.read().await.as_ref().unwrap().as_str(),
+        context.net.network_uid.read().await.as_ref().unwrap().zerostate_root_hash.as_str(),
         MAINNET_ZEROSTATE_ROOT_HASH,
     );
 
     // Second time in order to ensure that value wasn't broken after caching:
     assert_eq!(
-        get_current_network_zerostate_root_hash(&context).await?.as_str(),
+        get_current_network_uid(&context).await?.zerostate_root_hash.as_str(),
         MAINNET_ZEROSTATE_ROOT_HASH,
     );
 

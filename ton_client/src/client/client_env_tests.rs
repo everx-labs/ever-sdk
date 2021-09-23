@@ -60,12 +60,14 @@ fn test_storage_key_validation() {
     assert!(!is_storage_key_correct(""));
     assert!(!is_storage_key_correct("-"));
     assert!(!is_storage_key_correct("A B"));
-    assert!(!is_storage_key_correct("9"));
     assert!(!is_storage_key_correct("  a  "));
+    assert!(is_storage_key_correct("123"));
     assert!(is_storage_key_correct("a"));
     assert!(is_storage_key_correct("a1"));
+    assert!(is_storage_key_correct("1a"));
     assert!(is_storage_key_correct("a_"));
     assert!(is_storage_key_correct("very_long_ident_232352"));
+    assert!(is_storage_key_correct("directory/filename_123"));
 }
 
 #[cfg(not(feature = "wasm"))]

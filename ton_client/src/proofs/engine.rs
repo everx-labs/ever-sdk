@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+use std::future::Future;
 use std::ops::Range;
 use std::sync::Arc;
 
@@ -7,44 +9,129 @@ use ton_block::{BlkPrevInfo, Deserializable, ShardStateUnsplit};
 use ton_types::{Result, UInt256};
 
 use crate::boc::internal::get_boc_hash;
+use crate::client::NetworkUID;
 use crate::ClientContext;
 use crate::error::ClientResult;
 use crate::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
 use crate::net::types::TrustedMcBlockId;
-use crate::proofs::{BlockProof, get_current_network_zerostate_root_hash, ProofHelperEngine, resolve_initial_trusted_key_block, storage::ProofStorage};
+use crate::proofs::{BlockProof, get_current_network_uid, ProofHelperEngine, resolve_initial_trusted_key_block, storage::ProofStorage};
 
 const ZEROSTATE_KEY: &str = "zerostate";
+const ZEROSTATE_RIGHT_BOUND_KEY: &str = "zs_right_boundary_seq_no";
 
 pub struct ProofHelperEngineImpl<Storage: ProofStorage + Send + Sync> {
     context: Arc<ClientContext>,
-    storage: Storage,
+    storage: Arc<Storage>,
 }
 
 impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
-    pub fn new(context: Arc<ClientContext>, storage: Storage) -> Self {
+    pub fn new(context: Arc<ClientContext>, storage: Arc<Storage>) -> Self {
         Self { context, storage }
     }
 
-    fn gen_zerostate_prefix(zerostate_root_hash: &str) -> &str {
-        &zerostate_root_hash[..std::cmp::min(8, zerostate_root_hash.len())]
+    fn gen_root_hash_prefix(root_hash: &str) -> &str {
+        &root_hash[..std::cmp::min(8, root_hash.len())]
     }
 
-    fn gen_storage_key(zerostate_root_hash: &str, key: &str) -> String {
-        format!("{}_{}", Self::gen_zerostate_prefix(&zerostate_root_hash), key)
+    fn gen_storage_key(network_uid: &NetworkUID, key: &str) -> String {
+        format!(
+            "{}/{}/{}",
+            Self::gen_root_hash_prefix(&network_uid.zerostate_root_hash),
+            Self::gen_root_hash_prefix(&network_uid.first_master_block_root_hash),
+            key,
+        )
+    }
+
+    fn gen_trusted_block_left_bound_key(seq_no: u32) -> String {
+        format!("trusted_{}_left_boundary_seq_no", seq_no)
+    }
+
+    fn gen_trusted_block_right_bound_key(seq_no: u32) -> String {
+        format!("trusted_{}_right_boundary_seq_no", seq_no)
     }
 
     async fn read_storage(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
-        let zerostate_root_hash = get_current_network_zerostate_root_hash(&self.context).await?;
-        let key = Self::gen_storage_key(&zerostate_root_hash, key);
+        let network_uid = get_current_network_uid(&self.context).await?;
+        let key = Self::gen_storage_key(&network_uid, key);
 
         self.storage.get(&key).await
     }
 
     async fn write_storage(&self, key: &str, value: &[u8]) -> ClientResult<()> {
-        let zerostate_root_hash = get_current_network_zerostate_root_hash(&self.context).await?;
-        let key = Self::gen_storage_key(&zerostate_root_hash, key);
+        let network_uid = get_current_network_uid(&self.context).await?;
+        let key = Self::gen_storage_key(&network_uid, key);
 
         self.storage.put(&key, value).await
+    }
+
+    async fn read_metadata_value_u32(&self, key: &str) -> ClientResult<Option<u32>> {
+        Ok(
+            self.read_storage(key).await?
+                .map(|vec|
+                    vec.try_into()
+                        .ok()
+                        .map(|arr| u32::from_le_bytes(arr))
+                ).flatten()
+        )
+    }
+
+    async fn write_metadata_value_u32(&self, key: &str, value: u32) -> ClientResult<()> {
+        self.write_storage(key, &value.to_le_bytes()).await
+    }
+
+    async fn update_metadata_value_u32(
+        &self,
+        key: &str,
+        value: u32,
+        process_value: fn(u32, u32) -> u32,
+    ) -> ClientResult<()> {
+        match self.read_metadata_value_u32(key).await? {
+            None => self.write_metadata_value_u32(key, value).await,
+            Some(prev) => self.write_metadata_value_u32(key, process_value(prev, value)).await,
+        }
+    }
+
+    async fn read_zs_right_bound(&self) -> ClientResult<u32> {
+        self.read_metadata_value_u32(ZEROSTATE_RIGHT_BOUND_KEY).await
+            .map(|opt| opt.unwrap_or(0))
+    }
+
+    async fn update_zs_right_bound(&self, seq_no: u32) -> ClientResult<()> {
+        self.update_metadata_value_u32(ZEROSTATE_RIGHT_BOUND_KEY, seq_no, std::cmp::max).await
+    }
+
+    async fn read_trusted_block_left_bound(&self, trusted_seq_no: u32) -> ClientResult<u32> {
+        self.read_metadata_value_u32(&Self::gen_trusted_block_left_bound_key(trusted_seq_no)).await
+            .map(|opt| opt.unwrap_or(trusted_seq_no))
+    }
+
+    async fn update_trusted_block_left_bound(
+        &self,
+        trusted_seq_no: u32,
+        left_bound_seq_no: u32,
+    ) -> ClientResult<()> {
+        self.update_metadata_value_u32(
+            &Self::gen_trusted_block_left_bound_key(trusted_seq_no),
+            left_bound_seq_no,
+            std::cmp::min,
+        ).await
+    }
+
+    async fn read_trusted_block_right_bound(&self, trusted_seq_no: u32) -> ClientResult<u32> {
+        self.read_metadata_value_u32(&Self::gen_trusted_block_right_bound_key(trusted_seq_no)).await
+            .map(|opt| opt.unwrap_or(trusted_seq_no))
+    }
+
+    async fn update_trusted_block_right_bound(
+        &self,
+        trusted_seq_no: u32,
+        right_bound_seq_no: u32,
+    ) -> ClientResult<()> {
+        self.update_metadata_value_u32(
+            &Self::gen_trusted_block_right_bound_key(trusted_seq_no),
+            right_bound_seq_no,
+            std::cmp::max,
+        ).await
     }
 
     async fn query_zerostate_boc(&self) -> Result<Vec<u8>> {
@@ -295,7 +382,15 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         format!("proof_mc_{}", mc_seq_no)
     }
 
-    async fn download_proof_chain(&self, mc_seq_no_range: Range<u32>) -> Result<BlockProof> {
+    async fn download_proof_chain<F: Fn(u32) -> R, R: Future<Output = ClientResult<()>>>(
+        &self,
+        mc_seq_no_range: Range<u32>,
+        on_store_block: F,
+    ) -> Result<BlockProof> {
+        if mc_seq_no_range.is_empty() {
+            bail!("Empty materchain seq_no range");
+        }
+
         let proof_bocs = self.query_key_blocks_proofs_boc(mc_seq_no_range).await?;
 
         let mut last_proof = None;
@@ -304,6 +399,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             proof.check_proof(self).await?;
 
             self.write_storage(&Self::make_mc_proof_key(mc_seq_no), &boc).await?;
+            on_store_block(mc_seq_no).await?;
 
             last_proof = Some(proof);
         }
@@ -311,7 +407,11 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         last_proof.ok_or_else(|| err_msg("Empty proof chain"))
     }
 
-    async fn download_proof_chain_backward(&self, mc_seq_no_range: Range<u32>) -> Result<BlockProof> {
+    async fn download_proof_chain_backward(
+        &self,
+        mc_seq_no_range: Range<u32>,
+        trusted_seq_no: u32,
+    ) -> Result<BlockProof> {
         if mc_seq_no_range.is_empty() {
             bail!("Empty materchain seq_no range");
         }
@@ -363,6 +463,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             right_key_proof.check_with_prev_key_block_proof(&key_proof)?;
 
             self.write_storage(&Self::make_mc_proof_key(*key_seq_no), &key_boc).await?;
+            self.update_trusted_block_left_bound(trusted_seq_no, *key_seq_no).await?;
 
             right_key_proof = key_proof;
         }
@@ -385,7 +486,8 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngine for ProofHelperEngin
         let boc = self.query_zerostate_boc().await?;
 
         let actual_hash = get_boc_hash(&boc)?;
-        let expected_hash = get_current_network_zerostate_root_hash(self.context()).await?;
+        let expected_hash = &get_current_network_uid(self.context()).await?
+            .zerostate_root_hash;
         if actual_hash != *expected_hash {
             bail!(
                 "Zerostate hashes mismatch (expected `{}`, but queried from DApp is `{}`)",
@@ -404,14 +506,11 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngine for ProofHelperEngin
         if let Some(boc) = self.read_storage(&proof_key).await? {
             return BlockProof::deserialize(&boc);
         }
-
-        // TODO: Store already scanned state (zs_right, trusted_left, trusted_right) and scan only
-        //       to them. Take into account, that trusted key-block can be different from that
-        //       stored trusted chain (it can be changed by the user or SDK update).
+        
         let trusted_id = resolve_initial_trusted_key_block(self.context()).await?;
-        let zs_right = 0;
-        let trusted_left = trusted_id.seq_no;
-        let trusted_right = trusted_id.seq_no;
+        let zs_right_bound = self.read_zs_right_bound().await?;
+        let trusted_left_bound = self.read_trusted_block_left_bound(trusted_id.seq_no).await?;
+        let trusted_right_bound = self.read_trusted_block_right_bound(trusted_id.seq_no).await?;
 
         if mc_seq_no == trusted_id.seq_no {
             return self.download_trusted_key_block_proof(trusted_id).await;
@@ -419,28 +518,36 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngine for ProofHelperEngin
 
         self.require_trusted_key_block_proof(trusted_id).await?;
 
-        if mc_seq_no > trusted_right {
-            self.download_proof_chain(trusted_right..mc_seq_no + 1).await
-        } else if mc_seq_no < zs_right + (trusted_left - zs_right) / 2 {
-            self.download_proof_chain(zs_right + 1..mc_seq_no + 1).await
-        } else if mc_seq_no < trusted_left {
-            self.download_proof_chain_backward(mc_seq_no..trusted_left).await
-        } else if mc_seq_no <= zs_right {
+        let update_zs_right = move |mc_seq_no| async move {
+            self.update_zs_right_bound(mc_seq_no).await
+        };
+
+        let update_trusted_right = move |mc_seq_no| async move {
+            self.update_trusted_block_right_bound(trusted_id.seq_no, mc_seq_no).await
+        };
+
+        if mc_seq_no > trusted_right_bound {
+            self.download_proof_chain(trusted_right_bound..mc_seq_no + 1, update_trusted_right).await
+        } else if mc_seq_no < zs_right_bound + (trusted_left_bound - zs_right_bound) / 2 {
+            self.download_proof_chain(zs_right_bound + 1..mc_seq_no + 1, update_zs_right).await
+        } else if mc_seq_no < trusted_left_bound {
+            self.download_proof_chain_backward(mc_seq_no..trusted_left_bound, trusted_id.seq_no).await
+        } else if mc_seq_no <= zs_right_bound {
             // Chain from zerostate is broken
-            self.download_proof_chain(1..mc_seq_no + 1).await
-        } else if mc_seq_no >= trusted_left && mc_seq_no <= trusted_id.seq_no {
+            self.download_proof_chain(1..mc_seq_no + 1, update_zs_right).await
+        } else if mc_seq_no >= trusted_left_bound && mc_seq_no <= trusted_id.seq_no {
             // Chain from trusted key-block to the left is broken
-            self.download_proof_chain_backward(mc_seq_no..trusted_id.seq_no).await
-        } else if mc_seq_no > trusted_id.seq_no && mc_seq_no <= trusted_right {
+            self.download_proof_chain_backward(mc_seq_no..trusted_id.seq_no, trusted_id.seq_no).await
+        } else if mc_seq_no > trusted_id.seq_no && mc_seq_no <= trusted_right_bound {
             // Chain from trusted key-block to the right is broken
-            self.download_proof_chain(trusted_id.seq_no + 1..mc_seq_no + 1).await
+            self.download_proof_chain(trusted_id.seq_no + 1..mc_seq_no + 1, update_trusted_right).await
         } else {
             unreachable!(
                 "mc_seq_no: {}, zs_right: {}, trusted_left: {}, trusted_right: {}, trusted_id: {:?}",
                 mc_seq_no,
-                zs_right,
-                trusted_left,
-                trusted_right,
+                zs_right_bound,
+                trusted_left_bound,
+                trusted_right_bound,
                 trusted_id,
             )
         }

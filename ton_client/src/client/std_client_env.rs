@@ -290,7 +290,7 @@ impl ClientEnv {
     /// Remove value by a given key out of the local storage
     pub async fn remove_local_storage(
         local_storage_path: &Option<String>,
-        key: &str
+        key: &str,
     ) -> ClientResult<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
