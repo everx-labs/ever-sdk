@@ -1,15 +1,11 @@
 use std::collections::HashMap;
-use std::ops::Deref;
-#[cfg(test)]
-use std::path::Path;
+use std::io::Cursor;
 use std::sync::Arc;
 
 use failure::{bail, err_msg};
-use ton_block::{
-    Block, BlockIdExt, BlockInfo, CatchainConfig, ConfigParams, Deserializable, MerkleProof,
-    ShardStateUnsplit, ValidatorDescr, ValidatorSet,
-};
-use ton_types::{Cell, deserialize_tree_of_cells, HashmapType};
+use serde_json::Value;
+use ton_block::{Block, BlockIdExt, BlockInfo, CatchainConfig, ConfigParams, CryptoSignature, CryptoSignaturePair, Deserializable, MerkleProof, ShardIdent, ShardStateUnsplit, ValidatorDescr, ValidatorSet};
+use ton_types::{Cell, UInt256};
 use ton_types::Result;
 
 use crate::client::NetworkUID;
@@ -42,51 +38,136 @@ lazy_static! {
             .expect("FATAL: failed to parse trusted key-blocks JSON!");
 }
 
-pub struct BlockProof(ton_block::BlockProof);
+pub struct Signatures {
+    validator_list_hash_short: u32,
+    catchain_seqno: u32,
+    sig_weight: u64,
+    pure_signatures: Vec<CryptoSignaturePair>,
+}
 
-impl Deref for BlockProof {
-    type Target = ton_block::BlockProof;
+impl Signatures {
+    pub fn validator_list_hash_short(&self) -> u32 {
+        self.validator_list_hash_short
+    }
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+    pub fn catchain_seqno(&self) -> u32 {
+        self.catchain_seqno
+    }
+
+    pub fn sig_weight(&self) -> u64 {
+        self.sig_weight
+    }
+
+    pub fn pure_signatures(&self) -> &Vec<CryptoSignaturePair> {
+        &self.pure_signatures
     }
 }
 
-impl From<ton_block::BlockProof> for BlockProof {
-    fn from(internal: ton_block::BlockProof) -> Self {
-        Self(internal)
-    }
+pub struct BlockProof {
+    id: BlockIdExt,
+    root: Cell,
+    signatures: Signatures,
 }
 
 impl BlockProof {
-    pub fn deserialize(data: &[u8]) -> Result<Self> {
-        let root = deserialize_tree_of_cells(&mut std::io::Cursor::new(data))?;
-        let internal = ton_block::BlockProof::construct_from(&mut root.clone().into())?;
+    pub fn from_value(value: &Value) -> Result<Self> {
+        fn read_u64(value: &Value, field: &str) -> Result<u64> {
+            value[field].as_u64()
+                .ok_or_else(|| err_msg(format!("{} field must be an unsigned integer", field)))
+        }
 
-        Ok(Self(internal))
+        fn read_i64(value: &Value, field: &str) -> Result<i64> {
+            value[field].as_i64()
+                .ok_or_else(|| err_msg(format!("{} field must be an integer", field)))
+        }
+
+        fn read_str<'json>(value: &'json Value, field: &str) -> Result<&'json str> {
+            value[field].as_str()
+                .ok_or_else(|| err_msg(format!("{} field must be a string", field)))
+        }
+
+        let workchain_id = read_i64(value, "workchain_id")? as i32;
+        let shard_prefix_tagged = u64::from_str_radix(read_str(value, "shard")?, 16)?;
+        let shard_id = ShardIdent::with_tagged_prefix(workchain_id, shard_prefix_tagged)?;
+        let seq_no = read_u64(value, "seq_no")? as u32;
+        let root_hash = UInt256::from_str(read_str(value, "id")?)?;
+        let file_hash = UInt256::from_str(read_str(value, "file_hash")?)?;
+        let id = BlockIdExt::with_params(shard_id, seq_no, root_hash, file_hash);
+
+        let signatures_json = &value["signatures"];
+        let root_boc = base64::decode(read_str(signatures_json, "proof")?)?;
+
+        let root = ton_types::deserialize_tree_of_cells(&mut Cursor::new(&root_boc))?;
+
+        let mut pure_signatures = Vec::new();
+        let signatures_json_vec = signatures_json["signatures"].as_array()
+            .ok_or_else(|| err_msg("signatures field must be an array"))?;
+        for signature in signatures_json_vec {
+            let node_id_short = UInt256::from_str(read_str(signature, "node_id")?)?;
+            let sign = CryptoSignature::from_r_s_str(
+                read_str(signature, "r")?,
+                read_str(signature, "s")?,
+            )?;
+
+            pure_signatures.push(CryptoSignaturePair::with_params(node_id_short, sign))
+        }
+
+        let signatures = Signatures {
+            validator_list_hash_short: read_u64(signatures_json, "validator_list_hash_short")? as u32,
+            catchain_seqno: read_u64(signatures_json, "catchain_seqno")? as u32,
+            sig_weight: u64::from_str_radix(
+                read_str(signatures_json, "sig_weight")?
+                    .trim_start_matches("0x"),
+                16,
+            )?,
+            pure_signatures,
+        };
+
+        Ok(Self { id, root, signatures })
     }
 
     #[cfg(test)]
-    pub fn read_from_file(path: impl AsRef<Path>) -> Result<Self> {
+    pub fn deserialize(data: &[u8]) -> Result<Self> {
+        let proof = ton_block::BlockProof::construct_from_bytes(data)?;
+        let signatures = proof.signatures
+            .ok_or_else(|| err_msg("Signatures must be filled"))?;
+
+        let mut pure_signatures = Vec::new();
+        ton_types::HashmapType::iterate_slices(signatures.pure_signatures.signatures(),
+            |ref mut _key, ref mut slice| {
+                pure_signatures.push(CryptoSignaturePair::construct_from(slice)?);
+                Ok(true)
+            })?;
+
+        Ok(Self {
+            id: proof.proof_for,
+            root: proof.root,
+            signatures: Signatures {
+                validator_list_hash_short: signatures.validator_info.validator_list_hash_short,
+                catchain_seqno: signatures.validator_info.catchain_seqno,
+                sig_weight: signatures.pure_signatures.weight(),
+                pure_signatures,
+            }
+        })
+    }
+
+    #[cfg(test)]
+    pub fn read_from_file(path: impl AsRef<std::path::Path>) -> Result<Self> {
         Self::deserialize(&std::fs::read(path)?)
     }
 
     pub fn id(&self) -> &BlockIdExt {
-        &self.proof_for
-    }
-
-    pub fn is_link(&self) -> bool {
-        !self.id().shard().is_masterchain()
+        &self.id
     }
 
     pub fn virtualize_block(&self) -> Result<(Block, Cell)> {
         let merkle_proof = MerkleProof::construct_from(&mut self.root.clone().into())?;
         let block_virt_root = merkle_proof.proof.clone().virtualize(1);
-        if *self.proof_for.root_hash() != block_virt_root.repr_hash() {
+        if *self.id().root_hash() != block_virt_root.repr_hash() {
             bail!(
                 "merkle proof has invalid virtual hash (found: {}, expected: {})",
                 block_virt_root.repr_hash(),
-                self.proof_for,
+                self.id(),
             )
         }
         if block_virt_root.repr_hash() != self.id().root_hash {
@@ -108,38 +189,9 @@ impl BlockProof {
         Ok(())
     }
 
-    pub fn check_with_master_state(
-        &self,
-        block_id: &BlockIdExt,
-        master_state: &ShardStateUnsplit,
-        config: &ConfigParams
-    ) -> Result<()> {
-        if self.is_link() {
-            bail!(
-                "Can't verify block {}: can't call `check_with_master_state` for proof link",
-                self.id(),
-            )
-        }
-
-        let (virt_block, virt_block_info) = self.pre_check_block_proof()?;
-
-        self.check_with_master_state_(block_id, master_state, config, &virt_block, &virt_block_info)?;
-
-        Ok(())
-    }
-
-    pub fn check_proof_link(&self) -> Result<()> {
-        if !self.is_link() {
-            bail!("Can't call `check_proof_link` not for proof link, block {}", self.id())
-        }
-        self.pre_check_block_proof()?;
-
-        Ok(())
-    }
-
     pub async fn check_proof(&self, engine: &impl ProofHelperEngine) -> Result<()> {
-        if self.is_link() {
-            self.check_proof_link()?;
+        if !self.id().shard().is_masterchain() {
+            self.pre_check_block_proof()?;
         } else {
             let (virt_block, virt_block_info) = self.pre_check_block_proof()?;
             let prev_key_block_seqno = virt_block_info.prev_key_block_seqno();
@@ -148,8 +200,7 @@ impl BlockProof {
                 let zerostate = engine.load_zerostate().await?;
                 let mc_state_extra = zerostate.read_custom()?
                     .ok_or_else(|| err_msg("Can't read custom field from the zerostate"))?;
-                self.check_with_master_state_(
-                    self.id(),
+                self.check_with_zerostate(
                     &zerostate,
                     mc_state_extra.config(),
                     &virt_block,
@@ -231,10 +282,9 @@ impl BlockProof {
         self.check_signatures(validators, validators_hash_short)
     }
 
-    fn check_with_master_state_(
+    fn check_with_zerostate(
         &self,
-        block_id: &BlockIdExt,
-        master_state: &ShardStateUnsplit,
+        zerostate: &ShardStateUnsplit,
         config: &ConfigParams,
         virt_block: &Block,
         virt_block_info: &BlockInfo,
@@ -244,19 +294,12 @@ impl BlockProof {
         }
 
         let (validators, validators_hash_short) =
-            self.process_given_state(block_id, master_state, virt_block_info, config)?;
+            self.process_zerostate(zerostate, virt_block_info, config)?;
 
         self.check_signatures(validators, validators_hash_short)
     }
 
     fn pre_check_block_proof(&self) -> Result<(Block, BlockInfo)> {
-        if !self.id().shard().is_masterchain() && self.signatures.is_some() {
-            bail!(
-                "proof for non-master block {} can't contain signatures",
-                self.id(),
-            )
-        }
-
         let (virt_block, virt_block_root) = self.virtualize_block()?;
 
         if virt_block_root.repr_hash() != self.id().root_hash() {
@@ -412,39 +455,21 @@ impl BlockProof {
             &cc_config,
             self.id().shard().shard_prefix_with_tag(),
             self.id().shard().workchain_id(),
-            self.signatures.as_ref().map(|s| s.validator_info.catchain_seqno).unwrap_or(0),
+            self.signatures.catchain_seqno,
             gen_utime.into()
         )
     }
 
     fn check_signatures(&self, validators_list: Vec<ValidatorDescr>, list_hash_short: u32) -> Result<()> {
         // Pre checks
-        if self.signatures.is_none() {
-            bail!(
-                "Proof for {} doesn't have signatures to check",
-                self.id(),
-            );
-        }
-        let signatures = self.signatures.as_ref().unwrap();
-        if signatures.validator_info.validator_list_hash_short != list_hash_short {
+        if self.signatures.validator_list_hash_short != list_hash_short {
             bail!(
                 "Bad validator set hash in proof for block {}, calculated: {}, found: {}",
                 self.id(),
                 list_hash_short,
-                signatures.validator_info.validator_list_hash_short,
+                self.signatures.validator_list_hash_short,
             );
         }
-        let expected_count = signatures.pure_signatures.count() as usize;
-        let count = signatures.pure_signatures.signatures().count(expected_count)?;
-        if expected_count != count {
-            bail!(
-                "Proof for {}: signature count mismatch: declared: {}, calculated: {}",
-                self.id(),
-                expected_count,
-                count,
-            );
-        }
-
         // Check signatures
         let checked_data = ton_block::Block::build_data_for_sign(
             &self.id().root_hash(),
@@ -452,9 +477,9 @@ impl BlockProof {
         );
         let total_weight: u64 = validators_list.iter().map(|v| v.weight).sum();
         let weight = check_crypto_signatures(
-                &signatures.pure_signatures,
-                &validators_list,
-                &checked_data,
+            &self.signatures,
+            &validators_list,
+            &checked_data,
         )
             .map_err(|err| {
                 Error::invalid_data(
@@ -463,11 +488,11 @@ impl BlockProof {
             })?;
 
         // Check weight
-        if weight != signatures.pure_signatures.weight() {
+        if weight != self.signatures.sig_weight() {
             bail!(
                 "Proof for {}: total signature weight mismatch: declared: {}, calculated: {}",
                 self.id(),
-                signatures.pure_signatures.weight(),
+                self.signatures.sig_weight(),
                 weight,
             );
         }
@@ -482,41 +507,24 @@ impl BlockProof {
         Ok(())
     }
 
-    fn process_given_state(
+    fn process_zerostate(
         &self,
-        block_id: &BlockIdExt,
         state: &ShardStateUnsplit,
         block_info: &ton_block::BlockInfo,
         config: &ConfigParams,
     ) -> Result<(Vec<ValidatorDescr>, u32)> {
-        // Checks
-        if !block_id.shard().is_masterchain() {
-            bail!(
-                "Can't check proof for {}: given state {} doesn't belong masterchain",
-                self.id(),
-                block_id,
-            );
-        }
         if !self.id().shard().is_masterchain() {
             bail!(
                 "Can't check proof for non master block {} using master state",
                 self.id(),
             );
         }
-        if block_id.seq_no() < block_info.prev_key_block_seqno() {
+        if block_info.prev_key_block_seqno() > 0 {
             bail!(
-                "Can't check proof for block {} using master state {}, because it is older than \
-                    the previous key block with seqno {}",
+                "Can't check proof for block {} using zerostate, because it is older than \
+                    the previous key block with seq_no {}",
                 self.id(),
-                block_id,
                 block_info.prev_key_block_seqno(),
-            );
-        }
-        if block_id.seq_no() > self.id().seq_no() {
-            bail!(
-                "Can't check proof for block {} using newer master state {}",
-                self.id(),
-                block_id,
             );
         }
 
@@ -528,7 +536,7 @@ impl BlockProof {
             &cc_config,
             self.id().shard().shard_prefix_with_tag(),
             self.id().shard().workchain_id(),
-            self.signatures.as_ref().map(|s| s.validator_info.catchain_seqno).unwrap_or(0),
+            self.signatures.catchain_seqno,
             block_info.gen_utime()
         )?;
 

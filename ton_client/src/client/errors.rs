@@ -1,6 +1,7 @@
+use std::fmt::{Debug, Display};
+
 use crate::crypto::keys::strip_secret;
 use crate::error::ClientError;
-use std::fmt::{Debug, Display};
 
 #[derive(ApiType)]
 pub enum ErrorCode {

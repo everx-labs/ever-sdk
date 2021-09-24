@@ -42,6 +42,7 @@ pub struct Boxes {
     pub(crate) encryption_boxes: LockfreeMap<u32, Box<dyn EncryptionBox + Send + Sync>>,
 }
 
+#[derive(Debug)]
 pub(crate) struct NetworkUID {
     pub(crate) zerostate_root_hash: String,
     pub(crate) first_master_block_root_hash: String,

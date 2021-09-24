@@ -396,30 +396,46 @@ impl ClientEnv {
         .await?
     }
 
-    /// Read value by a given key from the local storage
-    pub async fn read_local_storage(
+    /// Read binary value by a given key from the local storage
+    pub async fn bin_read_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
     ) -> ClientResult<Option<Vec<u8>>> {
+        Ok(Self::read_local_storage(local_storage_path, key).await?
+            .map(|content_base64| base64::decode(&content_base64))
+            .transpose()
+            .map_err(|err| Error::internal_error(err))?)
+    }
+
+    /// Read string value by a given key from the local storage
+    pub async fn read_local_storage(
+        local_storage_path: &Option<String>,
+        key: &str,
+    ) -> ClientResult<Option<String>> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
         Ok(Self::local_storage()?.get_item(&path)
-            .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))?
-            .map(|content_base64| base64::decode(&content_base64))
-            .transpose()
-            .map_err(|err| Error::internal_error(err))?
-        )
+               .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))?)
     }
 
-    /// Write value by a given key into the local storage
-    pub async fn write_local_storage(
+    /// Write binary value by a given key into the local storage
+    pub async fn bin_write_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
         value: &[u8],
     ) -> ClientResult<()> {
+        Self::write_local_storage(local_storage_path, key, &base64::encode(value)).await
+    }
+
+    /// Write string value by a given key into the local storage
+    pub async fn write_local_storage(
+        local_storage_path: &Option<String>,
+        key: &str,
+        value: &str,
+    ) -> ClientResult<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
-        Self::local_storage()?.set_item(&path, &base64::encode(value))
+        Self::local_storage()?.set_item(&path, value)
             .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
     }
 

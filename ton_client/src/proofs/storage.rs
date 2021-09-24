@@ -1,10 +1,12 @@
-use crate::client::ClientEnv;
+use crate::client::{ClientEnv, Error};
 use crate::error::ClientResult;
 
 #[async_trait::async_trait]
 pub trait ProofStorage {
-    async fn get(&self, key: &str) -> ClientResult<Option<Vec<u8>>>;
-    async fn put(&self, key: &str, value: &[u8]) -> ClientResult<()>;
+    async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>>;
+    async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()>;
+    async fn get_str(&self, key: &str) -> ClientResult<Option<String>>;
+    async fn put_str(&self, key: &str, value: &str) -> ClientResult<()>;
 }
 
 pub struct LocalStorage {
@@ -19,11 +21,19 @@ impl LocalStorage {
 
 #[async_trait::async_trait]
 impl ProofStorage for LocalStorage {
-    async fn get(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
+    async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
+        ClientEnv::bin_read_local_storage(&self.local_storage_path, key).await
+    }
+
+    async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()> {
+        ClientEnv::bin_write_local_storage(&self.local_storage_path, key, value).await
+    }
+
+    async fn get_str(&self, key: &str) -> ClientResult<Option<String>> {
         ClientEnv::read_local_storage(&self.local_storage_path, key).await
     }
 
-    async fn put(&self, key: &str, value: &[u8]) -> ClientResult<()> {
+    async fn put_str(&self, key: &str, value: &str) -> ClientResult<()> {
         ClientEnv::write_local_storage(&self.local_storage_path, key, value).await
     }
 }
@@ -42,15 +52,27 @@ impl InMemoryProofStorage {
 
 #[async_trait::async_trait]
 impl ProofStorage for InMemoryProofStorage {
-    async fn get(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
+    async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
         Ok(
             self.proof_map.get(key)
                 .map(|guard| guard.val().clone())
         )
     }
 
-    async fn put(&self, key: &str, value: &[u8]) -> ClientResult<()> {
+    async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()> {
         self.proof_map.insert(key.to_string(), value.to_vec());
+        Ok(())
+    }
+
+    async fn get_str(&self, key: &str) -> ClientResult<Option<String>> {
+        self.proof_map.get(key)
+            .map(|guard| String::from_utf8(guard.val().clone())
+                .map_err(|err| Error::internal_error(err)))
+            .transpose()
+    }
+
+    async fn put_str(&self, key: &str, value: &str) -> ClientResult<()> {
+        self.proof_map.insert(key.to_string(), value.as_bytes().to_vec());
         Ok(())
     }
 }

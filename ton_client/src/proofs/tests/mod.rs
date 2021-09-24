@@ -1,8 +1,12 @@
+use std::sync::Arc;
+
 use serde_json::Value;
-use ton_block::{BinTreeType, Block, BlockIdExt, Deserializable, InRefValue, MASTERCHAIN_ID, ShardHashes, ShardIdent};
+use ton_block::{BinTreeType, Block, BlockIdExt, Deserializable, InRefValue, MASTERCHAIN_ID, ShardHashes, ShardIdent, ShardStateUnsplit};
 use ton_types::Result;
 
 use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_uid, resolve_initial_trusted_key_block};
+use crate::proofs::engine::ProofHelperEngineImpl;
+use crate::proofs::storage::InMemoryProofStorage;
 use crate::proofs::validators::{calc_subset_for_workchain, calc_workchain_id, calc_workchain_id_by_adnl_id};
 use crate::tests::TestClient;
 
@@ -40,18 +44,6 @@ fn test_check_master_blocks_proof_shuffle() -> Result<()> {
 }
 
 #[test]
-fn test_check_shard_blocks_proof() -> Result<()> {
-    for seq_no in 4377252..=4377282 {
-        let block_proof = BlockProof::read_from_file(
-            format!("src/proofs/tests/data/test_shard_block_proof/proof_{}", seq_no)
-        )?;
-        block_proof.check_proof_link()?;
-    }
-
-    Ok(())
-}
-
-#[test]
 fn test_calc_workchain_id_by_adnl_id() {
     assert_eq!(calc_workchain_id_by_adnl_id(&[0; 32]), -1);
     assert_eq!(calc_workchain_id_by_adnl_id(&[1; 32]), 0);
@@ -74,19 +66,19 @@ fn test_validator_set() -> Result<()> {
 
     let cc_seqno = block.read_info()?.gen_catchain_seqno();
 
-    vset.list().iter().enumerate().for_each(|(i,descr)| {
-        let real_id = calc_workchain_id(descr);
-        println!("{}: pub_key: {} real_id: {}", i, hex::encode(descr.public_key.as_slice()), real_id);
-    });
+    // vset.list().iter().enumerate().for_each(|(i,descr)| {
+    //     let real_id = calc_workchain_id(descr);
+    //     println!("{}: pub_key: {} real_id: {}", i, hex::encode(descr.public_key.as_slice()), real_id);
+    // });
 
     for workchain_id in -1..=1 {
-        println!("workchain_id: {}", workchain_id);
+        // println!("workchain_id: {}", workchain_id);
         let cc_config = config.catchain_config()?;
         let subset = calc_subset_for_workchain(&vset, config, &cc_config, ton_block::SHARD_FULL, workchain_id, cc_seqno, 0.into())?;
         assert_eq!(subset.0.len(), 7);
-        subset.0.iter().enumerate().for_each(|(i,descr)| {
+        subset.0.iter().enumerate().for_each(|(_i,descr)| {
             let real_id = calc_workchain_id(descr);
-            println!("{}: pub_key: {} real_id: {}", i, hex::encode(descr.public_key.as_slice()), real_id);
+            // println!("{}: pub_key: {} real_id: {}", i, hex::encode(descr.public_key.as_slice()), real_id);
             assert_eq!(real_id, workchain_id);
         });
     }
@@ -119,16 +111,16 @@ fn check_any_keyblock_validator_set(file_name: &str) -> Result<()> {
     let custom = block.read_extra()?.read_custom()?.unwrap();
     let config = custom.config().unwrap();
 
-    let vset = config.validator_set()?;
-    let election_id = vset.utime_since();
-    println!("elections: {} total validators: {}", election_id, vset.list().len());
+    // let vset = config.validator_set()?;
+    // let election_id = vset.utime_since();
+    // println!("elections: {} total validators: {}", election_id, vset.list().len());
 
     let cc_seqno = block.read_info()?.gen_catchain_seqno();
 
-    vset.list().iter().enumerate().for_each(|(i,descr)| {
-        let id = calc_workchain_id(descr);
-        println!("{}: pub_key: {} id: {}", i, hex::encode(descr.public_key.as_slice()), id);
-    });
+    // vset.list().iter().enumerate().for_each(|(i,descr)| {
+    //     let id = calc_workchain_id(descr);
+    //     println!("{}: pub_key: {} id: {}", i, hex::encode(descr.public_key.as_slice()), id);
+    // });
 
     let count = config.workchains()?.len()? as i32;
     for workchain_id in -1..count {
@@ -137,7 +129,7 @@ fn check_any_keyblock_validator_set(file_name: &str) -> Result<()> {
             workchain_id => get_top_blocks(custom.shards(), &[workchain_id])?
         };
         for block_id in shard_ids {
-            println!("{}", block_id.shard());
+            // println!("{}", block_id.shard());
             let vset = config.validator_set()?;
             let cc_config = config.catchain_config()?;
             let subset = calc_subset_for_workchain(
@@ -150,9 +142,9 @@ fn check_any_keyblock_validator_set(file_name: &str) -> Result<()> {
                 Default::default()
             )?;
             assert_eq!(subset.0.len(), 7);
-            subset.0.iter().enumerate().for_each(|(i,descr)| {
+            subset.0.iter().enumerate().for_each(|(_i, descr)| {
                 let real_id = calc_workchain_id(descr);
-                println!("{}: pub_key: {} real_id: {}", i, hex::encode(descr.public_key.as_slice()), real_id);
+                // println!("{}: pub_key: {} real_id: {}", i, hex::encode(descr.public_key.as_slice()), real_id);
                 assert_eq!(real_id, workchain_id);
             });
         }
@@ -222,6 +214,124 @@ async fn test_resolve_initial_trusted_key_block_main() -> Result<()> {
         &INITIAL_TRUSTED_KEY_BLOCKS.get(&MAINNET_ZEROSTATE_ROOT_HASH.to_string())
             .unwrap()
             .trusted_key_block,
+    );
+
+    Ok(())
+}
+
+#[test]
+fn test_gen_storage_key() {
+    let network_uid = crate::client::NetworkUID {
+        zerostate_root_hash:
+            "0123456790abcdef0123456790abcdef0123456790abcdef0123456790abcdef".to_string(),
+        first_master_block_root_hash:
+            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789".to_string(),
+    };
+    assert_eq!(
+        ProofHelperEngineImpl::<InMemoryProofStorage>::gen_storage_key(&network_uid, "test"),
+        "01234567/abcdef01/test",
+    );
+}
+
+fn create_engine_mainnet() -> ProofHelperEngineImpl<InMemoryProofStorage> {
+    let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
+    let storage = Arc::new(InMemoryProofStorage::new());
+    ProofHelperEngineImpl::new(client.context(), storage)
+}
+
+#[tokio::test]
+async fn test_metadata_storage() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    const KEY: &str = "test";
+    const TEST1_VALUE: u32 = 42;
+    const TEST2_VALUE: u32 = 100;
+    assert!(engine.read_metadata_value_u32(KEY).await?.is_none());
+
+    engine.write_metadata_value_u32(KEY, TEST1_VALUE).await?;
+    assert_eq!(engine.read_metadata_value_u32(KEY).await?, Some(TEST1_VALUE));
+
+    engine.update_metadata_value_u32(KEY, TEST2_VALUE, std::cmp::min).await?;
+    assert_eq!(engine.read_metadata_value_u32(KEY).await?, Some(TEST1_VALUE));
+
+    engine.update_metadata_value_u32(KEY, TEST2_VALUE, std::cmp::max).await?;
+    assert_eq!(engine.read_metadata_value_u32(KEY).await?, Some(TEST2_VALUE));
+
+    engine.update_metadata_value_u32(KEY, TEST1_VALUE, std::cmp::min).await?;
+    assert_eq!(engine.read_metadata_value_u32(KEY).await?, Some(TEST1_VALUE));
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_special_metadata_storage() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    assert_eq!(engine.read_zs_right_bound().await?, 0);
+
+    engine.update_zs_right_bound(0).await?;
+    assert_eq!(engine.read_zs_right_bound().await?, 0);
+
+    engine.update_zs_right_bound(200).await?;
+    assert_eq!(engine.read_zs_right_bound().await?, 200);
+
+    engine.update_zs_right_bound(300).await?;
+    assert_eq!(engine.read_zs_right_bound().await?, 300);
+
+    engine.update_zs_right_bound(10).await?;
+    assert_eq!(engine.read_zs_right_bound().await?, 300);
+
+
+    assert_eq!(engine.read_trusted_block_right_bound(10).await?, 10);
+
+    engine.update_trusted_block_right_bound(10, 25).await?;
+    assert_eq!(engine.read_trusted_block_right_bound(10).await?, 25);
+
+    assert_eq!(engine.read_trusted_block_right_bound(15).await?, 15);
+
+    engine.update_trusted_block_right_bound(15, 16).await?;
+    assert_eq!(engine.read_trusted_block_right_bound(15).await?, 16);
+
+
+    assert_eq!(engine.read_trusted_block_left_bound(10).await?, 10);
+
+    engine.update_trusted_block_left_bound(10, 8).await?;
+    assert_eq!(engine.read_trusted_block_left_bound(10).await?, 8);
+
+    engine.update_trusted_block_left_bound(10, 5).await?;
+    assert_eq!(engine.read_trusted_block_left_bound(10).await?, 5);
+
+    // Ensure these values are unchanged:
+    assert_eq!(engine.read_zs_right_bound().await?, 300);
+    assert_eq!(engine.read_trusted_block_right_bound(15).await?, 16);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn query_zerostate_boc_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+    let zs_boc = engine.query_zerostate_boc().await?;
+
+    let shard_state = ShardStateUnsplit::construct_from_bytes(&zs_boc)?;
+    assert_eq!(shard_state.id(), "shard: -1:8000000000000000, seq_no: 0");
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn query_mc_proof_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+    let proof_json = engine.query_mc_proof(1).await?;
+
+    dbg!(&proof_json);
+
+    let proof = BlockProof::from_value(&proof_json)?;
+    assert_eq!(
+        proof.id().to_string(),
+        "(-1:8000000000000000, 1, \
+            rh 4bba527c0f5301ac01194020edb6c237158bae872348ba36b0137d523fadd864, \
+            fh 5e64ec9e1baa18b4afef021c0bca224ebf4740e227b5ddd8a0131c777a914083)",
     );
 
     Ok(())

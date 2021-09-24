@@ -253,8 +253,8 @@ impl ClientEnv {
         })
     }
 
-    /// Read value by a given key from the local storage
-    pub async fn read_local_storage(
+    /// Read binary value by a given key from the local storage
+    pub async fn bin_read_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
     ) -> ClientResult<Option<Vec<u8>>> {
@@ -270,8 +270,19 @@ impl ClientEnv {
         }
     }
 
-    /// Write value by a given key into the local storage
-    pub async fn write_local_storage(
+    /// Read string value by a given key from the local storage
+    pub async fn read_local_storage(
+        local_storage_path: &Option<String>,
+        key: &str,
+    ) -> ClientResult<Option<String>> {
+        Self::bin_read_local_storage(local_storage_path, key).await
+            .map(|opt| opt.map(|vec| String::from_utf8(vec)))?
+            .transpose()
+            .map_err(|err| Error::internal_error(err))
+    }
+
+    /// Write binary value by a given key into the local storage
+    pub async fn bin_write_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
         value: &[u8],
@@ -285,6 +296,15 @@ impl ClientEnv {
 
         tokio::fs::write(&path, value).await
             .map_err(|err| Error::internal_error(err))
+    }
+
+    /// Write string value by a given key into the local storage
+    pub async fn write_local_storage(
+        local_storage_path: &Option<String>,
+        key: &str,
+        value: &str,
+    ) -> ClientResult<()> {
+        Self::bin_write_local_storage(local_storage_path, key, value.as_bytes()).await
     }
 
     /// Remove value by a given key out of the local storage
