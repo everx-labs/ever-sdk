@@ -42,7 +42,11 @@ pub use encode::{
 };
 pub use errors::{Error, ErrorCode};
 pub use hash::{get_boc_hash, ParamsOfGetBocHash, ResultOfGetBocHash};
-pub use tvc::{get_code_from_tvc, ParamsOfGetCodeFromTvc, ResultOfGetCodeFromTvc};
+pub use tvc::{
+    get_code_from_tvc, get_code_salt, set_code_salt,
+    ParamsOfGetCodeFromTvc, ParamsOfGetCodeSalt, ParamsOfSetCodeSalt, ResultOfGetCodeFromTvc,
+    ResultOfGetCodeSalt, ResultOfSetCodeSalt,
+};
 
 pub fn default_cache_max_size() -> u32 {
     10 * 1024 // * 1024 = 10 MB

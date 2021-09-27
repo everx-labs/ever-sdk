@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.23.0] – 2021-09-27
+
+### New
+- `boc.get_code_salt` and `boc.set_code_salt` functions for contract code salt management.
+
 ## [1.22.0] – 2021-09-20
 
 ### New
