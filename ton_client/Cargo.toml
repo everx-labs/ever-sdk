@@ -64,8 +64,7 @@ sha2 = "0.9.5"
 tokio = { version = "0.2.13", features = ["sync", "stream"], default-features = false }
 zstd = { version = "0.7.0", default-features = false }
 # TODO: remove fixed versioning when tiny-bip39 compilation issue is resolved
-tiny-bip39 = "=0.8.0"
-zeroize_derive = "=1.1.0"
+tiny-bip39 = "=0.7.3"
 
 # optional for std
 reqwest = { version = "0.10.4", optional = true }
