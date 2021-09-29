@@ -632,7 +632,6 @@ async fn resolve_initial_trusted_key_block(
 
 #[async_trait::async_trait]
 pub trait ProofHelperEngine {
-    fn context(&self) -> &Arc<ClientContext>;
     async fn load_zerostate(&self) -> Result<ShardStateUnsplit>;
     async fn load_key_block_proof(&self, mc_seq_no: u32) -> Result<BlockProof>;
 }

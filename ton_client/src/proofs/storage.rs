@@ -48,6 +48,27 @@ impl InMemoryProofStorage {
             proof_map: Default::default(),
         }
     }
+
+    #[cfg(test)]
+    pub fn count(&self) -> usize {
+        self.proof_map.iter().count()
+    }
+
+    #[cfg(test)]
+    pub fn dump(&self) {
+        println!("\n### Storage dump ###");
+        let count = self.proof_map.iter()
+            .map(|pair|
+                println!(
+                    "Key: {}, value (len: {}): {:?}",
+                    pair.key(),
+                    pair.val().len(),
+                    &pair.val()[..std::cmp::min(10, pair.val().len())],
+                )
+            ).count();
+
+        println!("Total records: {}", count);
+    }
 }
 
 #[async_trait::async_trait]

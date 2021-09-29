@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use serde_json::Value;
 use ton_block::{BinTreeType, Block, BlockIdExt, Deserializable, InRefValue, MASTERCHAIN_ID, ShardHashes, ShardIdent, ShardStateUnsplit};
-use ton_types::Result;
+use ton_types::{Result, UInt256};
 
 use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_uid, resolve_initial_trusted_key_block};
 use crate::proofs::engine::ProofHelperEngineImpl;
@@ -320,19 +320,118 @@ async fn query_zerostate_boc_test() -> Result<()> {
 }
 
 #[tokio::test]
+async fn query_file_hash_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    let file_hash_from_next = UInt256::from_str(
+        &engine.query_file_hash_from_next_block(1).await?.unwrap(),
+    )?;
+    let file_hash_from_boc = engine.download_boc_and_calc_file_hash(1).await?;
+
+    assert_eq!(file_hash_from_boc, file_hash_from_next);
+    assert_eq!(
+        file_hash_from_boc.as_hex_string(),
+        "5e64ec9e1baa18b4afef021c0bca224ebf4740e227b5ddd8a0131c777a914083",
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn query_mc_proof_test() -> Result<()> {
     let engine = create_engine_mainnet();
     let proof_json = engine.query_mc_proof(1).await?;
-
-    dbg!(&proof_json);
-
     let proof = BlockProof::from_value(&proof_json)?;
+
     assert_eq!(
         proof.id().to_string(),
         "(-1:8000000000000000, 1, \
             rh 4bba527c0f5301ac01194020edb6c237158bae872348ba36b0137d523fadd864, \
             fh 5e64ec9e1baa18b4afef021c0bca224ebf4740e227b5ddd8a0131c777a914083)",
     );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn query_key_blocks_proofs_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    let proofs = engine.query_key_blocks_proofs(0..1000000).await?;
+
+    assert_eq!(proofs.len(), 110);
+
+    let proofs_next = engine.query_blocks_proofs(
+        &proofs.iter().map(|(seq_no, _value)| seq_no + 1).collect::<Vec<u32>>(),
+        true,
+    ).await?;
+
+    assert_eq!(proofs_next.len(), proofs.len());
+
+    for i in 0..proofs.len() {
+        let (seq_no, _proof) = &proofs[i];
+        let (next_seq_no, next_proof) = &proofs_next[i];
+        assert_eq!(seq_no + 1, *next_seq_no);
+        assert!(next_proof["prev_ref"]["file_hash"].as_str().is_some())
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn add_file_hashes_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+    let mut proofs = engine.query_key_blocks_proofs(0..100000).await?;
+
+    assert_eq!(proofs.len(), 10);
+
+    engine.add_file_hashes(&mut proofs).await?;
+
+    for (seq_no, proof) in &proofs {
+        let file_hash = engine.query_file_hash_from_next_block(*seq_no).await?.unwrap();
+        assert_eq!(proof["file_hash"].as_str().unwrap(), file_hash);
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn mc_proofs_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+    let trusted_id = resolve_initial_trusted_key_block(engine.context()).await?;
+
+    let proof = BlockProof::from_value(&engine.query_mc_proof(100000).await?)?;
+    proof.check_proof(&engine).await?;
+
+    engine.storage().dump();
+
+    assert_eq!(engine.storage().count(), 13);
+    assert_eq!(engine.read_zs_right_bound().await?, 85049);
+
+    let proof = BlockProof::from_value(&engine.query_mc_proof(trusted_id.seq_no + 100000).await?)?;
+    proof.check_proof(&engine).await?;
+
+    engine.storage().dump();
+
+    assert_eq!(engine.storage().count(), 29);
+    assert_eq!(engine.read_trusted_block_right_bound(trusted_id.seq_no).await?, 11201794);
+
+    let proof = BlockProof::from_value(&engine.query_mc_proof(trusted_id.seq_no - 100000).await?)?;
+    proof.check_proof(&engine).await?;
+
+    engine.storage().dump();
+
+    assert_eq!(engine.storage().count(), 53);
+    assert_eq!(engine.read_trusted_block_left_bound(trusted_id.seq_no).await?, 11002325);
+
+    let proof = BlockProof::from_value(&engine.query_mc_proof(trusted_id.seq_no - 10000).await?)?;
+    proof.check_proof(&engine).await?;
+
+    assert_eq!(engine.storage().count(), 53);
+    assert_eq!(engine.read_trusted_block_left_bound(trusted_id.seq_no).await?, 11002325);
+
+    assert_eq!(engine.read_zs_right_bound().await?, 85049);
+    assert_eq!(engine.read_trusted_block_right_bound(trusted_id.seq_no).await?, 11201794);
 
     Ok(())
 }

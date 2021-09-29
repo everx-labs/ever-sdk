@@ -46,6 +46,14 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         Self { context, storage }
     }
 
+    pub fn context(&self) -> &Arc<ClientContext> {
+        &self.context
+    }
+
+    pub fn storage(&self) -> &Arc<Storage> {
+        &self.storage
+    }
+
     fn gen_root_hash_prefix(root_hash: &str) -> &str {
         &root_hash[..std::cmp::min(8, root_hash.len())]
     }
@@ -64,12 +72,31 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         Ok(Self::gen_storage_key(&network_uid, key))
     }
 
-    fn gen_trusted_block_left_bound_key(seq_no: u32) -> String {
+    fn mc_proof_key(mc_seq_no: u32) -> String {
+        format!("proof_mc_{}", mc_seq_no)
+    }
+
+    fn mc_block_key(mc_seq_no: u32) -> String {
+        format!("block_mc_{}", mc_seq_no)
+    }
+
+    fn trusted_block_left_bound_key(seq_no: u32) -> String {
         format!("trusted_{}_left_boundary_seq_no", seq_no)
     }
 
-    fn gen_trusted_block_right_bound_key(seq_no: u32) -> String {
+    fn trusted_block_right_bound_key(seq_no: u32) -> String {
         format!("trusted_{}_right_boundary_seq_no", seq_no)
+    }
+
+    fn filter_for_mc_block(mc_seq_no: u32) -> Value {
+        json!({
+            "workchain_id": {
+                "eq": -1,
+            },
+            "seq_no": {
+                "eq": mc_seq_no,
+            }
+        })
     }
 
     async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
@@ -104,19 +131,19 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
     }
 
     async fn read_mc_proof(&self, mc_seq_no: u32) -> ClientResult<Option<Value>> {
-        self.get_value(&Self::make_mc_proof_key(mc_seq_no)).await
+        self.get_value(&Self::mc_proof_key(mc_seq_no)).await
     }
 
     async fn write_mc_proof(&self, mc_seq_no: u32, value: &Value) -> ClientResult<()> {
-        self.put_value(&Self::make_mc_proof_key(mc_seq_no), value).await
+        self.put_value(&Self::mc_proof_key(mc_seq_no), value).await
     }
 
     async fn read_mc_block(&self, mc_seq_no: u32) -> ClientResult<Option<Vec<u8>>> {
-        self.get_bin(&Self::make_mc_block_key(mc_seq_no)).await
+        self.get_bin(&Self::mc_block_key(mc_seq_no)).await
     }
 
     async fn write_mc_block(&self, mc_seq_no: u32, boc: &[u8]) -> ClientResult<()> {
-        self.put_bin(&Self::make_mc_block_key(mc_seq_no), boc).await
+        self.put_bin(&Self::mc_block_key(mc_seq_no), boc).await
     }
 
     pub(crate) async fn read_metadata_value_u32(&self, key: &str) -> ClientResult<Option<u32>> {
@@ -156,7 +183,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
     }
 
     pub(crate) async fn read_trusted_block_left_bound(&self, trusted_seq_no: u32) -> ClientResult<u32> {
-        self.read_metadata_value_u32(&Self::gen_trusted_block_left_bound_key(trusted_seq_no)).await
+        self.read_metadata_value_u32(&Self::trusted_block_left_bound_key(trusted_seq_no)).await
             .map(|opt| opt.unwrap_or(trusted_seq_no))
     }
 
@@ -166,14 +193,14 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         left_bound_seq_no: u32,
     ) -> ClientResult<()> {
         self.update_metadata_value_u32(
-            &Self::gen_trusted_block_left_bound_key(trusted_seq_no),
+            &Self::trusted_block_left_bound_key(trusted_seq_no),
             left_bound_seq_no,
             std::cmp::min,
         ).await
     }
 
     pub(crate) async fn read_trusted_block_right_bound(&self, trusted_seq_no: u32) -> ClientResult<u32> {
-        self.read_metadata_value_u32(&Self::gen_trusted_block_right_bound_key(trusted_seq_no)).await
+        self.read_metadata_value_u32(&Self::trusted_block_right_bound_key(trusted_seq_no)).await
             .map(|opt| opt.unwrap_or(trusted_seq_no))
     }
 
@@ -183,7 +210,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         right_bound_seq_no: u32,
     ) -> ClientResult<()> {
         self.update_metadata_value_u32(
-            &Self::gen_trusted_block_right_bound_key(trusted_seq_no),
+            &Self::trusted_block_right_bound_key(trusted_seq_no),
             right_bound_seq_no,
             std::cmp::max,
         ).await
@@ -208,17 +235,6 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             .ok_or_else(|| err_msg("BoC of zerostate must be a string"))?;
 
         Ok(base64::decode(boc)?)
-    }
-
-    fn filter_for_mc_block(mc_seq_no: u32) -> Value {
-        json!({
-            "workchain_id": {
-                "eq": -1,
-            },
-            "seq_no": {
-                "eq": mc_seq_no,
-            }
-        })
     }
 
     pub(crate) async fn query_file_hash_from_next_block(
@@ -313,7 +329,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         Ok(result)
     }
 
-    async fn query_key_blocks_proofs(
+    pub(crate) async fn query_key_blocks_proofs(
         &self,
         mut mc_seq_no_range: Range<u32>,
     ) -> Result<Vec<(u32, Value)>> {
@@ -363,7 +379,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         }
     }
 
-    async fn query_blocks_proofs(
+    pub(crate) async fn query_blocks_proofs(
         &self,
         mut seq_numbers_sorted: &[u32],
         with_prev_ref_file_hash: bool,
@@ -407,8 +423,8 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             }
 
             let (expected, remaining) = seq_numbers_sorted.split_at(blocks.len());
-            for i in (0..blocks.len()).rev() {
-                let block = blocks.remove(i);
+            for i in 0..blocks.len() {
+                let block = blocks.remove(0);
                 let seq_no = block["seq_no"].as_u64()
                     .ok_or_else(|| err_msg("seq_no of block must be an integer value"))? as u32;
 
@@ -416,7 +432,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                     bail!("Block with seq_no: {} missed on DApp server", expected[i]);
                 }
 
-                result.insert(0, (seq_no, block));
+                result.push((seq_no, block));
             }
 
             seq_numbers_sorted = remaining;
@@ -425,7 +441,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         Ok(result)
     }
 
-    async fn add_file_hashes(
+    pub(crate) async fn add_file_hashes(
         &self,
         mut proofs_sorted: &mut [(u32, Value)],
     ) -> Result<()> {
@@ -434,7 +450,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                 Arc::clone(&self.context),
                 ParamsOfQueryCollection {
                     collection: "blocks".to_string(),
-                    result: "prev_ref{file_hash}".to_string(),
+                    result: "seq_no, prev_ref{file_hash}".to_string(),
                     filter: Some(json!({
                         "workchain_id": {
                             "eq": -1,
@@ -464,12 +480,12 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             }
 
             let (expected, remaining) = proofs_sorted.split_at_mut(blocks.len());
-            for i in (0..blocks.len()).rev() {
-                let mut block = blocks.remove(i);
+            for i in 0..blocks.len() {
+                let mut block = blocks.remove(0);
                 let seq_no = block["seq_no"].as_u64()
                     .ok_or_else(|| err_msg("seq_no of block must be an integer value"))? as u32;
 
-                if seq_no != expected[i].0 {
+                if seq_no != expected[i].0 + 1 {
                     bail!("Block with seq_no: {} missed on DApp server", expected[i].0);
                 }
 
@@ -482,7 +498,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         Ok(())
     }
 
-    async fn download_trusted_key_block_proof(
+    pub(crate) async fn download_trusted_key_block_proof(
         &self,
         id: &TrustedMcBlockId,
     ) -> Result<BlockProof> {
@@ -519,15 +535,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         self.download_trusted_key_block_proof(id).await
     }
 
-    fn make_mc_proof_key(mc_seq_no: u32) -> String {
-        format!("proof_mc_{}", mc_seq_no)
-    }
-
-    fn make_mc_block_key(mc_seq_no: u32) -> String {
-        format!("block_mc_{}", mc_seq_no)
-    }
-
-    async fn download_proof_chain<F: Fn(u32) -> R, R: Future<Output = ClientResult<()>>>(
+    pub(crate) async fn download_proof_chain<F: Fn(u32) -> R, R: Future<Output = ClientResult<()>>>(
         &self,
         mc_seq_no_range: Range<u32>,
         on_store_block: F,
@@ -575,7 +583,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         Ok(())
     }
 
-    async fn download_proof_chain_backward(
+    pub(crate) async fn download_proof_chain_backward(
         &self,
         mc_seq_no_range: Range<u32>,
         trusted_seq_no: u32,
@@ -646,10 +654,6 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
 
 #[async_trait::async_trait]
 impl<Storage: ProofStorage + Send + Sync> ProofHelperEngine for ProofHelperEngineImpl<Storage> {
-    fn context(&self) -> &Arc<ClientContext> {
-        &self.context
-    }
-
     async fn load_zerostate(&self) -> Result<ShardStateUnsplit> {
         if let Some(boc) = self.get_bin(ZEROSTATE_KEY).await? {
             return ShardStateUnsplit::construct_from_bytes(&boc);

@@ -95,23 +95,30 @@ async fn test_local_storage() -> Result<()> {
     const KEY1_NAME: &str = "key1";
     const KEY2_NAME: &str = "key2";
 
+    assert!(ClientEnv::read_local_storage(path.as_ref(), KEY1_NAME).await?.is_none());
     assert!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY1_NAME).await?.is_none());
+    assert!(ClientEnv::read_local_storage(path.as_ref(), KEY2_NAME).await?.is_none());
     assert!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY2_NAME).await?.is_none());
 
-    ClientEnv::bin_write_local_storage(path.as_ref(), KEY1_NAME, b"test1").await?;
+    ClientEnv::write_local_storage(path.as_ref(), KEY1_NAME, "test1").await?;
 
+    assert_eq!(ClientEnv::read_local_storage(path.as_ref(), KEY1_NAME).await?, Some("test1".to_string()));
     assert_eq!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY1_NAME).await?, Some(b"test1".to_vec()));
+    assert!(ClientEnv::read_local_storage(path.as_ref(), KEY2_NAME).await?.is_none());
     assert!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY2_NAME).await?.is_none());
 
     ClientEnv::bin_write_local_storage(path.as_ref(), KEY2_NAME, b"test2").await?;
 
+    assert_eq!(ClientEnv::read_local_storage(path.as_ref(), KEY1_NAME).await?, Some("test1".to_string()));
     assert_eq!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY1_NAME).await?, Some(b"test1".to_vec()));
+    assert_eq!(ClientEnv::read_local_storage(path.as_ref(), KEY2_NAME).await?, Some("test2".to_string()));
     assert_eq!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY2_NAME).await?, Some(b"test2".to_vec()));
 
     ClientEnv::remove_local_storage(path.as_ref(), KEY1_NAME).await?;
 
+    assert!(ClientEnv::read_local_storage(path.as_ref(), KEY1_NAME).await?.is_none());
     assert!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY1_NAME).await?.is_none());
-    assert_eq!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY2_NAME).await?, Some(b"test2".to_vec()));
+    assert_eq!(ClientEnv::read_local_storage(path.as_ref(), KEY2_NAME).await?, Some("test2".to_string()));
 
     Ok(())
 }
