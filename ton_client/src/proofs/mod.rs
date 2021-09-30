@@ -605,7 +605,6 @@ async fn query_current_network_uid(
 
     let zs_root_hash_json = &prev_ref["root_hash"];
     let zerostate_root_hash = zs_root_hash_json.as_str()
-        //.map(|v| Arc::new(v.to_string()))
         .ok_or_else::<ClientError, _>(|| Error::unable_to_resolve_zerostate_root_hash(
             format!(
                 "root_hash of the prev_ref of the block #1 is not a string: {:?}",
