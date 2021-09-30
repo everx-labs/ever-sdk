@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use failure::{bail, err_msg};
 use serde_json::Value;
-use ton_block::{BlkPrevInfo, Deserializable, ShardStateUnsplit};
+use ton_block::{Deserializable, ShardStateUnsplit};
 use ton_types::{Result, UInt256};
 
 use crate::boc::internal::get_boc_hash;
@@ -79,10 +79,6 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
 
     fn mc_block_key(mc_seq_no: u32) -> String {
         format!("block_mc_{}", mc_seq_no)
-    }
-
-    fn trusted_block_left_bound_key(seq_no: u32) -> String {
-        format!("trusted_{}_left_boundary_seq_no", seq_no)
     }
 
     fn trusted_block_right_bound_key(seq_no: u32) -> String {
@@ -214,23 +210,6 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
 
     pub(crate) async fn update_zs_right_bound(&self, seq_no: u32) -> ClientResult<()> {
         self.update_metadata_value_u32(ZEROSTATE_RIGHT_BOUND_KEY, seq_no, std::cmp::max).await
-    }
-
-    pub(crate) async fn read_trusted_block_left_bound(&self, trusted_seq_no: u32) -> ClientResult<u32> {
-        self.read_metadata_value_u32(&Self::trusted_block_left_bound_key(trusted_seq_no)).await
-            .map(|opt| opt.unwrap_or(trusted_seq_no))
-    }
-
-    pub(crate) async fn update_trusted_block_left_bound(
-        &self,
-        trusted_seq_no: u32,
-        left_bound_seq_no: u32,
-    ) -> ClientResult<()> {
-        self.update_metadata_value_u32(
-            &Self::trusted_block_left_bound_key(trusted_seq_no),
-            left_bound_seq_no,
-            std::cmp::min,
-        ).await
     }
 
     pub(crate) async fn read_trusted_block_right_bound(&self, trusted_seq_no: u32) -> ClientResult<u32> {
@@ -405,61 +384,6 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         }
     }
 
-    pub(crate) async fn query_blocks_proofs(
-        &self,
-        mut seq_numbers_sorted: &[u32],
-        with_prev_ref_file_hash: bool,
-    ) -> Result<Vec<(u32, Value)>> {
-        let mut result = Vec::new();
-        while seq_numbers_sorted.len() > 0 {
-            let mut blocks = Self::preprocess_query_result(query_collection(
-                Arc::clone(&self.context),
-                ParamsOfQueryCollection {
-                    collection: "blocks".to_string(),
-                    result: PROOF_QUERY_RESULT.to_string() +
-                        if with_prev_ref_file_hash {
-                            " prev_ref{file_hash}"
-                        } else {
-                            ""
-                        },
-                    filter: Some(json!({
-                        "workchain_id": {
-                            "eq": -1,
-                        },
-                        "seq_no": {
-                            "in": seq_numbers_sorted,
-                        }
-                    })),
-                    order: Some(Self::sorting_for_mc()),
-                    ..Default::default()
-                }
-            ).await?.result)?;
-
-            if seq_numbers_sorted.len() < blocks.len() {
-                bail!(
-                    "DApp server returned more blocks ({}) than expected ({})",
-                    blocks.len(),
-                    seq_numbers_sorted.len(),
-                )
-            }
-
-            let (expected, remaining) = seq_numbers_sorted.split_at(blocks.len());
-            for i in 0..blocks.len() {
-                let (seq_no, block) = blocks.remove(0);
-
-                if seq_no != expected[i] {
-                    bail!("Block with seq_no: {} missed on DApp server", expected[i]);
-                }
-
-                result.push((seq_no, block));
-            }
-
-            seq_numbers_sorted = remaining;
-        }
-
-        Ok(result)
-    }
-
     pub(crate) async fn add_file_hashes(
         &self,
         mut proofs_sorted: &mut [(u32, Value)],
@@ -577,96 +501,6 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
 
         last_proof.ok_or_else(|| err_msg("Empty proof chain"))
     }
-
-    fn add_file_hashes_from_back_links(
-        items: &mut [(u32, Value)],
-        next_items: &[(u32, Value)],
-    ) -> Result<()> {
-        for i in 0..items.len() {
-            let (seq_no, value) = &mut items[i];
-            let (next_seq_no, next_value) = &next_items[i];
-
-            if *seq_no + 1 != *next_seq_no {
-                bail!(
-                    "Next block's seq_no mismatch corresponding block's seq_no: {} != {} + 1",
-                    next_seq_no,
-                    seq_no,
-                );
-            }
-
-            value["file_hash"] = next_value["prev_ref"]["file_hash"].clone();
-        }
-
-        Ok(())
-    }
-
-    pub(crate) async fn download_proof_chain_backward(
-        &self,
-        mc_seq_no_range: Range<u32>,
-        trusted_seq_no: u32,
-    ) -> Result<BlockProof> {
-        if mc_seq_no_range.is_empty() {
-            bail!("Empty materchain seq_no range");
-        }
-
-        let mut key_proofs_json = self.query_key_blocks_proofs(mc_seq_no_range.clone()).await?;
-
-        let next_seq_no_sorted: Vec<u32> = key_proofs_json.iter()
-            .map(|(mc_seq_no, _boc)| mc_seq_no + 1)
-            .collect();
-
-        let mut next_blocks_proofs_json = self.query_blocks_proofs(&next_seq_no_sorted, true).await?;
-
-        Self::add_file_hashes_from_back_links(&mut key_proofs_json, &next_blocks_proofs_json)?;
-        self.add_file_hashes(&mut next_blocks_proofs_json).await?;
-
-        let right_key_proof_json = self.read_mc_proof(mc_seq_no_range.end).await?
-            .ok_or_else(
-                || err_msg(format!("Cannot load proof for MC seq_no: {}", mc_seq_no_range.end))
-            )?;
-        let mut right_key_proof = BlockProof::from_value(&right_key_proof_json)?;
-        for ((key_seq_no, key_proof_json), (next_seq_no, next_proof_json))
-            in key_proofs_json.iter().zip(next_blocks_proofs_json.iter()).rev()
-        {
-            let key_proof = BlockProof::from_value(&key_proof_json)?;
-            key_proof.pre_check_block_proof()?;
-
-            let next_block_proof = BlockProof::from_value(&next_proof_json)?;
-            let (next_block, next_block_info) = next_block_proof.pre_check_block_proof()?;
-            if next_block_info.prev_key_block_seqno() != *key_seq_no {
-                bail!("Block is expected to be just after its key-block");
-            }
-            next_block_proof.check_with_prev_key_block_proof_(
-                &key_proof,
-                &next_block,
-                &next_block_info,
-            )?;
-            let prev_root_hash = match next_block_info.read_prev_ref()? {
-                BlkPrevInfo::Block { prev } => prev.root_hash,
-                BlkPrevInfo::Blocks { .. } => bail!("Unexpected merge in masterchain"),
-            };
-
-            let key_root_hash = key_proof.id().root_hash();
-            if prev_root_hash != key_root_hash {
-                bail!(
-                    "Proof chain is broken: next block's prev root_hash ({:?}) links to an incorrect \
-                        root_hash ({:?})",
-                    prev_root_hash,
-                    key_root_hash,
-                );
-            }
-
-            right_key_proof.check_with_prev_key_block_proof(&key_proof)?;
-
-            self.write_mc_proof(*key_seq_no, key_proof_json).await?;
-            self.write_mc_proof(*next_seq_no, next_proof_json).await?;
-            self.update_trusted_block_left_bound(trusted_seq_no, *key_seq_no).await?;
-
-            right_key_proof = key_proof;
-        }
-
-        Ok(right_key_proof)
-    }
 }
 
 #[async_trait::async_trait]
@@ -701,7 +535,6 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngine for ProofHelperEngin
 
         let trusted_id = resolve_initial_trusted_key_block(self.context()).await?;
         let zs_right_bound = self.read_zs_right_bound().await?;
-        let trusted_left_bound = self.read_trusted_block_left_bound(trusted_id.seq_no).await?;
         let trusted_right_bound = self.read_trusted_block_right_bound(trusted_id.seq_no).await?;
 
         if mc_seq_no == trusted_id.seq_no {
@@ -719,26 +552,20 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngine for ProofHelperEngin
         };
 
         if mc_seq_no > trusted_right_bound {
-            self.download_proof_chain(trusted_right_bound..mc_seq_no + 1, update_trusted_right).await
-        } else if mc_seq_no < zs_right_bound + (trusted_left_bound - zs_right_bound) / 2 {
+            self.download_proof_chain(trusted_right_bound + 1..mc_seq_no + 1, update_trusted_right).await
+        } else if mc_seq_no < trusted_id.seq_no && mc_seq_no > zs_right_bound {
             self.download_proof_chain(zs_right_bound + 1..mc_seq_no + 1, update_zs_right).await
-        } else if mc_seq_no < trusted_left_bound {
-            self.download_proof_chain_backward(mc_seq_no..trusted_left_bound, trusted_id.seq_no).await
         } else if mc_seq_no <= zs_right_bound {
             // Chain from zerostate is broken
             self.download_proof_chain(1..mc_seq_no + 1, update_zs_right).await
-        } else if mc_seq_no >= trusted_left_bound && mc_seq_no <= trusted_id.seq_no {
-            // Chain from trusted key-block to the left is broken
-            self.download_proof_chain_backward(mc_seq_no..trusted_id.seq_no, trusted_id.seq_no).await
         } else if mc_seq_no > trusted_id.seq_no && mc_seq_no <= trusted_right_bound {
             // Chain from trusted key-block to the right is broken
             self.download_proof_chain(trusted_id.seq_no + 1..mc_seq_no + 1, update_trusted_right).await
         } else {
             unreachable!(
-                "mc_seq_no: {}, zs_right: {}, trusted_left: {}, trusted_right: {}, trusted_id: {:?}",
+                "mc_seq_no: {}, zs_right: {}, trusted_right: {}, trusted_id: {:?}",
                 mc_seq_no,
                 zs_right_bound,
-                trusted_left_bound,
                 trusted_right_bound,
                 trusted_id,
             )

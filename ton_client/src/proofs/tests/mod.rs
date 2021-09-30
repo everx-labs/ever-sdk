@@ -292,18 +292,8 @@ async fn test_special_metadata_storage() -> Result<()> {
     engine.update_trusted_block_right_bound(15, 16).await?;
     assert_eq!(engine.read_trusted_block_right_bound(15).await?, 16);
 
-
-    assert_eq!(engine.read_trusted_block_left_bound(10).await?, 10);
-
-    engine.update_trusted_block_left_bound(10, 8).await?;
-    assert_eq!(engine.read_trusted_block_left_bound(10).await?, 8);
-
-    engine.update_trusted_block_left_bound(10, 5).await?;
-    assert_eq!(engine.read_trusted_block_left_bound(10).await?, 5);
-
     // Ensure these values are unchanged:
     assert_eq!(engine.read_zs_right_bound().await?, 300);
-    assert_eq!(engine.read_trusted_block_right_bound(15).await?, 16);
 
     Ok(())
 }
@@ -361,20 +351,6 @@ async fn query_key_blocks_proofs_test() -> Result<()> {
 
     assert_eq!(proofs.len(), 110);
 
-    let proofs_next = engine.query_blocks_proofs(
-        &proofs.iter().map(|(seq_no, _value)| seq_no + 1).collect::<Vec<u32>>(),
-        true,
-    ).await?;
-
-    assert_eq!(proofs_next.len(), proofs.len());
-
-    for i in 0..proofs.len() {
-        let (seq_no, _proof) = &proofs[i];
-        let (next_seq_no, next_proof) = &proofs_next[i];
-        assert_eq!(seq_no + 1, *next_seq_no);
-        assert!(next_proof["prev_ref"]["file_hash"].as_str().is_some())
-    }
-
     Ok(())
 }
 
@@ -413,23 +389,7 @@ async fn mc_proofs_test() -> Result<()> {
 
     engine.storage().dump();
 
-    assert_eq!(engine.storage().count(), 29);
-    assert_eq!(engine.read_trusted_block_right_bound(trusted_id.seq_no).await?, 11201794);
-
-    let proof = BlockProof::from_value(&engine.query_mc_proof(trusted_id.seq_no - 100000).await?)?;
-    proof.check_proof(&engine).await?;
-
-    engine.storage().dump();
-
-    assert_eq!(engine.storage().count(), 53);
-    assert_eq!(engine.read_trusted_block_left_bound(trusted_id.seq_no).await?, 11002325);
-
-    let proof = BlockProof::from_value(&engine.query_mc_proof(trusted_id.seq_no - 10000).await?)?;
-    proof.check_proof(&engine).await?;
-
-    assert_eq!(engine.storage().count(), 53);
-    assert_eq!(engine.read_trusted_block_left_bound(trusted_id.seq_no).await?, 11002325);
-
+    assert_eq!(engine.storage().count(), 26);
     assert_eq!(engine.read_zs_right_bound().await?, 85049);
     assert_eq!(engine.read_trusted_block_right_bound(trusted_id.seq_no).await?, 11201794);
 
