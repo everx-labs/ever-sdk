@@ -32,6 +32,7 @@ pub struct ResultOfUpdateInitialData {
 }
 
 /// Updates account data with initial values for contract's public variables and owner's public key.
+/// This operation is applicable only to pre-deployment contract data. Deployed contract data doesn't contain this data section
 #[api_function]
 pub async fn update_initial_data(
     context: Arc<ClientContext>,
@@ -76,6 +77,7 @@ pub struct ResultOfDecodeInitialData {
 }
 
 /// Decodes initial values for contract's public variables and owner's public key from account data
+/// This operation is applicable only to pre-deployment contract data. Deployed contract data doesn't contain this data section
 #[api_function]
 pub async fn decode_initial_data(
     context: Arc<ClientContext>,
