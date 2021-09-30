@@ -23,6 +23,7 @@ const PROOF_QUERY_RESULT: &str = "\
     workchain_id \
     shard \
     seq_no \
+    gen_utime \
     signatures {\
         proof \
         catchain_seqno \
@@ -97,6 +98,39 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                 "eq": mc_seq_no,
             }
         })
+    }
+
+    fn sorting_for_mc() -> Vec<OrderBy> {
+        vec![
+            OrderBy {
+                path: "seq_no".to_string(),
+                direction: SortDirection::ASC,
+            },
+        ]
+    }
+
+    fn preprocess_query_result(blocks: Vec<Value>) -> Result<Vec<(u32, Value)>> {
+        let mut result = Vec::with_capacity(blocks.len());
+
+        let mut last_seq_no = 0;
+        let mut last_gen_utime = 0;
+        for block in blocks {
+            let seq_no = block["seq_no"].as_u64()
+                .ok_or_else(|| err_msg("seq_no of block must be an integer value"))? as u32;
+            let gen_utime = block["gen_utime"].as_u64()
+                .ok_or_else(|| err_msg("gen_utime of block must be an integer value"))? as u32;
+            if seq_no != last_seq_no {
+                result.push((seq_no, block));
+                last_seq_no = seq_no;
+                last_gen_utime =  gen_utime;
+            } else if gen_utime > last_gen_utime {
+                let last_index = result.len() - 1;
+                result[last_index].1 = block;
+                last_gen_utime = gen_utime;
+            }
+        }
+
+        Ok(result)
     }
 
     async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
@@ -242,22 +276,22 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         mut mc_seq_no: u32,
     ) -> Result<Option<String>> {
         mc_seq_no += 1;
-        let blocks = query_collection(
+        let blocks = Self::preprocess_query_result(query_collection(
             Arc::clone(&self.context),
             ParamsOfQueryCollection {
                 collection: "blocks".to_string(),
-                result: "prev_ref{file_hash}".to_string(),
+                result: "seq_no gen_utime prev_ref{file_hash}".to_string(),
                 filter: Some(Self::filter_for_mc_block(mc_seq_no)),
-                limit: Some(1),
+                order: Some(Self::sorting_for_mc()),
                 ..Default::default()
             }
-        ).await?.result;
+        ).await?.result)?;
 
         if blocks.is_empty() {
             return Ok(None)
         }
 
-        Ok(Some(blocks[0]["prev_ref"]["file_hash"].as_str()
+        Ok(Some(blocks[0].1["prev_ref"]["file_hash"].as_str()
             .ok_or_else(|| err_msg("file_hash field must be a string"))?
             .to_string()))
     }
@@ -269,16 +303,16 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         let boc = if let Some(boc) = self.read_mc_block(mc_seq_no).await? {
             boc
         } else {
-            let blocks = query_collection(
+            let blocks = Self::preprocess_query_result(query_collection(
                 Arc::clone(&self.context),
                 ParamsOfQueryCollection {
                     collection: "blocks".to_string(),
-                    result: "boc".to_string(),
+                    result: "seq_no gen_utime boc".to_string(),
                     filter: Some(Self::filter_for_mc_block(mc_seq_no)),
-                    limit: Some(1),
+                    order: Some(Self::sorting_for_mc()),
                     ..Default::default()
                 }
-            ).await?.result;
+            ).await?.result)?;
 
             if blocks.is_empty() {
                 bail!(
@@ -287,7 +321,8 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                 );
             }
 
-            let boc_base64 = blocks[0]["boc"].as_str()
+            let (_seq_no, block_json) = &blocks[0];
+            let boc_base64 = block_json["boc"].as_str()
                 .ok_or_else(|| err_msg("boc field must be a string"))?;
             let boc = base64::decode(boc_base64)?;
 
@@ -300,16 +335,16 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
     }
 
     pub(crate) async fn query_mc_proof(&self, mc_seq_no: u32) -> Result<Value> {
-        let mut blocks = query_collection(
+        let mut blocks = Self::preprocess_query_result(query_collection(
             Arc::clone(&self.context),
             ParamsOfQueryCollection {
                 collection: "blocks".to_string(),
                 result: PROOF_QUERY_RESULT.to_string(),
                 filter: Some(Self::filter_for_mc_block(mc_seq_no)),
-                limit: Some(1),
+                order: Some(Self::sorting_for_mc()),
                 ..Default::default()
             }
-        ).await?.result;
+        ).await?.result)?;
 
         if blocks.is_empty() {
             bail!(
@@ -318,7 +353,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             );
         }
 
-        let mut result = blocks.remove(0);
+        let (_seq_no, mut result) = blocks.remove(0);
         if let Some(file_hash) = self.query_file_hash_from_next_block(mc_seq_no).await? {
             result["file_hash"] = file_hash.into();
         } else {
@@ -356,12 +391,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                             "lt": mc_seq_no_range.end,
                         }
                     })),
-                    order: Some(
-                        vec![OrderBy {
-                            path: "seq_no".to_string(),
-                            direction: SortDirection::ASC,
-                        }]
-                    ),
+                    order: Some(Self::sorting_for_mc()),
                     ..Default::default()
                 }
             ).await?.result;
@@ -370,12 +400,8 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                 return Ok(result);
             }
 
-            for key_block in key_blocks {
-                let seq_no = key_block["seq_no"].as_u64()
-                    .ok_or_else(|| err_msg("seq_no of block must be an integer value"))? as u32;
-                result.push((seq_no, key_block));
-                mc_seq_no_range.start = seq_no + 1;
-            }
+            result.append(&mut Self::preprocess_query_result(key_blocks)?);
+            mc_seq_no_range.start = result[result.len() - 1].0 + 1;
         }
     }
 
@@ -386,7 +412,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
     ) -> Result<Vec<(u32, Value)>> {
         let mut result = Vec::new();
         while seq_numbers_sorted.len() > 0 {
-            let mut blocks = query_collection(
+            let mut blocks = Self::preprocess_query_result(query_collection(
                 Arc::clone(&self.context),
                 ParamsOfQueryCollection {
                     collection: "blocks".to_string(),
@@ -404,15 +430,10 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                             "in": seq_numbers_sorted,
                         }
                     })),
-                    order: Some(
-                        vec![OrderBy {
-                            path: "seq_no".to_string(),
-                            direction: SortDirection::ASC,
-                        }]
-                    ),
+                    order: Some(Self::sorting_for_mc()),
                     ..Default::default()
                 }
-            ).await?.result;
+            ).await?.result)?;
 
             if seq_numbers_sorted.len() < blocks.len() {
                 bail!(
@@ -424,9 +445,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
 
             let (expected, remaining) = seq_numbers_sorted.split_at(blocks.len());
             for i in 0..blocks.len() {
-                let block = blocks.remove(0);
-                let seq_no = block["seq_no"].as_u64()
-                    .ok_or_else(|| err_msg("seq_no of block must be an integer value"))? as u32;
+                let (seq_no, block) = blocks.remove(0);
 
                 if seq_no != expected[i] {
                     bail!("Block with seq_no: {} missed on DApp server", expected[i]);
@@ -446,11 +465,11 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         mut proofs_sorted: &mut [(u32, Value)],
     ) -> Result<()> {
         while proofs_sorted.len() > 0 {
-            let mut blocks = query_collection(
+            let mut blocks = Self::preprocess_query_result(query_collection(
                 Arc::clone(&self.context),
                 ParamsOfQueryCollection {
                     collection: "blocks".to_string(),
-                    result: "seq_no, prev_ref{file_hash}".to_string(),
+                    result: "seq_no gen_utime prev_ref{file_hash}".to_string(),
                     filter: Some(json!({
                         "workchain_id": {
                             "eq": -1,
@@ -461,15 +480,10 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                                     .collect::<Vec<u32>>(),
                         }
                     })),
-                    order: Some(
-                        vec![OrderBy {
-                            path: "seq_no".to_string(),
-                            direction: SortDirection::ASC,
-                        }]
-                    ),
+                    order: Some(Self::sorting_for_mc()),
                     ..Default::default()
                 }
-            ).await?.result;
+            ).await?.result)?;
 
             if proofs_sorted.len() < blocks.len() {
                 bail!(
@@ -481,12 +495,15 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
 
             let (expected, remaining) = proofs_sorted.split_at_mut(blocks.len());
             for i in 0..blocks.len() {
-                let mut block = blocks.remove(0);
-                let seq_no = block["seq_no"].as_u64()
-                    .ok_or_else(|| err_msg("seq_no of block must be an integer value"))? as u32;
+                let (seq_no, mut block) = blocks.remove(0);
 
-                if seq_no != expected[i].0 + 1 {
-                    bail!("Block with seq_no: {} missed on DApp server", expected[i].0);
+                let expected_seq_no = expected[i].0 + 1;
+                if seq_no != expected_seq_no {
+                    bail!(
+                        "Block with seq_no: {} missed on DApp server (actual seq_no: {})",
+                        expected_seq_no,
+                        seq_no,
+                    );
                 }
 
                 expected[i].1["file_hash"] = block["prev_ref"]["file_hash"].take();
