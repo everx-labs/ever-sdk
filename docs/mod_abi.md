@@ -22,9 +22,9 @@ Provides message encoding and decoding according to the ABI specification.
 
 [decode_account_data](#decode_account_data) – Decodes account data using provided data BOC and ABI.
 
-[update_initial_data](#update_initial_data) – Updates account data with initial values for contract's public variables and owner's public key. This operation is applicable only to pre-deployment contract data.
+[update_initial_data](#update_initial_data) – Updates initial account data with initial values for the contract's static variables and owner's public key. This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
 
-[decode_initial_data](#decode_initial_data) – Decodes initial values for contract's public variables and owner's public key from account data This operation is applicable only to pre-deployment contract data.
+[decode_initial_data](#decode_initial_data) – Decodes initial values of a contract's static variables and owner's public key from account initial data This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
 
 ## Types
 [AbiErrorCode](#AbiErrorCode)
@@ -495,9 +495,7 @@ function decode_account_data(
 
 ## update_initial_data
 
-Updates account data with initial values for contract's public variables and owner's public key. This operation is applicable only to pre-deployment contract data.
-
-Deployed contract data doesn't contain this data section
+Updates initial account data with initial values for the contract's static variables and owner's public key. This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
 
 ```ts
 type ParamsOfUpdateInitialData = {
@@ -519,7 +517,7 @@ function update_initial_data(
 ### Parameters
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
-- `initial_data`?: _any_ – List of initial values for contract's public variables.
+- `initial_data`?: _any_ – List of initial values for contract's static variables.
 <br>`abi` parameter should be provided to set initial data
 - `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
@@ -532,9 +530,7 @@ function update_initial_data(
 
 ## decode_initial_data
 
-Decodes initial values for contract's public variables and owner's public key from account data This operation is applicable only to pre-deployment contract data.
-
-Deployed contract data doesn't contain this data section
+Decodes initial values of a contract's static variables and owner's public key from account initial data This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
 
 ```ts
 type ParamsOfDecodeInitialData = {
@@ -1235,7 +1231,7 @@ type ParamsOfUpdateInitialData = {
 ```
 - `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
-- `initial_data`?: _any_ – List of initial values for contract's public variables.
+- `initial_data`?: _any_ – List of initial values for contract's static variables.
 <br>`abi` parameter should be provided to set initial data
 - `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
 - `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.

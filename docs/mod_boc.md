@@ -28,15 +28,15 @@ BOC manipulation module.
 
 [encode_boc](#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type
 
-[get_code_salt](#get_code_salt) – Returns contract code salt if present.
+[get_code_salt](#get_code_salt) – Returns the contract code's salt if it is present.
 
 [set_code_salt](#set_code_salt) – Sets new salt to contract code.
 
-[decode_tvc](#decode_tvc) – Sets new salt to contract code.
+[decode_tvc](#decode_tvc) – Decodes tvc into code, data, libraries and special options.
 
-[encode_tvc](#encode_tvc) – Sets new salt to contract code.
+[encode_tvc](#encode_tvc) – Encodes tvc from code, data, libraries ans special options (see input params)
 
-[get_compiler_version](#get_compiler_version) – Returns contract code salt if present.
+[get_compiler_version](#get_compiler_version) – Returns the compiler version used to compile the code.
 
 ## Types
 [BocCacheType](#BocCacheType)
@@ -427,7 +427,7 @@ function encode_boc(
 
 ## get_code_salt
 
-Returns contract code salt if present.
+Returns the contract code's salt if it is present.
 
 ```ts
 type ParamsOfGetCodeSalt = {
@@ -457,6 +457,8 @@ function get_code_salt(
 ## set_code_salt
 
 Sets new salt to contract code.
+
+Returns the new contract code with salt.
 
 ```ts
 type ParamsOfSetCodeSalt = {
@@ -488,7 +490,7 @@ function set_code_salt(
 
 ## decode_tvc
 
-Sets new salt to contract code.
+Decodes tvc into code, data, libraries and special options.
 
 ```ts
 type ParamsOfDecodeTvc = {
@@ -528,7 +530,7 @@ function decode_tvc(
 
 ## encode_tvc
 
-Sets new salt to contract code.
+Encodes tvc from code, data, libraries ans special options (see input params)
 
 ```ts
 type ParamsOfEncodeTvc = {
@@ -563,12 +565,12 @@ function encode_tvc(
 
 ### Result
 
-- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle
+- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
 
 
 ## get_compiler_version
 
-Returns contract code salt if present.
+Returns the compiler version used to compile the code.
 
 ```ts
 type ParamsOfGetCompilerVersion = {
@@ -589,7 +591,7 @@ function get_compiler_version(
 
 ### Result
 
-- `version`?: _string_ – Compiler version from contract code
+- `version`?: _string_ – Compiler version, for example 'sol 0.49.0'
 
 
 # Types
@@ -972,7 +974,7 @@ type ResultOfEncodeTvc = {
     tvc: string
 }
 ```
-- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle
+- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
 
 
 ## ParamsOfGetCompilerVersion
@@ -990,6 +992,6 @@ type ResultOfGetCompilerVersion = {
     version?: string
 }
 ```
-- `version`?: _string_ – Compiler version from contract code
+- `version`?: _string_ – Compiler version, for example 'sol 0.49.0'
 
 

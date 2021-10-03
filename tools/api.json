@@ -5773,7 +5773,7 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": "List of initial values for contract's public variables.",
+              "summary": "List of initial values for contract's static variables.",
               "description": "`abi` parameter should be provided to set initial data"
             },
             {
@@ -6207,8 +6207,8 @@
         },
         {
           "name": "update_initial_data",
-          "summary": "Updates account data with initial values for contract's public variables and owner's public key. This operation is applicable only to pre-deployment contract data.",
-          "description": "Deployed contract data doesn't contain this data section",
+          "summary": "Updates initial account data with initial values for the contract's static variables and owner's public key. This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.",
+          "description": null,
           "params": [
             {
               "name": "context",
@@ -6245,8 +6245,8 @@
         },
         {
           "name": "decode_initial_data",
-          "summary": "Decodes initial values for contract's public variables and owner's public key from account data This operation is applicable only to pre-deployment contract data.",
-          "description": "Deployed contract data doesn't contain this data section",
+          "summary": "Decodes initial values of a contract's static variables and owner's public key from account initial data This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.",
+          "description": null,
           "params": [
             {
               "name": "context",
@@ -6977,7 +6977,7 @@
             {
               "name": "tvc",
               "type": "String",
-              "summary": "Contract TVC image BOC encoded as base64 or BOC handle",
+              "summary": "Contract TVC image BOC encoded as base64 or BOC handle of boc_cache parameter was specified",
               "description": null
             }
           ],
@@ -7008,7 +7008,7 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": "Compiler version from contract code",
+              "summary": "Compiler version, for example 'sol 0.49.0'",
               "description": null
             }
           ],
@@ -7474,7 +7474,7 @@
         },
         {
           "name": "get_code_salt",
-          "summary": "Returns contract code salt if present.",
+          "summary": "Returns the contract code's salt if it is present.",
           "description": null,
           "params": [
             {
@@ -7513,7 +7513,7 @@
         {
           "name": "set_code_salt",
           "summary": "Sets new salt to contract code.",
-          "description": null,
+          "description": "Returns the new contract code with salt.",
           "params": [
             {
               "name": "context",
@@ -7550,7 +7550,7 @@
         },
         {
           "name": "decode_tvc",
-          "summary": "Sets new salt to contract code.",
+          "summary": "Decodes tvc into code, data, libraries and special options.",
           "description": null,
           "params": [
             {
@@ -7588,7 +7588,7 @@
         },
         {
           "name": "encode_tvc",
-          "summary": "Sets new salt to contract code.",
+          "summary": "Encodes tvc from code, data, libraries ans special options (see input params)",
           "description": null,
           "params": [
             {
@@ -7626,7 +7626,7 @@
         },
         {
           "name": "get_compiler_version",
-          "summary": "Returns contract code salt if present.",
+          "summary": "Returns the compiler version used to compile the code.",
           "description": null,
           "params": [
             {
@@ -11035,8 +11035,8 @@
         },
         {
           "name": "query_transaction_tree",
-          "summary": "Returns transactions tree for specific message.",
-          "description": "Performs recursive retrieval of the transactions tree produced by the specific message:\nin_msg -> dst_transaction -> out_messages -> dst_transaction -> ...\n\nAll retrieved messages and transactions will be included\ninto `result.messages` and `result.transactions` respectively.\n\nThe retrieval process will stop when the retrieved transaction count is more than 50.\n\nIt is guaranteed that each message in `result.messages` has the corresponding transaction\nin the `result.transactions`.\n\nBut there are no guaranties that all messages from transactions `out_msgs` are\npresented in `result.messages`.\nSo the application have to continue retrieval for missing messages if it requires.",
+          "summary": "Returns a tree of transactions triggered by a specific message.",
+          "description": "Performs recursive retrieval of a transactions tree produced by a specific message:\nin_msg -> dst_transaction -> out_messages -> dst_transaction -> ...\nIf the chain of transactions execution is in progress while the function is running,\nit will wait for the next transactions to appear until the full tree or more than 50 transactions\nare received.\n\nAll the retrieved messages and transactions are included\ninto `result.messages` and `result.transactions` respectively.\n\nFunction reads transactions layer by layer, by pages of 20 transactions.\n\nThe retrieval prosess goes like this:\nLet's assume we have an infinite chain of transactions and each transaction generates 5 messages.\n1. Retrieve 1st message (input parameter) and corresponding transaction - put it into result.\nIt is the first level of the tree of transactions - its root.\nRetrieve 5 out message ids from the transaction for next steps.\n2. Retrieve 5 messages and corresponding transactions on the 2nd layer. Put them into result.\nRetrieve 5*5 out message ids from these transactions for next steps\n3. Retrieve 20 (size of the page) messages and transactions (3rd layer) and 20*5=100 message ids (4th layer).\n4. Retrieve the last 5 messages and 5 transactions on the 3rd layer + 15 messages and transactions (of 100) from the 4th layer\n+ 25 message ids of the 4th layer + 75 message ids of the 5th layer.\n5. Retrieve 20 more messages and 20 more transactions of the 4th layer + 100 more message ids of the 5th layer.\n6. Now we have 1+5+20+20+20 = 66 transactions, which is more than 50. Function exits with the tree of\n1m->1t->5m->5t->25m->25t->35m->35t. If we see any message ids in the last transactions out_msgs, which don't have\ncorresponding messages in the function result, it means that the full tree was not received and we need to continue iteration.\n\nTo summarize, it is guaranteed that each message in `result.messages` has the corresponding transaction\nin the `result.transactions`.\nBut there is no guarantee that all messages from transactions `out_msgs` are\npresented in `result.messages`.\nSo the application has to continue retrieval for missing messages if it requires.",
           "params": [
             {
               "name": "context",
