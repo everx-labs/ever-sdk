@@ -1,66 +1,77 @@
-# Quick Start
+# Quick start
+
+## Quick Start
 
 Create your first DApp and run it on local blockchain
 
-- [Prerequisites](#prerequisites)
-- [Prepare development environment](#prepare-development-environment)
-- [Start local node (SE)](#start-local-node-se)
-- [Install demo application](#install-demo-application)
-- [Run it!](#run-it)
-- [Detailed sample explanation](#detailed-sample-explanation)
-- [Source code](#source-code)
+* [Prerequisites](quick_start.md#prerequisites)
+* [Prepare development environment](quick_start.md#prepare-development-environment)
+* [Start local node \(SE\)](quick_start.md#start-local-node-se)
+* [Install demo application](quick_start.md#install-demo-application)
+* [Run it!](quick_start.md#run-it)
+* [Detailed sample explanation](quick_start.md#detailed-sample-explanation)
+* [Source code](quick_start.md#source-code)
 
-# Prerequisites
+## Prerequisites
 
-Node.js latest version installed
-[Docker](https://www.docker.com/get-started) latest version installed
+Node.js latest version installed [Docker](https://www.docker.com/get-started) latest version installed
 
-# Prepare development environment
+## Prepare development environment
 
-Install [TONDEV CLI](https://github.com/tonlabs/tondev) that will help you easily start local node, compile your contracts, install demo projects and create new empty projects. 
+Install [TONDEV CLI](https://github.com/tonlabs/tondev) that will help you easily start local node, compile your contracts, install demo projects and create new empty projects.
 
-    $ npm install -g tondev
+```text
+$ npm install -g tondev
+```
 
-# Start local node (SE)
+## Start local node \(SE\)
 
-We will run our test on local blockchain for testing ([TON OS SE](https://github.com/tonlabs/tonos-se), start it with this command (docker should be launched). 
+We will run our test on local blockchain for testing \([TON OS SE](https://github.com/tonlabs/tonos-se), start it with this command \(docker should be launched\).
 
-    $ tondev se start
+```text
+$ tondev se start
+```
 
-# Install demo application
+## Install demo application
 
 Create a working folder. Then create a node.js demo project with TONDEV
 
-    $ tondev js demo hello-wallet
+```text
+$ tondev js demo hello-wallet
+```
 
-# Run it!
+## Run it!
 
-    $ cd hello-wallet
-    $ npm i
-    $ npm start
+```text
+$ cd hello-wallet
+$ npm i
+$ npm start
+```
 
 You will see the result of execution:
 
-    Hello localhost TON!
-    Future address of the contract will be: 0:c891d93061c4b3d7f77833b075674af527a6c3fce6fbb7dd1814b453842a5a84
-    Hello contract was deployed at address: 0:c891d93061c4b3d7f77833b075674af527a6c3fce6fbb7dd1814b453842a5a84
-    Contract run transaction with output null, de5fddc8814b350e6b6c8876c411935462eb1b88a96f9fa5dc176f021959ff38
-    Contract reacted to your getTimestamp: {
-      value0: '0x0000000000000000000000000000000000000000000000000000000060df2c77'
-    }
-    Contract reacted to your sendValue, target address will recieve: 99000000
+```text
+Hello localhost TON!
+Future address of the contract will be: 0:c891d93061c4b3d7f77833b075674af527a6c3fce6fbb7dd1814b453842a5a84
+Hello contract was deployed at address: 0:c891d93061c4b3d7f77833b075674af527a6c3fce6fbb7dd1814b453842a5a84
+Contract run transaction with output null, de5fddc8814b350e6b6c8876c411935462eb1b88a96f9fa5dc176f021959ff38
+Contract reacted to your getTimestamp: {
+  value0: '0x0000000000000000000000000000000000000000000000000000000060df2c77'
+}
+Contract reacted to your sendValue, target address will recieve: 99000000
+```
 
-# Detailed sample explanation
+## Detailed sample explanation
 
-Here is the script code and contract definition included in this sample. 
+Here is the script code and contract definition included in this sample.
 
-> This script is using high level sdk functions.  Check out the same [sample implemented with low-level sdk](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/hello-wallet). 
+> This script is using high level sdk functions. Check out the same [sample implemented with low-level sdk](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/hello-wallet).
 
-Read below a short description of what the script does.  Look for more detailed information in other guides.
+Read below a short description of what the script does. Look for more detailed information in other guides.
 
 Script code:
 
-```
+```text
 const { Account } = require("@tonclient/appkit");
 const { TonClient, signerKeys } = require("@tonclient/core");
 const { libNode } = require("@tonclient/lib-node");
@@ -147,7 +158,7 @@ async function main(client) {
 
 HelloWallet.js:
 
-```
+```text
 module.exports = {
     HelloWallet: {
         abi: {
@@ -213,12 +224,12 @@ module.exports = {
 }
 ```
 
-HelloWallet.js contains artifacts received from contract compilation. Read more [here](installation/3_add_contract_to_your_app.md). 
+HelloWallet.js contains artifacts received from contract compilation. Read more [here](installation/3_add_contract_to_your_app.md).
 
 The script implements the following logic:
 
 1. Links the project with Node.js [TON-SDK](https://github.com/tonlabs/TON-SDK) binary. If you plan to use JS SDK in Web, link it with Wasm binary. Read more [here](https://github.com/tonlabs/ton-client-js). 
-2. `TONClient` instance is created and initialized with [TON OS SE](https://github.com/tonlabs/tonos-se) ("http://localhost", local blockchain) endpoint.  See the list of other available [endpoints](../docs/api/1_networks.md).
+2. `TONClient` instance is created and initialized with [TON OS SE](https://github.com/tonlabs/tonos-se) \("[http://localhost](http://localhost)", local blockchain\) endpoint.  See the list of other available [endpoints](../docs/ton_os_api/1_networks.md).
 3. new `Account` type object is initialized with a generated key pair, `HelloWallet` object and client object. Read more about Account initialization [here](work_with_contracts/1_deploy.md).
 4. Future address of the contract is calculated and printed to console.
 5. `deploy` function is used to deploy the contract.  Flag `useGiver: true` allows to sponsor deploy with TON OS SE giver that is hard coded as the default Account giver. [You can re-assign it to your own giver](work_with_contracts/1_deploy.md#transfer-funds-to-the-future-address). 
@@ -226,11 +237,9 @@ The script implements the following logic:
 7. `runLocal` function is used to tun get method `getTimestamp` is executed off-chain - locally to read the contract's data. 
 8. `run` function is used to execute contract function `sendValue` on-chain to send some tokens to a randomly generated address.
 
+## Source code
 
-# Source code
+You can find source code of this sample here
 
-You can find source code of this sample here 
-
-https://github.com/tonlabs/sdk-samples/tree/master/demo/hello-wallet
-
+[https://github.com/tonlabs/sdk-samples/tree/master/demo/hello-wallet](https://github.com/tonlabs/sdk-samples/tree/master/demo/hello-wallet)
 

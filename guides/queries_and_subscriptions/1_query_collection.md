@@ -1,29 +1,30 @@
-# Query collection
+# Query Collection
+
+## Query collection
 
 Query blockchain data collections: filter, sort
 
-# What is a collection?
+## What is a collection?
 
-There are a few collections with blockchain data: 
+There are a few collections with blockchain data:
 
-- *accounts*: blockchain account data;
-- *transactions*: transactions related to accounts;
-- *messages*: input and output messages related to transactions;
-- *blocks*: blockchain blocks.
-- *block_signatures* : validator block signatures
+* _accounts_: blockchain account data;
+* _transactions_: transactions related to accounts;
+* _messages_: input and output messages related to transactions;
+* _blocks_: blockchain blocks.
+* _block\_signatures_ : validator block signatures
 
-The JS Client Library contains the Query Module called `net` - a wrapper for [TON Labs GraphQL API](../../docs/ton_os_api.md) - to perform GraphQL queries over a blockchain. 
+The JS Client Library contains the Query Module called `net` - a wrapper for [TON Labs GraphQL API](../../docs/ton_os_api/) - to perform GraphQL queries over a blockchain.
 
 [Use `query_collection` method to query data that can be filtered and sorted](../../docs/mod_net.md#query_collection).
 
-
-
-# Sample source code
+## Sample source code
 
 **Core**
 
-https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/query
+[https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/query](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/query)
 
 **AppKit**
 
-https://github.com/tonlabs/sdk-samples/tree/master/appkit-examples/query
+[https://github.com/tonlabs/sdk-samples/tree/master/appkit-examples/query](https://github.com/tonlabs/sdk-samples/tree/master/appkit-examples/query)
+

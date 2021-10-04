@@ -1,15 +1,18 @@
 # Error API
 
+## Error API
+
 SDK Error API
 
-- [TONClientError](#tonclienterror)
-  - [Properties](#properties)
-- [Types](#types)
-  - [ErrorData](#errordata)
-- [Error example](#error-example)
+* [TONClientError](error_api.md#tonclienterror)
+  * [Properties](error_api.md#properties)
+* [Types](error_api.md#types)
+  * [ErrorData](error_api.md#errordata)
+* [Error example](error_api.md#error-example)
 
-# TONClientError
-## Properties
+## TONClientError
+
+### Properties
 
 **code: number**
 
@@ -23,43 +26,44 @@ Error description
 
 Additional data provided with error. All the fields in `ErrorData` are optional and their presence depends on the error code.
 
-# Types
-## ErrorData
+## Types
+
+### ErrorData
 
 All the fields in `ErrorData` are optional and their presence depends on the error code.
 
-```
+```text
 {
-	message_id?: string,
-	shard_block_id?: string
-	core_version?: string,
-	waiting_expiration_time?:string,
-	block_time?: string,
-	phase?: string
-	exit_code
-	exit_arg
-	account_address?: string
-	local_error: ErrorData
+    message_id?: string,
+    shard_block_id?: string
+    core_version?: string,
+    waiting_expiration_time?:string,
+    block_time?: string,
+    phase?: string
+    exit_code
+    exit_arg
+    account_address?: string
+    local_error: ErrorData
 }
 ```
 
-**message_id**
+**message\_id**
 
 Message id
 
-**shard_block_id**
+**shard\_block\_id**
 
 The last shardchain block of the account received before the error occurred.
 
-**core_version**
+**core\_version**
 
 Core library binary version used
 
-**waiting_expiration_time**
+**waiting\_expiration\_time**
 
 Message expiration time.
 
-**block_time**
+**block\_time**
 
 Creation time of the last shardchain block of the account received before the error occurred.
 
@@ -67,30 +71,29 @@ Creation time of the last shardchain block of the account received before the er
 
 Transaction execution phase when contract execution was aborted
 
-**exit_code**
+**exit\_code**
 
 Exit code of exception thrown by the aborted contract execution
 
-**exit_arg**
+**exit\_arg**
 
 Exit args provided along with exit code
 
-**account_address**
+**account\_address**
 
 Address of the account
 
-**local_error: ErrorData**
+**local\_error: ErrorData**
 
 Result of local transaction emulation performed after the message was not successfully delivered.
 
+## Error example
 
-# Error example
+Here you can see an error returned by process\_message function when message was not delivered to the blockchain and got expired \(code 507\).
 
-Here you can see an error returned by process_message function when message was not delivered to the blockchain and got expired (code 507). 
+In such cases SDK emulated the same transaction locally and here it got a local\_error with possible reason - wrong signature - exit code = 40.
 
-In such cases SDK emulated the same transaction locally and here it got a local_error with possible reason - wrong signature - exit code = 40.
-
-```
+```text
 {
   "code": 507,
   "message": "Message expired. Possible reason: Contract execution was terminated with error: Contract did not accept message, exit code: 40 (Invalid signature). Check sign keys. For more information about exit code check the contract source code or ask the contract developer",
@@ -115,3 +118,4 @@ In such cases SDK emulated the same transaction locally and here it got a local_
   }
 }
 ```
+

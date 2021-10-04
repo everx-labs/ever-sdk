@@ -1,57 +1,57 @@
 # Error Codes
 
+## Error Codes
+
 You can find error codes with descriptions on this page
 
-- [SDK Errors](#sdk-errors)
-- [Solidity Runtime Errors](#solidity-runtime-errors)
-- [TON Virtual Machine Runtime Errors](#ton-virtual-machine-runtime-errors)
-  - [Action phase errors](#action-phase-errors)
+* [SDK Errors](error_codes.md#sdk-errors)
+* [Solidity Runtime Errors](error_codes.md#solidity-runtime-errors)
+* [TON Virtual Machine Runtime Errors](error_codes.md#ton-virtual-machine-runtime-errors)
+  * [Action phase errors](error_codes.md#action-phase-errors)
 
-# SDK Errors
+## SDK Errors
 
-[Client Error codes (1-99)](mod_client.md#clienterrorcode)
+[Client Error codes \(1-99\)](mod_client.md#clienterrorcode)
 
-[Crypto Error codes (100-199)](mod_crypto.md#CryptoErrorCode)
+[Crypto Error codes \(100-199\)](mod_crypto.md#CryptoErrorCode)
 
-[Boc error codes(200-299)](mod_boc.md#BocErrorCode)
+[Boc error codes\(200-299\)](mod_boc.md#BocErrorCode)
 
-[Abi Error codes (300-399)](mod_abi.md#AbiErrorCode)
+[Abi Error codes \(300-399\)](mod_abi.md#AbiErrorCode)
 
-[TVM Error codes (400-499)](mod_tvm.md#TvmErrorCode)
+[TVM Error codes \(400-499\)](mod_tvm.md#TvmErrorCode)
 
-[Processing Error codes (500-599)](mod_processing.md#ProcessingErrorCode)
+[Processing Error codes \(500-599\)](mod_processing.md#ProcessingErrorCode)
 
-[Net Error Codes (600-699)](mod_net.md#NetErrorCode)
+[Net Error Codes \(600-699\)](mod_net.md#NetErrorCode)
 
-[DeBot Error Codes (800-899)](mod_debot.md#DebotErrorCode)
+[DeBot Error Codes \(800-899\)](mod_debot.md#DebotErrorCode)
 
+## Solidity Runtime Errors
 
-# Solidity Runtime Errors
+[https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md\#solidity-runtime-errors](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#solidity-runtime-errors)
 
-https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#solidity-runtime-errors
+## TON Virtual Machine Runtime Errors
 
+`0` TVM terminated successfully
 
-# TON Virtual Machine Runtime Errors
+`-2` TVM terminated successfully: alternative code
 
-`0`	TVM terminated successfully
+`-3` Stack underflow
 
-`-2`	TVM terminated successfully:  alternative code
+`-4` Stack overflow
 
-`-3`	Stack underflow
+`-5` Integer overflow
 
-`-4`	Stack overflow
+`-6` Range check error
 
-`-5`	Integer overflow
+`-7` Invalid opcode
 
-`-6`	Range check error
+`-8` Type check error
 
-`-7`	Invalid opcode
+`-9` Cell overflow
 
-`-8`	Type check error
-
-`-9`	Cell overflow
-
-`-10`	Cell underflow
+`-10` Cell underflow
 
 `-11` Dictionary error
 
@@ -61,27 +61,27 @@ https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#solidity-run
 
 `-14` Out of gas: the contract is either low on gas, or its limit is exceeded
 
+### Action phase errors
 
-## Action phase errors
+`32` Action list invalid
 
-`32`   Action list invalid
+`33` Too many actions
 
-`33`   Too many actions
+`34` Unsupported action
 
-`34`   Unsupported action
+`35` Invalid source address
 
-`35`   Invalid source address
+`36` Invalid destination address
 
-`36`   Invalid destination address
+`37` Too low balance to send outbound message \(37\) at action
 
-`37`   Too low balance to send outbound message (37) at action
+`38` Too low extra to send outbound message \(38\) at action
 
-`38`   Too low extra to send outbound message (38) at action
+`39` Message does not fit in buffer
 
-`39`   Message does not fit in buffer
+`40` Message too large
 
-`40`   Message too large
+`41` Library not found
 
-`41`   Library not found
+`42` Library delete error
 
-`42`   Library delete error

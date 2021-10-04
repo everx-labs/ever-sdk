@@ -1,15 +1,17 @@
 # Run ABI Get Method
 
+## Run ABI Get Method
+
 Run ABI compatible get methods
 
-- [Run get method](#run-get-method)
-- [Source code](#source-code)
+* [Run get method](3_run_abi_get_method.md#run-get-method)
+* [Source code](3_run_abi_get_method.md#source-code)
 
-# Run get method
+## Run get method
 
 With low level SDK get method is executed in 3 steps:
 
-1. Download the latest Account State (BOC)
+1. Download the latest Account State \(BOC\)
 2. Encode message that calls the method
 3. Execute the message locally on the downloaded state:
 
@@ -19,7 +21,7 @@ Here is the sample that executes the get method `getTimestamp` on the latest acc
 2. message that calls contract's function `getTimestamp` is encoded with `encode_message` function
 3. message is executed on local TVM with `run_local` method
 
-```
+```text
     // Execute the get method `getTimestamp` on the latest account's state
     // This can be managed in 3 steps:
     // 1. Download the latest Account State (BOC)
@@ -58,8 +60,9 @@ Here is the sample that executes the get method `getTimestamp` on the latest acc
     console.log('Contract reacted to your getTimestamp:', response.decoded.output);
 ```
 
-# Source code
+## Source code
 
-https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js
+[https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js)
 
 Check out [AppKit documentation](https://github.com/tonlabs/appkit-js/blob/main/docs/guides/3_run_abi_get_method_with_appkit.md) for this use case.
+
