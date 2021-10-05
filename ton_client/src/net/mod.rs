@@ -63,9 +63,10 @@ mod server_link;
 pub(crate) mod subscriptions;
 mod ton_gql;
 pub(crate) mod transaction_tree;
-mod types;
+pub(crate) mod types;
 mod websocket_link;
 
+#[cfg(not(feature = "wasm"))]
 #[cfg(test)]
 mod tests;
 

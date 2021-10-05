@@ -41,6 +41,7 @@ use tokio::sync::{
     oneshot::{channel, Sender},
     Mutex,
 };
+use crate::json_interface::runtime::Runtime;
 
 mod common;
 
@@ -706,6 +707,11 @@ impl TestClient {
         )
         .await
         .unwrap();
+    }
+
+    pub fn context(&self) -> Arc<ClientContext> {
+        Runtime::required_context(self.context)
+            .expect("Unable to get current ClientContext by handle")
     }
 }
 

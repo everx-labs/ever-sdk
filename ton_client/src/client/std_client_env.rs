@@ -253,15 +253,14 @@ impl ClientEnv {
         })
     }
 
-    /// Read value by a given key from the local storage
-    pub async fn read_local_storage(
-        &self,
+    /// Read binary value by a given key from the local storage
+    pub async fn bin_read_local_storage(
         local_storage_path: &Option<String>,
-        key: &str
-    ) -> ClientResult<Option<String>> {
+        key: &str,
+    ) -> ClientResult<Option<Vec<u8>>> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
-        match tokio::fs::read_to_string(&path).await {
+        match tokio::fs::read(&path).await {
             Ok(value) => Ok(Some(value)),
             Err(err) => if err.kind() == std::io::ErrorKind::NotFound {
                 Ok(None)
@@ -271,12 +270,22 @@ impl ClientEnv {
         }
     }
 
-    /// Write value by a given key into the local storage
-    pub async fn write_local_storage(
-        &self,
+    /// Read string value by a given key from the local storage
+    pub async fn read_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
-        value: &str
+    ) -> ClientResult<Option<String>> {
+        Self::bin_read_local_storage(local_storage_path, key).await
+            .map(|opt| opt.map(|vec| String::from_utf8(vec)))?
+            .transpose()
+            .map_err(|err| Error::internal_error(err))
+    }
+
+    /// Write binary value by a given key into the local storage
+    pub async fn bin_write_local_storage(
+        local_storage_path: &Option<String>,
+        key: &str,
+        value: &[u8],
     ) -> ClientResult<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
@@ -289,11 +298,19 @@ impl ClientEnv {
             .map_err(|err| Error::internal_error(err))
     }
 
+    /// Write string value by a given key into the local storage
+    pub async fn write_local_storage(
+        local_storage_path: &Option<String>,
+        key: &str,
+        value: &str,
+    ) -> ClientResult<()> {
+        Self::bin_write_local_storage(local_storage_path, key, value.as_bytes()).await
+    }
+
     /// Remove value by a given key out of the local storage
     pub async fn remove_local_storage(
-        &self,
         local_storage_path: &Option<String>,
-        key: &str
+        key: &str,
     ) -> ClientResult<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 

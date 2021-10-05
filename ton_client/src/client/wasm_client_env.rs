@@ -342,7 +342,7 @@ impl ClientEnv {
         Ok(Self::calc_storage_path(local_storage_path, key))
     }
 
-    fn local_storage(&self) -> ClientResult<Storage> {
+    fn local_storage() -> ClientResult<Storage> {
         let window = web_sys::window()
             .ok_or_else(|| Error::internal_error("Can not get `window` object"))?;
         window.local_storage()
@@ -396,40 +396,57 @@ impl ClientEnv {
         .await?
     }
 
-    /// Read value by a given key from the local storage
-    pub async fn read_local_storage(
-        &self,
+    /// Read binary value by a given key from the local storage
+    pub async fn bin_read_local_storage(
         local_storage_path: &Option<String>,
-        key: &str
+        key: &str,
+    ) -> ClientResult<Option<Vec<u8>>> {
+        Ok(Self::read_local_storage(local_storage_path, key).await?
+            .map(|content_base64| crate::encoding::base64_decode(&content_base64))
+            .transpose()?)
+    }
+
+    /// Read string value by a given key from the local storage
+    pub async fn read_local_storage(
+        local_storage_path: &Option<String>,
+        key: &str,
     ) -> ClientResult<Option<String>> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
-        self.local_storage()?.get_item(&path)
-            .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
+        Ok(Self::local_storage()?.get_item(&path)
+               .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))?)
     }
 
-    /// Write value by a given key into the local storage
-    pub async fn write_local_storage(
-        &self,
+    /// Write binary value by a given key into the local storage
+    pub async fn bin_write_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
-        value: &str
+        value: &[u8],
+    ) -> ClientResult<()> {
+        Self::write_local_storage(local_storage_path, key, &base64::encode(value)).await
+    }
+
+    /// Write string value by a given key into the local storage
+    pub async fn write_local_storage(
+        local_storage_path: &Option<String>,
+        key: &str,
+        value: &str,
     ) -> ClientResult<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
-        self.local_storage()?.set_item(&path, value)
+        Self::local_storage()?.set_item(&path, value)
             .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
     }
 
     /// Remove value by a given key out of the local storage
+    #[allow(dead_code)]
     pub async fn remove_local_storage(
-        &self,
         local_storage_path: &Option<String>,
-        key: &str
+        key: &str,
     ) -> ClientResult<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
-        self.local_storage()?.remove_item(&path)
+        Self::local_storage()?.remove_item(&path)
             .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
     }
 }

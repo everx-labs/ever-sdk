@@ -23,12 +23,14 @@ mod wasm_client_env;
 #[cfg(feature = "wasm")]
 pub(crate) use wasm_client_env::ClientEnv;
 
+#[cfg(not(feature = "wasm"))]
 #[cfg(test)]
 pub(crate) use crate::client::network_mock::{NetworkMock};
 
 #[cfg(test)]
 mod tests;
 
+#[cfg(not(feature = "wasm"))]
 #[cfg(test)]
 mod network_mock;
 
@@ -36,7 +38,7 @@ pub use client::{ClientConfig, ClientContext};
 pub use errors::{Error, ErrorCode};
 
 pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket};
-pub(crate) use client::AppObject;
+pub(crate) use client::{AppObject, NetworkUID};
 
 use crate::error::ClientResult;
 use crate::json_interface::runtime::Runtime;
@@ -46,7 +48,7 @@ use std::sync::Arc;
 pub(crate) const LOCAL_STORAGE_DEFAULT_DIR_NAME: &str = ".tonclient";
 
 lazy_static! {
-    static ref KEY_FORMAT_RE: regex::Regex = regex::Regex::new("^[a-zA-Z_][a-zA-Z0-9_]*$").unwrap();
+    static ref KEY_FORMAT_RE: regex::Regex = regex::Regex::new(r#"^[a-zA-Z0-9_\./]+?$"#).unwrap();
 }
 
 pub(crate) fn is_storage_key_correct(key: &str) -> bool {

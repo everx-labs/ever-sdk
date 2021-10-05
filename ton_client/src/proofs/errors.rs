@@ -4,7 +4,9 @@ use crate::error::ClientError;
 
 #[derive(ApiType)]
 pub enum ErrorCode {
-    InvalidData = 1,
+    InvalidData = 901,
+    UnableToResolveZeroStateRootHash = 902,
+    UnableToResolveTrustedKeyBlock = 903,
 }
 
 pub struct Error;
@@ -18,6 +20,23 @@ impl Error {
         error(
             ErrorCode::InvalidData,
             format!("Invalid data: {}", err),
+        )
+    }
+
+    pub fn unable_to_resolve_zerostate_root_hash(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::UnableToResolveZeroStateRootHash,
+            format!("Unable to resolve zerostate's root hash: {}", err),
+        )
+    }
+
+    pub fn unable_to_resolve_trusted_key_block(zerostate_root_hash: &str) -> ClientError {
+        error(
+            ErrorCode::UnableToResolveTrustedKeyBlock,
+            format!(
+                "Unable to resolve trusted key-block for network with zerostate root_hash: `{}`",
+                zerostate_root_hash,
+            ),
         )
     }
 }

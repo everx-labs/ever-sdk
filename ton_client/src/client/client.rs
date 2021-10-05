@@ -42,10 +42,17 @@ pub struct Boxes {
     pub(crate) encryption_boxes: LockfreeMap<u32, Box<dyn EncryptionBox + Send + Sync>>,
 }
 
+#[derive(Debug)]
+pub(crate) struct NetworkUID {
+    pub(crate) zerostate_root_hash: String,
+    pub(crate) first_master_block_root_hash: String,
+}
+
 pub struct NetworkContext {
     pub(crate) server_link: Option<ServerLink>,
     pub(crate) subscriptions: Mutex<HashMap<u32, mpsc::Sender<SubscriptionAction>>>,
     pub(crate) iterators: Mutex<HashMap<u32, Arc<Mutex<Box<dyn ChainIterator + Send + Sync>>>>>,
+    pub(crate) network_uid: RwLock<Option<Arc<NetworkUID>>>,
 }
 
 pub struct ClientContext {
@@ -98,6 +105,7 @@ Note that default values are used if parameters are omitted in config"#,
                 server_link,
                 subscriptions: Default::default(),
                 iterators: Default::default(),
+                network_uid: Default::default(),
             },
             env,
             debots: LockfreeMap::new(),
@@ -162,7 +170,15 @@ pub struct ClientConfig {
     pub local_storage_path: Option<String>,
 
     /// Cache proofs in the local storage. Default is `true`.
-    pub cache_proofs: Option<bool>,
+    #[serde(
+        default = "default_cache_proofs",
+        deserialize_with = "deserialize_cache_proofs"
+    )]
+    pub cache_proofs: bool,
+}
+
+fn default_cache_proofs() -> bool {
+    true
 }
 
 fn deserialize_network_config<'de, D: Deserializer<'de>>(
@@ -189,6 +205,12 @@ fn deserialize_boc_config<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
 }
 
+fn deserialize_cache_proofs<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<bool, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_cache_proofs()))
+}
+
 impl Default for ClientConfig {
     fn default() -> Self {
         Self {
@@ -197,7 +219,7 @@ impl Default for ClientConfig {
             abi: Default::default(),
             boc: Default::default(),
             local_storage_path: Default::default(),
-            cache_proofs: Default::default(),
+            cache_proofs: default_cache_proofs(),
         }
     }
 }

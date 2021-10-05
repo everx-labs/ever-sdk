@@ -5,11 +5,12 @@ use std::fmt::{Display, Formatter};
 use ed25519_dalek::Digest;
 use failure::bail;
 use ton_block::{
-    BlockSignaturesPure, CatchainConfig, ConfigParams, CryptoSignaturePair, Deserializable,
-    UnixTime32, ValidatorDescr, ValidatorSet, WorkchainDescr, Workchains,
+    CatchainConfig, ConfigParams, UnixTime32, ValidatorDescr, ValidatorSet, WorkchainDescr,
+    Workchains,
 };
-use ton_types::HashmapType;
 use ton_types::Result;
+
+use crate::proofs::Signatures;
 
 pub(crate) fn calc_workchain_id(descr: &ValidatorDescr) -> i32 {
     calc_workchain_id_by_adnl_id(descr.compute_node_id_short().as_slice())
@@ -144,7 +145,7 @@ impl Display for KeyId {
 }
 
 pub fn check_crypto_signatures(
-    signatures: &BlockSignaturesPure,
+    signatures: &Signatures,
     validators_list: &[ValidatorDescr],
     data: &[u8],
 ) -> Result<u64> {
@@ -155,8 +156,7 @@ pub fn check_crypto_signatures(
     }).collect::<HashMap<_, _>>();
     // Check signatures
     let mut weight = 0;
-    signatures.signatures().iterate_slices(|_key, ref mut slice| {
-        let sign = CryptoSignaturePair::construct_from(slice)?;
+    for sign in signatures.pure_signatures() {
         let key = KeyId::from_data(sign.node_id_short.inner());
         if let Some(vd) = validators_map.get(&key) {
             if !vd.public_key.verify_signature(data, &sign.sign) {
@@ -164,7 +164,7 @@ pub fn check_crypto_signatures(
             }
             weight += vd.weight;
         }
-        Ok(true)
-    })?;
+    }
+
     Ok(weight)
 }
