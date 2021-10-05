@@ -265,7 +265,7 @@ async fn query_next_portion(
 
 /// Returns a tree of transactions triggered by a specific message.
 ///
-/// Performs recursive retrieval of the transactions tree produced by the specific message:
+/// Performs recursive retrieval of a transactions tree produced by a specific message:
 /// in_msg -> dst_transaction -> out_messages -> dst_transaction -> ...
 /// If the chain of transactions execution is in progress while the function is running,
 /// it will wait for the next transactions to appear until the full tree or more than 50 transactions
