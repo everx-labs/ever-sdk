@@ -190,7 +190,9 @@ Result:
 
 Video tutorial - GraphQL: Joined Blocks, OR Operator, Aggregations
 
-[https://www.youtube.com/watch?v=8dNAv5vsYRI](https://www.youtube.com/watch?v=8dNAv5vsYRI)
+{% embed url="https://www.youtube.com/watch?v=8dNAv5vsYRI" %}
+
+
 
 ## Subscription
 
