@@ -16,9 +16,13 @@ Also check other documents in this section.
 
 Video tutorial - Using GraphQL Playground
 
-[https://www.youtube.com/watch?v=ZQJpd0vJCgA](https://www.youtube.com/watch?v=ZQJpd0vJCgA)
+{% embed url="https://www.youtube.com/watch?v=ZQJpd0vJCgA" %}
+
+
 
 Video tutorial - GraphQL: Joined Blocks, OR Operator, Aggregations
 
-[https://www.youtube.com/watch?v=8dNAv5vsYRI](https://www.youtube.com/watch?v=8dNAv5vsYRI)
+{% embed url="https://www.youtube.com/watch?v=8dNAv5vsYRI" %}
+
+
 
