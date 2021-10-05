@@ -170,13 +170,15 @@ pub struct ClientConfig {
     pub local_storage_path: Option<String>,
 
     /// Cache proofs in the local storage. Default is `true`.
-    pub cache_proofs: Option<bool>,
+    #[serde(
+        default = "default_cache_proofs",
+        deserialize_with = "deserialize_cache_proofs"
+    )]
+    pub cache_proofs: bool,
 }
 
-impl ClientConfig {
-    pub fn cache_proofs(&self) -> bool {
-        self.cache_proofs.unwrap_or(true)
-    }
+fn default_cache_proofs() -> bool {
+    true
 }
 
 fn deserialize_network_config<'de, D: Deserializer<'de>>(
@@ -201,6 +203,12 @@ fn deserialize_boc_config<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<BocConfig, D::Error> {
     Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
+}
+
+fn deserialize_cache_proofs<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<bool, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_cache_proofs()))
 }
 
 impl Default for ClientConfig {
