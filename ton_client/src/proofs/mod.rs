@@ -300,17 +300,7 @@ impl BlockProof {
     }
 
     fn pre_check_block_proof(&self) -> Result<(Block, BlockInfo)> {
-        let (virt_block, virt_block_root) = self.virtualize_block()?;
-
-        if virt_block_root.repr_hash() != self.id().root_hash() {
-            bail!(
-                "proof for block {} contains a Merkle proof with incorrect root hash: \
-                    expected {}, found: {} ",
-                self.id(),
-                self.id().root_hash(),
-                virt_block_root.repr_hash(),
-            )
-        }
+        let (virt_block, _virt_block_root) = self.virtualize_block()?;
 
         let info = virt_block.read_info()?;
         let _value_flow = virt_block.read_value_flow()?;

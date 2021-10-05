@@ -236,7 +236,7 @@ pub struct NetworkConfig {
 
     /// Maximum value for the endpoint's blockchain data syncronization latency (time-lag).
     /// Library periodically checks the current endpoint for blockchain
-    /// data syncronization latency.
+    /// data synchronization latency.
     /// If the latency (time-lag) is less then `NetworkConfig.max_latency`
     /// then library selects another endpoint.
     ///

@@ -4,9 +4,9 @@ use crate::error::ClientError;
 
 #[derive(ApiType)]
 pub enum ErrorCode {
-    InvalidData = 1,
-    UnableToResolveZeroStateRootHash = 2,
-    UnableToResolveTrustedKeyBlock = 3,
+    InvalidData = 901,
+    UnableToResolveZeroStateRootHash = 902,
+    UnableToResolveTrustedKeyBlock = 903,
 }
 
 pub struct Error;

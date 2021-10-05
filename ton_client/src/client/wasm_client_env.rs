@@ -402,9 +402,8 @@ impl ClientEnv {
         key: &str,
     ) -> ClientResult<Option<Vec<u8>>> {
         Ok(Self::read_local_storage(local_storage_path, key).await?
-            .map(|content_base64| base64::decode(&content_base64))
-            .transpose()
-            .map_err(|err| Error::internal_error(err))?)
+            .map(|content_base64| crate::encoding::base64_decode(&content_base64))
+            .transpose()?)
     }
 
     /// Read string value by a given key from the local storage
