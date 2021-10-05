@@ -219,7 +219,7 @@ impl Default for ClientConfig {
             abi: Default::default(),
             boc: Default::default(),
             local_storage_path: Default::default(),
-            cache_proofs: Default::default(),
+            cache_proofs: default_cache_proofs(),
         }
     }
 }
