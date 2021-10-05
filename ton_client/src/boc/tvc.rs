@@ -11,16 +11,18 @@
 * limitations under the License.
 */
 
+use ton_block::{Number5, StateInit, StateInitLib, TickTock};
 use ton_types::{BuilderData, Cell, SliceData};
 
-use crate::boc::internal::{deserialize_cell_from_boc, deserialize_object_from_boc, serialize_cell_to_boc};
+use crate::boc::internal::{deserialize_cell_from_boc, deserialize_object_from_boc, serialize_cell_to_boc, serialize_object_to_boc};
 use crate::boc::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 
 use super::BocCacheType;
 
-const OLD_SELECTOR_DATA: &[u8] = &[0xff, 0x00, 0x20, 0xc1, 0x01, 0xf4, 0xa4, 0x20, 0x58, 0x92, 0xf4, 0xa0, 0xe0, 0x5f, 0x02, 0x8a, 0x20, 0xed, 0x53, 0xd9, 0x80];
+const OLD_CPP_SELECTOR_DATA: &[u8] = &[0xff, 0x00, 0x20, 0xc1, 0x01, 0xf4, 0xa4, 0x20, 0x58, 0x92, 0xf4, 0xa0, 0xe0, 0x5f, 0x02, 0x8a, 0x20, 0xed, 0x53, 0xd9, 0x80];
+const OLD_SOL_SELECTOR_DATA: &[u8] = &[0xff, 0x00, 0xf4, 0xa4, 0x20, 0x22, 0xc0, 0x01, 0x92, 0xf4, 0xa0, 0xe1, 0x8a, 0xed, 0x53, 0x58, 0x30, 0xf4, 0xa1, 0x80];
 const NEW_SELECTOR_DATA: &[u8] = &[0x8a, 0xed, 0x53, 0x20, 0xe3, 0x03, 0x20, 0xc0, 0xff, 0xe3, 0x02, 0x20, 0xc0, 0xfe, 0xe3, 0x02, 0xf2, 0x0b, 0x80];
 const MYCODE_SELECTOR_DATA: &[u8] = &[0x8A, 0xDB, 0x35, 0x80];
 
@@ -55,7 +57,7 @@ fn get_old_selector_salt(code: &Cell) -> ClientResult<Option<Cell>> {
     Ok(code.reference(2).ok())
 }
 
-fn get_new_selector_salt(code: &Cell) -> ClientResult<Option<Cell>> {
+fn get_new_selector_salt_and_ver(code: &Cell) -> ClientResult<(Option<Cell>, Cell)> {
     let mut private_selector: SliceData = code.reference(0)
         .map_err(|_| Error::invalid_boc("no private functions selector in new selector"))?
         .into();
@@ -63,18 +65,30 @@ fn get_new_selector_salt(code: &Cell) -> ClientResult<Option<Cell>> {
         return Err(Error::invalid_boc("invalid private functions selector data"))
     }
     private_selector.get_dictionary_opt();
-    Ok(private_selector.reference_opt(1))
+    let version = private_selector.reference_opt(0)
+        .ok_or_else(|| Error::invalid_boc("no compiler version in contract code"))?;
+    Ok((private_selector.reference_opt(1), version))
 }
 
-fn get_mycode_selector_salt(code: &Cell) -> ClientResult<Option<Cell>> {
+fn get_mycode_selector_salt_and_ver(code: &Cell) -> ClientResult<(Option<Cell>, Cell)> {
     let new_selector = code.reference(1)
         .map_err(|_| Error::invalid_boc("no new selector in mycode selector"))?;
-    get_new_selector_salt(&new_selector)
+    get_new_selector_salt_and_ver(&new_selector)
+}
+
+pub fn get_salt_and_ver(code: Cell) -> ClientResult<(Option<Cell>, Option<Cell>)> {
+    match code.data() {
+        OLD_CPP_SELECTOR_DATA => get_old_selector_salt(&code).map(|salt| (salt, None)),
+        OLD_SOL_SELECTOR_DATA => Ok((None, None)),
+        NEW_SELECTOR_DATA => get_new_selector_salt_and_ver(&code).map(|(salt, ver)| (salt, Some(ver))),
+        MYCODE_SELECTOR_DATA => get_mycode_selector_salt_and_ver(&code).map(|(salt, ver)| (salt, Some(ver))),
+        _ => Err(Error::invalid_boc("unknown contract type")),
+    }
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfGetCodeSalt {
-    /// Contract code BOC encoded as base64 or image BOC handle
+    /// Contract code BOC encoded as base64 or code BOC handle
     pub code: String,
     /// Cache type to put the result.
     /// The BOC itself returned if no cache type provided.
@@ -95,12 +109,7 @@ pub async fn get_code_salt(
 ) -> ClientResult<ResultOfGetCodeSalt> {
     let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code").await?;
     
-    let salt = match code.data() {
-        OLD_SELECTOR_DATA => get_old_selector_salt(&code),
-        NEW_SELECTOR_DATA => get_new_selector_salt(&code),
-        MYCODE_SELECTOR_DATA => get_mycode_selector_salt(&code),
-        _ => Err(Error::invalid_boc("unknown contract type")),
-    }?;
+    let (salt, _) = get_salt_and_ver(code)?;
     
     let salt = if let Some(salt) = salt {
         Some(serialize_cell_to_boc(&context, salt, "code salt", params.boc_cache).await?)
@@ -137,7 +146,7 @@ fn set_new_selector_salt(code: Cell, salt: Cell) -> ClientResult<Cell> {
         .map_err(|_| Error::invalid_boc("no private functions selector in new selector"))?;
 
     let private_selector = set_salt(
-        private_selector, salt, get_new_selector_salt(&code)?.is_some()
+        private_selector, salt, get_new_selector_salt_and_ver(&code)?.0.is_some()
     )?;
 
     let mut builder: BuilderData = code.into();
@@ -157,7 +166,7 @@ fn set_mycode_selector_salt(code: Cell, salt: Cell) -> ClientResult<Cell> {
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfSetCodeSalt {
-    /// Contract TVC image BOC encoded as base64 or image BOC handle
+    /// Contract code BOC encoded as base64 or code BOC handle
     pub code: String,
     /// Code salt to set. BOC encoded as base64 or BOC handle
     pub salt: String,
@@ -182,13 +191,166 @@ pub async fn set_code_salt(
     let (_, salt) = deserialize_cell_from_boc(&context, &params.salt, "salt").await?;
     
     let code = match code.data() {
-        OLD_SELECTOR_DATA => set_old_selector_salt(code, salt),
+        OLD_CPP_SELECTOR_DATA => set_old_selector_salt(code, salt),
         NEW_SELECTOR_DATA => set_new_selector_salt(code, salt),
         MYCODE_SELECTOR_DATA => set_mycode_selector_salt(code, salt),
+        OLD_SOL_SELECTOR_DATA => Err(Error::invalid_boc("the contract doesn't support salt adding")),
         _ => Err(Error::invalid_boc("unknown contract type")),
     }?;
     
     Ok(ResultOfSetCodeSalt { 
         code: serialize_cell_to_boc(&context, code, "contract code", params.boc_cache).await?
+    })
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default)]
+pub struct ParamsOfGetCompilerVersion {
+    /// Contract code BOC encoded as base64 or code BOC handle
+    pub code: String,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default)]
+pub struct ResultOfGetCompilerVersion {
+    /// Compiler version from contract code
+    pub version: Option<String>,
+}
+
+/// Returns contract code salt if present.
+#[api_function]
+pub async fn get_compiler_version(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfGetCompilerVersion,
+) -> ClientResult<ResultOfGetCompilerVersion> {
+    let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code").await?;
+    
+    let (_, version) = get_salt_and_ver(code)?;
+
+    let version = version.map(|cell| {
+        let bytes = cell.data();
+        String::from_utf8(bytes[..bytes.len() - 1].to_vec())
+            .map_err(|err| Error::invalid_boc(
+                format!("can not convert version cell to string: {}", err)))
+    })
+        .transpose()?;
+
+    Ok(ResultOfGetCompilerVersion { version })
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default)]
+pub struct ParamsOfEncodeTvc {
+    /// Contract code BOC encoded as base64 or BOC handle
+    pub code: Option<String>,
+    /// Contract data BOC encoded as base64 or BOC handle
+    pub data: Option<String>,
+    /// Contract library BOC encoded as base64 or BOC handle
+    pub library: Option<String>,
+    /// `special.tick` field. Specifies the contract ability to handle tick transactions
+    pub tick: Option<bool>,
+    /// `special.tock` field. Specifies the contract ability to handle tock transactions
+    pub tock: Option<bool>,
+    /// Is present and non-zero only in instances of large smart contracts
+    pub split_depth: Option<u32>,
+
+    /// Cache type to put the result.
+    /// The BOC itself returned if no cache type provided.
+    pub boc_cache: Option<BocCacheType>,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default)]
+pub struct ResultOfEncodeTvc {
+    /// Contract TVC image BOC encoded as base64 or BOC handle
+    pub tvc: String,
+}
+
+/// Sets new salt to contract code.
+#[api_function]
+pub async fn encode_tvc(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfEncodeTvc,
+) -> ClientResult<ResultOfEncodeTvc> {
+    let get_cell = |name, boc| {
+        let context = context.clone();
+        async move {
+            if let Some(boc) = boc {
+                deserialize_cell_from_boc(&context, boc, name).await.map(|val| Some(val.1))
+            } else {
+                Ok(None)
+            }
+    }};
+    let code = get_cell("code", params.code.as_deref()).await?;
+    let data = get_cell("data", params.data.as_deref()).await?;
+    let library = StateInitLib::with_hashmap(get_cell("library", params.library.as_deref()).await?);
+
+    let special = if params.tick.is_some() || params.tock.is_some() {
+        Some(TickTock {
+            tick: params.tick.unwrap_or_default(),
+            tock: params.tock.unwrap_or_default(),
+        })
+    } else {
+        None
+    };
+
+    let split_depth = params.split_depth.map(Number5);
+    
+    let state = StateInit { code, data, library, special, split_depth };
+    
+    Ok(ResultOfEncodeTvc { 
+        tvc: serialize_object_to_boc(&context, &state, "TVC", params.boc_cache).await?
+    })
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default)]
+pub struct ParamsOfDecodeTvc {
+    /// Contract TVC image BOC encoded as base64 or BOC handle
+    pub tvc: String,
+    /// Cache type to put the result.
+    /// The BOC itself returned if no cache type provided.
+    pub boc_cache: Option<BocCacheType>,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default, Debug, PartialEq)]
+pub struct ResultOfDecodeTvc {
+    /// Contract code BOC encoded as base64 or BOC handle
+    pub code: Option<String>,
+    /// Contract data BOC encoded as base64 or BOC handle
+    pub data: Option<String>,
+    /// Contract library BOC encoded as base64 or BOC handle
+    pub library: Option<String>,
+    /// `special.tick` field. Specifies the contract ability to handle tick transactions
+    pub tick: Option<bool>,
+    /// `special.tock` field. Specifies the contract ability to handle tock transactions
+    pub tock: Option<bool>,
+    /// Is present and non-zero only in instances of large smart contracts
+    pub split_depth: Option<u32>,
+}
+
+/// Sets new salt to contract code.
+#[api_function]
+pub async fn decode_tvc(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfDecodeTvc,
+) -> ClientResult<ResultOfDecodeTvc> {
+    let tvc = deserialize_object_from_boc::<StateInit>(&context, &params.tvc, "TVC").await?;
+
+    let serialize = |name, cell, boc_cache| {
+        let context = context.clone();
+        async move {
+            if let Some(cell) = cell {
+                serialize_cell_to_boc(&context, cell, name, boc_cache).await.map(Some)
+            } else {
+                Ok(None)
+            }
+    }};
+    let code = serialize("code", tvc.object.code, params.boc_cache.clone()).await?;
+    let data = serialize("data", tvc.object.data, params.boc_cache.clone()).await?;
+    let library = serialize("library", tvc.object.library.root().cloned(), params.boc_cache.clone()).await?;
+    
+    Ok(ResultOfDecodeTvc {
+        code,
+        data,
+        library,
+        tick: tvc.object.special.as_ref().map(|val| val.tick),
+        tock: tvc.object.special.as_ref().map(|val| val.tick),
+        split_depth: tvc.object.split_depth.map(|val| val.0),
     })
 }

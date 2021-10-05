@@ -18,6 +18,7 @@ pub(crate) mod decode_data;
 pub(crate) mod decode_message;
 pub(crate) mod encode_account;
 pub(crate) mod encode_message;
+pub(crate) mod init_data;
 
 mod errors;
 mod internal;
@@ -42,6 +43,10 @@ pub use encode_message::{
     ResultOfEncodeInternalMessage, ResultOfEncodeMessage, ResultOfEncodeMessageBody,
 };
 pub use errors::{Error, ErrorCode};
+pub use init_data::{
+    decode_initial_data, update_initial_data, ParamsOfDecodeInitialData, ParamsOfUpdateInitialData,
+    ResultOfDecodeInitialData, ResultOfUpdateInitialData,
+};
 pub use signing::Signer;
 pub use types::{
     Abi, AbiContract, AbiData, AbiEvent, AbiFunction, AbiHandle, AbiParam, FunctionHeader,

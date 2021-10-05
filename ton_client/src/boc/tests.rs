@@ -571,12 +571,12 @@ fn test_code_salt() {
     let client = TestClient::new();
 
     check_salt(&client,
-        "old_sel_nosalt.boc",
+        "old_cpp_sel_nosalt.boc",
         None,
         "te6ccgEBAQEAJAAAQ4AGPqCXQ2drhdqhLLt3rJ80LxA65YMTwgWLLUmt9EbElFA=",
         None);
     check_salt(&client,
-        "old_sel_salt.boc",
+        "old_cpp_sel_salt.boc",
         Some("te6ccgEBAQEAJAAAQ4AGPqCXQ2drhdqhLLt3rJ80LxA65YMTwgWLLUmt9EbElFA="),
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADk",
         None);
@@ -620,4 +620,102 @@ fn test_code_salt() {
         Some("te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACG"),
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADk",
         None);
+
+    let code = read_salted_boc("old_sol_sel.boc");
+    let result: ResultOfGetCodeSalt = client
+        .request(
+            "boc.get_code_salt",
+            ParamsOfGetCodeSalt {
+                code: code.clone(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    assert_eq!(result.salt, None);
+}
+
+fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeTvc) {
+    let result: ResultOfDecodeTvc = client
+        .request(
+            "boc.decode_tvc",
+            ParamsOfDecodeTvc {
+                tvc: tvc.clone(),
+                boc_cache: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(result, decoded);
+
+    let result: ResultOfEncodeTvc = client
+        .request(
+            "boc.encode_tvc",
+            ParamsOfEncodeTvc {
+                code: result.code,
+                data: result.data,
+                library: result.library,
+                split_depth: result.split_depth,
+                tick: result.tick,
+                tock: result.tock,
+                boc_cache: None
+            },
+        )
+        .unwrap();
+    assert_eq!(result.tvc, tvc);
+}
+
+#[test]
+fn test_tvc_encode() {
+    let client = TestClient::new();
+
+    let tvc = TestClient::tvc(crate::tests::GIVER_V2, Some(2));
+    let decoded = ResultOfDecodeTvc {
+        code: Some(String::from("te6ccgECFAEAA6EAAib/APSkICLAAZL0oOGK7VNYMPShAwEBCvSkIPShAgAAAgEgBgQB/P9/Ie1E0CDXScIBn9P/0wD0Bfhqf/hh+Gb4Yo4b9AVt+GpwAYBA9A7yvdcL//hicPhjcPhmf/hh4tMAAY4SgQIA1xgg+QFY+EIg+GX5EPKo3iP4QvhFIG6SMHDeuvLgZSHTP9MfNDH4IyEBvvK5IfkAIPhKgQEA9A4gkTHeswUATvLgZvgAIfhKIgFVAcjLP1mBAQD0Q/hqIwRfBNMfAfAB+EdukvI83gIBIAwHAgFYCwgBCbjomPxQCQH++EFujhLtRNDT/9MA9AX4an/4Yfhm+GLe0XBtbwL4SoEBAPSGlQHXCz9/k3BwcOKRII43IyMjbwJvIsgizwv/Ic8LPzExAW8iIaQDWYAg9ENvAjQi+EqBAQD0fJUB1ws/f5NwcHDiAjUzMehfA8iCEHdEx+KCEIAAAACxzwsfIQoAom8iAssf9ADIglhgAAAAAAAAAAAAAAAAzwtmgQOYIs8xAbmWcc9AIc8XlXHPQSHN4iDJcfsAWzDA/44S+ELIy//4Rs8LAPhKAfQAye1U3n/4ZwDFuRar5/8ILdHG3aiaBBrpOEAz+n/6YB6Avw1P/ww/DN8MUcN+gK2/DU4AMAgegd5XuuF//wxOHwxuHwzP/ww8W98I0l5Gcm4/DNxfABo/CFkZf/8I2eFgHwlAPoAZPaqP/wzwAgEgDw0B17sV75NfhBbo4S7UTQ0//TAPQF+Gp/+GH4Zvhi3vpA1w1/ldTR0NN/39cMAJXU0dDSAN/RIiIic8hxzwsBIs8KAHPPQCTPFiP6AoBpz0Byz0AgySL7AF8F+EqBAQD0hpUB1ws/f5NwcHDikSCA4Ako4t+CMiAbuf+EojASEBgQEA9FswMfhq3iL4SoEBAPR8lQHXCz9/k3BwcOICNTMx6F8DXwP4QsjL//hGzwsA+EoB9ADJ7VR/+GcCASAREADHuORhh18ILdHCXaiaGn/6YB6Avw1P/ww/DN8MW9qaPwhfCKQN0kYOG9deXAy/AB8IWRl//wjZ4WAfCUA+gBk9qp8B5B9ghBodo92qfgBGHwhZGX//CNnhYB8JQD6AGT2qj/8M8AIC2hMSAC2vhCyMv/+EbPCwD4SgH0AMntVPgP8gCAB1pwIccAnSLQc9ch1wsAwAGQkOLgIdcNH5LyPOFTEcAAkODBAyKCEP////28sZLyPOAB8AH4R26S8jzeg=")),
+        data: Some(String::from("te6ccgEBBQEANQABAcABAgPPIAQCAQHeAwAD0CAAQdgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA==")),
+        library: None,
+        split_depth: None,
+        tick: None,
+        tock: None,
+    };
+
+    check_encode_tvc(&client, tvc, decoded);
+
+    let tvc = base64::encode(include_bytes!("test_data/state_init_lib.boc"));
+    let decoded = ResultOfDecodeTvc {
+        code: Some(String::from("te6ccgEBBAEAhwABFP8A9KQT9LzyyAsBAgEgAwIA36X//3aiaGmP6f/o5CxSZ4WPkOeF/+T2qmRnxET/s2X/wQgC+vCAfQFANeegZLh9gEB354V/wQgD39JAfQFANeegZLhkZ82JA6Mrm6RBCAOt5or9AUA156BF6kMrY2N5YQO7e5NjIQxni2S4fYB9gEAAAtI=")),
+        data: Some(String::from("te6ccgEBAQEAJgAASBHvVgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==")),
+        library: Some(String::from("te6ccgEBBgEAYAACAWIEAQFCv0EkKSBepm1vIATt+lcPb1az6F5ZuqG++8c7faXVW9xhAgEEEjQDAARWeAFCv1ou71BWd19blXL/OtY90qcdH7KByhd6Xhx0cw7MsuUTBQAPq6yrrausq6g=")),
+        split_depth: None,
+        tick: Some(true),
+        tock: Some(true),
+    };
+
+    check_encode_tvc(&client, tvc, decoded);
+}
+
+#[test]
+fn test_get_compiler_version() {
+    let client = TestClient::new();
+
+    let tvc = TestClient::tvc("t24_initdata", Some(2));
+
+    let code = client
+        .request::<_, ResultOfDecodeTvc>(
+            "boc.decode_tvc",
+            ParamsOfDecodeTvc {
+                tvc,
+                boc_cache: None,
+            },
+        )
+        .unwrap()
+        .code
+        .unwrap();
+
+    let result: ResultOfGetCompilerVersion = client
+        .request(
+            "boc.get_compiler_version",
+            ParamsOfGetCompilerVersion { code },
+        )
+        .unwrap();
+
+    assert_eq!(result.version.as_deref(), Some("sol 0.51.0"));
 }
