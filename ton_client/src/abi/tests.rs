@@ -9,10 +9,10 @@ use crate::boc::internal::{
     deserialize_object_from_base64, get_boc_hash, serialize_cell_to_base64,
     serialize_object_to_base64
 };
-use crate::boc::{ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfGetCodeFromTvc};
+use crate::boc::{ParamsOfDecodeTvc, ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfDecodeTvc, ResultOfGetCodeFromTvc};
 use crate::crypto::KeyPair;
 use crate::encoding::account_decode;
-use crate::tests::{TestClient, EVENTS, HELLO};
+use crate::tests::{EVENTS, HELLO, TestClient};
 use crate::utils::conversion::abi_uint;
 use crate::{
     abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage},
@@ -940,4 +940,65 @@ async fn test_decode_account_data() {
             "length": "0x000000000000000000000000000000000000000000000000000000000000000f"
         })
     );
+}
+
+#[test]
+fn test_init_data() {
+    let client = TestClient::new();
+    let (abi, tvc) = TestClient::package("t24_initdata", Some(2));
+
+    let data = client
+        .request::<_, ResultOfDecodeTvc>(
+            "boc.decode_tvc",
+            ParamsOfDecodeTvc {
+                tvc,
+                boc_cache: None,
+            },
+        )
+        .unwrap()
+        .data
+        .unwrap();
+    
+    let result: ResultOfDecodeInitialData = client
+        .request(
+            "abi.decode_initial_data",
+            ParamsOfDecodeInitialData {
+                abi: Some(abi.clone()),
+                data: data.clone(),
+            },
+        )
+        .unwrap();
+    assert_eq!(result.initial_data, Some(json!({})));
+    assert_eq!(result.initial_pubkey, hex::encode(&[0u8; 32]));
+
+    let initial_data = json!({
+        "a": abi_uint(123, 8),
+        "s": "some string",
+    });
+
+    let result: ResultOfUpdateInitialData = client
+        .request(
+            "abi.update_initial_data",
+            ParamsOfUpdateInitialData {
+                abi: Some(abi.clone()),
+                data,
+                initial_data: Some(initial_data.clone()),
+                initial_pubkey: Some(hex::encode(&[0x22u8; 32])),
+                boc_cache: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(result.data, "te6ccgEBBwEARwABAcABAgPPoAQCAQFIAwAWc29tZSBzdHJpbmcCASAGBQADHuAAQQiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIoA==");
+
+    let result: ResultOfDecodeInitialData = client
+        .request(
+            "abi.decode_initial_data",
+            ParamsOfDecodeInitialData {
+                abi: Some(abi.clone()),
+                data: result.data,
+            },
+        )
+        .unwrap();
+    assert_eq!(result.initial_data, Some(initial_data));
+    assert_eq!(result.initial_pubkey, hex::encode(&[0x22u8; 32]));
 }

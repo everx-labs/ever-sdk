@@ -1,5 +1,5 @@
 use api_info::ApiModule;
-use crate::{boc::tests::ACCOUNT, json_interface::modules::UtilsModule};
+use crate::json_interface::modules::UtilsModule;
 use crate::encoding::AccountAddressType;
 use crate::error::ClientResult;
 use crate::tests::TestClient;
@@ -81,7 +81,7 @@ async fn test_calc_storage_fee() {
     let result: ResultOfCalcStorageFee = client.request_async(
         "utils.calc_storage_fee",
         ParamsOfCalcStorageFee {
-            account: String::from(ACCOUNT),
+            account: base64::encode(&include_bytes!("../boc/test_data/account.boc")),
             period: 1000,
         }
     ).await.unwrap();

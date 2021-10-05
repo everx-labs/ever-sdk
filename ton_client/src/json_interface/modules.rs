@@ -315,6 +315,14 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::decode_account_data,
         crate::abi::decode_data::decode_account_data_api,
     );
+    module.register_async_fn(
+        crate::abi::update_initial_data,
+        crate::abi::init_data::update_initial_data_api,
+    );
+    module.register_async_fn(
+        crate::abi::decode_initial_data,
+        crate::abi::init_data::decode_initial_data_api,
+    );
     module.register();
 }
 
@@ -358,6 +366,11 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
     module.register_async_fn(crate::boc::cache_unpin, crate::boc::cache::cache_unpin_api);
     module.register_type::<BuilderOp>();
     module.register_async_fn(crate::boc::encode_boc, crate::boc::encode::encode_boc_api);
+    module.register_async_fn(crate::boc::get_code_salt, crate::boc::tvc::get_code_salt_api);
+    module.register_async_fn(crate::boc::set_code_salt, crate::boc::tvc::set_code_salt_api);
+    module.register_async_fn(crate::boc::decode_tvc, crate::boc::tvc::decode_tvc_api);
+    module.register_async_fn(crate::boc::encode_tvc, crate::boc::tvc::encode_tvc_api);
+    module.register_async_fn(crate::boc::get_compiler_version, crate::boc::tvc::get_compiler_version_api);
     module.register();
 }
 
