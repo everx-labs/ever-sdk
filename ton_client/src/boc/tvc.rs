@@ -101,7 +101,7 @@ pub struct ResultOfGetCodeSalt {
     pub salt: Option<String>,
 }
 
-/// Returns contract code salt if present.
+/// Returns the contract code's salt if it is present.
 #[api_function]
 pub async fn get_code_salt(
     context: std::sync::Arc<ClientContext>,
@@ -181,7 +181,7 @@ pub struct ResultOfSetCodeSalt {
     pub code: String,
 }
 
-/// Sets new salt to contract code.
+/// Sets new salt to contract code. Returns the new contract code with salt.
 #[api_function]
 pub async fn set_code_salt(
     context: std::sync::Arc<ClientContext>,
@@ -211,11 +211,11 @@ pub struct ParamsOfGetCompilerVersion {
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfGetCompilerVersion {
-    /// Compiler version from contract code
+    /// Compiler version, for example 'sol 0.49.0'
     pub version: Option<String>,
 }
 
-/// Returns contract code salt if present.
+/// Returns the compiler version used to compile the code.
 #[api_function]
 pub async fn get_compiler_version(
     context: std::sync::Arc<ClientContext>,
@@ -258,11 +258,11 @@ pub struct ParamsOfEncodeTvc {
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ResultOfEncodeTvc {
-    /// Contract TVC image BOC encoded as base64 or BOC handle
+    /// Contract TVC image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
     pub tvc: String,
 }
 
-/// Sets new salt to contract code.
+/// Encodes tvc from code, data, libraries ans special options (see input params)
 #[api_function]
 pub async fn encode_tvc(
     context: std::sync::Arc<ClientContext>,
@@ -324,7 +324,7 @@ pub struct ResultOfDecodeTvc {
     pub split_depth: Option<u32>,
 }
 
-/// Sets new salt to contract code.
+/// Decodes tvc into code, data, libraries and special options.
 #[api_function]
 pub async fn decode_tvc(
     context: std::sync::Arc<ClientContext>,

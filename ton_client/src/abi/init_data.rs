@@ -15,7 +15,7 @@ pub struct ParamsOfUpdateInitialData  {
     pub abi: Option<Abi>,
     /// Data BOC or BOC handle
     pub data: String,
-    /// List of initial values for contract's public variables. `abi` parameter should be provided to set initial data
+    /// List of initial values for contract's static variables. `abi` parameter should be provided to set initial data
     pub initial_data: Option<Value>,
     /// Initial account owner's public key to set into account data
     pub initial_pubkey: Option<String>,
@@ -31,8 +31,9 @@ pub struct ResultOfUpdateInitialData {
     pub data: String,
 }
 
-/// Updates account data with initial values for contract's public variables and owner's public key.
-/// This operation is applicable only to pre-deployment contract data. Deployed contract data doesn't contain this data section
+/// Updates initial account data with initial values for the contract's static variables and owner's public key.
+/// This operation is applicable only for initial account data (before deploy). 
+/// If the contract is already deployed, its data doesn't contain this data section any more.
 #[api_function]
 pub async fn update_initial_data(
     context: Arc<ClientContext>,
@@ -76,8 +77,9 @@ pub struct ResultOfDecodeInitialData {
     pub initial_pubkey: String,
 }
 
-/// Decodes initial values for contract's public variables and owner's public key from account data
-/// This operation is applicable only to pre-deployment contract data. Deployed contract data doesn't contain this data section
+/// Decodes initial values of a contract's static variables and owner's public key from account initial data
+/// This operation is applicable only for initial account data (before deploy). 
+/// If the contract is already deployed, its data doesn't contain this data section any more.
 #[api_function]
 pub async fn decode_initial_data(
     context: Arc<ClientContext>,
