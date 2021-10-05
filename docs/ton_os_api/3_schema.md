@@ -1,7 +1,5 @@
 # Schema
 
-## Schema
-
 A schema defines a type system of GraphQL API. It describes the complete set of possible data \(objects, fields, relationships, everything\) that a client can access.
 
 * [Root types](3_schema.md#root-types)

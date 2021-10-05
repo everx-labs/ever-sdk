@@ -23,15 +23,15 @@ Core Client Library built on the TON OS GraphQL API for Free TON DApp developmen
 
 ## Useful links
 
-[Quick Start \(Javascript\)](https://docs.ton.dev/86757ecb2/p/33b76d-quick-start)
+[Quick Start \(Javascript\)](guides/quick_start.md)
 
-[Error descriptions](https://docs.ton.dev/86757ecb2/p/443ce4-errors)
+[Error descriptions](docs/error_codes.md)
 
 [JavaScript SDK Types and Methods \(API Reference\)](https://tonlabs.github.io/ton-client-js/)
 
-[Core Types and Methods \(API Reference\)](https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md)
+[Core Types and Methods \(API Reference\)](docs/modules.md)
 
-[Guides](https://docs.ton.dev/86757ecb2/p/783f9d-sdk)
+[Guides](guides/installation/1_add_sdk_to_your_app.md)
 
 ## What is Core Free TON Client Library
 

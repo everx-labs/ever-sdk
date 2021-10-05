@@ -1,7 +1,5 @@
 # Decode Message
 
-## Decode message
-
 SDK can decode ABI-compatible External Inbound, External Outbound and Internal messages.
 
 ## When you may need it?

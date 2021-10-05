@@ -1,7 +1,5 @@
 # Web Playground
 
-## Web Playground
-
 **Test your queries and explore blockchain data**
 
 GraphQL web playground is available for each network at its root endpoint URL. See the [previous section](1_networks.md) for more details.

@@ -1,7 +1,5 @@
 # External Signing
 
-## External signing
-
 How to perform deploy and run scenarios without disclosing the private key
 
 * [When you may need it?](8_external_signing.md#when-you-may-need-it)

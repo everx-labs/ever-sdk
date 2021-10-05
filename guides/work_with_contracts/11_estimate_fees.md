@@ -1,7 +1,5 @@
 # Estimate Fees
 
-## Estimate fees
-
 Find out how to estimate fees before executing contracts on-chain
 
 ## When you may need to estimate fees?

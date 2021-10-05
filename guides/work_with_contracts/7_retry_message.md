@@ -1,7 +1,5 @@
 # Retry Message
 
-## Retry message
-
 ## Resending a Message
 
 The process\_message function has the retry feature. If [message had expired](5_message_expiration.md), it can be re-created and re-sent to the network. Five attempts are carried out by default. If all of them fail, `507` error is returned as well. Use the `network.message_retries_count` parameter to customize the number of attempts at SDK initialization. If set to `0`, no further attempts will be carried out.

@@ -1,7 +1,5 @@
 # Run ABI Get Method
 
-## Run ABI Get Method
-
 Run ABI compatible get methods
 
 * [Run get method](3_run_abi_get_method.md#run-get-method)

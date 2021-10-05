@@ -1,7 +1,5 @@
 # Run Fift Get Method
 
-## Run Fift get method
-
 Learn how to run FIFT methods
 
 ## About Fift get methods

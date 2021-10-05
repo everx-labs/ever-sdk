@@ -1,7 +1,5 @@
 # Work with Events
 
-## Work with Events
-
 How to work with contract events
 
 * [About events](6_work_with_events.md#about-events)

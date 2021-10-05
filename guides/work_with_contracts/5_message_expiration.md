@@ -1,7 +1,5 @@
 # Message Expiration
 
-## Message expiration
-
 Find out what 'message expired' means and get the understanding of 'retries' mechanism for reliable message delivery in TON Blockchain
 
 ## About message expiration

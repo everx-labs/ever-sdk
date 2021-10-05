@@ -1,7 +1,5 @@
 # Deploy
 
-## Deploy
-
 Find out how to deploy a contract to Free TON Blockchain with SDK
 
 * [About deploy](1_deploy.md#about-deploy)

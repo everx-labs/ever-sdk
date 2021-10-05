@@ -1,7 +1,5 @@
 # Configure SDK
 
-## Configure SDK
-
 Find out how to create and configure `TONClient` object to start interacting with blockchain
 
 * [Create TONClient](2_configure_sdk.md#create-tonclient)

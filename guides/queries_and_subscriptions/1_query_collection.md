@@ -1,7 +1,5 @@
 # Query Collection
 
-## Query collection
-
 Query blockchain data collections: filter, sort
 
 ## What is a collection?

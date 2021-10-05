@@ -1,7 +1,5 @@
 # Networks
 
-## Networks
-
 Each TON Operating System instance has a single GraphQL API endpoint. Each Cloud has several TON OS instances running for reliability.
 
 ## Networks

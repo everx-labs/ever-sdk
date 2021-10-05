@@ -1,7 +1,5 @@
 # Validate address, convert address
 
-## Validate address, convert address
-
 Validate and convert TON address to different formats
 
 ## When you may need it?

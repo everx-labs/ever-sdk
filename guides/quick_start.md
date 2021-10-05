@@ -1,7 +1,5 @@
 # Quick start
 
-## Quick Start
-
 Create your first DApp and run it on local blockchain
 
 * [Prerequisites](quick_start.md#prerequisites)

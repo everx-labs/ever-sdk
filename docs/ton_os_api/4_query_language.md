@@ -1,7 +1,5 @@
 # Query Language
 
-## Query language
-
 This document provides query language syntax examples and documentation
 
 Check out \(../mod\_net.md\) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.

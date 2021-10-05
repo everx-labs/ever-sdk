@@ -1,7 +1,5 @@
 # Add SDK to your App
 
-## Add SDK to your App
-
 [Node.js](1_add_sdk_to_your_app.md#nodejs) \| [Web](1_add_sdk_to_your_app.md#web)
 
 ## Node.js

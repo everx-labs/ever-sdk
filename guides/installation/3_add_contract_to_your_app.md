@@ -1,7 +1,5 @@
 # Add Contract to your App
 
-## Add Contract to your App
-
 Define a contract in your application to start working with it
 
 * [About contract artifacts](3_add_contract_to_your_app.md#about-contract-artifacts)

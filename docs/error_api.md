@@ -1,7 +1,5 @@
 # Error API
 
-## Error API
-
 SDK Error API
 
 * [TONClientError](error_api.md#tonclienterror)

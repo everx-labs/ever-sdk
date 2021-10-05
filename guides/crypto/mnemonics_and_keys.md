@@ -1,7 +1,5 @@
 # Mnemonics and Keys
 
-## Mnemonics and keys
-
 This section explains how to generate mnemonics, derive keys and get a key pair
 
 * [Mnemonic generation](mnemonics_and_keys.md#mnemonic-generation)

@@ -1,7 +1,5 @@
 # Error Codes
 
-## Error Codes
-
 You can find error codes with descriptions on this page
 
 * [SDK Errors](error_codes.md#sdk-errors)

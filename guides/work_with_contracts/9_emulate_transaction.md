@@ -1,7 +1,5 @@
 # Emulate Transaction
 
-## Emulate transaction
-
 Emulate transaction execution locally to understand why it fails
 
 ## When you may need it?

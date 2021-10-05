@@ -1,7 +1,5 @@
 # Field Descriptions
 
-## Field descriptions
-
 Below you can find the types descriptions
 
 * [Account type](5_field_descriptions.md#account-type)

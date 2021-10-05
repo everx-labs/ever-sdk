@@ -1,7 +1,5 @@
 # Run on-chain
 
-## Run on-chain
-
 Learn how to run methods of a contract on-chain
 
 * [About run](2_run_onchain.md#about-run)
