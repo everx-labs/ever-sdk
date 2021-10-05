@@ -44,7 +44,7 @@ query{
 }
 ```
 
-![https://github.com/tonlabs/TON-SDK/blob/master/guides/screenshots/scr2.png](https://github.com/tonlabs/TON-SDK/blob/master/guides/screenshots/scr2.png)
+![scr1.png](scr1.png)
 
 Check out [TON Labs SDK query module](../mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
 
