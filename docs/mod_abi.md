@@ -22,6 +22,10 @@ Provides message encoding and decoding according to the ABI specification.
 
 [decode_account_data](#decode_account_data) – Decodes account data using provided data BOC and ABI.
 
+[update_initial_data](#update_initial_data) – Updates account data with initial values for contract's public variables and owner's public key. This operation is applicable only to pre-deployment contract data.
+
+[decode_initial_data](#decode_initial_data) – Decodes initial values for contract's public variables and owner's public key from account data This operation is applicable only to pre-deployment contract data.
+
 ## Types
 [AbiErrorCode](#AbiErrorCode)
 
@@ -88,6 +92,14 @@ Provides message encoding and decoding according to the ABI specification.
 [ParamsOfDecodeAccountData](#ParamsOfDecodeAccountData)
 
 [ResultOfDecodeData](#ResultOfDecodeData)
+
+[ParamsOfUpdateInitialData](#ParamsOfUpdateInitialData)
+
+[ResultOfUpdateInitialData](#ResultOfUpdateInitialData)
+
+[ParamsOfDecodeInitialData](#ParamsOfDecodeInitialData)
+
+[ResultOfDecodeInitialData](#ResultOfDecodeInitialData)
 
 
 # Functions
@@ -481,6 +493,77 @@ function decode_account_data(
 - `data`: _any_ – Decoded data as a JSON structure.
 
 
+## update_initial_data
+
+Updates account data with initial values for contract's public variables and owner's public key. This operation is applicable only to pre-deployment contract data.
+
+Deployed contract data doesn't contain this data section
+
+```ts
+type ParamsOfUpdateInitialData = {
+    abi?: Abi,
+    data: string,
+    initial_data?: any,
+    initial_pubkey?: string,
+    boc_cache?: BocCacheType
+}
+
+type ResultOfUpdateInitialData = {
+    data: string
+}
+
+function update_initial_data(
+    params: ParamsOfUpdateInitialData,
+): Promise<ResultOfUpdateInitialData>;
+```
+### Parameters
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `data`: _string_ – Data BOC or BOC handle
+- `initial_data`?: _any_ – List of initial values for contract's public variables.
+<br>`abi` parameter should be provided to set initial data
+- `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+### Result
+
+- `data`: _string_ – Updated data BOC or BOC handle
+
+
+## decode_initial_data
+
+Decodes initial values for contract's public variables and owner's public key from account data This operation is applicable only to pre-deployment contract data.
+
+Deployed contract data doesn't contain this data section
+
+```ts
+type ParamsOfDecodeInitialData = {
+    abi?: Abi,
+    data: string
+}
+
+type ResultOfDecodeInitialData = {
+    initial_data?: any,
+    initial_pubkey: string
+}
+
+function decode_initial_data(
+    params: ParamsOfDecodeInitialData,
+): Promise<ResultOfDecodeInitialData>;
+```
+### Parameters
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+<br>Initial data is decoded if this parameter is provided
+- `data`: _string_ – Data BOC or BOC handle
+
+
+### Result
+
+- `initial_data`?: _any_ – List of initial values of contract's public variables.
+<br>Initial data is decoded if `abi` input parameter is provided
+- `initial_pubkey`: _string_ – Initial account owner's public key
+
+
 # Types
 ## AbiErrorCode
 ```ts
@@ -497,7 +580,8 @@ enum AbiErrorCode {
     InvalidSigner = 310,
     InvalidAbi = 311,
     InvalidFunctionId = 312,
-    InvalidData = 313
+    InvalidData = 313,
+    EncodeInitialDataFailed = 314
 }
 ```
 One of the following value:
@@ -515,6 +599,7 @@ One of the following value:
 - `InvalidAbi = 311`
 - `InvalidFunctionId = 312`
 - `InvalidData = 313`
+- `EncodeInitialDataFailed = 314`
 
 
 ## Abi
@@ -1136,5 +1221,56 @@ type ResultOfDecodeData = {
 }
 ```
 - `data`: _any_ – Decoded data as a JSON structure.
+
+
+## ParamsOfUpdateInitialData
+```ts
+type ParamsOfUpdateInitialData = {
+    abi?: Abi,
+    data: string,
+    initial_data?: any,
+    initial_pubkey?: string,
+    boc_cache?: BocCacheType
+}
+```
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `data`: _string_ – Data BOC or BOC handle
+- `initial_data`?: _any_ – List of initial values for contract's public variables.
+<br>`abi` parameter should be provided to set initial data
+- `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+## ResultOfUpdateInitialData
+```ts
+type ResultOfUpdateInitialData = {
+    data: string
+}
+```
+- `data`: _string_ – Updated data BOC or BOC handle
+
+
+## ParamsOfDecodeInitialData
+```ts
+type ParamsOfDecodeInitialData = {
+    abi?: Abi,
+    data: string
+}
+```
+- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+<br>Initial data is decoded if this parameter is provided
+- `data`: _string_ – Data BOC or BOC handle
+
+
+## ResultOfDecodeInitialData
+```ts
+type ResultOfDecodeInitialData = {
+    initial_data?: any,
+    initial_pubkey: string
+}
+```
+- `initial_data`?: _any_ – List of initial values of contract's public variables.
+<br>Initial data is decoded if `abi` input parameter is provided
+- `initial_pubkey`: _string_ – Initial account owner's public key
 
 

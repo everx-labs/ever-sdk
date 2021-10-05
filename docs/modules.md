@@ -131,6 +131,10 @@ Where:
 
 [decode_account_data](mod_abi.md#decode_account_data) – Decodes account data using provided data BOC and ABI.
 
+[update_initial_data](mod_abi.md#update_initial_data) – Updates account data with initial values for contract's public variables and owner's public key. This operation is applicable only to pre-deployment contract data.
+
+[decode_initial_data](mod_abi.md#decode_initial_data) – Decodes initial values for contract's public variables and owner's public key from account data This operation is applicable only to pre-deployment contract data.
+
 ## [boc](mod_boc.md) – BOC manipulation module.
 
 [parse_message](mod_boc.md#parse_message) – Parses message boc into a JSON
@@ -156,6 +160,16 @@ Where:
 [cache_unpin](mod_boc.md#cache_unpin) – Unpin BOCs with specified pin.
 
 [encode_boc](mod_boc.md#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type
+
+[get_code_salt](mod_boc.md#get_code_salt) – Returns contract code salt if present.
+
+[set_code_salt](mod_boc.md#set_code_salt) – Sets new salt to contract code.
+
+[decode_tvc](mod_boc.md#decode_tvc) – Sets new salt to contract code.
+
+[encode_tvc](mod_boc.md#encode_tvc) – Sets new salt to contract code.
+
+[get_compiler_version](mod_boc.md#get_compiler_version) – Returns contract code salt if present.
 
 ## [processing](mod_processing.md) – Message processing module.
 

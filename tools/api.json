@@ -1,5 +1,5 @@
 {
-  "version": "1.22.0",
+  "version": "1.23.0",
   "modules": [
     {
       "name": "client",
@@ -4468,6 +4468,13 @@
               "value": "313",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "EncodeInitialDataFailed",
+              "type": "Number",
+              "value": "314",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -5738,6 +5745,121 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfUpdateInitialData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "abi.Abi"
+              },
+              "summary": "Contract ABI",
+              "description": null
+            },
+            {
+              "name": "data",
+              "type": "String",
+              "summary": "Data BOC or BOC handle",
+              "description": null
+            },
+            {
+              "name": "initial_data",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "List of initial values for contract's public variables.",
+              "description": "`abi` parameter should be provided to set initial data"
+            },
+            {
+              "name": "initial_pubkey",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Initial account owner's public key to set into account data",
+              "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result. The BOC itself returned if no cache type provided.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfUpdateInitialData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "String",
+              "summary": "Updated data BOC or BOC handle",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfDecodeInitialData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "abi.Abi"
+              },
+              "summary": "Contract ABI.",
+              "description": "Initial data is decoded if this parameter is provided"
+            },
+            {
+              "name": "data",
+              "type": "String",
+              "summary": "Data BOC or BOC handle",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfDecodeInitialData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "initial_data",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "List of initial values of contract's public variables.",
+              "description": "Initial data is decoded if `abi` input parameter is provided"
+            },
+            {
+              "name": "initial_pubkey",
+              "type": "String",
+              "summary": "Initial account owner's public key",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -6082,6 +6204,82 @@
             ]
           },
           "errors": null
+        },
+        {
+          "name": "update_initial_data",
+          "summary": "Updates account data with initial values for contract's public variables and owner's public key. This operation is applicable only to pre-deployment contract data.",
+          "description": "Deployed contract data doesn't contain this data section",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfUpdateInitialData",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "abi.ResultOfUpdateInitialData"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "decode_initial_data",
+          "summary": "Decodes initial values for contract's public variables and owner's public key from account data This operation is applicable only to pre-deployment contract data.",
+          "description": "Deployed contract data doesn't contain this data section",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfDecodeInitialData",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "abi.ResultOfDecodeInitialData"
+              }
+            ]
+          },
+          "errors": null
         }
       ]
     },
@@ -6296,7 +6494,7 @@
             {
               "name": "tvc",
               "type": "String",
-              "summary": "Contract TVC image encoded as base64",
+              "summary": "Contract TVC image or image BOC handle",
               "description": null
             }
           ],
@@ -6519,6 +6717,298 @@
               "name": "boc",
               "type": "String",
               "summary": "Encoded cell BOC or BOC cache key.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfGetCodeSalt",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "code",
+              "type": "String",
+              "summary": "Contract code BOC encoded as base64 or code BOC handle",
+              "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result. The BOC itself returned if no cache type provided.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetCodeSalt",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "salt",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Contract code salt if present.",
+              "description": "BOC encoded as base64 or BOC handle"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfSetCodeSalt",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "code",
+              "type": "String",
+              "summary": "Contract code BOC encoded as base64 or code BOC handle",
+              "description": null
+            },
+            {
+              "name": "salt",
+              "type": "String",
+              "summary": "Code salt to set.",
+              "description": "BOC encoded as base64 or BOC handle"
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result. The BOC itself returned if no cache type provided.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfSetCodeSalt",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "code",
+              "type": "String",
+              "summary": "Contract code with salt set.",
+              "description": "BOC encoded as base64 or BOC handle"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfDecodeTvc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "tvc",
+              "type": "String",
+              "summary": "Contract TVC image BOC encoded as base64 or BOC handle",
+              "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result. The BOC itself returned if no cache type provided.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfDecodeTvc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "code",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Contract code BOC encoded as base64 or BOC handle",
+              "description": null
+            },
+            {
+              "name": "data",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Contract data BOC encoded as base64 or BOC handle",
+              "description": null
+            },
+            {
+              "name": "library",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Contract library BOC encoded as base64 or BOC handle",
+              "description": null
+            },
+            {
+              "name": "tick",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "`special.tick` field.",
+              "description": "Specifies the contract ability to handle tick transactions"
+            },
+            {
+              "name": "tock",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "`special.tock` field.",
+              "description": "Specifies the contract ability to handle tock transactions"
+            },
+            {
+              "name": "split_depth",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Is present and non-zero only in instances of large smart contracts",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfEncodeTvc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "code",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Contract code BOC encoded as base64 or BOC handle",
+              "description": null
+            },
+            {
+              "name": "data",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Contract data BOC encoded as base64 or BOC handle",
+              "description": null
+            },
+            {
+              "name": "library",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Contract library BOC encoded as base64 or BOC handle",
+              "description": null
+            },
+            {
+              "name": "tick",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "`special.tick` field.",
+              "description": "Specifies the contract ability to handle tick transactions"
+            },
+            {
+              "name": "tock",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "`special.tock` field.",
+              "description": "Specifies the contract ability to handle tock transactions"
+            },
+            {
+              "name": "split_depth",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Is present and non-zero only in instances of large smart contracts",
+              "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result. The BOC itself returned if no cache type provided.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfEncodeTvc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "tvc",
+              "type": "String",
+              "summary": "Contract TVC image BOC encoded as base64 or BOC handle",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfGetCompilerVersion",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "code",
+              "type": "String",
+              "summary": "Contract code BOC encoded as base64 or code BOC handle",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetCompilerVersion",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "version",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Compiler version from contract code",
               "description": null
             }
           ],
@@ -6977,6 +7467,196 @@
               {
                 "type": "Ref",
                 "ref_name": "boc.ResultOfEncodeBoc"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_code_salt",
+          "summary": "Returns contract code salt if present.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfGetCodeSalt",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfGetCodeSalt"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "set_code_salt",
+          "summary": "Sets new salt to contract code.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfSetCodeSalt",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfSetCodeSalt"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "decode_tvc",
+          "summary": "Sets new salt to contract code.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfDecodeTvc",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfDecodeTvc"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "encode_tvc",
+          "summary": "Sets new salt to contract code.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfEncodeTvc",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfEncodeTvc"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_compiler_version",
+          "summary": "Returns contract code salt if present.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfGetCompilerVersion",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfGetCompilerVersion"
               }
             ]
           },
