@@ -189,30 +189,31 @@ impl BlockProof {
         Ok(())
     }
 
-    pub async fn check_proof(&self, engine: &impl ProofHelperEngine) -> Result<()> {
+    pub async fn check_proof(&self, engine: &impl ProofHelperEngine) -> Result<(Block, BlockInfo)> {
         if !self.id().shard().is_masterchain() {
-            self.pre_check_block_proof()?;
-        } else {
-            let (virt_block, virt_block_info) = self.pre_check_block_proof()?;
-            let prev_key_block_seqno = virt_block_info.prev_key_block_seqno();
-
-            if prev_key_block_seqno == 0 {
-                let zerostate = engine.load_zerostate().await?;
-                let mc_state_extra = zerostate.read_custom()?
-                    .ok_or_else(|| err_msg("Can't read custom field from the zerostate"))?;
-                self.check_with_zerostate(
-                    &zerostate,
-                    mc_state_extra.config(),
-                    &virt_block,
-                    &virt_block_info,
-                )?;
-            } else {
-                let prev_key_block_proof = engine.load_key_block_proof(prev_key_block_seqno).await?;
-
-                self.check_with_prev_key_block_proof_(&prev_key_block_proof, &virt_block, &virt_block_info)?;
-            }
+            bail!("Only masterchain block proofs are supported");
         }
-        Ok(())
+
+        let (virt_block, virt_block_info) = self.pre_check_block_proof()?;
+        let prev_key_block_seqno = virt_block_info.prev_key_block_seqno();
+
+        if prev_key_block_seqno == 0 {
+            let zerostate = engine.load_zerostate().await?;
+            let mc_state_extra = zerostate.read_custom()?
+                .ok_or_else(|| err_msg("Can't read custom field from the zerostate"))?;
+            self.check_with_zerostate(
+                &zerostate,
+                mc_state_extra.config(),
+                &virt_block,
+                &virt_block_info,
+            )?;
+        } else {
+            let prev_key_block_proof = engine.load_key_block_proof(prev_key_block_seqno).await?;
+
+            self.check_with_prev_key_block_proof_(&prev_key_block_proof, &virt_block, &virt_block_info)?;
+        }
+
+        Ok((virt_block, virt_block_info))
     }
 
     pub fn get_cur_validators_set(&self) -> Result<(ValidatorSet, CatchainConfig)> {

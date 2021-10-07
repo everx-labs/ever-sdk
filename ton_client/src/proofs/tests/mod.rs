@@ -316,7 +316,7 @@ async fn query_file_hash_test() -> Result<()> {
     let file_hash_from_next = UInt256::from_str(
         &engine.query_file_hash_from_next_block(1).await?.unwrap(),
     )?;
-    let file_hash_from_boc = engine.download_boc_and_calc_file_hash(1).await?;
+    let file_hash_from_boc = engine.download_mc_boc_and_calc_file_hash(1).await?;
 
     assert_eq!(file_hash_from_boc, file_hash_from_next);
     assert_eq!(
@@ -392,6 +392,124 @@ async fn mc_proofs_test() -> Result<()> {
     assert_eq!(engine.storage().count(), 26);
     assert_eq!(engine.read_zs_right_bound().await?, 85049);
     assert_eq!(engine.read_trusted_block_right_bound(trusted_id.seq_no).await?, 11201794);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn extract_top_shard_block_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+    let boc = engine.download_mc_boc(100).await?;
+    let block = Block::construct_from_bytes(&boc)?;
+
+    assert!(ProofHelperEngineImpl::<InMemoryProofStorage>::extract_top_shard_block(
+        &block,
+        &ShardIdent::with_tagged_prefix(0, 0x8000000000000000)?,
+    ).is_err());
+
+    assert!(ProofHelperEngineImpl::<InMemoryProofStorage>::extract_top_shard_block(
+        &block,
+        &ShardIdent::with_tagged_prefix(1, 0x2000000000000000)?,
+    ).is_err());
+
+    assert_eq!(
+        ProofHelperEngineImpl::<InMemoryProofStorage>::extract_top_shard_block(
+            &block,
+            &ShardIdent::with_tagged_prefix(0, 0x2000000000000000)?,
+        )?,
+        (96, UInt256::from_str("e3db85d93d5d85670c261899cf56f7ef2876e0ea95cdcfc6b7e3837998242950")?),
+    );
+
+    assert_eq!(
+        ProofHelperEngineImpl::<InMemoryProofStorage>::extract_top_shard_block(
+            &block,
+            &ShardIdent::with_tagged_prefix(0, 0xa000000000000000)?,
+        )?,
+        (113, UInt256::from_str("845052457398c7a2f3f5ff74ebfd2b0f6567f9ceec510593be11c900ecb26cd1")?),
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn query_closest_mc_block_for_shard_block_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    let shard = ShardIdent::with_tagged_prefix(0, 0xa000000000000000)?;
+
+    let mut first_mc_seq_no = 100;
+    assert_eq!(
+        engine.query_closest_mc_block_for_shard_block(&mut first_mc_seq_no, &shard, 113).await?,
+        Some(100),
+    );
+
+    first_mc_seq_no = 99;
+    assert_eq!(
+        engine.query_closest_mc_block_for_shard_block(&mut first_mc_seq_no, &shard, 113).await?,
+        Some(99),
+    );
+
+    first_mc_seq_no = 95;
+    assert_eq!(
+        engine.query_closest_mc_block_for_shard_block(&mut first_mc_seq_no, &shard, 109).await?,
+        Some(96),
+    );
+
+    Ok(())
+}
+
+const SHARD_BLOCK_0_A000000000000000_99_BOC: &str =
+    "te6ccuECEQEAArkAABwAxADeAXACBAKgAzwDRgNYA6QECgQiBCoE9AVkBWwFcwQQEe9VqgAAACoBAgMEAqCbx6\
+    mHAAAAAIQBAAAAYwAAAAACAAAAAIAAAAAAAAAAXrQHmgAAAAAG6gUAAAAAAAbqBQGyfCu9AAAAAgAAAFMAAAAAx\
+    AAAAAMAAAAAAAAALgUGAhG45I37QO5rKAQHCAqKBGFR1tD1H1YJuvT+AeffTPjAYu+ZO8nWZmHsiOcBjgwT+aoe\
+    0gsBG0P0h0luP4GaSgcCgYy5IjwTqZXSIYYyFU8AAgACCQoDiUoz9v0VXplWHvmULzKidbstN+VVAHO6e3HYwO8\
+    S0lWq1Njxs+MjZ5qaX3Wy2UJl0E1niolxk+hX2mam0xkowcM8kUYlQA8QEACYAAAAAAas/AQAAABTB3YPJAltJD\
+    aifFMLGBfGSqSuvKpr0cFEvBEi342Yag2jiOSQ5MlCwAejYCI5oU5EbgLSVSCG4LHHgFMzq5O8MwCYAAAAAAbaw\
+    sEAAABiQbMSOwHpTZBEIYKXXyYQ6vfIwH2vL2gyvjJiWlTNu6MhnLL8a9sPLBZv9nO/Eo7VKACm09qERB8B5wB0\
+    1Kw1zAAFAAAIAA0AEDuaygAIKEgBAWFR1tD1H1YJuvT+AeffTPjAYu+ZO8nWZmHsiOcBjgwTAAIDW5Ajr+IAAAA\
+    qAgAAAACAAAAAAAAAAAAAAGMAAAAAXrQHmgAAAAAG6gUBAAAAUyALDA0BEQAAAAAAAAAAUA4AAwAQAMUAAAAAAA\
+    AAAAAAAAAB////AoLhm4PAEAAAAABqz8BAAAAFMHdg8kCW0kNqJ8UwsYF8ZKpK68qmvRwUS8ESLfjZhqDaOI5JD\
+    kyULAB6NgIjmhTkRuAtJVIIbgsceAUzOrk7wzgAa7BQAAAAAAAAAAAAACmAAAAAA1Z+Af//////////////////\
+    ////////////////////////wAADACAAAQL5eHt0";
+
+const SHARD_BLOCK_0_A000000000000000_101_BOC: &str =
+    "te6ccuECEQEAArkAABwAxADeAXACBAKgAzwDRgNYA6QECgQiBCoE9AVkBWwFcwQQEe9VqgAAACoBAgMEAqCbx6\
+    mHAAAAAIQBAAAAZQAAAAACAAAAAIAAAAAAAAAAXrQHngAAAAAHCImAAAAAAAcIiYGyfCu9AAAAAgAAAFUAAAAAx\
+    AAAAAMAAAAAAAAALgUGAhG45I37QO5rKAQHCAqKBO5sAcF2Ymt7CdQz/5dUOh0WyFdnKDN0tgG6P6udwTloEhUx\
+    yRwpTzXcIqlKUPMO1c8qSnjjb5j9+2wRS/PnHCoAAgACCQoDiUoz9v17zLkiB8uYo0dn+vy/FUZwk6AL+dQyhFY\
+    xgp1SxSWRqliYMsW1ZyavhBdHyrATjsbtXtXllTZbMVB7VqzXoiYbQA8QEACYAAAAAAbqBQQAAABVTv2/9/Rq22\
+    nN1Ir0xVEuUwWTscgsfOTgmIxFvvgKwGaYZ3Sq5GZOCOdRIpGuFelcnV52ntRlSzGxNDsLtSx6IgCYAAAAAAb5R\
+    0EAAABkfIg4BEAVcwd2QRhSmkdM9cXU/uFjjWL4NSVkjAM3Z6wSgR7EbvVRzbJIhp3R55crsh2egsOSo5nYChOa\
+    NiKmpwAFAAAIAA0AEDuaygAIKEgBAe5sAcF2Ymt7CdQz/5dUOh0WyFdnKDN0tgG6P6udwTloAAIDW5Ajr+IAAAA\
+    qAgAAAACAAAAAAAAAAAAAAGUAAAAAXrQHngAAAAAHCImBAAAAVSALDA0BEQAAAAAAAAAAUA4AAwAQAMUAAAAAAA\
+    AAAAAAAAAH////AoLwgjZAEAAAAABuoFBAAAAFVO/b/39Grbac3UivTFUS5TBZOxyCx85OCYjEW++ArAZphndKr\
+    kZk4I51Eika4V6VydXnae1GVLMbE0Owu1LHoigAa7BQAAAAAAAAAAAAACqAAAAAA3UCgf//////////////////\
+    ////////////////////////wAADACAAAQLlB2As";
+
+#[tokio::test]
+async fn query_shard_block_bocs_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    let shard = ShardIdent::with_tagged_prefix(0, 0xa000000000000000)?;
+
+    let bocs = engine.query_shard_block_bocs(&shard, 99..102).await?;
+
+    assert_eq!(bocs.len(), 3);
+    assert_eq!(bocs[0], base64::decode(SHARD_BLOCK_0_A000000000000000_99_BOC)?);
+    assert_eq!(bocs[2], base64::decode(SHARD_BLOCK_0_A000000000000000_101_BOC)?);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn check_shard_block_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    let boc_99 = base64::decode(SHARD_BLOCK_0_A000000000000000_99_BOC)?;
+    engine.check_shard_block(&boc_99).await?;
+
+    let boc_101 = base64::decode(SHARD_BLOCK_0_A000000000000000_101_BOC)?;
+    engine.check_shard_block(&boc_101).await?;
 
     Ok(())
 }

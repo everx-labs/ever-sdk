@@ -1,16 +1,19 @@
 use std::convert::TryInto;
 use std::future::Future;
+use std::io::Cursor;
 use std::ops::Range;
 use std::sync::Arc;
+use std::time::Duration;
 
 use failure::{bail, err_msg};
 use serde_json::Value;
-use ton_block::{Deserializable, ShardStateUnsplit};
-use ton_types::{Result, UInt256};
+use ton_block::{BinTreeType, Block, Deserializable, InRefValue, ShardIdent, ShardStateUnsplit};
+use ton_types::{deserialize_tree_of_cells, Result, UInt256};
 
 use crate::boc::internal::get_boc_hash;
 use crate::client::{Error, NetworkUID};
 use crate::ClientContext;
+use crate::encoding::base64_decode;
 use crate::error::ClientResult;
 use crate::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
 use crate::net::types::TrustedMcBlockId;
@@ -96,7 +99,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         })
     }
 
-    fn sorting_for_mc() -> Vec<OrderBy> {
+    fn sorting_by_seq_no() -> Vec<OrderBy> {
         vec![
             OrderBy {
                 path: "seq_no".to_string(),
@@ -261,7 +264,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                 collection: "blocks".to_string(),
                 result: "seq_no gen_utime prev_ref{file_hash}".to_string(),
                 filter: Some(Self::filter_for_mc_block(mc_seq_no)),
-                order: Some(Self::sorting_for_mc()),
+                order: Some(Self::sorting_by_seq_no()),
                 ..Default::default()
             }
         ).await?.result)?;
@@ -275,12 +278,12 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             .to_string()))
     }
 
-    pub(crate) async fn download_boc_and_calc_file_hash(
+    pub(crate) async fn download_mc_boc(
         &self,
         mc_seq_no: u32,
-    ) -> Result<UInt256> {
-        let boc = if let Some(boc) = self.read_mc_block(mc_seq_no).await? {
-            boc
+    ) -> Result<Vec<u8>> {
+        if let Some(boc) = self.read_mc_block(mc_seq_no).await? {
+            Ok(boc)
         } else {
             let blocks = Self::preprocess_query_result(query_collection(
                 Arc::clone(&self.context),
@@ -288,7 +291,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                     collection: "blocks".to_string(),
                     result: "seq_no gen_utime boc".to_string(),
                     filter: Some(Self::filter_for_mc_block(mc_seq_no)),
-                    order: Some(Self::sorting_for_mc()),
+                    order: Some(Self::sorting_by_seq_no()),
                     ..Default::default()
                 }
             ).await?.result)?;
@@ -303,14 +306,26 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             let (_seq_no, block_json) = &blocks[0];
             let boc_base64 = block_json["boc"].as_str()
                 .ok_or_else(|| err_msg("boc field must be a string"))?;
-            let boc = base64::decode(boc_base64)?;
 
-            self.write_mc_block(mc_seq_no, &boc).await?;
+            Ok(base64::decode(boc_base64)?)
+        }
+    }
 
-            boc
-        };
+    pub(crate) async fn download_mc_boc_and_calc_file_hash(
+        &self,
+        mc_seq_no: u32,
+    ) -> Result<UInt256> {
+        let boc = self.download_mc_boc(mc_seq_no).await?;
 
         Ok(UInt256::calc_file_hash(&boc))
+    }
+
+    pub(crate) async fn query_mc_block_file_hash(&self, mc_seq_no: u32) -> Result<String> {
+        if let Some(file_hash) = self.query_file_hash_from_next_block(mc_seq_no).await? {
+            return Ok(file_hash);
+        }
+        let file_hash = self.download_mc_boc_and_calc_file_hash(mc_seq_no).await?;
+        Ok(file_hash.as_hex_string())
     }
 
     pub(crate) async fn query_mc_proof(&self, mc_seq_no: u32) -> Result<Value> {
@@ -320,7 +335,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                 collection: "blocks".to_string(),
                 result: PROOF_QUERY_RESULT.to_string(),
                 filter: Some(Self::filter_for_mc_block(mc_seq_no)),
-                order: Some(Self::sorting_for_mc()),
+                order: Some(Self::sorting_by_seq_no()),
                 ..Default::default()
             }
         ).await?.result)?;
@@ -332,13 +347,8 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             );
         }
 
-        let (_seq_no, mut result) = blocks.remove(0);
-        if let Some(file_hash) = self.query_file_hash_from_next_block(mc_seq_no).await? {
-            result["file_hash"] = file_hash.into();
-        } else {
-            let file_hash = self.download_boc_and_calc_file_hash(mc_seq_no).await?;
-            result["file_hash"] = file_hash.as_hex_string().into();
-        }
+        let (seq_no, mut result) = blocks.remove(0);
+        result["file_hash"] = self.query_mc_block_file_hash(seq_no).await?.into();
 
         Ok(result)
     }
@@ -347,7 +357,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         &self,
         mut mc_seq_no_range: Range<u32>,
     ) -> Result<Vec<(u32, Value)>> {
-        let mut result = Vec::new();
+        let mut result = Vec::with_capacity(mc_seq_no_range.len());
         loop {
             if mc_seq_no_range.is_empty() {
                 return Ok(result);
@@ -370,7 +380,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                             "lt": mc_seq_no_range.end,
                         }
                     })),
-                    order: Some(Self::sorting_for_mc()),
+                    order: Some(Self::sorting_by_seq_no()),
                     ..Default::default()
                 }
             ).await?.result;
@@ -404,7 +414,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                                     .collect::<Vec<u32>>(),
                         }
                     })),
-                    order: Some(Self::sorting_for_mc()),
+                    order: Some(Self::sorting_by_seq_no()),
                     ..Default::default()
                 }
             ).await?.result)?;
@@ -500,6 +510,270 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         }
 
         last_proof.ok_or_else(|| err_msg("Empty proof chain"))
+    }
+
+    pub(crate) fn extract_top_shard_block(
+        mc_block: &Block,
+        shard: &ShardIdent,
+    ) -> Result<(u32, UInt256)> {
+        let extra = mc_block.read_extra()?;
+        let mc_extra = extra.read_custom()?
+            .ok_or_else(|| err_msg("Unable to read McBlockExtra"))?;
+
+        let mut result = None;
+        if let Some(InRefValue(bintree)) = mc_extra.shards().get(&shard.workchain_id())? {
+            bintree.iterate(|prefix, shard_descr| {
+                let shard_ident = ShardIdent::with_prefix_slice(shard.workchain_id(), prefix)?;
+                if shard_ident != *shard {
+                    return Ok(true);
+                }
+                result = Some((shard_descr.seq_no, shard_descr.root_hash));
+                Ok(false)
+            })?;
+        }
+
+        result.ok_or_else(
+            || err_msg(format!("Top block for the given shard ({}) not found", shard))
+        )
+    }
+
+    pub(crate) async fn query_closest_mc_block_for_shard_block(
+        &self,
+        first_mc_seq_no: &mut u32,
+        shard: &ShardIdent,
+        shard_block_seq_no: u32,
+    ) -> Result<Option<u32>> {
+        loop {
+            let blocks = Self::preprocess_query_result(query_collection(
+                Arc::clone(&self.context),
+                ParamsOfQueryCollection {
+                    collection: "blocks".to_string(),
+                    result: "\
+                    seq_no \
+                    gen_utime \
+                    master { \
+                        shard_hashes { \
+                            workchain_id \
+                            shard \
+                            descr { \
+                                seq_no \
+                                root_hash \
+                            }\
+                        }\
+                    }".to_string(),
+                    filter: Some(json!({
+                        "workchain_id": { "eq": -1 },
+                        "seq_no": { "ge": *first_mc_seq_no },
+                    })),
+                    order: Some(Self::sorting_by_seq_no()),
+                    ..Default::default()
+                }
+            ).await?.result)?;
+
+            if blocks.is_empty() {
+                return Ok(None);
+            }
+
+            for (seq_no, value) in &blocks {
+                let shard_hashes = value["master"]["shard_hashes"].as_array()
+                    .ok_or_else(|| err_msg("Field `shard_hashes` must be an array"))?;
+                for item in shard_hashes {
+                    if item["workchain_id"] == shard.workchain_id()
+                        && item["shard"] == shard.shard_prefix_as_str_with_tag()
+                        && item["descr"]["seq_no"].as_u64()
+                                .ok_or_else(|| err_msg("Field `seq_no` must be an integer"))?
+                            >= shard_block_seq_no as u64
+                    {
+                        return Ok(Some(*seq_no))
+                    }
+                }
+            }
+
+            *first_mc_seq_no = blocks[blocks.len() - 1].0 + 1;
+        }
+    }
+
+    pub(crate) async fn query_shard_block_bocs(
+        &self,
+        shard: &ShardIdent,
+        seq_no_range: Range<u32>,
+    ) -> Result<Vec<Vec<u8>>> {
+        let blocks = Self::preprocess_query_result(query_collection(
+            Arc::clone(&self.context),
+            ParamsOfQueryCollection {
+                collection: "blocks".to_string(),
+                result: "\
+                    seq_no \
+                    gen_utime \
+                    id \
+                    boc \
+                ".to_string(),
+                filter: Some(json!({
+                    "workchain_id": { "eq": shard.workchain_id() },
+                    "shard": { "eq": shard.shard_prefix_as_str_with_tag() },
+                    "seq_no": { "in": seq_no_range.clone().collect::<Vec<u32>>() },
+                })),
+                order: Some(Self::sorting_by_seq_no()),
+                ..Default::default()
+            }
+        ).await?.result)?;
+
+        if blocks.is_empty() {
+            bail!(
+                "No shard blocks found on DApp server for specified range \
+                    (shard: {}, seq_no_range: {:?})",
+                shard,
+                seq_no_range,
+            );
+        }
+
+        if blocks.len() != seq_no_range.len() {
+            bail!(
+                "Unexpected number of blocks returned by DApp server for specified range \
+                    (shard: {}, seq_no_range: {:?}, expected count: {}, actual count: {})",
+                shard,
+                seq_no_range,
+                seq_no_range.len(),
+                blocks.len(),
+            );
+        }
+
+        let mut result = Vec::with_capacity(blocks.len());
+        for i in 0..blocks.len() {
+            let (seq_no, block) = &blocks[i];
+
+            let expected_seq_no = seq_no_range.start + i as u32;
+            if *seq_no != expected_seq_no {
+                bail!(
+                    "Unexpected seq_no of block returned by DApp server for specified range \
+                        (shard: {}, seq_no_range: {:?}, expected seq_no: {}, actual seq_no: {})",
+                    shard,
+                    seq_no_range,
+                    expected_seq_no,
+                    seq_no,
+                );
+            }
+
+            let boc_base64 = block["boc"].as_str()
+                .ok_or_else(|| err_msg("Field `boc` must be valid base64 string"))?;
+            result.push(base64_decode(boc_base64)?);
+        }
+
+        Ok(result)
+    }
+
+    pub async fn check_shard_block(&self, boc: &[u8]) -> Result<()> {
+        let cell = deserialize_tree_of_cells(&mut Cursor::new(boc))?;
+        let root_hash = cell.repr_hash();
+        let block = Block::construct_from_cell(cell)?;
+
+        let info = block.info.read_struct()?;
+
+        let master_ref = info.read_master_ref()?
+            .ok_or_else(|| err_msg("Unable to read master_ref of block"))?;
+
+        let mut first_mc_seq_no = master_ref.master.seq_no;
+        loop {
+            if let Some(mc_seq_no) = self.query_closest_mc_block_for_shard_block(
+                    &mut first_mc_seq_no,
+                    info.shard(),
+                    info.seq_no(),
+                ).await?
+            {
+                let mc_proof_json = self.query_mc_proof(mc_seq_no).await?;
+                let mc_proof = BlockProof::from_value(&mc_proof_json)?;
+                let (_mc_block, _mc_block_info) = mc_proof.check_proof(self).await?;
+
+                let mc_boc = self.download_mc_boc(mc_seq_no).await?;
+                let mc_cell = deserialize_tree_of_cells(&mut Cursor::new(&mc_boc))?;
+
+                if mc_cell.repr_hash() != *mc_proof.id().root_hash() {
+                    bail!(
+                        "Proof checking failed: `root_hash` of MC block's BOC downloaded from DApp \
+                            server mismatches `root_hash` of proof for this MC block",
+                    );
+                }
+
+                self.write_mc_block(mc_seq_no, &mc_boc).await?;
+
+                let mc_block = Block::construct_from_bytes(&mc_boc)?;
+
+                let (top_seq_no, top_root_hash) =
+                    Self::extract_top_shard_block(&mc_block, info.shard())?;
+
+                if top_seq_no == info.seq_no() {
+                    if top_root_hash != root_hash {
+                        bail!("Proof checking failed: masterchain block references shard block \
+                            with different `root_hash`: reference {}, but shard block has {}",
+                            top_root_hash,
+                            root_hash,
+                        );
+                    }
+                    return Ok(());
+                }
+
+                let shard_chain = self.query_shard_block_bocs(
+                    info.shard(),
+                    (info.seq_no() + 1)..(top_seq_no + 1),
+                ).await?;
+
+
+                let check_with_last_prev_ref =
+                    |seq_no, root_hash, last_prev_ref_seq_no, last_prev_ref_root_hash| {
+                        if seq_no != last_prev_ref_seq_no {
+                            bail!(
+                                "Queried shard block's `seq_no` ({}) mismatches `prev_ref.seq_no` ({}) \
+                                    of the next block or reference from the masterchain block",
+                                seq_no,
+                                last_prev_ref_seq_no,
+                            );
+                        }
+
+                        if root_hash != last_prev_ref_root_hash {
+                            bail!(
+                                "Shard block proof checking failed: \
+                                    block's `root_hash` ({}) mismatches `prev_ref.root_hash` ({}) \
+                                    of the next block or reference from the masterchain block",
+                                root_hash,
+                                last_prev_ref_root_hash,
+                            );
+                        }
+
+                        Ok(())
+                    };
+
+                let mut last_prev_ref_seq_no = top_seq_no;
+                let mut last_prev_ref_root_hash = top_root_hash;
+                for boc in shard_chain.iter().rev() {
+                    let cell = deserialize_tree_of_cells(&mut Cursor::new(boc))?;
+                    let root_hash = cell.repr_hash();
+                    let block = Block::construct_from_cell(cell)?;
+                    let info = block.read_info()?;
+
+                    check_with_last_prev_ref(
+                        info.seq_no(),
+                        root_hash,
+                        last_prev_ref_seq_no,
+                        last_prev_ref_root_hash,
+                    )?;
+
+                    let prev_ref = info.read_prev_ref()?.prev1()?;
+                    last_prev_ref_seq_no = prev_ref.seq_no;
+                    last_prev_ref_root_hash = prev_ref.root_hash;
+                }
+
+                check_with_last_prev_ref(
+                    info.seq_no(),
+                    root_hash,
+                    last_prev_ref_seq_no,
+                    last_prev_ref_root_hash,
+                )?;
+
+                return Ok(());
+            }
+
+            tokio::time::delay_for(Duration::from_secs(1)).await;
+        }
     }
 }
 
