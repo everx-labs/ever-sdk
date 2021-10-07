@@ -23,7 +23,6 @@ use crate::boc::{
     BocCacheType,
     internal::{deserialize_object_from_base64, serialize_cell_to_base64},
 };
-use crate::boc::tests::BLOCK_CONFIG;
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
@@ -800,10 +799,10 @@ async fn test_resolve_blockchain_config() {
     let net_context = Arc::new(crate::ClientContext::new(config).unwrap());
 
     let local_context = Arc::new(crate::ClientContext::new(crate::ClientConfig::default()).unwrap());
+    let block_config = base64::encode(&include_bytes!("../boc/test_data/block_config.boc"));
+    let custom_config_params = deserialize_object_from_base64(&block_config, "config").unwrap();
 
-    let custom_config_params = deserialize_object_from_base64(BLOCK_CONFIG, "config").unwrap();
-
-    let config = resolve_blockchain_config(&local_context, Some(BLOCK_CONFIG.to_owned())).await.unwrap();
+    let config = resolve_blockchain_config(&local_context, Some(block_config)).await.unwrap();
     assert_eq!(config.raw_config(), &custom_config_params.object);
 
     let config = resolve_blockchain_config(&local_context, None).await.unwrap();

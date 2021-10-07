@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.23.0] – 2021-10-05
+
+### New
+- `boc.get_code_salt` and `boc.set_code_salt` functions for contract code salt management.
+- `boc.encode_tvc` and `boc.decode_tvc` functions for TVC image encoding and decoding
+- `boc.get_compiler_version` function extracting compiler version from contract code
+- `abi.update_initial_data` and `abi.decode_initial_data` function for pre-deployment contract data management
+
 ## [1.22.0] – 2021-09-20
 
 ### New
