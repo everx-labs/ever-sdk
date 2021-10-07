@@ -29,6 +29,7 @@ use tokio::runtime::Runtime;
 #[cfg(test)]
 use tokio::sync::RwLock;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
+use ton_types::Result;
 
 #[cfg(test)]
 #[path = "client_env_tests.rs"]
@@ -257,7 +258,7 @@ impl ClientEnv {
     pub async fn bin_read_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
-    ) -> ClientResult<Option<Vec<u8>>> {
+    ) -> Result<Option<Vec<u8>>> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
         match tokio::fs::read(&path).await {
@@ -265,7 +266,7 @@ impl ClientEnv {
             Err(err) => if err.kind() == std::io::ErrorKind::NotFound {
                 Ok(None)
             } else {
-                Err(Error::internal_error(err))
+                Err(err.into())
             }
         }
     }
@@ -274,11 +275,11 @@ impl ClientEnv {
     pub async fn read_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
-    ) -> ClientResult<Option<String>> {
+    ) -> Result<Option<String>> {
         Self::bin_read_local_storage(local_storage_path, key).await
             .map(|opt| opt.map(|vec| String::from_utf8(vec)))?
             .transpose()
-            .map_err(|err| Error::internal_error(err))
+            .map_err(|err| err.into())
     }
 
     /// Write binary value by a given key into the local storage
@@ -286,7 +287,7 @@ impl ClientEnv {
         local_storage_path: &Option<String>,
         key: &str,
         value: &[u8],
-    ) -> ClientResult<()> {
+    ) -> Result<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
         if let Some(path) = path.parent() {
@@ -294,8 +295,7 @@ impl ClientEnv {
                 .map_err(|err| Error::internal_error(err))?;
         }
 
-        tokio::fs::write(&path, value).await
-            .map_err(|err| Error::internal_error(err))
+        Ok(tokio::fs::write(&path, value).await?)
     }
 
     /// Write string value by a given key into the local storage
@@ -303,7 +303,7 @@ impl ClientEnv {
         local_storage_path: &Option<String>,
         key: &str,
         value: &str,
-    ) -> ClientResult<()> {
+    ) -> Result<()> {
         Self::bin_write_local_storage(local_storage_path, key, value.as_bytes()).await
     }
 
@@ -311,10 +311,9 @@ impl ClientEnv {
     pub async fn remove_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
-    ) -> ClientResult<()> {
+    ) -> Result<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
-        tokio::fs::remove_file(&path).await
-            .map_err(|err| Error::internal_error(err))
+        Ok(tokio::fs::remove_file(&path).await?)
     }
 }

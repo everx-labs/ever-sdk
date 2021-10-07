@@ -22,6 +22,9 @@ use wasm_bindgen_futures::JsFuture;
 use web_sys::{Event, MessageEvent, Request, RequestInit, Response, Storage, Window};
 use js_sys::JSON;
 
+use ton_types::Result;
+use failure::err_msg;
+
 #[cfg(test)]
 #[path = "client_env_tests.rs"]
 mod client_env_tests;
@@ -400,9 +403,9 @@ impl ClientEnv {
     pub async fn bin_read_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
-    ) -> ClientResult<Option<Vec<u8>>> {
+    ) -> Result<Option<Vec<u8>>> {
         Ok(Self::read_local_storage(local_storage_path, key).await?
-            .map(|content_base64| crate::encoding::base64_decode(&content_base64))
+            .map(|content_base64| base64::decode(&content_base64))
             .transpose()?)
     }
 
@@ -410,11 +413,11 @@ impl ClientEnv {
     pub async fn read_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
-    ) -> ClientResult<Option<String>> {
+    ) -> Result<Option<String>> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
         Ok(Self::local_storage()?.get_item(&path)
-               .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))?)
+               .map_err(|js_err| err_msg(js_error_to_string(js_err)))?)
     }
 
     /// Write binary value by a given key into the local storage
@@ -422,7 +425,7 @@ impl ClientEnv {
         local_storage_path: &Option<String>,
         key: &str,
         value: &[u8],
-    ) -> ClientResult<()> {
+    ) -> Result<()> {
         Self::write_local_storage(local_storage_path, key, &base64::encode(value)).await
     }
 
@@ -431,11 +434,11 @@ impl ClientEnv {
         local_storage_path: &Option<String>,
         key: &str,
         value: &str,
-    ) -> ClientResult<()> {
+    ) -> Result<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
         Self::local_storage()?.set_item(&path, value)
-            .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
+            .map_err(|js_err| err_msg(js_error_to_string(js_err)))
     }
 
     /// Remove value by a given key out of the local storage
@@ -443,10 +446,10 @@ impl ClientEnv {
     pub async fn remove_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
-    ) -> ClientResult<()> {
+    ) -> Result<()> {
         let path = Self::key_to_path(local_storage_path, key)?;
 
         Self::local_storage()?.remove_item(&path)
-            .map_err(|js_err| Error::internal_error(js_error_to_string(js_err)))
+            .map_err(|js_err| err_msg(js_error_to_string(js_err)))
     }
 }

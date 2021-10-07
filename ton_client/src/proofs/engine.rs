@@ -14,10 +14,10 @@ use crate::boc::internal::get_boc_hash;
 use crate::client::{Error, NetworkUID};
 use crate::ClientContext;
 use crate::encoding::base64_decode;
-use crate::error::ClientResult;
 use crate::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
 use crate::net::types::TrustedMcBlockId;
 use crate::proofs::{BlockProof, get_current_network_uid, ProofHelperEngine, resolve_initial_trusted_key_block, storage::ProofStorage};
+use crate::utils::json::JsonHelper;
 
 const ZEROSTATE_KEY: &str = "zerostate";
 const ZEROSTATE_RIGHT_BOUND_KEY: &str = "zs_right_boundary_seq_no";
@@ -40,7 +40,7 @@ const PROOF_QUERY_RESULT: &str = "\
     }\
 ";
 
-pub struct ProofHelperEngineImpl<Storage: ProofStorage + Send + Sync> {
+pub(crate) struct ProofHelperEngineImpl<Storage: ProofStorage + Send + Sync> {
     context: Arc<ClientContext>,
     storage: Arc<Storage>,
 }
@@ -71,7 +71,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         )
     }
 
-    pub(crate) async fn get_storage_key(&self, key: &str) -> ClientResult<String> {
+    pub(crate) async fn get_storage_key(&self, key: &str) -> Result<String> {
         let network_uid = get_current_network_uid(&self.context).await?;
         Ok(Self::gen_storage_key(&network_uid, key))
     }
@@ -114,10 +114,8 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         let mut last_seq_no = 0;
         let mut last_gen_utime = 0;
         for block in blocks {
-            let seq_no = block["seq_no"].as_u64()
-                .ok_or_else(|| err_msg("seq_no of block must be an integer value"))? as u32;
-            let gen_utime = block["gen_utime"].as_u64()
-                .ok_or_else(|| err_msg("gen_utime of block must be an integer value"))? as u32;
+            let seq_no = block.get_u32("seq_no")?;
+            let gen_utime = block.get_u32("gen_utime")?;
             if seq_no != last_seq_no {
                 result.push((seq_no, block));
                 last_seq_no = seq_no;
@@ -132,30 +130,30 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         Ok(result)
     }
 
-    async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
+    async fn get_bin(&self, key: &str) -> Result<Option<Vec<u8>>> {
         self.storage.get_bin(&self.get_storage_key(key).await?).await
     }
 
-    async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()> {
+    async fn put_bin(&self, key: &str, value: &[u8]) -> Result<()> {
         self.storage.put_bin(&self.get_storage_key(key).await?, value).await
     }
 
-    async fn get_str(&self, key: &str) -> ClientResult<Option<String>> {
+    async fn get_str(&self, key: &str) -> Result<Option<String>> {
         self.storage.get_str(&self.get_storage_key(key).await?).await
     }
 
-    async fn put_str(&self, key: &str, value: &str) -> ClientResult<()> {
+    async fn put_str(&self, key: &str, value: &str) -> Result<()> {
         self.storage.put_str(&self.get_storage_key(key).await?, value).await
     }
 
-    async fn get_value(&self, key: &str) -> ClientResult<Option<Value>> {
+    async fn get_value(&self, key: &str) -> Result<Option<Value>> {
         self.get_str(key).await?
             .map(|value_str| serde_json::from_str(&value_str)
-                .map_err(|err| Error::internal_error(err)))
+                .map_err(|err| err.into()))
             .transpose()
     }
 
-    async fn put_value(&self, key: &str, value: &Value) -> ClientResult<()> {
+    async fn put_value(&self, key: &str, value: &Value) -> Result<()> {
         self.put_str(
             key,
             &serde_json::to_string(value)
@@ -163,23 +161,23 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         ).await
     }
 
-    async fn read_mc_proof(&self, mc_seq_no: u32) -> ClientResult<Option<Value>> {
+    async fn read_mc_proof(&self, mc_seq_no: u32) -> Result<Option<Value>> {
         self.get_value(&Self::mc_proof_key(mc_seq_no)).await
     }
 
-    async fn write_mc_proof(&self, mc_seq_no: u32, value: &Value) -> ClientResult<()> {
+    async fn write_mc_proof(&self, mc_seq_no: u32, value: &Value) -> Result<()> {
         self.put_value(&Self::mc_proof_key(mc_seq_no), value).await
     }
 
-    async fn read_mc_block(&self, mc_seq_no: u32) -> ClientResult<Option<Vec<u8>>> {
+    async fn read_mc_block(&self, mc_seq_no: u32) -> Result<Option<Vec<u8>>> {
         self.get_bin(&Self::mc_block_key(mc_seq_no)).await
     }
 
-    async fn write_mc_block(&self, mc_seq_no: u32, boc: &[u8]) -> ClientResult<()> {
+    async fn write_mc_block(&self, mc_seq_no: u32, boc: &[u8]) -> Result<()> {
         self.put_bin(&Self::mc_block_key(mc_seq_no), boc).await
     }
 
-    pub(crate) async fn read_metadata_value_u32(&self, key: &str) -> ClientResult<Option<u32>> {
+    pub(crate) async fn read_metadata_value_u32(&self, key: &str) -> Result<Option<u32>> {
         Ok(
             self.get_bin(key).await?
                 .map(|vec|
@@ -190,7 +188,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         )
     }
 
-    pub(crate) async fn write_metadata_value_u32(&self, key: &str, value: u32) -> ClientResult<()> {
+    pub(crate) async fn write_metadata_value_u32(&self, key: &str, value: u32) -> Result<()> {
         self.put_bin(key, &value.to_le_bytes()).await
     }
 
@@ -199,23 +197,23 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         key: &str,
         value: u32,
         process_value: fn(u32, u32) -> u32,
-    ) -> ClientResult<()> {
+    ) -> Result<()> {
         match self.read_metadata_value_u32(key).await? {
             None => self.write_metadata_value_u32(key, value).await,
             Some(prev) => self.write_metadata_value_u32(key, process_value(prev, value)).await,
         }
     }
 
-    pub(crate) async fn read_zs_right_bound(&self) -> ClientResult<u32> {
+    pub(crate) async fn read_zs_right_bound(&self) -> Result<u32> {
         self.read_metadata_value_u32(ZEROSTATE_RIGHT_BOUND_KEY).await
             .map(|opt| opt.unwrap_or(0))
     }
 
-    pub(crate) async fn update_zs_right_bound(&self, seq_no: u32) -> ClientResult<()> {
+    pub(crate) async fn update_zs_right_bound(&self, seq_no: u32) -> Result<()> {
         self.update_metadata_value_u32(ZEROSTATE_RIGHT_BOUND_KEY, seq_no, std::cmp::max).await
     }
 
-    pub(crate) async fn read_trusted_block_right_bound(&self, trusted_seq_no: u32) -> ClientResult<u32> {
+    pub(crate) async fn read_trusted_block_right_bound(&self, trusted_seq_no: u32) -> Result<u32> {
         self.read_metadata_value_u32(&Self::trusted_block_right_bound_key(trusted_seq_no)).await
             .map(|opt| opt.unwrap_or(trusted_seq_no))
     }
@@ -224,7 +222,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         &self,
         trusted_seq_no: u32,
         right_bound_seq_no: u32,
-    ) -> ClientResult<()> {
+    ) -> Result<()> {
         self.update_metadata_value_u32(
             &Self::trusted_block_right_bound_key(trusted_seq_no),
             right_bound_seq_no,
@@ -247,8 +245,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             bail!("Unable to download network's zerostate from DApp server");
         }
 
-        let boc = zerostates[0]["boc"].as_str()
-            .ok_or_else(|| err_msg("BoC of zerostate must be a string"))?;
+        let boc = zerostates[0].get_str("boc")?;
 
         Ok(base64::decode(boc)?)
     }
@@ -273,9 +270,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             return Ok(None)
         }
 
-        Ok(Some(blocks[0].1["prev_ref"]["file_hash"].as_str()
-            .ok_or_else(|| err_msg("file_hash field must be a string"))?
-            .to_string()))
+        Ok(Some(blocks[0].1["prev_ref"].get_str("file_hash")?.to_string()))
     }
 
     pub(crate) async fn download_mc_boc(
@@ -304,8 +299,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             }
 
             let (_seq_no, block_json) = &blocks[0];
-            let boc_base64 = block_json["boc"].as_str()
-                .ok_or_else(|| err_msg("boc field must be a string"))?;
+            let boc_base64 = block_json.get_str("boc")?;
 
             Ok(base64::decode(boc_base64)?)
         }
@@ -486,7 +480,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         self.download_trusted_key_block_proof(id).await
     }
 
-    pub(crate) async fn download_proof_chain<F: Fn(u32) -> R, R: Future<Output = ClientResult<()>>>(
+    pub(crate) async fn download_proof_chain<F: Fn(u32) -> R, R: Future<Output = Result<()>>>(
         &self,
         mc_seq_no_range: Range<u32>,
         on_store_block: F,
@@ -575,14 +569,11 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             }
 
             for (seq_no, value) in &blocks {
-                let shard_hashes = value["master"]["shard_hashes"].as_array()
-                    .ok_or_else(|| err_msg("Field `shard_hashes` must be an array"))?;
+                let shard_hashes = value["master"].get_array("shard_hashes")?;
                 for item in shard_hashes {
                     if item["workchain_id"] == shard.workchain_id()
                         && item["shard"] == shard.shard_prefix_as_str_with_tag()
-                        && item["descr"]["seq_no"].as_u64()
-                                .ok_or_else(|| err_msg("Field `seq_no` must be an integer"))?
-                            >= shard_block_seq_no as u64
+                        && item["descr"].get_u32("seq_no")? >= shard_block_seq_no
                     {
                         return Ok(Some(*seq_no))
                     }
@@ -654,9 +645,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                 );
             }
 
-            let boc_base64 = block["boc"].as_str()
-                .ok_or_else(|| err_msg("Field `boc` must be valid base64 string"))?;
-            result.push(base64_decode(boc_base64)?);
+            result.push(base64_decode(block.get_str("boc")?)?);
         }
 
         Ok(result)
