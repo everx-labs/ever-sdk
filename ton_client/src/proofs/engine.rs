@@ -40,13 +40,13 @@ const PROOF_QUERY_RESULT: &str = "\
     }\
 ";
 
-pub(crate) struct ProofHelperEngineImpl<Storage: ProofStorage + Send + Sync> {
+pub(crate) struct ProofHelperEngineImpl {
     context: Arc<ClientContext>,
-    storage: Arc<Storage>,
+    storage: Arc<dyn ProofStorage>,
 }
 
-impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
-    pub fn new(context: Arc<ClientContext>, storage: Arc<Storage>) -> Self {
+impl ProofHelperEngineImpl {
+    pub fn new(context: Arc<ClientContext>, storage: Arc<dyn ProofStorage>) -> Self {
         Self { context, storage }
     }
 
@@ -54,7 +54,8 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         &self.context
     }
 
-    pub fn storage(&self) -> &Arc<Storage> {
+    #[cfg(test)]
+    pub fn storage(&self) -> &Arc<dyn ProofStorage> {
         &self.storage
     }
 
@@ -80,12 +81,20 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         format!("proof_mc_{}", mc_seq_no)
     }
 
-    fn mc_block_key(mc_seq_no: u32) -> String {
-        format!("block_mc_{}", mc_seq_no)
+    fn block_key(root_hash: &str) -> String {
+        format!("block_{}", root_hash)
     }
 
     fn trusted_block_right_bound_key(seq_no: u32) -> String {
         format!("trusted_{}_right_boundary_seq_no", seq_no)
+    }
+
+    fn filter_for_block(root_hash: &str) -> Value {
+        json!({
+            "id": {
+                "eq": root_hash,
+            }
+        })
     }
 
     fn filter_for_mc_block(mc_seq_no: u32) -> Value {
@@ -169,12 +178,12 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         self.put_value(&Self::mc_proof_key(mc_seq_no), value).await
     }
 
-    async fn read_mc_block(&self, mc_seq_no: u32) -> Result<Option<Vec<u8>>> {
-        self.get_bin(&Self::mc_block_key(mc_seq_no)).await
+    pub(crate) async fn read_block(&self, root_hash: &str) -> Result<Option<Vec<u8>>> {
+        self.get_bin(&Self::block_key(root_hash)).await
     }
 
-    async fn write_mc_block(&self, mc_seq_no: u32, boc: &[u8]) -> Result<()> {
-        self.put_bin(&Self::mc_block_key(mc_seq_no), boc).await
+    pub(crate) async fn write_block(&self, root_hash: &str, boc: &[u8]) -> Result<()> {
+        self.put_bin(&Self::block_key(root_hash), boc).await
     }
 
     pub(crate) async fn read_metadata_value_u32(&self, key: &str) -> Result<Option<u32>> {
@@ -273,52 +282,56 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         Ok(Some(blocks[0].1["prev_ref"].get_str("file_hash")?.to_string()))
     }
 
-    pub(crate) async fn download_mc_boc(
+    pub(crate) async fn download_boc(
         &self,
-        mc_seq_no: u32,
+        root_hash: &str,
     ) -> Result<Vec<u8>> {
-        if let Some(boc) = self.read_mc_block(mc_seq_no).await? {
+        if let Some(boc) = self.read_block(root_hash).await? {
             Ok(boc)
         } else {
-            let blocks = Self::preprocess_query_result(query_collection(
+            let blocks = query_collection(
                 Arc::clone(&self.context),
                 ParamsOfQueryCollection {
                     collection: "blocks".to_string(),
                     result: "seq_no gen_utime boc".to_string(),
-                    filter: Some(Self::filter_for_mc_block(mc_seq_no)),
-                    order: Some(Self::sorting_by_seq_no()),
+                    filter: Some(Self::filter_for_block(root_hash)),
+                    limit: Some(1),
                     ..Default::default()
                 }
-            ).await?.result)?;
+            ).await?.result;
 
             if blocks.is_empty() {
                 bail!(
-                    "Unable to download masterchain block with seq_no: {} from DApp server",
-                    mc_seq_no,
+                    "Unable to download block with `root_hash`: {} from DApp server",
+                    root_hash,
                 );
             }
 
-            let (_seq_no, block_json) = &blocks[0];
+            let block_json = &blocks[0];
             let boc_base64 = block_json.get_str("boc")?;
 
             Ok(base64::decode(boc_base64)?)
         }
     }
 
-    pub(crate) async fn download_mc_boc_and_calc_file_hash(
+    pub(crate) async fn download_boc_and_calc_file_hash(
         &self,
-        mc_seq_no: u32,
+        root_hash: &str,
     ) -> Result<UInt256> {
-        let boc = self.download_mc_boc(mc_seq_no).await?;
+        let boc = self.download_boc(root_hash).await?;
 
         Ok(UInt256::calc_file_hash(&boc))
     }
 
-    pub(crate) async fn query_mc_block_file_hash(&self, mc_seq_no: u32) -> Result<String> {
+    pub(crate) async fn query_mc_block_file_hash(
+        &self,
+        mc_seq_no: u32,
+        root_hash: &str,
+    ) -> Result<String> {
         if let Some(file_hash) = self.query_file_hash_from_next_block(mc_seq_no).await? {
             return Ok(file_hash);
         }
-        let file_hash = self.download_mc_boc_and_calc_file_hash(mc_seq_no).await?;
+        let file_hash = self.download_boc_and_calc_file_hash(root_hash).await?;
         Ok(file_hash.as_hex_string())
     }
 
@@ -342,9 +355,53 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
         }
 
         let (seq_no, mut result) = blocks.remove(0);
-        result["file_hash"] = self.query_mc_block_file_hash(seq_no).await?.into();
+        result["file_hash"] = self.query_mc_block_file_hash(
+            seq_no,
+            result.get_str("id")?,
+        ).await?.into();
 
         Ok(result)
+    }
+
+    pub(crate) async fn check_mc_proof(
+        &self,
+        mc_seq_no: u32,
+        root_hash: &UInt256,
+    ) -> Result<()> {
+        if let Some(proof_json) = self.read_mc_proof(mc_seq_no).await? {
+            let id = UInt256::from_str(proof_json.get_str("id")?)?;
+            if id != *root_hash {
+                bail!(
+                    "`id` ({}) of proven masterchain block with seq_no: {} mismatches `root_hash` \
+                        ({}) of the block being checked",
+                    id,
+                    mc_seq_no,
+                    root_hash,
+                )
+            }
+            return Ok(());
+        }
+
+        let proof_json = self.query_mc_proof(mc_seq_no).await?;
+        let proof = BlockProof::from_value(&proof_json)?;
+
+        let expected_root_hash = proof.id().root_hash();
+
+        if root_hash != expected_root_hash {
+            bail!(
+                "`root_hash` ({}) of downloaded proof for masterchain block with seq_no: {} \
+                    mismatches `root_hash` ({}) of the block being checked",
+                expected_root_hash,
+                mc_seq_no,
+                root_hash,
+            )
+        }
+
+        proof.check_proof(self).await?;
+
+        self.write_mc_proof(mc_seq_no, &proof_json).await?;
+
+        Ok(())
     }
 
     pub(crate) async fn query_key_blocks_proofs(
@@ -457,7 +514,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
             );
         }
         let trusted_root_hash = UInt256::from_str(&id.root_hash)?;
-        if proof.id().root_hash() != trusted_root_hash {
+        if *proof.id().root_hash() != trusted_root_hash {
             bail!(
                 "Proof for trusted key-block root_hash ({:?}) mismatches trusted key-block root_hash ({:?})",
                 proof.id().root_hash(),
@@ -673,7 +730,9 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                 let mc_proof = BlockProof::from_value(&mc_proof_json)?;
                 let (_mc_block, _mc_block_info) = mc_proof.check_proof(self).await?;
 
-                let mc_boc = self.download_mc_boc(mc_seq_no).await?;
+                let mc_boc = self.download_boc(
+                    &mc_proof.id().root_hash().as_hex_string(),
+                ).await?;
                 let mc_cell = deserialize_tree_of_cells(&mut Cursor::new(&mc_boc))?;
 
                 if mc_cell.repr_hash() != *mc_proof.id().root_hash() {
@@ -683,7 +742,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                     );
                 }
 
-                self.write_mc_block(mc_seq_no, &mc_boc).await?;
+                self.write_block(&mc_cell.repr_hash().as_hex_string(), &mc_boc).await?;
 
                 let mc_block = Block::construct_from_bytes(&mc_boc)?;
 
@@ -767,7 +826,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
 }
 
 #[async_trait::async_trait]
-impl<Storage: ProofStorage + Send + Sync> ProofHelperEngine for ProofHelperEngineImpl<Storage> {
+impl ProofHelperEngine for ProofHelperEngineImpl {
     async fn load_zerostate(&self) -> Result<ShardStateUnsplit> {
         if let Some(boc) = self.get_bin(ZEROSTATE_KEY).await? {
             return ShardStateUnsplit::construct_from_bytes(&boc);

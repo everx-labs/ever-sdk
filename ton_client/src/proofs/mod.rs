@@ -1,28 +1,134 @@
-use std::collections::HashMap;
+use std::array::IntoIter;
+use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::sync::Arc;
 
 use failure::{bail, err_msg};
 use serde_json::Value;
 use ton_block::{Block, BlockIdExt, BlockInfo, ConfigParams, CryptoSignature, CryptoSignaturePair, Deserializable, MerkleProof, ShardIdent, ShardStateUnsplit, ValidatorDescr};
-use ton_types::{Cell, UInt256};
+use ton_block_json::BlockSerializationSet;
+use ton_types::{Cell, deserialize_tree_of_cells, UInt256};
 use ton_types::Result;
 
 use crate::client::NetworkUID;
 use crate::ClientContext;
+use crate::encoding::base64_decode;
+use crate::error::ClientResult;
 use crate::net::{ParamsOfQueryCollection, query_collection};
 use crate::net::types::TrustedMcBlockId;
+use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::errors::Error;
 use crate::proofs::validators::{calc_subset_for_workchain, check_crypto_signatures};
-use crate::utils::json::JsonHelper;
+use crate::utils::json::{compare_values, CompareValuesResult, JsonHelper};
 
-mod errors;
+pub mod errors;
 mod engine;
 pub(crate) mod storage;
 mod validators;
 
+pub(crate) use errors::ErrorCode;
+
 #[cfg(test)]
 mod tests;
+
+lazy_static::lazy_static! {
+    static ref COMPARE_JSON_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
+        "gen_software_version",
+        "gen_software_capabilities",
+    ]).collect();
+}
+
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
+pub struct ParamsOfProofBlockData {
+    /// Single block's data as queried from DApp server, without modifications.
+    /// The required field is `id` or top-level `boc`, others are optional.
+    block: Value,
+}
+
+/// Proves that block's data queried from DApp server can be trusted.
+/// Automatically checks block proofs and compares given data with the proven.
+/// If block's BOC is not provided, it will be queried from DApp
+/// (in this case it is required to provide `id` of block in the JSON).
+/// If `cache_proofs` in config is set to `true` (default), downloaded proofs and masterchain BOCs
+/// are saved into the persistent local storage (e.g. file system for native environments or
+/// browser's local storage for the web); otherwise all data are cached only in memory in current
+/// client's context and will be lost after destruction of the client.
+#[api_function]
+pub async fn proof_block_data(
+    context: Arc<ClientContext>,
+    params: ParamsOfProofBlockData,
+) -> ClientResult<()> {
+    let storage = Arc::clone(&context.storage);
+    let engine = ProofHelperEngineImpl::new(context, storage);
+
+    let id_opt = params.block["id"].as_str();
+
+    let boc = if let Some(boc) = params.block["boc"].as_str() {
+        base64_decode(boc)?
+    } else if let Some(id) = id_opt {
+        engine.download_boc(id).await
+            .map_err(|err| Error::proof_check_failed(err))?
+    } else {
+        return Err(Error::invalid_data("Block's BOC or id are required"));
+    };
+
+    let cell = deserialize_tree_of_cells(&mut Cursor::new(&boc))
+        .map_err(|err| Error::invalid_data(err))?;
+    let root_hash = cell.repr_hash();
+    if let Some(id) = id_opt {
+        if root_hash != UInt256::from_str(id)
+            .map_err(|err| Error::invalid_data(err))?
+        {
+            return Err(
+                Error::invalid_data(
+                    format!(
+                        "Field `id` ({}) mismatches `root_hash` ({}) of block's BOC",
+                        id,
+                        root_hash,
+                    ),
+                )
+            );
+        }
+    }
+
+    engine.write_block(&root_hash.as_hex_string(), &boc).await
+        .map_err(|err| Error::internal_error(err))?;
+
+    let block = Block::construct_from_cell(cell)
+        .map_err(|err| Error::invalid_data(err))?;
+
+    let info = block.read_info()
+        .map_err(|err| Error::invalid_data(err))?;
+    if info.shard().is_masterchain() {
+        engine.check_mc_proof(info.seq_no(), &root_hash).await
+    } else {
+        engine.check_shard_block(&boc).await
+    }.map_err(|err| Error::proof_check_failed(err))?;
+
+    // TODO: Add proof information to the resulting JSON:
+    //       1. Convert crate::proofs::BlockProof into ton_block::BlockProof (not implemented yet);
+    //       2. Get map using ton_block_json::db_serialize_proof();
+    //       3. Merge two maps into a single JSON;
+    //       4. [TBD] Increase required comparison result to CompareValuesResult::Subset.
+    let block_map = ton_block_json::db_serialize_block_ex(
+        "id",
+        &BlockSerializationSet {
+            block,
+            id: root_hash,
+            status: ton_block::BlockProcessingStatus::Finalized,
+            boc
+        },
+        ton_block_json::SerializationMode::QServer,
+    ).map_err(|err| Error::invalid_data(err))?;
+
+    if let CompareValuesResult::Different(message) =
+        compare_values(&params.block, &block_map.into(), &COMPARE_JSON_IGNORE_FIELDS)
+    {
+        return Err(Error::proof_check_failed(message));
+    }
+
+    Ok(())
+}
 
 // TODO: Update this JSON-file contents using CI:
 static INITIAL_TRUSTED_KEY_BLOCKS_JSON: &str = include_str!("trusted_key_blocks.json");
@@ -166,13 +272,6 @@ impl BlockProof {
         Ok((Block::construct_from_cell(block_virt_root.clone())?, block_virt_root))
     }
 
-    pub fn check_with_prev_key_block_proof(&self, prev_key_block_proof: &BlockProof) -> Result<()> {
-        let (virt_block, virt_block_info) = self.pre_check_block_proof()?;
-        self.check_with_prev_key_block_proof_(prev_key_block_proof, &virt_block, &virt_block_info)?;
-
-        Ok(())
-    }
-
     pub async fn check_proof(&self, engine: &impl ProofHelperEngine) -> Result<(Block, BlockInfo)> {
         if !self.id().shard().is_masterchain() {
             bail!("Only masterchain block proofs are supported");
@@ -194,13 +293,13 @@ impl BlockProof {
         } else {
             let prev_key_block_proof = engine.load_key_block_proof(prev_key_block_seqno).await?;
 
-            self.check_with_prev_key_block_proof_(&prev_key_block_proof, &virt_block, &virt_block_info)?;
+            self.check_with_prev_key_block_proof(&prev_key_block_proof, &virt_block, &virt_block_info)?;
         }
 
         Ok((virt_block, virt_block_info))
     }
 
-    pub fn check_with_prev_key_block_proof_(
+    pub fn check_with_prev_key_block_proof(
         &self,
         prev_key_block_proof: &BlockProof,
         virt_block: &Block,

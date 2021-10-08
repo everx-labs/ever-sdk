@@ -3,7 +3,9 @@ use ton_types::Result;
 use crate::client::ClientEnv;
 
 #[async_trait::async_trait]
-pub trait ProofStorage {
+pub trait ProofStorage: Send + Sync {
+    #[cfg(test)]
+    fn in_memory(&self) -> &InMemoryProofStorage;
     async fn get_bin(&self, key: &str) -> Result<Option<Vec<u8>>>;
     async fn put_bin(&self, key: &str, value: &[u8]) -> Result<()>;
     async fn get_str(&self, key: &str) -> Result<Option<String>>;
@@ -22,6 +24,11 @@ impl LocalStorage {
 
 #[async_trait::async_trait]
 impl ProofStorage for LocalStorage {
+    #[cfg(test)]
+    fn in_memory(&self) -> &InMemoryProofStorage {
+        panic!("`in_memory()` is not supported for LocalStorage");
+    }
+
     async fn get_bin(&self, key: &str) -> Result<Option<Vec<u8>>> {
         ClientEnv::bin_read_local_storage(&self.local_storage_path, key).await
     }
@@ -74,6 +81,11 @@ impl InMemoryProofStorage {
 
 #[async_trait::async_trait]
 impl ProofStorage for InMemoryProofStorage {
+    #[cfg(test)]
+    fn in_memory(&self) -> &InMemoryProofStorage {
+        self
+    }
+
     async fn get_bin(&self, key: &str) -> Result<Option<Vec<u8>>> {
         Ok(
             self.proof_map.get(key)

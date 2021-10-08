@@ -35,6 +35,7 @@ use crate::net::{
 use super::std_client_env::ClientEnv;
 #[cfg(feature = "wasm")]
 use super::wasm_client_env::ClientEnv;
+use crate::proofs::storage::ProofStorage;
 
 #[derive(Default)]
 pub struct Boxes {
@@ -65,6 +66,7 @@ pub struct ClientContext {
     pub(crate) blockchain_config: RwLock<Option<Arc<ton_executor::BlockchainConfig>>>,
 
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
+    pub(crate) storage: Arc<dyn ProofStorage>,
 
     next_id: AtomicU32,
 }
@@ -100,6 +102,12 @@ Note that default values are used if parameters are omitted in config"#,
             None
         };
 
+        let bocs = Bocs::new(config.boc.cache_max_size);
+        let storage: Arc<dyn ProofStorage> = if config.cache_proofs {
+            Arc::new(crate::proofs::storage::LocalStorage::new(config.local_storage_path.clone()))
+        } else {
+            Arc::new(crate::proofs::storage::InMemoryProofStorage::new())
+        };
         Ok(Self {
             net: NetworkContext {
                 server_link,
@@ -107,14 +115,15 @@ Note that default values are used if parameters are omitted in config"#,
                 iterators: Default::default(),
                 network_uid: Default::default(),
             },
+            config,
             env,
             debots: LockfreeMap::new(),
             boxes: Default::default(),
-            bocs: Bocs::new(config.boc.cache_max_size),
-            app_requests: Mutex::new(HashMap::new()),
-            next_id: AtomicU32::new(1),
-            config,
+            bocs,
             blockchain_config: RwLock::new(None),
+            app_requests: Mutex::new(HashMap::new()),
+            storage,
+            next_id: AtomicU32::new(1),
         })
     }
 
