@@ -4,37 +4,7 @@ pragma AbiHeader time;
 pragma AbiHeader pubkey;
 import "https://raw.githubusercontent.com/tonlabs/debots/main/Debot.sol";
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/libraries/JsonLib.sol";
-
-interface IJson {
-
-    function deserialize(uint32 answerId, string json) external returns (bool result);
-    function parse(uint32 answerId, string json) external returns (bool result, JsonLib.Value obj);
-
-}
-
-library Json {
-
-    uint256 constant ID = 0x442288826041d564ccedc579674f17c1b0a3452df799656a9167a41ab270ec19;
-    int8 constant DEBOT_WC = -31;
-
-    function deserialize(uint32 answerId, string json) public pure {
-        address addr = address.makeAddrStd(DEBOT_WC, ID);
-        IJson(addr).deserialize(answerId, json);
-    }
-
-    function parse(uint32 answerId, string json) public pure {
-        address addr = address.makeAddrStd(DEBOT_WC, ID);
-        IJson(addr).parse(answerId, json);
-    }
-
-}
-
-contract JsonABI is IJson {
-    function deserialize(uint32 answerId, string json) external override returns (bool result) {}
-    function parse(uint32 answerId, string json) external override returns (bool result, JsonLib.Value obj) {}
-} 
-
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Json/Json.sol";
 
 contract TestDebot15 is Debot {
 
@@ -100,7 +70,7 @@ contract TestDebot15 is Debot {
             optional(string) nameOpt;
             (val, nameOpt) = JsonLib.decodeObjectValue(cell);
             string desc = val.get().as_string().get();
-            Terminal.print(0, format("Address: {}, Description: {}", nameOpt.get(), desc));
+            //Terminal.print(0, format("Address: {}, Description: {}", nameOpt.get(), desc));
         }
     }
 
@@ -108,13 +78,13 @@ contract TestDebot15 is Debot {
         string name, string version, string publisher, string caption, string author,
         address support, string hello, string language, string dabi, bytes icon
     ) {
-        name = "TestDeBot14";
+        name = "TestDeBot15";
         version = "0.1.0";
         publisher = "TON Labs";
-        caption = "TestDeBot14";
+        caption = "TestDeBot15";
         author = "TON Labs";
         support = address(0);
-        hello = "TestDeBot14";
+        hello = "TestDeBot15";
         language = "en";
         dabi = m_debotAbi.get();
         icon = "";

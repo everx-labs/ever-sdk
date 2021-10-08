@@ -1721,7 +1721,7 @@ async fn test_debot_json_parse() {
             15,
             vec![
                 format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
-                format!("442288826041d564ccedc579674f17c1b0a3452df799656a9167a41ab270ec19"),
+                format!("0x442288826041d564ccedc579674f17c1b0a3452df799656a9167a41ab270ec19"),
             ],
         ),
         vec![],

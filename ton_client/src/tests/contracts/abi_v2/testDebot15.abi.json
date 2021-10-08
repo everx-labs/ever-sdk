@@ -3,30 +3,6 @@
 	"header": ["pubkey", "time", "expire"],
 	"functions": [
 		{
-			"name": "scatter",
-			"inputs": [
-				{"name":"count","type":"uint8"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "transfer",
-			"inputs": [
-				{"name":"val","type":"uint128"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "getRecipients",
-			"inputs": [
-			],
-			"outputs": [
-				{"components":[{"name":"dst","type":"address"},{"name":"val","type":"uint128"}],"name":"recipients","type":"tuple[]"}
-			]
-		},
-		{
 			"name": "start",
 			"inputs": [
 			],
@@ -34,42 +10,19 @@
 			]
 		},
 		{
-			"name": "setBoxHandle",
+			"name": "setResult",
 			"inputs": [
-				{"name":"handle","type":"uint32"}
+				{"name":"result","type":"bool"},
+				{"components":[{"name":"name","type":"bytes"},{"name":"tags","type":"bytes[]"},{"name":"age","type":"uint8"},{"name":"numbers","type":"uint8[]"},{"name":"addrs","type":"map(address,bytes)"}],"name":"obj","type":"tuple"}
 			],
 			"outputs": [
 			]
 		},
 		{
-			"name": "onError",
+			"name": "setValue",
 			"inputs": [
-				{"name":"sdkError","type":"uint32"},
-				{"name":"exitCode","type":"uint32"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "onSuccess",
-			"inputs": [
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "onGetter",
-			"inputs": [
-				{"components":[{"name":"dst","type":"address"},{"name":"val","type":"uint128"}],"name":"recipients","type":"tuple[]"}
-			],
-			"outputs": [
-			]
-		},
-		{
-			"name": "setQueryResult",
-			"inputs": [
-				{"name":"status","type":"uint8"},
-				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"cell"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"objects","type":"tuple[]"}
+				{"name":"result","type":"bool"},
+				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"cell"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"obj","type":"tuple"}
 			],
 			"outputs": [
 			]
