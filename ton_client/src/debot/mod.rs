@@ -14,8 +14,6 @@
 mod action;
 mod activity;
 mod base64_interface;
-mod hex_interface;
-mod json_interface;
 mod browser;
 pub mod calltype;
 mod context;
@@ -24,7 +22,10 @@ mod dengine;
 mod dinterface;
 mod errors;
 mod helpers;
+mod hex_interface;
 mod info;
+mod json_interface;
+mod json_lib_utils;
 mod msg_interface;
 mod network_interface;
 mod query_interface;
@@ -39,6 +40,8 @@ mod tests_interfaces;
 #[cfg(not(feature = "wasm"))]
 pub use calltype::prepare_ext_in_message;
 
+use crate::error::ClientResult;
+use crate::ClientContext;
 pub use action::DAction;
 pub use activity::{DebotActivity, Spending};
 pub use browser::BrowserCallbacks;
@@ -47,8 +50,6 @@ pub use dengine::DEngine;
 pub use dinterface::{DebotInterface, DebotInterfaceExecutor, InterfaceResult};
 pub use errors::{Error, ErrorCode};
 use info::DInfo;
-use crate::error::ClientResult;
-use crate::ClientContext;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -146,7 +147,7 @@ impl From<DInfo> for DebotInfo {
             hello: info.hello,
             language: info.language,
             dabi: info.dabi,
-            icon : info.icon,
+            icon: info.icon,
             interfaces: info.interfaces,
         }
     }
@@ -173,10 +174,7 @@ pub struct ParamsOfStart {
 /// Therefore when `debote.remove` is called the debot is being deleted and the callback is called
 /// with `finish`=`true` which indicates that it will never be used again.
 #[api_function]
-pub async fn start(
-    context: Arc<ClientContext>,
-    params: ParamsOfStart,
-) -> ClientResult<()> {
+pub async fn start(context: Arc<ClientContext>, params: ParamsOfStart) -> ClientResult<()> {
     let mutex = context
         .debots
         .get(&params.debot_handle.0)
@@ -208,7 +206,10 @@ pub async fn fetch(
     params: ParamsOfFetch,
 ) -> ClientResult<ResultOfFetch> {
     Ok(ResultOfFetch {
-        info : DEngine::fetch(context, params.address).await.map_err(Error::fetch_failed)?.into()
+        info: DEngine::fetch(context, params.address)
+            .await
+            .map_err(Error::fetch_failed)?
+            .into(),
     })
 }
 
@@ -250,7 +251,11 @@ pub async fn init(
     let handle = context.get_next_id();
     context.debots.insert(handle, Mutex::new(dengine));
     let debot_abi = info.dabi.clone().unwrap_or(String::new());
-    Ok(RegisteredDebot { debot_handle: DebotHandle(handle), info, debot_abi })
+    Ok(RegisteredDebot {
+        debot_handle: DebotHandle(handle),
+        info,
+        debot_abi,
+    })
 }
 
 /// [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
@@ -317,7 +322,5 @@ pub async fn send(context: Arc<ClientContext>, params: ParamsOfSend) -> ClientRe
         .get(&params.debot_handle.0)
         .ok_or(Error::invalid_handle(params.debot_handle.0))?;
     let mut dengine = mutex.1.lock().await;
-    dengine
-        .send(params.message)
-        .await
+    dengine.send(params.message).await
 }
