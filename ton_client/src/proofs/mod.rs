@@ -42,7 +42,7 @@ lazy_static::lazy_static! {
 pub struct ParamsOfProofBlockData {
     /// Single block's data as queried from DApp server, without modifications.
     /// The required field is `id` or top-level `boc`, others are optional.
-    block: Value,
+    pub block: Value,
 }
 
 /// Proves that block's data queried from DApp server can be trusted.
