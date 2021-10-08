@@ -247,6 +247,13 @@
               "value": "34",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "InvalidStorageKey",
+              "type": "Number",
+              "value": "35",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -324,6 +331,24 @@
               },
               "summary": null,
               "description": null
+            },
+            {
+              "name": "local_storage_path",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "For file based storage is a folder name where SDK will store its data. For browser based is a browser async storage key prefix. Default (recommended) value is \"~/.tonclient\" for native environments and \".tonclient\" for web-browser.",
+              "description": null
+            },
+            {
+              "name": "cache_proofs",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Cache proofs in the local storage.",
+              "description": "Default is `true`."
             }
           ],
           "summary": null,
@@ -461,7 +486,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data syncronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.",
+              "summary": "Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data synchronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.",
               "description": "Must be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
@@ -11529,6 +11554,96 @@
               "name": "params",
               "type": "Ref",
               "ref_name": "debot.ParamsOfRemove",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "proofs",
+      "summary": "[UNSTABLE](UNSTABLE.md) Module for proving queried data.",
+      "description": null,
+      "types": [
+        {
+          "name": "ProofsErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "InvalidData",
+              "type": "Number",
+              "value": "901",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ProofCheckFailed",
+              "type": "Number",
+              "value": "902",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InternalError",
+              "type": "Number",
+              "value": "903",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfProofBlockData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "block",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Single block's data as queried from DApp server, without modifications. The required field is `id` or top-level `boc`, others are optional.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "proof_block_data",
+          "summary": "Proves that block's data queried from DApp server can be trusted. Automatically checks block proofs and compares given data with the proven. If block's BOC is not provided, it will be queried from DApp (in this case it is required to provide `id` of block in the JSON). If `cache_proofs` in config is set to `true` (default), downloaded proofs and masterchain BOCs are saved into the persistent local storage (e.g.",
+          "description": "file system for native environments or browser's local storage for the web); otherwise all data are cached only in memory in current\nclient's context and will be lost after destruction of the client.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "proofs.ParamsOfProofBlockData",
               "summary": null,
               "description": null
             }

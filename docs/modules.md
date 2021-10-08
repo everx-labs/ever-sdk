@@ -243,3 +243,7 @@ Where:
 
 [remove](mod_debot.md#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 
+## [proofs](mod_proofs.md) – [UNSTABLE](UNSTABLE.md) Module for proving queried data.
+
+[proof_block_data](mod_proofs.md#proof_block_data) – Proves that block's data queried from DApp server can be trusted. Automatically checks block proofs and compares given data with the proven. If block's BOC is not provided, it will be queried from DApp (in this case it is required to provide `id` of block in the JSON). If `cache_proofs` in config is set to `true` (default), downloaded proofs and masterchain BOCs are saved into the persistent local storage (e.g.
+
