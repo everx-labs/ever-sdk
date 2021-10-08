@@ -75,6 +75,7 @@ impl Value {
             hasher.update(k);
             let hash = hasher.finalize();
             let json: JsonValue = serde_json::to_value(pack(v)?).ok()?;
+            println!("{}", json);
             let params = [
                 Param::new("kind", ParamType::Uint(8)),
                 Param::new("value", ParamType::Cell),
@@ -82,7 +83,7 @@ impl Value {
                     "object",
                     ParamType::Map(Box::new(ParamType::Uint(256)), Box::new(ParamType::Cell)),
                 ),
-                Param::new("array", ParamType::Array(Box::new(ParamType::Cell))),
+                Param::new("array", ParamType::Array(Box::new(ParamType::Tuple(vec![Param::new("cell", ParamType::Cell)])))),
             ];
             let tokens = Tokenizer::tokenize_all_params(&params, &json).unwrap();
             let builder =
