@@ -173,7 +173,7 @@ async fn test_query_current_network_zerostate_root_hash() -> Result<()> {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
 
     assert_eq!(
-        query_current_network_uid(client.context()).await?.zerostate_root_hash.as_str(),
+        query_current_network_uid(client.context()).await?.zerostate_root_hash.as_hex_string(),
         MAINNET_ZEROSTATE_ROOT_HASH,
     );
 
@@ -188,18 +188,18 @@ async fn test_get_current_network_zerostate_root_hash() -> Result<()> {
     assert!(context.net.network_uid.read().await.is_none());
 
     assert_eq!(
-        get_current_network_uid(&context).await?.zerostate_root_hash.as_str(),
+        get_current_network_uid(&context).await?.zerostate_root_hash.as_hex_string(),
         MAINNET_ZEROSTATE_ROOT_HASH,
     );
 
     assert_eq!(
-        context.net.network_uid.read().await.as_ref().unwrap().zerostate_root_hash.as_str(),
+        context.net.network_uid.read().await.as_ref().unwrap().zerostate_root_hash.as_hex_string(),
         MAINNET_ZEROSTATE_ROOT_HASH,
     );
 
     // Second time in order to ensure that value wasn't broken after caching:
     assert_eq!(
-        get_current_network_uid(&context).await?.zerostate_root_hash.as_str(),
+        get_current_network_uid(&context).await?.zerostate_root_hash.as_hex_string(),
         MAINNET_ZEROSTATE_ROOT_HASH,
     );
 
@@ -211,13 +211,11 @@ async fn test_resolve_initial_trusted_key_block_main() -> Result<()> {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
     let context = client.context();
 
-    let trusted_block_id = resolve_initial_trusted_key_block(&context).await?;
+    let (seq_no, root_hash) = resolve_initial_trusted_key_block(&context, 100).await?;
 
     assert_eq!(
-        trusted_block_id,
-        &INITIAL_TRUSTED_KEY_BLOCKS.get(&MAINNET_ZEROSTATE_ROOT_HASH.to_string())
-            .unwrap()
-            .trusted_key_block,
+        (seq_no, *root_hash.as_array()),
+        INITIAL_TRUSTED_KEY_BLOCKS.get(UInt256::from_str(MAINNET_ZEROSTATE_ROOT_HASH)?.as_array()).unwrap()[0],
     );
 
     Ok(())
@@ -227,9 +225,9 @@ async fn test_resolve_initial_trusted_key_block_main() -> Result<()> {
 fn test_gen_storage_key() {
     let network_uid = crate::client::NetworkUID {
         zerostate_root_hash:
-            "0123456790abcdef0123456790abcdef0123456790abcdef0123456790abcdef".to_string(),
+            UInt256::from_str("0123456790abcdef0123456790abcdef0123456790abcdef0123456790abcdef").unwrap(),
         first_master_block_root_hash:
-            "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789".to_string(),
+            UInt256::from_str("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789").unwrap(),
     };
     assert_eq!(
         ProofHelperEngineImpl::gen_storage_key(&network_uid, "test"),
@@ -380,7 +378,6 @@ async fn add_file_hashes_test() -> Result<()> {
 #[tokio::test]
 async fn mc_proofs_test() -> Result<()> {
     let engine = create_engine_mainnet();
-    let trusted_id = resolve_initial_trusted_key_block(engine.context()).await?;
     let storage: &InMemoryProofStorage = engine.storage().in_memory();
 
     let proof = BlockProof::from_value(&engine.query_mc_proof(100000).await?)?;
@@ -388,17 +385,21 @@ async fn mc_proofs_test() -> Result<()> {
 
     storage.dump();
 
-    assert_eq!(storage.count(), 13);
-    assert_eq!(engine.read_zs_right_bound().await?, 85049);
+    assert_eq!(storage.count(), 1);
+    assert_eq!(engine.read_zs_right_bound().await?, 0);
 
-    let proof = BlockProof::from_value(&engine.query_mc_proof(trusted_id.seq_no + 100000).await?)?;
+    let (trusted_seq_no, _trusted_root_hash) = resolve_initial_trusted_key_block(
+        engine.context(), 10000000,
+    ).await?;
+
+    let proof = BlockProof::from_value(&engine.query_mc_proof(trusted_seq_no + 1000).await?)?;
     proof.check_proof(&engine).await?;
 
     storage.dump();
 
-    assert_eq!(storage.count(), 26);
-    assert_eq!(engine.read_zs_right_bound().await?, 85049);
-    assert_eq!(engine.read_trusted_block_right_bound(trusted_id.seq_no).await?, 11859841);
+    assert_eq!(storage.count(), 2);
+    assert_eq!(engine.read_zs_right_bound().await?, 0);
+    assert_eq!(engine.read_trusted_block_right_bound(trusted_seq_no).await?, trusted_seq_no);
 
     Ok(())
 }

@@ -36,6 +36,7 @@ use super::std_client_env::ClientEnv;
 #[cfg(feature = "wasm")]
 use super::wasm_client_env::ClientEnv;
 use crate::proofs::storage::ProofStorage;
+use ton_types::UInt256;
 
 #[derive(Default)]
 pub struct Boxes {
@@ -45,8 +46,8 @@ pub struct Boxes {
 
 #[derive(Debug)]
 pub(crate) struct NetworkUID {
-    pub(crate) zerostate_root_hash: String,
-    pub(crate) first_master_block_root_hash: String,
+    pub(crate) zerostate_root_hash: UInt256,
+    pub(crate) first_master_block_root_hash: UInt256,
 }
 
 pub struct NetworkContext {

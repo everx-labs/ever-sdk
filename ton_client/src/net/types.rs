@@ -128,7 +128,7 @@ fn deserialize_query_timeout<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_query_timeout()))
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone, PartialEq, ApiType)]
+#[derive(Debug, Clone, PartialEq, ApiType)]
 pub struct TrustedMcBlockId {
     /// Trusted key-block sequence number
     pub seq_no: u32,
