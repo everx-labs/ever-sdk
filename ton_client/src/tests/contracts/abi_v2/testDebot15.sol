@@ -22,27 +22,7 @@ contract TestDebot15 is Debot {
     /// @notice Entry point function for DeBot.
     function start() public override {
         string json = "{\"name\":\"Joe\",\"tags\":[\"good\",\"bad\",\"ugly\"],\"age\":73,\"numbers\":[1,2,3],\"addrs\":{\"0:1111111111111111111111111111111111111111111111111111111111111111\":\"My main account\"}}";
-        Json.deserialize(tvm.functionId(setResult), json);
         Json.parse(tvm.functionId(setValue), json);
-    }
-
-    function setResult(bool result, Info obj) public pure {
-        uint8[] numbers = [1,2,3];
-        string[] tags = ["good", "bad", "ugly"];
-        require(result == true, 99);
-        require(obj.name =="Joe", 100);
-        for(uint i = 0; i < tags.length; i++) {
-            require(tvm.hash(bytes(tags[i])) == tvm.hash(bytes(obj.tags[i])), (i << 4) & 1);
-        }
-	    require(obj.age == 73, 102);
-        for(uint i = 0; i < numbers.length; i++) {
-            require(obj.numbers[i]==numbers[i], 103);
-        }
-        address testAddr = address.makeAddrStd(0, 0x1111111111111111111111111111111111111111111111111111111111111111);
-        optional(string) titleOpt = obj.addrs.fetch(testAddr);
-        require(titleOpt.hasValue(), 104);
-        string title = titleOpt.get();
-        require(title == "My main account", 105);
     }
 
     function setValue(bool result, JsonLib.Value obj) public {
@@ -69,7 +49,7 @@ contract TestDebot15 is Debot {
         for ((uint256 hash, TvmCell cell): addrs) {
             optional(string) nameOpt;
             (val, nameOpt) = JsonLib.decodeObjectValue(cell);
-            string desc = val.get().as_string().get();
+            //string desc = val.get().as_string().get();
             //Terminal.print(0, format("Address: {}, Description: {}", nameOpt.get(), desc));
         }
     }

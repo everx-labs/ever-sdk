@@ -10,15 +10,6 @@
 			]
 		},
 		{
-			"name": "setResult",
-			"inputs": [
-				{"name":"result","type":"bool"},
-				{"components":[{"name":"name","type":"bytes"},{"name":"tags","type":"bytes[]"},{"name":"age","type":"uint8"},{"name":"numbers","type":"uint8[]"},{"name":"addrs","type":"map(address,bytes)"}],"name":"obj","type":"tuple"}
-			],
-			"outputs": [
-			]
-		},
-		{
 			"name": "setValue",
 			"inputs": [
 				{"name":"result","type":"bool"},
