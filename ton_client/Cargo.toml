@@ -45,7 +45,6 @@ failure = "0.1"
 futures = "0.3.4"
 hex = "0.3.2"
 hmac = "0.11.0"
-home = "0.5.3"
 lazy_static = "1.1.0"
 libsecp256k1 = "0.6.0"
 log = "0.4.11"
@@ -74,6 +73,10 @@ js-sys = { version = "0.3.50", optional = true }
 wasm-bindgen = { version = "0.2.73", optional = true }
 wasm-bindgen-futures = { version = "0.4.15", optional = true }
 
+[dependencies.home]
+version = "0.5.3"
+optional = true
+
 [dependencies.web-sys]
 version =  "0.3.42"
 optional = true
@@ -99,7 +102,7 @@ pretty_assertions = "0.6.1"
 
 [features]
 default = ["std"]
-std = ["tokio/rt-threaded", "tokio/macros", "reqwest", "tokio-tungstenite"]
+std = ["tokio/rt-threaded", "tokio/macros", "reqwest", "tokio-tungstenite", "home"]
 wasm = [
     "wasm-bindgen",
     "wasm-bindgen-futures",
