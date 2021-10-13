@@ -1436,7 +1436,6 @@ async fn test_debot_json_parse() {
     .await;
 }
 
-
 fn build_info(abi: String, n: u32, interfaces: Vec<String>) -> DebotInfo {
     let name = format!("TestDeBot{}", n);
     DebotInfo {
