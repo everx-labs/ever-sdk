@@ -45,13 +45,6 @@ contract TestDebot15 is Debot {
         val = addrs.get("0:1111111111111111111111111111111111111111111111111111111111111111");
         string desc1 = val.get().as_string().get();
         require(desc1 == "My main account", 205);
-
-        for ((uint256 hash, TvmCell cell): addrs) {
-            optional(string) nameOpt;
-            (val, nameOpt) = JsonLib.decodeObjectValue(cell);
-            //string desc = val.get().as_string().get();
-            //Terminal.print(0, format("Address: {}, Description: {}", nameOpt.get(), desc));
-        }
     }
 
     function getDebotInfo() public functionID(0xDEB) override view returns(

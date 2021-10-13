@@ -75,7 +75,6 @@ impl Value {
             hasher.update(k);
             let hash = hasher.finalize();
             let json: JsonValue = serde_json::to_value(pack(v)?).ok()?;
-            println!("{}", json);
             let params = [
                 Param::new("kind", ParamType::Uint(8)),
                 Param::new("value", ParamType::Cell),
