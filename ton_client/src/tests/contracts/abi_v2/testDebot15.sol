@@ -35,6 +35,17 @@ contract TestDebot15 is Debot {
         string name = val.get().as_string().get();
         require(name =="Joe",200);
 
+        string[] expectedTags = ["good", "bad", "ugly"];
+        uint i = 0;
+        val = jsonObj.get("tags");
+        JsonLib.Cell[] elems = val.get().as_array().get();
+        for (JsonLib.Cell e: elems) {
+            val = JsonLib.decodeArrayValue(e.cell);
+            string tag = val.get().as_string().get();
+            require(expectedTags[i] == tag, 300);
+            i++;
+        }
+
         val = jsonObj.get("age");
         int age = val.get().as_number().get();
         require(age == 73, 202);
@@ -45,6 +56,16 @@ contract TestDebot15 is Debot {
         val = addrs.get("0:1111111111111111111111111111111111111111111111111111111111111111");
         string desc1 = val.get().as_string().get();
         require(desc1 == "My main account", 205);
+
+        mapping(string => string) expectedAddrs;
+        expectedAddrs["0:1111111111111111111111111111111111111111111111111111111111111111"] = "My main account";
+        for ((uint256 hash, TvmCell cell): addrs) {
+            optional(string) nameOpt;
+            (val, nameOpt) = JsonLib.decodeObjectValue(cell);
+            string desc = val.get().as_string().get();
+            require(expectedAddrs.exists(nameOpt.get()), 206);
+            require(expectedAddrs[nameOpt.get()] == desc, 207);
+        }
     }
 
     function getDebotInfo() public functionID(0xDEB) override view returns(

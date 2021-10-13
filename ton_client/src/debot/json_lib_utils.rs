@@ -71,26 +71,13 @@ impl Value {
         let mut val = Self::default();
         val.kind = ValKind::Object;
         for (k, v) in map {
+            let json: JsonValue = serde_json::to_value(pack(v)?).ok()?;
+            let packed = Self::pack_value_to_cell(json, Some(&k))?;
             let mut hasher = sha2::Sha256::new();
             hasher.update(k);
             let hash = hasher.finalize();
-            let json: JsonValue = serde_json::to_value(pack(v)?).ok()?;
-            let params = [
-                Param::new("kind", ParamType::Uint(8)),
-                Param::new("value", ParamType::Cell),
-                Param::new(
-                    "object",
-                    ParamType::Map(Box::new(ParamType::Uint(256)), Box::new(ParamType::Cell)),
-                ),
-                Param::new("array", ParamType::Array(Box::new(ParamType::Tuple(vec![Param::new("cell", ParamType::Cell)])))),
-            ];
-            let tokens = Tokenizer::tokenize_all_params(&params, &json).unwrap();
-            let builder =
-                TokenValue::pack_values_into_chain(&tokens[..], vec![], &ABI_VERSION_2_0).unwrap();
-            let serialized =
-                serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()?;
             val.object
-                .insert(format!("0x{}", hex::encode(&hash[..])), serialized);
+                .insert(format!("0x{}", hex::encode(&hash[..])), packed);
         }
         Some(val)
     }
@@ -99,11 +86,34 @@ impl Value {
         let mut val = Self::default();
         val.kind = ValKind::Array;
         for element in array {
-            val.array.push(Cell {
-                cell: pack(element)?.value,
-            });
+            let json: JsonValue = serde_json::to_value(pack(element)?).ok()?;
+            let packed = Self::pack_value_to_cell(json, None)?;
+            val.array.push(Cell { cell: packed });
         }
         Some(val)
+    }
+
+    fn pack_value_to_cell(mut json: JsonValue, key: Option<&String>) -> Option<String> {
+        let mut params = vec![
+            Param::new("kind", ParamType::Uint(8)),
+            Param::new("value", ParamType::Cell),
+            Param::new(
+                "object",
+                ParamType::Map(Box::new(ParamType::Uint(256)), Box::new(ParamType::Cell)),
+            ),
+            Param::new("array", ParamType::Array(Box::new(ParamType::Tuple(vec![Param::new("cell", ParamType::Cell)])))),
+        ];
+        if let Some(k) = key {
+            params.push(Param::new("key", ParamType::Bytes));
+            json["key"] = json!(hex::encode(k));
+        }
+
+        let tokens = Tokenizer::tokenize_all_params(&params, &json).unwrap();
+        let builder =
+            TokenValue::pack_values_into_chain(&tokens[..], vec![], &ABI_VERSION_2_0).unwrap();
+        let serialized =
+            serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()?;
+        Some(serialized)
     }
 
     fn serialize(param_type: ParamType, json: JsonValue) -> Option<String> {
