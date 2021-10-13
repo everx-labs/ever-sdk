@@ -772,7 +772,7 @@ impl<Storage: ProofStorage + Send + Sync> ProofHelperEngineImpl<Storage> {
                 return Ok(());
             }
 
-            tokio::time::delay_for(Duration::from_secs(1)).await;
+            self.context.env.set_timer(1000).await?;
         }
     }
 }
