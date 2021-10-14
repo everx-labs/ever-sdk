@@ -123,7 +123,7 @@ impl Value {
             let tokens = Tokenizer::tokenize_all_params(&params, &json).unwrap();
             let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], &ABI_VERSION_2_0).unwrap();
             let serialized =
-                serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()?;
+                serialize_cell_to_base64(&builder.into_cell().ok()?, "QueryValue").ok()?;
             val.object
                 .insert(format!("0x{}", hex::encode(&hash[..])), serialized);
         }
@@ -137,7 +137,7 @@ impl Value {
         )
         .ok()?;
         let builder = TokenValue::pack_values_into_chain(&tokens[..], vec![], &ABI_VERSION_2_0).ok()?;
-        serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()
+        serialize_cell_to_base64(&builder.into_cell().ok()?, "QueryValue").ok()
     }
 }
 
