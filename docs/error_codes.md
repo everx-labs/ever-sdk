@@ -9,25 +9,25 @@ You can find error codes with descriptions on this page
 
 ## SDK Errors
 
-[Client Error codes \(1-99\)](mod_client.md#clienterrorcode)
+[Client Error codes (1-99)](modules/mod_client.md#clienterrorcode)
 
-[Crypto Error codes \(100-199\)](mod_crypto.md#CryptoErrorCode)
+[Crypto Error codes (100-199)](modules/mod_crypto.md#CryptoErrorCode)
 
-[Boc error codes\(200-299\)](mod_boc.md#BocErrorCode)
+[Boc error codes(200-299)](modules/mod_boc.md#BocErrorCode)
 
-[Abi Error codes \(300-399\)](mod_abi.md#AbiErrorCode)
+[Abi Error codes (300-399)](modules/mod_abi.md#AbiErrorCode)
 
-[TVM Error codes \(400-499\)](mod_tvm.md#TvmErrorCode)
+[TVM Error codes (400-499)](modules/mod_tvm.md#TvmErrorCode)
 
-[Processing Error codes \(500-599\)](mod_processing.md#ProcessingErrorCode)
+[Processing Error codes (500-599)](modules/mod_processing.md#ProcessingErrorCode)
 
-[Net Error Codes \(600-699\)](mod_net.md#NetErrorCode)
+[Net Error Codes (600-699)](modules/mod_net.md#NetErrorCode)
 
-[DeBot Error Codes \(800-899\)](mod_debot.md#DebotErrorCode)
+[DeBot Error Codes (800-899)](modules/mod_debot.md#DebotErrorCode)
 
 ## Solidity Runtime Errors
 
-[https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md\#solidity-runtime-errors](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#solidity-runtime-errors)
+[https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#solidity-runtime-errors](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#solidity-runtime-errors)
 
 ## TON Virtual Machine Runtime Errors
 
@@ -71,9 +71,9 @@ You can find error codes with descriptions on this page
 
 `36` Invalid destination address
 
-`37` Too low balance to send outbound message \(37\) at action
+`37` Too low balance to send outbound message (37) at action
 
-`38` Too low extra to send outbound message \(38\) at action
+`38` Too low extra to send outbound message (38) at action
 
 `39` Message does not fit in buffer
 
@@ -82,4 +82,3 @@ You can find error codes with descriptions on this page
 `41` Library not found
 
 `42` Library delete error
-

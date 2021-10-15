@@ -13,11 +13,11 @@ GraphQL Server is a major TON Operating System component that provides API and r
 * Query blockchain data
 * Send a prepared message to blockchain
 * Subscribe to blockchain data updates
-* Subscribe to contract events\(external outbound messages\)
+* Subscribe to contract events(external outbound messages)
 
 Read more in the next sections.
 
-[Quick Start](6_samples.md#quick-start)
+[Quick Start](samples.md#quick-start)
 
 ## SDK
 
@@ -27,5 +27,4 @@ SDK is supported for 14 programming languages for all the popular platforms.
 
 ## More about GraphQL protocol
 
-Read more about GraphQL on the official GraphQL Foundation website [https://graphql.org/](https://graphql.org/)
-
+Read more about GraphQL on the official GraphQL Foundation website [https://graphql.org/](https://graphql.org)
