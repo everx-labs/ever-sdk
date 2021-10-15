@@ -60,11 +60,11 @@
   * [Batch Query](guides/queries_and_subscriptions/batch_query.md)
   * [Subscribe to Updates](guides/queries_and_subscriptions/subscribe_to_updates.md)
 
-***
-
-* [AppKit JS documentation](https://azorina.gitbook.io/appkit-js/)
-
 ## For Binding Developers
 
 * [How to work with Application Objects in binding generators](for-binding-developers/app_objects.md)
 * [JSON Interface to Ton Client](for-binding-developers/json_interface.md)
+
+***
+
+* [AppKit JS documentation](https://azorina.gitbook.io/appkit-js/)
