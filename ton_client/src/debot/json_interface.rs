@@ -119,7 +119,7 @@ impl JsonInterface {
                     .pointer(&pointer)
                     .ok_or_else(|| format!("\"{}\" not found", pointer))?
                     .as_array()
-                    .unwrap()
+                    .ok_or_else(|| String::from("Failed to retrieve an array"))?
                     .len();
                 for i in 0..elem_count {
                     self.bypass_json(
@@ -134,7 +134,7 @@ impl JsonInterface {
                     .pointer(&pointer)
                     .ok_or_else(|| format!("\"{}\" not found", pointer))?
                     .as_object()
-                    .unwrap()
+                    .ok_or_else(|| String::from("Failed to retrieve an object"))?
                     .keys()
                     .map(|k| k.clone())
                     .collect();
