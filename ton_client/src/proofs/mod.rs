@@ -5,7 +5,7 @@ use std::sync::Arc;
 
 use failure::{bail, err_msg};
 use serde_json::Value;
-use ton_block::{Block, BlockIdExt, BlockInfo, ConfigParams, CryptoSignature, CryptoSignaturePair, Deserializable, MerkleProof, ShardIdent, ShardStateUnsplit, ValidatorDescr};
+use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, MerkleProof, ShardIdent, ShardStateUnsplit, ValidatorDescr};
 use ton_block_json::BlockSerializationSet;
 use ton_types::{Cell, deserialize_tree_of_cells, UInt256};
 use ton_types::Result;
@@ -75,21 +75,6 @@ pub async fn proof_block_data(
     let cell = deserialize_tree_of_cells(&mut Cursor::new(&boc))
         .map_err(|err| Error::invalid_data(err))?;
     let root_hash = cell.repr_hash();
-    if let Some(id) = id_opt {
-        if root_hash != UInt256::from_str(id)
-            .map_err(|err| Error::invalid_data(err))?
-        {
-            return Err(
-                Error::invalid_data(
-                    format!(
-                        "Field `id` ({}) mismatches `root_hash` ({}) of block's BOC",
-                        id,
-                        root_hash,
-                    ),
-                )
-            );
-        }
-    }
 
     engine.write_block(&root_hash.as_hex_string(), &boc).await
         .map_err(|err| Error::internal_error(err))?;
@@ -124,7 +109,7 @@ pub async fn proof_block_data(
     if let CompareValuesResult::Different(message) =
         compare_values(&params.block, &block_map.into(), &COMPARE_JSON_IGNORE_FIELDS)
     {
-        return Err(Error::proof_check_failed(message));
+        return Err(Error::data_differs_from_proven(message));
     }
 
     Ok(())
@@ -282,11 +267,8 @@ impl BlockProof {
 
         if prev_key_block_seqno == 0 {
             let zerostate = engine.load_zerostate().await?;
-            let mc_state_extra = zerostate.read_custom()?
-                .ok_or_else(|| err_msg("Can't read custom field from the zerostate"))?;
             self.check_with_zerostate(
                 &zerostate,
-                mc_state_extra.config(),
                 &virt_block,
                 &virt_block_info,
             )?;
@@ -347,7 +329,6 @@ impl BlockProof {
     fn check_with_zerostate(
         &self,
         zerostate: &ShardStateUnsplit,
-        config: &ConfigParams,
         virt_block: &Block,
         virt_block_info: &BlockInfo,
     ) -> Result<()> {
@@ -356,7 +337,7 @@ impl BlockProof {
         }
 
         let (validators, validators_hash_short) =
-            self.process_zerostate(zerostate, virt_block_info, config)?;
+            self.process_zerostate(zerostate, virt_block_info)?;
 
         self.check_signatures(validators, validators_hash_short)
     }
@@ -561,9 +542,8 @@ impl BlockProof {
 
     fn process_zerostate(
         &self,
-        state: &ShardStateUnsplit,
+        zerostate: &ShardStateUnsplit,
         block_info: &ton_block::BlockInfo,
-        config: &ConfigParams,
     ) -> Result<(Vec<ValidatorDescr>, u32)> {
         if !self.id().shard().is_masterchain() {
             bail!(
@@ -580,11 +560,13 @@ impl BlockProof {
             );
         }
 
-        let (cur_validator_set, cc_config) = state.read_cur_validator_set_and_cc_conf()?;
+        let (cur_validator_set, cc_config) = zerostate.read_cur_validator_set_and_cc_conf()?;
+        let mc_state_extra = zerostate.read_custom()?
+            .ok_or_else(|| err_msg("Can't read custom field from the zerostate"))?;
 
         let (validators, hash_short) = calc_subset_for_workchain(
             &cur_validator_set,
-            config,
+            mc_state_extra.config(),
             &cc_config,
             self.id().shard().shard_prefix_with_tag(),
             self.id().shard().workchain_id(),

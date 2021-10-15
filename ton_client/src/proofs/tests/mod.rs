@@ -4,7 +4,7 @@ use serde_json::Value;
 use ton_block::{BinTreeType, Block, BlockIdExt, Deserializable, InRefValue, MASTERCHAIN_ID, ShardHashes, ShardIdent, ShardStateUnsplit};
 use ton_types::{Result, UInt256};
 
-use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, proof_block_data, query_current_network_uid, resolve_initial_trusted_key_block, ParamsOfProofBlockData};
+use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_uid, resolve_initial_trusted_key_block, ParamsOfProofBlockData};
 use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::storage::InMemoryProofStorage;
 use crate::proofs::validators::{calc_subset_for_workchain, calc_workchain_id, calc_workchain_id_by_adnl_id};
@@ -398,7 +398,7 @@ async fn mc_proofs_test() -> Result<()> {
 
     assert_eq!(storage.count(), 26);
     assert_eq!(engine.read_zs_right_bound().await?, 85049);
-    assert_eq!(engine.read_trusted_block_right_bound(trusted_id.seq_no).await?, 11201794);
+    assert_eq!(engine.read_trusted_block_right_bound(trusted_id.seq_no).await?, 11859841);
 
     Ok(())
 }
@@ -575,17 +575,38 @@ async fn query_block_data(context: Arc<ClientContext>, id: &str, result: &str) -
 
 #[tokio::test]
 async fn proof_block_data_test() -> Result<()> {
-    let engine = create_engine_mainnet();
+    let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
 
-    let proof_json = engine.query_mc_proof(100).await?;
+    let proof_json = query_block_data(
+        client.context(),
+        "5a049e5b761c1cb4bbedf0df8efb202b55a243ad194f8cb03c6e34cac48d448c",
+        r#"
+            id
+            workchain_id
+            shard
+            seq_no
+            gen_utime
+            signatures {
+                proof
+                catchain_seqno
+                validator_list_hash_short
+                sig_weight
+                signatures {
+                    node_id
+                    r
+                    s
+                }
+            }
+        "#
+    ).await?;
 
-    proof_block_data(
-        Arc::clone(engine.context()),
+    client.request_async(
+        "proofs.proof_block_data",
         ParamsOfProofBlockData { block: proof_json },
     ).await?;
 
     let mut block_json = query_block_data(
-        Arc::clone(engine.context()),
+        client.context(),
         "8bde590a572437332977e68bace66fa00f9cebac6baa57f6bf2d2f1276db2848",
         r#"
             id
@@ -813,23 +834,23 @@ async fn proof_block_data_test() -> Result<()> {
 		"#,
     ).await?;
 
-    proof_block_data(
-        Arc::clone(engine.context()),
+    client.request_async(
+        "proofs.proof_block_data",
         ParamsOfProofBlockData { block: block_json.clone() },
     ).await?;
 
     block_json["boc"] = Value::Null;
 
-    proof_block_data(
-        Arc::clone(engine.context()),
+    client.request_async(
+        "proofs.proof_block_data",
         ParamsOfProofBlockData { block: block_json.clone() },
     ).await?;
 
     block_json["boc"] = SHARD_BLOCK_0_A000000000000000_99_BOC.into();
 
     assert!(
-        proof_block_data(
-            Arc::clone(engine.context()),
+        client.request_async::<_, ()>(
+            "proofs.proof_block_data",
             ParamsOfProofBlockData { block: block_json.clone() },
         ).await
             .is_err()
@@ -839,8 +860,8 @@ async fn proof_block_data_test() -> Result<()> {
     block_json["prev_ref"]["root_hash"] = "0000000000000000000000000000000000000000000000000000000000000000".into();
 
     assert!(
-        proof_block_data(
-            Arc::clone(engine.context()),
+        client.request_async::<_, ()>(
+            "proofs.proof_block_data",
             ParamsOfProofBlockData { block: block_json },
         ).await
             .is_err()

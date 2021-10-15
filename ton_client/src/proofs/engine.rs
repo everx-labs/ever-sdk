@@ -600,23 +600,24 @@ impl ProofHelperEngineImpl {
                 ParamsOfQueryCollection {
                     collection: "blocks".to_string(),
                     result: "\
-                    seq_no \
-                    gen_utime \
-                    master { \
-                        shard_hashes { \
-                            workchain_id \
-                            shard \
-                            descr { \
-                                seq_no \
-                                root_hash \
+                        seq_no \
+                        gen_utime \
+                        master { \
+                            shard_hashes { \
+                                workchain_id \
+                                shard \
+                                descr { \
+                                    seq_no \
+                                    root_hash \
+                                }\
                             }\
-                        }\
-                    }".to_string(),
+                        }".to_string(),
                     filter: Some(json!({
                         "workchain_id": { "eq": -1 },
                         "seq_no": { "ge": *first_mc_seq_no },
                     })),
                     order: Some(Self::sorting_by_seq_no()),
+                    limit: Some(10),
                     ..Default::default()
                 }
             ).await?.result)?;
@@ -820,7 +821,8 @@ impl ProofHelperEngineImpl {
                 return Ok(());
             }
 
-            tokio::time::delay_for(Duration::from_secs(1)).await;
+            // TODO: Rewrite using wait_for():
+            self.context.env.set_timer(1000).await.ok();
         }
     }
 }

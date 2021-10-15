@@ -7,6 +7,7 @@ pub enum ErrorCode {
     InvalidData = 901,
     ProofCheckFailed = 902,
     InternalError = 903,
+    DataDiffersFromProven = 904,
 }
 
 pub struct Error;
@@ -27,6 +28,13 @@ impl Error {
         error(
             ErrorCode::ProofCheckFailed,
             format!("Proof check failed: {}", err),
+        )
+    }
+
+    pub fn data_differs_from_proven(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::DataDiffersFromProven,
+            format!("Data differs from the proven: {}", err),
         )
     }
 

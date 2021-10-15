@@ -43,16 +43,16 @@ impl JsonHelper for Value {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub(crate) enum CompareValuesResult {
-    /// Values a and b are different
+    /// Values `a` and `b` are different
     Different(String),
 
-    /// Value a has fields which are not exist in value b
+    /// Value `a` has fields which are not exist in value `b`
     PartiallyMatches,
 
-    /// Value a is subset of value b
+    /// Value `a` is subset of value `b`
     Subset,
 
-    /// Value a equals to value b
+    /// Value `a` equals to value `b`
     Equal,
 }
 
