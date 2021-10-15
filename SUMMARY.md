@@ -43,7 +43,7 @@
   * [Retry Message](guides/work_with_contracts/retry_message.md)
   * [External Signing](guides/work_with_contracts/external_signing.md)
   * [Emulate Transaction](guides/work_with_contracts/emulate_transaction.md)
-  * [Decode Message](guides/work_with_contracts/1decode_message.md)
+  * [Decode Message](guides/work_with_contracts/decode_message.md)
   * [Estimate Fees](guides/work_with_contracts/estimate_fees.md)
   * [Validate address, convert address](guides/work_with_contracts/validate_address_convert_address.md)
 * [Crypto](guides/crypto/README.md)
