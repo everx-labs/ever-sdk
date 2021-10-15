@@ -10,6 +10,9 @@ All notable changes to this project will be documented in this file.
 - `boc.get_compiler_version` function extracting compiler version from contract code
 - `abi.update_initial_data` and `abi.decode_initial_data` function for pre-deployment contract data management
 
+- **Debot module**:
+    - added `parse` function to Json interface.
+
 ## [1.22.0] – 2021-09-20
 
 ### New
