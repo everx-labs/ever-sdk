@@ -3,7 +3,6 @@ use std::future::Future;
 use std::io::Cursor;
 use std::ops::Range;
 use std::sync::Arc;
-use std::time::Duration;
 
 use failure::{bail, err_msg};
 use serde_json::Value;

@@ -30,19 +30,19 @@ impl ProofStorage for LocalStorage {
     }
 
     async fn get_bin(&self, key: &str) -> Result<Option<Vec<u8>>> {
-        ClientEnv::bin_read_local_storage(&self.local_storage_path, key).await
+        Ok(ClientEnv::bin_read_local_storage(&self.local_storage_path, key).await?)
     }
 
     async fn put_bin(&self, key: &str, value: &[u8]) -> Result<()> {
-        ClientEnv::bin_write_local_storage(&self.local_storage_path, key, value).await
+        Ok(ClientEnv::bin_write_local_storage(&self.local_storage_path, key, value).await?)
     }
 
     async fn get_str(&self, key: &str) -> Result<Option<String>> {
-        ClientEnv::read_local_storage(&self.local_storage_path, key).await
+        Ok(ClientEnv::read_local_storage(&self.local_storage_path, key).await?)
     }
 
     async fn put_str(&self, key: &str, value: &str) -> Result<()> {
-        ClientEnv::write_local_storage(&self.local_storage_path, key, value).await
+        Ok(ClientEnv::write_local_storage(&self.local_storage_path, key, value).await?)
     }
 }
 
