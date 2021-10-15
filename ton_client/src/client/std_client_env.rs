@@ -265,7 +265,7 @@ impl ClientEnv {
             Err(err) => if err.kind() == std::io::ErrorKind::NotFound {
                 Ok(None)
             } else {
-                Err(Error::internal_error(err))
+                Err(Error::local_storage_error(err))
             }
         }
     }
@@ -278,7 +278,8 @@ impl ClientEnv {
         Self::bin_read_local_storage(local_storage_path, key).await
             .map(|opt| opt.map(|vec| String::from_utf8(vec)))?
             .transpose()
-            .map_err(|err| Error::internal_error(err))
+            .map_err(|err| Error::local_storage_error(err))
+            .map_err(|err| err.into())
     }
 
     /// Write binary value by a given key into the local storage
@@ -291,11 +292,11 @@ impl ClientEnv {
 
         if let Some(path) = path.parent() {
             tokio::fs::create_dir_all(path).await
-                .map_err(|err| Error::internal_error(err))?;
+                .map_err(|err| Error::local_storage_error(err))?;
         }
 
         tokio::fs::write(&path, value).await
-            .map_err(|err| Error::internal_error(err))
+            .map_err(|err| Error::local_storage_error(err))
     }
 
     /// Write string value by a given key into the local storage
@@ -308,6 +309,7 @@ impl ClientEnv {
     }
 
     /// Remove value by a given key out of the local storage
+    #[allow(dead_code)]
     pub async fn remove_local_storage(
         local_storage_path: &Option<String>,
         key: &str,
@@ -315,6 +317,6 @@ impl ClientEnv {
         let path = Self::key_to_path(local_storage_path, key)?;
 
         tokio::fs::remove_file(&path).await
-            .map_err(|err| Error::internal_error(err))
+            .map_err(|err| Error::local_storage_error(err))
     }
 }

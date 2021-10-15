@@ -1,28 +1,118 @@
-use std::collections::HashMap;
+use std::array::IntoIter;
+use std::collections::{HashMap, HashSet};
 use std::io::Cursor;
 use std::sync::Arc;
 
 use failure::{bail, err_msg};
 use serde_json::Value;
-use ton_block::{Block, BlockIdExt, BlockInfo, CatchainConfig, ConfigParams, CryptoSignature, CryptoSignaturePair, Deserializable, MerkleProof, ShardIdent, ShardStateUnsplit, ValidatorDescr, ValidatorSet};
-use ton_types::{Cell, UInt256};
+use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, MerkleProof, ShardIdent, ShardStateUnsplit, ValidatorDescr};
+use ton_block_json::BlockSerializationSet;
+use ton_types::{Cell, deserialize_tree_of_cells, UInt256};
 use ton_types::Result;
 
 use crate::client::NetworkUID;
 use crate::ClientContext;
-use crate::error::{ClientError, ClientResult};
+use crate::encoding::base64_decode;
+use crate::error::ClientResult;
 use crate::net::{ParamsOfQueryCollection, query_collection};
 use crate::net::types::TrustedMcBlockId;
+use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::errors::Error;
 use crate::proofs::validators::{calc_subset_for_workchain, check_crypto_signatures};
+use crate::utils::json::{compare_values, CompareValuesResult, JsonHelper};
 
-mod errors;
+pub mod errors;
 mod engine;
 pub(crate) mod storage;
 mod validators;
 
+pub(crate) use errors::ErrorCode;
+
 #[cfg(test)]
 mod tests;
+
+lazy_static::lazy_static! {
+    static ref COMPARE_JSON_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
+        "gen_software_capabilities",
+    ]).collect();
+}
+
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
+pub struct ParamsOfProofBlockData {
+    /// Single block's data as queried from DApp server, without modifications.
+    /// The required field is `id` or top-level `boc`, others are optional.
+    pub block: Value,
+}
+
+/// Proves that block's data queried from DApp server can be trusted.
+/// Automatically checks block proofs and compares given data with the proven.
+/// If block's BOC is not provided, it will be queried from DApp
+/// (in this case it is required to provide `id` of block in the JSON).
+/// If `cache_proofs` in config is set to `true` (default), downloaded proofs and masterchain BOCs
+/// are saved into the persistent local storage (e.g. file system for native environments or
+/// browser's local storage for the web); otherwise all data are cached only in memory in current
+/// client's context and will be lost after destruction of the client.
+#[api_function]
+pub async fn proof_block_data(
+    context: Arc<ClientContext>,
+    params: ParamsOfProofBlockData,
+) -> ClientResult<()> {
+    let storage = Arc::clone(&context.storage);
+    let engine = ProofHelperEngineImpl::new(context, storage);
+
+    let id_opt = params.block["id"].as_str();
+
+    let boc = if let Some(boc) = params.block["boc"].as_str() {
+        base64_decode(boc)?
+    } else if let Some(id) = id_opt {
+        engine.download_boc(id).await
+            .map_err(|err| Error::proof_check_failed(err))?
+    } else {
+        return Err(Error::invalid_data("Block's BOC or id are required"));
+    };
+
+    let cell = deserialize_tree_of_cells(&mut Cursor::new(&boc))
+        .map_err(|err| Error::invalid_data(err))?;
+    let root_hash = cell.repr_hash();
+
+    engine.write_block(&root_hash.as_hex_string(), &boc).await
+        .map_err(|err| Error::internal_error(err))?;
+
+    let block = Block::construct_from_cell(cell)
+        .map_err(|err| Error::invalid_data(err))?;
+
+    let info = block.read_info()
+        .map_err(|err| Error::invalid_data(err))?;
+    if info.shard().is_masterchain() {
+        engine.check_mc_proof(info.seq_no(), &root_hash).await
+    } else {
+        engine.check_shard_block(&boc).await
+    }.map_err(|err| Error::proof_check_failed(err))?;
+
+    // TODO: Add proof information to the resulting JSON:
+    //       1. Convert crate::proofs::BlockProof into ton_block::BlockProof (not implemented yet);
+    //       2. Get map using ton_block_json::db_serialize_proof();
+    //       3. Merge two maps into a single JSON;
+    //       4. [TBD] Increase required comparison result to CompareValuesResult::Subset.
+    let block_map = ton_block_json::db_serialize_block_ex(
+        "id",
+        &BlockSerializationSet {
+            block,
+            id: root_hash,
+            status: ton_block::BlockProcessingStatus::Finalized,
+            boc
+        },
+        ton_block_json::SerializationMode::QServer,
+    ).map_err(|err| Error::invalid_data(err))?;
+
+    if let CompareValuesResult::Different(message) =
+        compare_values(&params.block, &block_map.into(), "blocks", &COMPARE_JSON_IGNORE_FIELDS)
+    {
+        return Err(Error::data_differs_from_proven(message));
+    }
+
+    Ok(())
+}
 
 // TODO: Update this JSON-file contents using CI:
 static INITIAL_TRUSTED_KEY_BLOCKS_JSON: &str = include_str!("trusted_key_blocks.json");
@@ -38,7 +128,7 @@ lazy_static! {
             .expect("FATAL: failed to parse trusted key-blocks JSON!");
 }
 
-pub struct Signatures {
+pub(crate) struct Signatures {
     validator_list_hash_short: u32,
     catchain_seqno: u32,
     sig_weight: u64,
@@ -63,7 +153,7 @@ impl Signatures {
     }
 }
 
-pub struct BlockProof {
+pub(crate) struct BlockProof {
     id: BlockIdExt,
     root: Cell,
     signatures: Signatures,
@@ -71,52 +161,36 @@ pub struct BlockProof {
 
 impl BlockProof {
     pub fn from_value(value: &Value) -> Result<Self> {
-        fn read_u64(value: &Value, field: &str) -> Result<u64> {
-            value[field].as_u64()
-                .ok_or_else(|| err_msg(format!("{} field must be an unsigned integer", field)))
-        }
-
-        fn read_i64(value: &Value, field: &str) -> Result<i64> {
-            value[field].as_i64()
-                .ok_or_else(|| err_msg(format!("{} field must be an integer", field)))
-        }
-
-        fn read_str<'json>(value: &'json Value, field: &str) -> Result<&'json str> {
-            value[field].as_str()
-                .ok_or_else(|| err_msg(format!("{} field must be a string", field)))
-        }
-
-        let workchain_id = read_i64(value, "workchain_id")? as i32;
-        let shard_prefix_tagged = u64::from_str_radix(read_str(value, "shard")?, 16)?;
+        let workchain_id = value.get_i32("workchain_id")?;
+        let shard_prefix_tagged = u64::from_str_radix(value.get_str("shard")?, 16)?;
         let shard_id = ShardIdent::with_tagged_prefix(workchain_id, shard_prefix_tagged)?;
-        let seq_no = read_u64(value, "seq_no")? as u32;
-        let root_hash = UInt256::from_str(read_str(value, "id")?)?;
-        let file_hash = UInt256::from_str(read_str(value, "file_hash")?)?;
+        let seq_no = value.get_u32("seq_no")?;
+        let root_hash = UInt256::from_str(value.get_str("id")?)?;
+        let file_hash = UInt256::from_str(value.get_str("file_hash")?)?;
         let id = BlockIdExt::with_params(shard_id, seq_no, root_hash, file_hash);
 
         let signatures_json = &value["signatures"];
-        let root_boc = base64::decode(read_str(signatures_json, "proof")?)?;
+        let root_boc = base64::decode(signatures_json.get_str("proof")?)?;
 
         let root = ton_types::deserialize_tree_of_cells(&mut Cursor::new(&root_boc))?;
 
         let mut pure_signatures = Vec::new();
-        let signatures_json_vec = signatures_json["signatures"].as_array()
-            .ok_or_else(|| err_msg("signatures field must be an array"))?;
+        let signatures_json_vec = signatures_json.get_array("signatures")?;
         for signature in signatures_json_vec {
-            let node_id_short = UInt256::from_str(read_str(signature, "node_id")?)?;
+            let node_id_short = UInt256::from_str(signature.get_str("node_id")?)?;
             let sign = CryptoSignature::from_r_s_str(
-                read_str(signature, "r")?,
-                read_str(signature, "s")?,
+                signature.get_str("r")?,
+                signature.get_str("s")?,
             )?;
 
             pure_signatures.push(CryptoSignaturePair::with_params(node_id_short, sign))
         }
 
         let signatures = Signatures {
-            validator_list_hash_short: read_u64(signatures_json, "validator_list_hash_short")? as u32,
-            catchain_seqno: read_u64(signatures_json, "catchain_seqno")? as u32,
+            validator_list_hash_short: signatures_json.get_u32("validator_list_hash_short")?,
+            catchain_seqno: signatures_json.get_u32("catchain_seqno")?,
             sig_weight: u64::from_str_radix(
-                read_str(signatures_json, "sig_weight")?
+                signatures_json.get_str("sig_weight")?
                     .trim_start_matches("0x"),
                 16,
             )?,
@@ -182,62 +256,31 @@ impl BlockProof {
         Ok((Block::construct_from_cell(block_virt_root.clone())?, block_virt_root))
     }
 
-    pub fn check_with_prev_key_block_proof(&self, prev_key_block_proof: &BlockProof) -> Result<()> {
-        let (virt_block, virt_block_info) = self.pre_check_block_proof()?;
-        self.check_with_prev_key_block_proof_(prev_key_block_proof, &virt_block, &virt_block_info)?;
-
-        Ok(())
-    }
-
-    pub async fn check_proof(&self, engine: &impl ProofHelperEngine) -> Result<()> {
+    pub async fn check_proof(&self, engine: &impl ProofHelperEngine) -> Result<(Block, BlockInfo)> {
         if !self.id().shard().is_masterchain() {
-            self.pre_check_block_proof()?;
+            bail!("Only masterchain block proofs are supported");
+        }
+
+        let (virt_block, virt_block_info) = self.pre_check_block_proof()?;
+        let prev_key_block_seqno = virt_block_info.prev_key_block_seqno();
+
+        if prev_key_block_seqno == 0 {
+            let zerostate = engine.load_zerostate().await?;
+            self.check_with_zerostate(
+                &zerostate,
+                &virt_block,
+                &virt_block_info,
+            )?;
         } else {
-            let (virt_block, virt_block_info) = self.pre_check_block_proof()?;
-            let prev_key_block_seqno = virt_block_info.prev_key_block_seqno();
+            let prev_key_block_proof = engine.load_key_block_proof(prev_key_block_seqno).await?;
 
-            if prev_key_block_seqno == 0 {
-                let zerostate = engine.load_zerostate().await?;
-                let mc_state_extra = zerostate.read_custom()?
-                    .ok_or_else(|| err_msg("Can't read custom field from the zerostate"))?;
-                self.check_with_zerostate(
-                    &zerostate,
-                    mc_state_extra.config(),
-                    &virt_block,
-                    &virt_block_info,
-                )?;
-            } else {
-                let prev_key_block_proof = engine.load_key_block_proof(prev_key_block_seqno).await?;
-
-                self.check_with_prev_key_block_proof_(&prev_key_block_proof, &virt_block, &virt_block_info)?;
-            }
-        }
-        Ok(())
-    }
-
-    pub fn get_cur_validators_set(&self) -> Result<(ValidatorSet, CatchainConfig)> {
-        let (virt_key_block, prev_key_block_info) = self.pre_check_block_proof()?;
-
-        if !prev_key_block_info.key_block() {
-            bail!(
-                "proof for key block {} contains a Merkle proof which declares non key block",
-                self.id(),
-            )
+            self.check_with_prev_key_block_proof(&prev_key_block_proof, &virt_block, &virt_block_info)?;
         }
 
-        let (cur_validator_set, cc_config) = virt_key_block.read_cur_validator_set_and_cc_conf()
-            .map_err(|err| {
-                Error::invalid_data(format!(
-                    "Сan't extract config params from key block's proof {}: {}",
-                    self.id(),
-                    err,
-                ))
-            })?;
-
-        Ok((cur_validator_set, cc_config))
+        Ok((virt_block, virt_block_info))
     }
 
-    pub fn check_with_prev_key_block_proof_(
+    pub fn check_with_prev_key_block_proof(
         &self,
         prev_key_block_proof: &BlockProof,
         virt_block: &Block,
@@ -285,7 +328,6 @@ impl BlockProof {
     fn check_with_zerostate(
         &self,
         zerostate: &ShardStateUnsplit,
-        config: &ConfigParams,
         virt_block: &Block,
         virt_block_info: &BlockInfo,
     ) -> Result<()> {
@@ -294,7 +336,7 @@ impl BlockProof {
         }
 
         let (validators, validators_hash_short) =
-            self.process_zerostate(zerostate, virt_block_info, config)?;
+            self.process_zerostate(zerostate, virt_block_info)?;
 
         self.check_signatures(validators, validators_hash_short)
     }
@@ -445,19 +487,19 @@ impl BlockProof {
             &cc_config,
             self.id().shard().shard_prefix_with_tag(),
             self.id().shard().workchain_id(),
-            self.signatures.catchain_seqno,
+            self.signatures.catchain_seqno(),
             gen_utime.into()
         )
     }
 
     fn check_signatures(&self, validators_list: Vec<ValidatorDescr>, list_hash_short: u32) -> Result<()> {
         // Pre checks
-        if self.signatures.validator_list_hash_short != list_hash_short {
+        if self.signatures.validator_list_hash_short() != list_hash_short {
             bail!(
                 "Bad validator set hash in proof for block {}, calculated: {}, found: {}",
                 self.id(),
                 list_hash_short,
-                self.signatures.validator_list_hash_short,
+                self.signatures.validator_list_hash_short(),
             );
         }
         // Check signatures
@@ -499,9 +541,8 @@ impl BlockProof {
 
     fn process_zerostate(
         &self,
-        state: &ShardStateUnsplit,
+        zerostate: &ShardStateUnsplit,
         block_info: &ton_block::BlockInfo,
-        config: &ConfigParams,
     ) -> Result<(Vec<ValidatorDescr>, u32)> {
         if !self.id().shard().is_masterchain() {
             bail!(
@@ -518,15 +559,17 @@ impl BlockProof {
             );
         }
 
-        let (cur_validator_set, cc_config) = state.read_cur_validator_set_and_cc_conf()?;
+        let (cur_validator_set, cc_config) = zerostate.read_cur_validator_set_and_cc_conf()?;
+        let mc_state_extra = zerostate.read_custom()?
+            .ok_or_else(|| err_msg("Can't read custom field from the zerostate"))?;
 
         let (validators, hash_short) = calc_subset_for_workchain(
             &cur_validator_set,
-            config,
+            mc_state_extra.config(),
             &cc_config,
             self.id().shard().shard_prefix_with_tag(),
             self.id().shard().workchain_id(),
-            self.signatures.catchain_seqno,
+            self.signatures.catchain_seqno(),
             block_info.gen_utime()
         )?;
 
@@ -536,7 +579,7 @@ impl BlockProof {
 
 async fn get_current_network_uid(
     context: &Arc<ClientContext>,
-) -> ClientResult<Arc<NetworkUID>> {
+) -> Result<Arc<NetworkUID>> {
     if let Some(ref uid) = *context.net.network_uid.read().await {
         return Ok(Arc::clone(uid));
     }
@@ -555,7 +598,7 @@ async fn get_current_network_uid(
 
 async fn query_current_network_uid(
     context: Arc<ClientContext>,
-) -> ClientResult<Arc<NetworkUID>> {
+) -> Result<Arc<NetworkUID>> {
     let blocks = query_collection(context, ParamsOfQueryCollection {
         collection: "blocks".to_string(),
         filter: Some(json!({
@@ -572,42 +615,23 @@ async fn query_current_network_uid(
     }).await?.result;
 
     if blocks.is_empty() {
-        return Err(
-            Error::unable_to_resolve_zerostate_root_hash("Can't get masterchain block #1")
-        );
+        bail!("Unable to resolve zerostate's root hash: can't get masterchain block #1");
     }
 
     let prev_ref = &blocks[0]["prev_ref"];
     if prev_ref.is_null() {
-        return Err(
-            Error::unable_to_resolve_zerostate_root_hash("prev_ref of the block #1 is not set")
-        );
+        bail!("Unable to resolve zerostate's root hash: prev_ref of the block #1 is not set");
     }
 
-    let block_root_hash_json = &blocks[0]["id"];
-    let first_master_block_root_hash = block_root_hash_json.as_str()
-        .ok_or_else(|| Error::invalid_data(
-            format!(
-                "id of the block #1 must be a string: {:?}",
-                block_root_hash_json,
-            )
-        ))?.to_string();
-
-    let zs_root_hash_json = &prev_ref["root_hash"];
-    let zerostate_root_hash = zs_root_hash_json.as_str()
-        .ok_or_else::<ClientError, _>(|| Error::unable_to_resolve_zerostate_root_hash(
-            format!(
-                "root_hash of the prev_ref of the block #1 is not a string: {:?}",
-                zs_root_hash_json,
-            ),
-        ))?.to_string();
+    let first_master_block_root_hash = blocks[0].get_str("id")?.to_string();
+    let zerostate_root_hash = prev_ref.get_str("root_hash")?.to_string();
 
     Ok(Arc::new(NetworkUID { zerostate_root_hash, first_master_block_root_hash }))
 }
 
 async fn resolve_initial_trusted_key_block(
     context: &Arc<ClientContext>,
-) -> ClientResult<&TrustedMcBlockId> {
+) -> Result<&TrustedMcBlockId> {
     let network_uid = get_current_network_uid(context).await?;
 
     if let Some(hardcoded_mc_block) =
@@ -616,11 +640,14 @@ async fn resolve_initial_trusted_key_block(
         return Ok(&hardcoded_mc_block.trusted_key_block);
     }
 
-    Err(Error::unable_to_resolve_trusted_key_block(&network_uid.zerostate_root_hash))
+    bail!(
+        "Unable to resolve trusted key-block for network with zerostate root_hash: `{}`",
+        network_uid.zerostate_root_hash,
+    )
 }
 
 #[async_trait::async_trait]
-pub trait ProofHelperEngine {
+pub(crate) trait ProofHelperEngine {
     async fn load_zerostate(&self) -> Result<ShardStateUnsplit>;
     async fn load_key_block_proof(&self, mc_seq_no: u32) -> Result<BlockProof>;
 }

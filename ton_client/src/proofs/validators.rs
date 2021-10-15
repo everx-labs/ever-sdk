@@ -144,7 +144,7 @@ impl Display for KeyId {
     }
 }
 
-pub fn check_crypto_signatures(
+pub(crate) fn check_crypto_signatures(
     signatures: &Signatures,
     validators_list: &[ValidatorDescr],
     data: &[u8],

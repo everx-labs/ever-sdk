@@ -39,7 +39,7 @@ pub enum ErrorCode {
     CanNotParseNumber = 32,
     InternalError = 33,
     InvalidHandle = 34,
-    InvalidStorageKey = 35,
+    LocalStorageError = 35,
 }
 pub struct Error;
 
@@ -302,10 +302,20 @@ impl Error {
 
     pub fn invalid_storage_key(key: &str) -> ClientError {
         error(
-            ErrorCode::InvalidStorageKey,
+            ErrorCode::LocalStorageError,
             format!(
                 "Invalid local storage key (allowed only symbols A-Z, a-z, 0-9, _, without spaces): {}",
                 key,
+            ),
+        )
+    }
+
+    pub fn local_storage_error(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::LocalStorageError,
+            format!(
+                "Local storage error: {}",
+                err,
             ),
         )
     }

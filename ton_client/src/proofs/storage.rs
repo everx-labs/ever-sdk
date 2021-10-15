@@ -1,12 +1,15 @@
-use crate::client::{ClientEnv, Error};
-use crate::error::ClientResult;
+use ton_types::Result;
+
+use crate::client::ClientEnv;
 
 #[async_trait::async_trait]
-pub trait ProofStorage {
-    async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>>;
-    async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()>;
-    async fn get_str(&self, key: &str) -> ClientResult<Option<String>>;
-    async fn put_str(&self, key: &str, value: &str) -> ClientResult<()>;
+pub trait ProofStorage: Send + Sync {
+    #[cfg(test)]
+    fn in_memory(&self) -> &InMemoryProofStorage;
+    async fn get_bin(&self, key: &str) -> Result<Option<Vec<u8>>>;
+    async fn put_bin(&self, key: &str, value: &[u8]) -> Result<()>;
+    async fn get_str(&self, key: &str) -> Result<Option<String>>;
+    async fn put_str(&self, key: &str, value: &str) -> Result<()>;
 }
 
 pub struct LocalStorage {
@@ -21,20 +24,25 @@ impl LocalStorage {
 
 #[async_trait::async_trait]
 impl ProofStorage for LocalStorage {
-    async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
-        ClientEnv::bin_read_local_storage(&self.local_storage_path, key).await
+    #[cfg(test)]
+    fn in_memory(&self) -> &InMemoryProofStorage {
+        panic!("`in_memory()` is not supported for LocalStorage");
     }
 
-    async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()> {
-        ClientEnv::bin_write_local_storage(&self.local_storage_path, key, value).await
+    async fn get_bin(&self, key: &str) -> Result<Option<Vec<u8>>> {
+        Ok(ClientEnv::bin_read_local_storage(&self.local_storage_path, key).await?)
     }
 
-    async fn get_str(&self, key: &str) -> ClientResult<Option<String>> {
-        ClientEnv::read_local_storage(&self.local_storage_path, key).await
+    async fn put_bin(&self, key: &str, value: &[u8]) -> Result<()> {
+        Ok(ClientEnv::bin_write_local_storage(&self.local_storage_path, key, value).await?)
     }
 
-    async fn put_str(&self, key: &str, value: &str) -> ClientResult<()> {
-        ClientEnv::write_local_storage(&self.local_storage_path, key, value).await
+    async fn get_str(&self, key: &str) -> Result<Option<String>> {
+        Ok(ClientEnv::read_local_storage(&self.local_storage_path, key).await?)
+    }
+
+    async fn put_str(&self, key: &str, value: &str) -> Result<()> {
+        Ok(ClientEnv::write_local_storage(&self.local_storage_path, key, value).await?)
     }
 }
 
@@ -73,26 +81,31 @@ impl InMemoryProofStorage {
 
 #[async_trait::async_trait]
 impl ProofStorage for InMemoryProofStorage {
-    async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
+    #[cfg(test)]
+    fn in_memory(&self) -> &InMemoryProofStorage {
+        self
+    }
+
+    async fn get_bin(&self, key: &str) -> Result<Option<Vec<u8>>> {
         Ok(
             self.proof_map.get(key)
                 .map(|guard| guard.val().clone())
         )
     }
 
-    async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()> {
+    async fn put_bin(&self, key: &str, value: &[u8]) -> Result<()> {
         self.proof_map.insert(key.to_string(), value.to_vec());
         Ok(())
     }
 
-    async fn get_str(&self, key: &str) -> ClientResult<Option<String>> {
+    async fn get_str(&self, key: &str) -> Result<Option<String>> {
         self.proof_map.get(key)
             .map(|guard| String::from_utf8(guard.val().clone())
-                .map_err(|err| Error::internal_error(err)))
+                .map_err(|err| err.into()))
             .transpose()
     }
 
-    async fn put_str(&self, key: &str, value: &str) -> ClientResult<()> {
+    async fn put_str(&self, key: &str, value: &str) -> Result<()> {
         self.proof_map.insert(key.to_string(), value.as_bytes().to_vec());
         Ok(())
     }

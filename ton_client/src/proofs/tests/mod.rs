@@ -4,11 +4,13 @@ use serde_json::Value;
 use ton_block::{BinTreeType, Block, BlockIdExt, Deserializable, InRefValue, MASTERCHAIN_ID, ShardHashes, ShardIdent, ShardStateUnsplit};
 use ton_types::{Result, UInt256};
 
-use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_uid, resolve_initial_trusted_key_block};
+use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_uid, resolve_initial_trusted_key_block, ParamsOfProofBlockData};
 use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::storage::InMemoryProofStorage;
 use crate::proofs::validators::{calc_subset_for_workchain, calc_workchain_id, calc_workchain_id_by_adnl_id};
 use crate::tests::TestClient;
+use crate::net::{ParamsOfQueryCollection, query_collection};
+use crate::ClientContext;
 
 #[test]
 fn test_check_master_blocks_proof() -> Result<()> {
@@ -20,7 +22,8 @@ fn test_check_master_blocks_proof() -> Result<()> {
         let block_proof = BlockProof::read_from_file(
             format!("src/proofs/tests/data/test_master_block_proof/proof__{}", seq_no)
         )?;
-        block_proof.check_with_prev_key_block_proof(&key_block_proof)?;
+        let (virt_block, virt_block_info) = block_proof.pre_check_block_proof()?;
+        block_proof.check_with_prev_key_block_proof(&key_block_proof, &virt_block, &virt_block_info)?;
     }
 
     Ok(())
@@ -37,7 +40,8 @@ fn test_check_master_blocks_proof_shuffle() -> Result<()> {
             format!("src/proofs/tests/data/test_master_block_proof_shuffle/proof__{}", seq_no)
         )?;
 
-        block_proof.check_with_prev_key_block_proof(&key_block_proof)?;
+        let (virt_block, virt_block_info) = block_proof.pre_check_block_proof()?;
+        block_proof.check_with_prev_key_block_proof(&key_block_proof, &virt_block, &virt_block_info)?;
     }
 
     Ok(())
@@ -228,12 +232,12 @@ fn test_gen_storage_key() {
             "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789".to_string(),
     };
     assert_eq!(
-        ProofHelperEngineImpl::<InMemoryProofStorage>::gen_storage_key(&network_uid, "test"),
+        ProofHelperEngineImpl::gen_storage_key(&network_uid, "test"),
         "01234567/abcdef01/test",
     );
 }
 
-fn create_engine_mainnet() -> ProofHelperEngineImpl<InMemoryProofStorage> {
+fn create_engine_mainnet() -> ProofHelperEngineImpl {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
     let storage = Arc::new(InMemoryProofStorage::new());
     ProofHelperEngineImpl::new(client.context(), storage)
@@ -316,7 +320,9 @@ async fn query_file_hash_test() -> Result<()> {
     let file_hash_from_next = UInt256::from_str(
         &engine.query_file_hash_from_next_block(1).await?.unwrap(),
     )?;
-    let file_hash_from_boc = engine.download_boc_and_calc_file_hash(1).await?;
+    let file_hash_from_boc = engine.download_boc_and_calc_file_hash(
+        "4bba527c0f5301ac01194020edb6c237158bae872348ba36b0137d523fadd864",
+    ).await?;
 
     assert_eq!(file_hash_from_boc, file_hash_from_next);
     assert_eq!(
@@ -375,23 +381,491 @@ async fn add_file_hashes_test() -> Result<()> {
 async fn mc_proofs_test() -> Result<()> {
     let engine = create_engine_mainnet();
     let trusted_id = resolve_initial_trusted_key_block(engine.context()).await?;
+    let storage: &InMemoryProofStorage = engine.storage().in_memory();
 
     let proof = BlockProof::from_value(&engine.query_mc_proof(100000).await?)?;
     proof.check_proof(&engine).await?;
 
-    engine.storage().dump();
+    storage.dump();
 
-    assert_eq!(engine.storage().count(), 13);
+    assert_eq!(storage.count(), 13);
     assert_eq!(engine.read_zs_right_bound().await?, 85049);
 
     let proof = BlockProof::from_value(&engine.query_mc_proof(trusted_id.seq_no + 100000).await?)?;
     proof.check_proof(&engine).await?;
 
-    engine.storage().dump();
+    storage.dump();
 
-    assert_eq!(engine.storage().count(), 26);
+    assert_eq!(storage.count(), 26);
     assert_eq!(engine.read_zs_right_bound().await?, 85049);
-    assert_eq!(engine.read_trusted_block_right_bound(trusted_id.seq_no).await?, 11201794);
+    assert_eq!(engine.read_trusted_block_right_bound(trusted_id.seq_no).await?, 11859841);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn extract_top_shard_block_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+    let boc = engine.download_boc(
+        "01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95",
+    ).await?;
+    let block = Block::construct_from_bytes(&boc)?;
+
+    assert!(ProofHelperEngineImpl::extract_top_shard_block(
+        &block,
+        &ShardIdent::with_tagged_prefix(0, 0x8000000000000000)?,
+    ).is_err());
+
+    assert!(ProofHelperEngineImpl::extract_top_shard_block(
+        &block,
+        &ShardIdent::with_tagged_prefix(1, 0x2000000000000000)?,
+    ).is_err());
+
+    assert_eq!(
+        ProofHelperEngineImpl::extract_top_shard_block(
+            &block,
+            &ShardIdent::with_tagged_prefix(0, 0x2000000000000000)?,
+        )?,
+        (96, UInt256::from_str("e3db85d93d5d85670c261899cf56f7ef2876e0ea95cdcfc6b7e3837998242950")?),
+    );
+
+    assert_eq!(
+        ProofHelperEngineImpl::extract_top_shard_block(
+            &block,
+            &ShardIdent::with_tagged_prefix(0, 0xa000000000000000)?,
+        )?,
+        (113, UInt256::from_str("845052457398c7a2f3f5ff74ebfd2b0f6567f9ceec510593be11c900ecb26cd1")?),
+    );
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn query_closest_mc_block_for_shard_block_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    let shard = ShardIdent::with_tagged_prefix(0, 0xa000000000000000)?;
+
+    let mut first_mc_seq_no = 100;
+    assert_eq!(
+        engine.query_closest_mc_block_for_shard_block(&mut first_mc_seq_no, &shard, 113).await?,
+        Some(100),
+    );
+
+    first_mc_seq_no = 99;
+    assert_eq!(
+        engine.query_closest_mc_block_for_shard_block(&mut first_mc_seq_no, &shard, 113).await?,
+        Some(99),
+    );
+
+    first_mc_seq_no = 95;
+    assert_eq!(
+        engine.query_closest_mc_block_for_shard_block(&mut first_mc_seq_no, &shard, 109).await?,
+        Some(96),
+    );
+
+    Ok(())
+}
+
+const SHARD_BLOCK_0_A000000000000000_99_BOC: &str =
+    "te6ccuECEQEAArkAABwAxADeAXACBAKgAzwDRgNYA6QECgQiBCoE9AVkBWwFcwQQEe9VqgAAACoBAgMEAqCbx6\
+    mHAAAAAIQBAAAAYwAAAAACAAAAAIAAAAAAAAAAXrQHmgAAAAAG6gUAAAAAAAbqBQGyfCu9AAAAAgAAAFMAAAAAx\
+    AAAAAMAAAAAAAAALgUGAhG45I37QO5rKAQHCAqKBGFR1tD1H1YJuvT+AeffTPjAYu+ZO8nWZmHsiOcBjgwT+aoe\
+    0gsBG0P0h0luP4GaSgcCgYy5IjwTqZXSIYYyFU8AAgACCQoDiUoz9v0VXplWHvmULzKidbstN+VVAHO6e3HYwO8\
+    S0lWq1Njxs+MjZ5qaX3Wy2UJl0E1niolxk+hX2mam0xkowcM8kUYlQA8QEACYAAAAAAas/AQAAABTB3YPJAltJD\
+    aifFMLGBfGSqSuvKpr0cFEvBEi342Yag2jiOSQ5MlCwAejYCI5oU5EbgLSVSCG4LHHgFMzq5O8MwCYAAAAAAbaw\
+    sEAAABiQbMSOwHpTZBEIYKXXyYQ6vfIwH2vL2gyvjJiWlTNu6MhnLL8a9sPLBZv9nO/Eo7VKACm09qERB8B5wB0\
+    1Kw1zAAFAAAIAA0AEDuaygAIKEgBAWFR1tD1H1YJuvT+AeffTPjAYu+ZO8nWZmHsiOcBjgwTAAIDW5Ajr+IAAAA\
+    qAgAAAACAAAAAAAAAAAAAAGMAAAAAXrQHmgAAAAAG6gUBAAAAUyALDA0BEQAAAAAAAAAAUA4AAwAQAMUAAAAAAA\
+    AAAAAAAAAB////AoLhm4PAEAAAAABqz8BAAAAFMHdg8kCW0kNqJ8UwsYF8ZKpK68qmvRwUS8ESLfjZhqDaOI5JD\
+    kyULAB6NgIjmhTkRuAtJVIIbgsceAUzOrk7wzgAa7BQAAAAAAAAAAAAACmAAAAAA1Z+Af//////////////////\
+    ////////////////////////wAADACAAAQL5eHt0";
+
+const SHARD_BLOCK_0_A000000000000000_101_BOC: &str =
+    "te6ccuECEQEAArkAABwAxADeAXACBAKgAzwDRgNYA6QECgQiBCoE9AVkBWwFcwQQEe9VqgAAACoBAgMEAqCbx6\
+    mHAAAAAIQBAAAAZQAAAAACAAAAAIAAAAAAAAAAXrQHngAAAAAHCImAAAAAAAcIiYGyfCu9AAAAAgAAAFUAAAAAx\
+    AAAAAMAAAAAAAAALgUGAhG45I37QO5rKAQHCAqKBO5sAcF2Ymt7CdQz/5dUOh0WyFdnKDN0tgG6P6udwTloEhUx\
+    yRwpTzXcIqlKUPMO1c8qSnjjb5j9+2wRS/PnHCoAAgACCQoDiUoz9v17zLkiB8uYo0dn+vy/FUZwk6AL+dQyhFY\
+    xgp1SxSWRqliYMsW1ZyavhBdHyrATjsbtXtXllTZbMVB7VqzXoiYbQA8QEACYAAAAAAbqBQQAAABVTv2/9/Rq22\
+    nN1Ir0xVEuUwWTscgsfOTgmIxFvvgKwGaYZ3Sq5GZOCOdRIpGuFelcnV52ntRlSzGxNDsLtSx6IgCYAAAAAAb5R\
+    0EAAABkfIg4BEAVcwd2QRhSmkdM9cXU/uFjjWL4NSVkjAM3Z6wSgR7EbvVRzbJIhp3R55crsh2egsOSo5nYChOa\
+    NiKmpwAFAAAIAA0AEDuaygAIKEgBAe5sAcF2Ymt7CdQz/5dUOh0WyFdnKDN0tgG6P6udwTloAAIDW5Ajr+IAAAA\
+    qAgAAAACAAAAAAAAAAAAAAGUAAAAAXrQHngAAAAAHCImBAAAAVSALDA0BEQAAAAAAAAAAUA4AAwAQAMUAAAAAAA\
+    AAAAAAAAAH////AoLwgjZAEAAAAABuoFBAAAAFVO/b/39Grbac3UivTFUS5TBZOxyCx85OCYjEW++ArAZphndKr\
+    kZk4I51Eika4V6VydXnae1GVLMbE0Owu1LHoigAa7BQAAAAAAAAAAAAACqAAAAAA3UCgf//////////////////\
+    ////////////////////////wAADACAAAQLlB2As";
+
+#[tokio::test]
+async fn query_shard_block_bocs_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    let shard = ShardIdent::with_tagged_prefix(0, 0xa000000000000000)?;
+
+    let bocs = engine.query_shard_block_bocs(&shard, 99..102).await?;
+
+    assert_eq!(bocs.len(), 3);
+    assert_eq!(bocs[0], base64::decode(SHARD_BLOCK_0_A000000000000000_99_BOC)?);
+    assert_eq!(bocs[2], base64::decode(SHARD_BLOCK_0_A000000000000000_101_BOC)?);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn check_shard_block_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    let boc_99 = base64::decode(SHARD_BLOCK_0_A000000000000000_99_BOC)?;
+    engine.check_shard_block(&boc_99).await?;
+
+    let boc_101 = base64::decode(SHARD_BLOCK_0_A000000000000000_101_BOC)?;
+    engine.check_shard_block(&boc_101).await?;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn check_mc_proof_test() -> Result<()> {
+    let engine = create_engine_mainnet();
+
+    engine.check_mc_proof(
+        100,
+        &UInt256::from_str("01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95")?,
+    ).await?;
+
+    // From cache:
+    engine.check_mc_proof(
+        100,
+        &UInt256::from_str("01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95")?,
+    ).await?;
+
+    assert!(
+        engine.check_mc_proof(
+            101,
+            &UInt256::from_str("01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95")?,
+        ).await.is_err(),
+    );
+
+    // From cache:
+    assert!(
+        engine.check_mc_proof(
+            100,
+            &UInt256::from_str("1111111111111111111111111111111111111111111111111111111111111111")?,
+        ).await.is_err(),
+    );
+
+    Ok(())
+}
+
+async fn query_block_data(context: Arc<ClientContext>, id: &str, result: &str) -> Result<Value> {
+    Ok(query_collection(
+        context,
+        ParamsOfQueryCollection {
+            collection: "blocks".to_string(),
+            result: result.to_string(),
+            filter: Some(json!({
+                "id": {
+                    "eq": id,
+                },
+            })),
+            limit: Some(1),
+            ..Default::default()
+        }
+    ).await?.result.remove(0))
+}
+
+#[tokio::test]
+async fn proof_block_data_test() -> Result<()> {
+    let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
+
+    let proof_json = query_block_data(
+        client.context(),
+        "5a049e5b761c1cb4bbedf0df8efb202b55a243ad194f8cb03c6e34cac48d448c",
+        r#"
+            id
+            workchain_id
+            shard
+            seq_no
+            gen_utime
+            signatures {
+                proof
+                catchain_seqno
+                validator_list_hash_short
+                sig_weight
+                signatures {
+                    node_id
+                    r
+                    s
+                }
+            }
+        "#
+    ).await?;
+
+    client.request_async(
+        "proofs.proof_block_data",
+        ParamsOfProofBlockData { block: proof_json },
+    ).await?;
+
+    let mut block_json = query_block_data(
+        client.context(),
+        "8bde590a572437332977e68bace66fa00f9cebac6baa57f6bf2d2f1276db2848",
+        r#"
+            id
+            status
+            status_name
+            boc
+            global_id
+            version
+            after_merge
+            before_split
+            after_split
+            want_split
+            want_merge
+            key_block
+            seq_no
+            vert_seq_no
+            gen_utime
+            start_lt
+            end_lt
+            gen_validator_list_hash_short
+            gen_catchain_seqno
+            min_ref_mc_seqno
+            prev_key_block_seqno
+            workchain_id
+            shard
+            gen_software_version
+            gen_software_capabilities
+            prev_ref {
+                end_lt
+                seq_no
+                root_hash
+                file_hash
+            }
+            value_flow {
+                from_prev_blk
+                from_prev_blk_other {
+                    currency
+                    value
+                }
+                to_next_blk
+                to_next_blk_other {
+                    currency
+                    value
+                }
+                imported
+                exported
+                fees_collected
+                fees_imported
+                created
+                minted
+            }
+            state_update {
+                old_hash
+                new_hash
+                old_depth
+                new_depth
+            }
+
+            in_msg_descr {
+                in_msg {
+                    msg_id
+                    cur_addr
+                    next_addr
+                    fwd_fee_remaining
+                }
+                transaction_id
+                fwd_fee
+                msg_type
+                msg_type_name
+            }
+            out_msg_descr {
+                import_block_lt
+                imported {
+                    fwd_fee
+                    ihr_fee
+                    in_msg {
+                        cur_addr
+                        fwd_fee_remaining
+                        msg_id
+                        next_addr
+                        __typename
+                    }
+                    msg_id
+                    msg_type
+                    msg_type_name
+                    out_msg {
+                        cur_addr
+                        fwd_fee_remaining
+                        msg_id
+                        next_addr
+                        __typename
+                    }
+                    proof_created
+                    proof_delivered
+                    transaction_id
+                    transit_fee
+                    __typename
+                }
+                msg_env_hash
+                msg_id
+                msg_type
+                msg_type_name
+                next_addr_pfx
+                next_workchain
+                out_msg {
+                    cur_addr
+                    fwd_fee_remaining
+                    msg_id
+                    next_addr
+                    __typename
+                }
+                reimport {
+                    fwd_fee
+                    ihr_fee
+                    in_msg {
+                        cur_addr
+                        fwd_fee_remaining
+                        msg_id
+                        next_addr
+                        __typename
+                    }
+                    msg_id
+                    msg_type
+                    msg_type_name
+                    out_msg {
+                        cur_addr
+                        fwd_fee_remaining
+                        msg_id
+                        next_addr
+                        __typename
+                    }
+                    proof_created
+                    proof_delivered
+                    transaction_id
+                    transit_fee
+                    __typename
+                }
+                transaction_id
+                __typename
+            }
+            account_blocks {
+                account_addr
+                transactions {
+                    lt
+                    total_fees
+                    total_fees_other {
+                        currency
+                        value
+                        __typename
+                    }
+                    transaction_id
+                    __typename
+                }
+                old_hash
+                new_hash
+                tr_count
+            }
+            tr_count
+            rand_seed
+            created_by
+            master {
+                shard_hashes {
+                    workchain_id
+                    shard
+                    descr {
+                        seq_no
+                        reg_mc_seqno
+                        start_lt
+                        end_lt
+                        root_hash
+                        file_hash
+                        before_split
+                        before_merge
+                        want_split
+                        want_merge
+                        nx_cc_updated
+                        gen_utime
+                        next_catchain_seqno
+                        next_validator_shard
+                        min_ref_mc_seqno
+                        flags
+                        fees_collected
+                        funds_created
+                    }
+                }
+                min_shard_gen_utime
+                max_shard_gen_utime
+                shard_fees {
+                    workchain_id
+                    shard
+                    fees
+                    create
+                }
+                prev_blk_signatures {
+                    node_id
+                    s
+                    r
+                }
+                recover_create_msg {
+                    in_msg {
+                        cur_addr
+                        fwd_fee_remaining
+                        msg_id
+                        next_addr
+                        __typename
+                    }
+                    msg_id
+                    transaction_id
+                    fwd_fee
+                    msg_type
+                    msg_type_name
+                    ihr_fee
+                    out_msg {
+                        cur_addr
+                        fwd_fee_remaining
+                        msg_id
+                        next_addr
+                        __typename
+                    }
+                    proof_created
+                    proof_delivered
+                    transit_fee
+                }
+            }
+		"#,
+    ).await?;
+
+    client.request_async(
+        "proofs.proof_block_data",
+        ParamsOfProofBlockData { block: block_json.clone() },
+    ).await?;
+
+    block_json["boc"] = Value::Null;
+
+    client.request_async(
+        "proofs.proof_block_data",
+        ParamsOfProofBlockData { block: block_json.clone() },
+    ).await?;
+
+    block_json["boc"] = SHARD_BLOCK_0_A000000000000000_99_BOC.into();
+
+    assert!(
+        client.request_async::<_, ()>(
+            "proofs.proof_block_data",
+            ParamsOfProofBlockData { block: block_json.clone() },
+        ).await
+            .is_err()
+    );
+
+    block_json["boc"] = Value::Null;
+    block_json["prev_ref"]["root_hash"] = "0000000000000000000000000000000000000000000000000000000000000000".into();
+
+    assert!(
+        client.request_async::<_, ()>(
+            "proofs.proof_block_data",
+            ParamsOfProofBlockData { block: block_json },
+        ).await
+            .is_err()
+    );
 
     Ok(())
 }
