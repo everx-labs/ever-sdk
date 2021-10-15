@@ -11,6 +11,6 @@ This section contains the following guides on working with contracts:
 * [Retry Message](retry_message.md)
 * [External Signing](external_signing.md)
 * [Emulate Transaction](emulate_transaction.md)
-* [Decode Message](1decode_message.md)
+* [Decode Message](decode_message.md)
 * [Estimate Fees](estimate_fees.md)
 * [Validate address, convert address](validate_address_convert_address.md)

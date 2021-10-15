@@ -14,6 +14,7 @@
   * [Module processing](docs/modules/mod_processing.md)
   * [Module tvm](docs/modules/mod_tvm.md)
   * [Module utils](docs/modules/mod_utils.md)
+* [Types and Methods](https://tonlabs.github.io/ton-client-js/)
 * [API](docs/ton_os_api/README.md)
   * [Networks](docs/ton_os_api/networks.md)
   * [Web Playground](docs/ton_os_api/web_playground.md)

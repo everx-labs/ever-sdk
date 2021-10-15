@@ -45,7 +45,7 @@ Also this approach provided an opportunity to easily create bindings for any pro
 
 Client Library exposes all the functionality through a few of exported functions. All interaction with library is performed using JSON-RPC like protocol.
 
-Library works over [GraphQL API](https://docs.ton.dev/86757ecb2/p/793337-ton-os-api) of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). So, it can be used to interact directly with [TON OS Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks).
+Library works over [GraphQL API](docs/ton_os_api/) of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). So, it can be used to interact directly with [TON OS Clouds](docs/ton_os_api/networks.md).
 
 ## SDKs in other languages (bindings over TON-SDK)
 
@@ -59,21 +59,21 @@ Repository: [JavaScript SDK](https://github.com/tonlabs/ton-client-js)
 
 ### Community bindings
 
-| Language   | Repository                                                                                                                                                                                                                                                                                                                                           |
-| ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Clojure    | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)                                                                                                                                                                                                                                                        |
-| Dart       | [freetonsurfer/ton_client_dart](https://github.com/freetonsurfer/ton_client_dart)                                                                                                                                                                                                                                                                    |
-| Golang     | <p><a href="https://github.com/radianceteam/ton-client-go">radianceteam/ton-client-go</a> <br> <a href="https://github.com/move-ton/ton-client-go">move-ton/ton-client-go</a></p>                                                                                                                                                                    |
-| Java       | [radianceteam/ton-client-java](https://github.com/radianceteam/ton-client-java)                                                                                                                                                                                                                                                                      |
-| Kotlin     | [mdorofeev/ton-client-kotlin](https://github.com/mdorofeev/ton-client-kotlin)                                                                                                                                                                                                                                                                        |
-| Lua        | [serge-medvedev/tonos-client-lua](https://github.com/serge-medvedev/tonos-client-lua)                                                                                                                                                                                                                                                                |
-| .NET       | <p><a href="https://github.com/radianceteam/ton-client-dotnet">radianceteam/ton-client-dotnet</a> <br>  <a href="https://github.com/ton-actions/ton-client-dotnet">ton-actions/ton-client-dotnet</a> <br> <a href="https://github.com/vcvetkovs/TonSdk">vcvetkovs/TonSdk</a> <br> <a href="https://github.com/staszx/Ton.Sdk">staszx/Ton.Sdk</a></p> |
-| PHP        | <p><a href="https://github.com/extraton/php-ton-client">extraton/php-ton-client</a> <br> <a href="https://github.com/radianceteam/ton-client-php">radianceteam/ton-client-php</a></p>                                                                                                                                                                |
-| Python     | [move-ton/ton-client-py](https://github.com/move-ton/ton-client-py)                                                                                                                                                                                                                                                                                  |
-| Ruby       | <p><a href="https://github.com/radianceteam/ton-client-ruby">radianceteam/ton-client-ruby</a> <br> <a href="https://github.com/nerzh/ton-client-ruby">nerzh/ton-client-ruby</a></p>                                                                                                                                                                  |
-| Scala      | <p><a href="https://github.com/slavaschmidt/ton-sdk-client-scala-binding/">slavaschmidt/ton-sdk-client-scala-binding/</a> <br> <a href="https://github.com/radianceteam/ton-client-scala">radianceteam/ton-client-scala</a></p>                                                                                                                      |
-| Swift      | [nerzh/ton-client-swift](https://github.com/nerzh/ton-client-swift)                                                                                                                                                                                                                                                                                  |
-| Typescript | [RSquad/ton-client-ts](https://github.com/RSquad/ton-client-ts)                                                                                                                                                                                                                                                                                      |
+| Language   | Repository                                                                                                                                                                                                                                                                                                                                    |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Clojure    | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)                                                                                                                                                                                                                                                 |
+| Dart       | [freetonsurfer/ton_client_dart](https://github.com/freetonsurfer/ton_client_dart)                                                                                                                                                                                                                                                             |
+| Golang     | <p><a href="https://github.com/radianceteam/ton-client-go">radianceteam/ton-client-go</a><br><a href="https://github.com/move-ton/ton-client-go">move-ton/ton-client-go</a></p>                                                                                                                                                               |
+| Java       | [radianceteam/ton-client-java](https://github.com/radianceteam/ton-client-java)                                                                                                                                                                                                                                                               |
+| Kotlin     | [mdorofeev/ton-client-kotlin](https://github.com/mdorofeev/ton-client-kotlin)                                                                                                                                                                                                                                                                 |
+| Lua        | [serge-medvedev/tonos-client-lua](https://github.com/serge-medvedev/tonos-client-lua)                                                                                                                                                                                                                                                         |
+| .NET       | <p><a href="https://github.com/radianceteam/ton-client-dotnet">radianceteam/ton-client-dotnet</a><br><a href="https://github.com/ton-actions/ton-client-dotnet">ton-actions/ton-client-dotnet</a><br><a href="https://github.com/vcvetkovs/TonSdk">vcvetkovs/TonSdk</a><br><a href="https://github.com/staszx/Ton.Sdk">staszx/Ton.Sdk</a></p> |
+| PHP        | <p><a href="https://github.com/extraton/php-ton-client">extraton/php-ton-client</a><br><a href="https://github.com/radianceteam/ton-client-php">radianceteam/ton-client-php</a></p>                                                                                                                                                           |
+| Python     | [move-ton/ton-client-py](https://github.com/move-ton/ton-client-py)                                                                                                                                                                                                                                                                           |
+| Ruby       | <p><a href="https://github.com/radianceteam/ton-client-ruby">radianceteam/ton-client-ruby</a><br><a href="https://github.com/nerzh/ton-client-ruby">nerzh/ton-client-ruby</a></p>                                                                                                                                                             |
+| Scala      | <p><a href="https://github.com/slavaschmidt/ton-sdk-client-scala-binding/">slavaschmidt/ton-sdk-client-scala-binding/</a><br><a href="https://github.com/radianceteam/ton-client-scala">radianceteam/ton-client-scala</a></p>                                                                                                                 |
+| Swift      | [nerzh/ton-client-swift](https://github.com/nerzh/ton-client-swift)                                                                                                                                                                                                                                                                           |
+| Typescript | [RSquad/ton-client-ts](https://github.com/RSquad/ton-client-ts)                                                                                                                                                                                                                                                                               |
 
 ## How to use library
 
@@ -83,16 +83,16 @@ But what if you are required to use library in languages others than Rust?
 
 You have some options:
 
-*   use library module `json_interface` which provides access to library functions through 
+*   use library module `json_interface` which provides access to library functions through
 
     JSON-RPC interface. This interface exports several extern "C" functions. So you can build
 
-    a dynamic or static link library and link it to your application as any other external 
+    a dynamic or static link library and link it to your application as any other external
 
-    libraries. The JSON Interface is fully "C" compliant. You can find description 
+    libraries. The JSON Interface is fully "C" compliant. You can find description
 
     in section [JSON Interface](docs/json_interface.md).
-*   use bindings already written by TON Labs and community. Below you can find a list of known 
+*   use bindings already written by TON Labs and community. Below you can find a list of known
 
     bindings.
 * write your own binding to chosen language and share it with community.
