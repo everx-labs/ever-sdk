@@ -33,7 +33,6 @@ mod tests;
 
 lazy_static::lazy_static! {
     static ref COMPARE_JSON_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
-        "gen_software_version",
         "gen_software_capabilities",
     ]).collect();
 }
