@@ -335,7 +335,7 @@ Application can use several ways to handle this situation:
 
 *   If application monitors changes for the single blockchain
 
-    object (for example specific account):  application
+    object (for example specific account): application
 
     can perform a query for this object and handle actual data as a
 
@@ -368,7 +368,7 @@ function subscribe_collection(
 * `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 * `filter`?: _any_ – Collection filter
 * `result`: _string_ – Projection (result) string
-* `responseHandler`?: [_ResponseHandler_](./#ResponseHandler) – additional responses handler.
+* `responseHandler`?: [_ResponseHandler_](modules.md#ResponseHandler) – additional responses handler.
 
 #### Result
 

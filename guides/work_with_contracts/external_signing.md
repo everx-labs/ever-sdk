@@ -17,8 +17,8 @@ Sometimes there is no access to the private key - for instance if an application
 
 There are 2 patterns to implement such scenario:
 
-* use `signingBox` interface to sign message. It will allow you to invoke an API of your signing device during message creation. 
-* sign message separately - this approach will allow you to separate message creation into 3 steps: create unsigned message, sign it, and attach signature. 
+* use `signingBox` interface to sign message. It will allow you to invoke an API of your signing device during message creation.
+* sign message separately - this approach will allow you to separate message creation into 3 steps: create unsigned message, sign it, and attach signature.
 
 Read below for more details.
 
@@ -28,7 +28,7 @@ Developer needs to create an implementation of this interface in their project a
 
 The implementation may incapsulate invoking of some external API, such as HSM of NFC Card.
 
-```
+```javascript
 export interface AppSigningBox {
     get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKey>,
     sign(params: ParamsOfAppSigningBoxSign): Promise<ResultOfAppSigningBoxSign>,
@@ -37,7 +37,7 @@ export interface AppSigningBox {
 
 where
 
-```
+```javascript
 type ResultOfAppSigningBoxGetPublicKey = {
     public_key: string
 }
@@ -51,7 +51,7 @@ type ResultOfAppSigningBoxSign = {
 }
 ```
 
-All the methods that create messages - `encode_message`, `process_message` can take [Signer of type SigningBox object](../../docs/modules/mod_abi.md#signer), implementing this interface, instead of a key pair.
+All the methods that create messages - `encode_message`, `process_message` can take [Signer of type SigningBox object](../../reference/types-and-methods/mod_abi.md#signer), implementing this interface, instead of a key pair.
 
 ### Sample source code
 
@@ -65,7 +65,7 @@ All the methods that create messages - `encode_message`, `process_message` can t
 
 ## Sign message outside sdk
 
-In this case you may create an unsigned message with `encode_message` function, specifying Signer of type `External` . After that you sign it somewhere outside and attach signature with [attach_signature](../../docs/modules/mod_abi.md#attach_signature) function.
+In this case you may create an unsigned message with `encode_message` function, specifying Signer of type `External` . After that you sign it somewhere outside and attach signature with [attach_signature](../../reference/types-and-methods/mod_abi.md#attach_signature) function.
 
 ### Sample source code
 

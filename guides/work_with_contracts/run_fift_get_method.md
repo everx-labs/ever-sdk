@@ -6,7 +6,7 @@ Learn how to run FIFT methods
 
 There are contracts written in Fift. They have other rules for running get methods.
 
-This is why we have a separate method for that in tvm module - [run_get](../../docs/modules/mod_tvm.md#run_get).
+This is why we have a separate method for that in tvm module - [run_get](../../reference/types-and-methods/mod_tvm.md#run_get).
 
 ## Sample source code
 

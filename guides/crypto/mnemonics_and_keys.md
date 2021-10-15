@@ -10,13 +10,13 @@ This section explains how to generate mnemonics, derive keys and get a key pair
   * [Derived key](mnemonics_and_keys.md#derived-key)
   * [Generate keys for signature](mnemonics_and_keys.md#generate-keys-for-signature)
 
-> Check [crypto module](../../docs/modules/mod_crypto.md) reference for more info:
+> Check [crypto module](../../reference/types-and-methods/mod_crypto.md) reference for more info:
 
 ## Mnemonic generation
 
 To generate a random mnemonic, use `mnemonic_from_random` function. Specify the dictionary, and a number of words (12 or 24).
 
-```
+```javascript
 const SEED_PHRASE_WORD_COUNT = 12; //Mnemonic word count
 const SEED_PHRASE_DICTIONARY_ENGLISH = 1; //Dictionary identifier
 
@@ -37,7 +37,7 @@ Generated seed phrase: "garden wedding range mixed during left powder grid modif
 
 Here is the fast way to generate a key pair for a signature from a specified mnemonic and path with `mnemonic_derive_sign_keys` method. The specified path, dictionary and word count is compatible with Surf and tonos-cli:
 
-```
+```javascript
 const HD_PATH = "m/44'/396'/0'/0/0";
 
 const keyPair = await client.crypto.mnemonic_derive_sign_keys({
@@ -68,7 +68,7 @@ Sometimes there is no need for mnemonic.
 
 For example, if you generate a key pair for a server that does not need a readable form. Then you can easily generate such a pair with `generate_random_sign_keys` function:
 
-```
+```javascript
 const simpleKeys = await client.crypto.generate_random_sign_keys();
 console.log(`key pair not from mnemonic:`);
 console.log(simpleKeys);
@@ -94,7 +94,7 @@ To derive a key within a specified path, first, you need to generate a seed from
 
 Both these operations can be performed with `hdkey_xprv_from_mnemonic` method:
 
-```
+```javascript
 const hdk_root = await client.crypto.hdkey_xprv_from_mnemonic({
         dictionary: SEED_PHRASE_DICTIONARY_ENGLISH, // 1
         wordCount: SEED_PHRASE_WORD_COUNT, // 12
@@ -114,7 +114,7 @@ xprv9s21ZrQH143K45hXeaopM1rAUJDszLAcwFkxrZ4njANoGhFPYFsB7rzspWC8wAnWoZ2bPia7covh
 
 Now you can derive the key within the specified path with `hdkey_derive_from_xprv_path` method. The result will be an extended derived private key.
 
-```
+```javascript
 const HD_PATH = "m/44'/396'/0'/0/0";
 const extended_prkey = await client.crypto.hdkey_derive_from_xprv_path({
     xprv: hdk_root,
@@ -132,7 +132,7 @@ xprvA45BBKdrZKobCbeFvC316LZ6AVDXbDn8Sa3btCMCcgTRM4CRxX4Tg3fk7sNNXPza9aMiS6mBMp7w
 
 Now lets extract the private key itself from the extended key with function:
 
-```
+```javascript
 const secret = await сlient.crypto.hdkey_secret_from_xprv(extended_prkey);
 console.log(`Derived private key: \n${secret}`);
 ```
@@ -148,7 +148,7 @@ e90866b307ea6a72c216a34786762e648e9b382779fdfb88cf7b1e900a6bf0e2
 
 After we've got the derived private key we can generate a ed25519 key pair for signature:
 
-```
+```javascript
 let tonosKeyPair2 = await сlient.crypto.nacl_sign_keypair_from_secret_key({ secret })
 
 if (tonosKeyPair2.secret.length > tonosKeyPair2.public.length) {

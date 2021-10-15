@@ -25,11 +25,11 @@ Core Client Library built on the TON OS GraphQL API for Free TON DApp developmen
 
 [Quick Start (Javascript)](guides/quick_start.md)
 
-[Error descriptions](docs/error_codes.md)
+[Error descriptions](reference/error_codes.md)
 
 [JavaScript SDK Types and Methods (API Reference)](https://tonlabs.github.io/ton-client-js/)
 
-[Core Types and Methods (API Reference)](docs/modules/)
+[Core Types and Methods (API Reference)](reference/types-and-methods/modules.md)
 
 [Guides](guides/installation/add_sdk_to_your_app.md)
 
@@ -45,7 +45,7 @@ Also this approach provided an opportunity to easily create bindings for any pro
 
 Client Library exposes all the functionality through a few of exported functions. All interaction with library is performed using JSON-RPC like protocol.
 
-Library works over [GraphQL API](docs/ton_os_api/) of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). So, it can be used to interact directly with [TON OS Clouds](docs/ton_os_api/networks.md).
+Library works over [GraphQL API](reference/ton_os_api/) of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). So, it can be used to interact directly with [TON OS Clouds](reference/ton_os_api/networks.md).
 
 ## SDKs in other languages (bindings over TON-SDK)
 
@@ -91,13 +91,13 @@ You have some options:
 
     libraries. The JSON Interface is fully "C" compliant. You can find description
 
-    in section [JSON Interface](docs/json_interface.md).
+    in section [JSON Interface](for-binding-developers/json_interface.md).
 *   use bindings already written by TON Labs and community. Below you can find a list of known
 
     bindings.
 * write your own binding to chosen language and share it with community.
 
-If you choose using JSON Interface please read this document [JSON Interface](docs/json_interface.md).\
+If you choose using JSON Interface please read this document [JSON Interface](for-binding-developers/json_interface.md).\
 Here you can find directions how to use `json_interface` and write your own binding.
 
 ## How to avoid Soft Breaking Problems

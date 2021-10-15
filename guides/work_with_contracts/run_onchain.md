@@ -5,9 +5,9 @@ Learn how to run methods of a contract on-chain
 * [About run](run_onchain.md#about-run)
 * [Run on-chain](run_onchain.md#run-on-chain-1)
   * [Pattern 1. Run in 1 step: `process_message` method](run_onchain.md#pattern-1-run-in-1-step-process_message-method)
-  * [Pattern 2.  Run in 3 steps: `encode_message` ->  `send_message` -> `wait_for_transaction`](run_onchain.md#pattern-2--run-in-3-steps-encode_message----send_message---wait_for_transaction)
+  * [Pattern 2. Run in 3 steps: `encode_message` -> `send_message` -> `wait_for_transaction`](run_onchain.md#pattern-2--run-in-3-steps-encode_message----send_message---wait_for_transaction)
 
-> [See the API reference](../../docs/modules/).
+> [See the API reference](../../reference/types-and-methods/modules.md).
 
 Core api is more flexible then AppKit and you can perform a lot of complex logic using it. But you will need to write more code with it as well :)
 
@@ -29,7 +29,7 @@ Run operation consists of few steps:
 
 ### Pattern 1. Run in 1 step: `process_message` method
 
-The [process_message](../../docs/modules/mod_processing.md#process_message) method runs ABI-compatible contract method on-chain and returns the result transaction along with the external messages bocs, and decoded external messages bodies.
+The [process_message](../../reference/types-and-methods/mod_processing.md#process_message) method runs ABI-compatible contract method on-chain and returns the result transaction along with the external messages bocs, and decoded external messages bodies.
 
 `process_message` performs all the run operation steps inside.
 
@@ -37,7 +37,7 @@ The [process_message](../../docs/modules/mod_processing.md#process_message) meth
 
 For example, a contract has such method:
 
-```
+```javascript
 // Function setting set value to state variable timestamp and returning it
 function touchMe() public alwaysAccept returns (uint32) {
     timestamp = uint32(now);
@@ -47,7 +47,7 @@ function touchMe() public alwaysAccept returns (uint32) {
 
 Client method call:
 
-```
+```javascript
 // Encode the message with `touch` function call
 const params = {
     send_events: false,
@@ -73,11 +73,11 @@ See the full sample in the repository with sdk samples:
 
 [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/hello-wallet](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/hello-wallet)
 
-### Pattern 2.  Run in 3 steps: `encode_message` ->  `send_message` -> `wait_for_transaction`
+### Pattern 2. Run in 3 steps: `encode_message` -> `send_message` -> `wait_for_transaction`
 
 To run a contract method, first you need to create a run message:
 
-```
+```javascript
 // Encode the message with `touch` function call
 const params = {
         abi = {
@@ -101,7 +101,7 @@ const encode_touch_result = await client.abi.encode_message(params);
 
 Now the message should be sent. `sendMessage` method returns the the last block created in the shard before the message was sent.
 
-```
+```javascript
 // Send `touch` call message to the network
 // See more info about `send_message` here  
 // https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_processing.md#send_message
@@ -115,7 +115,7 @@ console.log(`Touch message was sent.`);
 
 After the message was sent we need to wait for the transaction starting from the last shard block:
 
-```
+```javascript
 // Monitor message delivery. 
 // See more info about `wait_for_transaction` here  
 // https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_processing.md#wait_for_transaction

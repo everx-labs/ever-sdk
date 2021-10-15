@@ -19,7 +19,7 @@ Here is the sample that executes the get method `getTimestamp` on the latest acc
 2. message that calls contract's function `getTimestamp` is encoded with `encode_message` function
 3. message is executed on local TVM with `run_local` method
 
-```
+```javascript
     // Execute the get method `getTimestamp` on the latest account's state
     // This can be managed in 3 steps:
     // 1. Download the latest Account State (BOC)

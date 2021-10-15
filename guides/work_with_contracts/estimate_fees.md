@@ -12,14 +12,14 @@ Find out how to estimate fees before executing contracts on-chain
 
 The steps you need to complete to estimate fees of deploy and run:
 
-1. Encode a message you will locally execute with [encode_message](../../docs/modules/mod_abi.md#encode_message) 
+1. Encode a message you will locally execute with [encode_message](../../reference/types-and-methods/mod_abi.md#encode_message)
 2. Download account boc the same way you did in [Run ABI Get method](run_abi_get_method.md)
-3. Run the message on the downloaded state with [run_executor](../../docs/modules/mod_tvm.md#run_executor) function
+3. Run the message on the downloaded state with [run_executor](../../reference/types-and-methods/mod_tvm.md#run_executor) function
 4. Retrieve `result.fees` object
 
 ## Estimate storage fee
 
-Use [calc_storage_fee](../../docs/modules/mod_utils.md#calc_storage_fee) method.
+Use [calc_storage_fee](../../reference/types-and-methods/mod_utils.md#calc_storage_fee) method.
 
 ## Sample source code
 

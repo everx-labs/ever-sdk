@@ -34,7 +34,7 @@ You will see the GraphQL playground.
 
 In this picture we query the GraphQL API version on the left and see the result on the right.
 
-```
+```graphql
 query{
   info{
     version
@@ -44,7 +44,7 @@ query{
 
 ![scr1.png](../../.gitbook/assets/scr1.png)
 
-Check out [TON Labs SDK query module](../modules/mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
+Check out [TON Labs SDK query module](../types-and-methods/mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
 
 ## General network queries
 
@@ -52,7 +52,7 @@ Check out [TON Labs SDK query module](../modules/mod_net.md) - the official TON 
 
 Fetch the last key block and get config from it:
 
-```
+```graphql
 query{
   blocks(filter:{
     workchain_id:{
@@ -110,7 +110,7 @@ query{
 
 You will get the result:
 
-```
+```graphql
 "data": {
     "blocks": [
       {
@@ -160,7 +160,7 @@ You will get the result:
 
 You can also query other config data:
 
-```
+```graphql
 query { 
   blocks(filter: { 
     seq_no: { eq: 3127942 }
@@ -466,7 +466,7 @@ Masterchain has only 1 shard `8000000000000000`.
 
 So, to get its last block height we sort its blocks by `seq_no` in DESC order and get the newest one
 
-```
+```graphql
 query{
   blocks(filter:{
     workchain_id:{
@@ -490,7 +490,7 @@ query{
 
 The the latest masterchain block height is `1418096`:
 
-```
+```graphql
 {
   "data": {
     "blocks": [
@@ -513,7 +513,7 @@ Workchain shard list can change dynamically depending on the network load.
 
 To get the list of shards for Zero workchain for the current moment run this query. Here we sort the main workchain blocks by `seq_no`, get the newest one and extract the list of active shards of Zero workchain.
 
-```
+```graphql
 query{
   blocks(filter:{
     workchain_id:{
@@ -538,7 +538,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "blocks": [
@@ -605,7 +605,7 @@ Result:
 
 Let's get the latest shardchain 0800000000000000 of zero workchain block height (see how to get the list of shardchains at the previous step).
 
-```
+```graphql
 query{
   blocks(filter:{
     workchain_id:{
@@ -632,7 +632,7 @@ query{
 
 The block height is `1948985`:
 
-```
+```graphql
 {
   "data": {
     "blocks": [
@@ -651,7 +651,7 @@ The block height is `1948985`:
 
 Here we specify the only shard of "-1" workchain and time from 18.43 till 19.43. You can do the same for any shard of "0" workchain.
 
-```
+```graphql
 query{
   aggregateBlocks(filter:{
     workchain_id:{
@@ -675,7 +675,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "aggregateBlocks": [
@@ -691,7 +691,7 @@ Result:
 
 Specify the workchain_id, shard and seq_no:
 
-```
+```graphql
 query{
   blocks(filter:{
     workchain_id:{
@@ -721,7 +721,7 @@ query{
 
 The block hash is `11d663227777659a9f90a4098281cedfd50b929daa7093876b061d6915c90bef`:
 
-```
+```graphql
 {
   "data": {
     "blocks": [
@@ -738,7 +738,7 @@ The block hash is `11d663227777659a9f90a4098281cedfd50b929daa7093876b061d6915c90
 
 ### Get block transactions
 
-```
+```graphql
 query{
   transactions(filter:{
     block_id:{
@@ -772,7 +772,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "transactions": [
@@ -882,7 +882,7 @@ Result:
 
 To get account info use the following GraphQL query:
 
-```
+```graphql
 query{
   accounts(
   filter:{
@@ -905,7 +905,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "accounts": [
@@ -944,7 +944,7 @@ fields:
 
 In case account not found result will be empty:
 
-```
+```graphql
 {
   "data": {
     "accounts": []
@@ -956,9 +956,9 @@ In case account not found result will be empty:
 
 To implement account transactions pagination in descending order do the following steps:
 
-1. Get the last account transaction logical time. You will receive it in hexadecimal string format. This is the start point of your pagination range. 
+1. Get the last account transaction logical time. You will receive it in hexadecimal string format. This is the start point of your pagination range.
 
-```
+```graphql
 query{
   accounts(filter:{
     id:{
@@ -973,7 +973,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "accounts": [
@@ -985,11 +985,11 @@ Result:
 }
 ```
 
-1. Now lets fetch the first batch of transactions. We need to filter them by the account, specify the start point `lt` and sort by block time now and logical time in descending order. Limit the result by 25 records. 
+1. Now lets fetch the first batch of transactions. We need to filter them by the account, specify the start point `lt` and sort by block time now and logical time in descending order. Limit the result by 25 records.
 
 We use `lt` (less than) operator instead of `le` (less or equal) even for the first step because the `last_trans_lt` field of account is always equal to the (last transaction lt +1).
 
-```
+```graphql
 query{
     transactions(
     filter:{
@@ -1017,7 +1017,7 @@ query{
 
 the result shows us 25 records. These are the last 2 records:
 
-```
+```graphql
 {
         "id": "a7c9296961d0c105c060dbb1c7d4a92afbfc6a4606982407ab56a88ebc06cefb",
         "lt": "0x3b5608087c1",
@@ -1037,7 +1037,7 @@ the result shows us 25 records. These are the last 2 records:
 
 1. Take the `lt` of the last retrieved transaction and use it as the start point for the next batch. Make sure to use `lt` operator, not `le`, so that you will not get the same transaction in 2 batches:
 
-```
+```graphql
 query{
     transactions(
     filter:{
@@ -1069,7 +1069,7 @@ And so on.
 
 Use the following query:
 
-```
+```graphql
 {
   messages( 
     filter: { 
@@ -1090,7 +1090,7 @@ Use the following query:
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "messages": [
@@ -1120,7 +1120,7 @@ In the next example we limit the number of results returned to 2.
 
 **Query**:
 
-```
+```graphql
 {
   transactions(
     filter: { 
@@ -1143,7 +1143,7 @@ In the next example we limit the number of results returned to 2.
 
 **Result**:
 
-```
+```graphql
 {
   "data": {
     "transactions": [
@@ -1172,7 +1172,7 @@ In the above query:
 
 We take last record `lt` retrieved from the initial query and repeat query with "greater than lt" condition:
 
-```
+```graphql
 {
   transactions(
     filter: { 
@@ -1194,7 +1194,7 @@ We take last record `lt` retrieved from the initial query and repeat query with 
 
 **Result**:
 
-```
+```graphql
 {
   "data": {
     "transactions": [
@@ -1219,7 +1219,7 @@ To get count of transactions use `aggregateTransactions`:
 
 **Query**:
 
-```
+```graphql
 query {
   aggregateTransactions(
     filter:{
@@ -1236,7 +1236,7 @@ query {
 
 **Result**:
 
-```
+```graphql
 {
   "data": {
     "aggregateTransactions": [
@@ -1254,7 +1254,7 @@ In the next example we limit the number of results returned to 2.
 
 **Query**:
 
-```
+```graphql
 {
   messages(
       filter:{ 
@@ -1280,7 +1280,7 @@ In the next example we limit the number of results returned to 2.
 
 **Result**:
 
-```
+```graphql
 {
   "data": {
     "messages": [
@@ -1307,7 +1307,7 @@ There are two records returned and that may mean that there is another page. We 
 
 **Query**:
 
-```
+```graphql
 {
   messages(
       filter:{ 
@@ -1333,7 +1333,7 @@ There are two records returned and that may mean that there is another page. We 
 
 **Result**:
 
-```
+```graphql
 {
   "data": {
     "messages": [
@@ -1360,7 +1360,7 @@ To receive count of all account messages (both in and out) use `aggregateMessage
 
 **Query**:
 
-```
+```graphql
 query{ aggregateMessages( filter:
   { src : { eq: "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"}
     OR:{dst: {eq: "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"}}
@@ -1370,7 +1370,7 @@ query{ aggregateMessages( filter:
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "aggregateMessages": [
@@ -1384,7 +1384,7 @@ Result:
 
 Get COUNT of the transactions of a specified account
 
-```
+```graphql
 query{
   aggregateTransactions(
     filter:{
@@ -1402,7 +1402,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "aggregateTransactions": [
@@ -1416,7 +1416,7 @@ Result:
 
 Determine min, max and sum values of transferred tokens and number of transfers between two accounts
 
-```
+```graphql
 query{
   aggregateMessages(
     filter:{
@@ -1440,7 +1440,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "aggregateMessages": [
@@ -1459,7 +1459,7 @@ Determine min, max and sum value for the gas_used of a transactions compute phas
 
 You can use a dot separated path as a field name to use fields resided deep in a JSON structure of a transaction record:
 
-```
+```graphql
 query{
   aggregateTransactions(
     filter:{
@@ -1477,7 +1477,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "aggregateTransactions": [
@@ -1493,7 +1493,7 @@ Result:
 
 ### Query transaction data
 
-```
+```graphql
 query{
   transactions(filter:{
     id:{
@@ -1527,7 +1527,7 @@ query{
 
 The result:
 
-```
+```graphql
 {
   "data": {
     "transactions": [
@@ -1563,7 +1563,7 @@ The result:
 
 The sample below shows how to query fail reasons for aborted transactions:
 
-```
+```graphql
 query {
   transactions(filter: {aborted: {eq: true }}) {
     id
@@ -1579,7 +1579,7 @@ query {
 
 To receive all transaction fees please query fwd_fee and total_fees fields and sum values:
 
-```
+```graphql
 query{
   transactions(filter:{
     id:{
@@ -1598,7 +1598,7 @@ query{
 
 The result:
 
-```
+```graphql
 {
   "data": {
     "transactions": [

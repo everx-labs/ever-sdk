@@ -23,7 +23,7 @@ Check out (../mod_net.md) - the official TON Labs wrapper over GraphQL API for r
 
 Account collection query sample that returns the specified account's balance
 
-```
+```graphql
 query {
   accounts(
     filter: {
@@ -38,7 +38,7 @@ query {
 
 To perform a query over a collection, choose a collection and result projection. **Optionally** specify a filter, sorting order and the maximum number of items in the results list.
 
-```
+```graphql
 query {
   transactions(
     filter: {
@@ -83,7 +83,7 @@ Data is aggregated by `filter` and `fields`.
 
 Get COUNT of the transactions of a specified account (note that in case of `COUNT` you can omit `field` in `fields` ):
 
-```
+```graphql
 query{
   aggregateTransactions(
     filter:{
@@ -101,7 +101,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "aggregateTransactions": [
@@ -115,7 +115,7 @@ Result:
 
 Determine min, max and sum values of transferred coins and number of transfers between two accounts:
 
-```
+```graphql
 query{
   aggregateMessages(
     filter:{
@@ -139,7 +139,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "aggregateMessages": [
@@ -156,7 +156,7 @@ Result:
 
 Determine `min`, `max` and `sum` value for the gas_used of a transactions compute phase (you can use a dot separated path as a field name to use fields resided deep in a JSON structure of a transaction record):
 
-```
+```graphql
 query{
   aggregateTransactions(
     filter:{
@@ -174,7 +174,7 @@ query{
 
 Result:
 
-```
+```graphql
 {
   "data": {
     "aggregateTransactions": [
@@ -190,13 +190,11 @@ Video tutorial - GraphQL: Joined Blocks, OR Operator, Aggregations
 
 {% embed url="https://www.youtube.com/watch?v=8dNAv5vsYRI" %}
 
-
-
 ## Subscription
 
 In this example, we start a subscription and get a result whenever a block is inserted or updated in the blockchain.
 
-```
+```graphql
 subscription{
   blocks{
     id
@@ -222,18 +220,18 @@ These filter types will be described in more details below in this section.
 
 Scalar filter is a structure with one or more predefined fields. Each field defines a specific scalar operation and a reference value:
 
-* `eq`:  item value must be equal to the specified value;
+* `eq`: item value must be equal to the specified value;
 * `ne`: item value must not be equal to the specified value;
-* `gt`:  item value must be greater than the specified value;
-* `lt`:  item value must be less than specified value;
+* `gt`: item value must be greater than the specified value;
+* `lt`: item value must be less than specified value;
 * `ge`: item value must be greater than or equal to the specified value;
 * `le`: item value must be less than or equal to the specified value;
-* `in`:  item value must be contained in the specified array of values;
+* `in`: item value must be contained in the specified array of values;
 * `notIn`: item value must not be contained within the specified array of values.
 
 Scalar filter example 1
 
-```
+```graphql
 filter: {
     id: { eq: 'e19948d53c4fc8d405fbb8bde4af83039f37ce6bc9d0fc07bbd47a1cf59a8465'},
     status: { in: [0, 1, 2] }
@@ -242,7 +240,7 @@ filter: {
 
 Scalar filter example 2
 
-```
+```graphql
 filter: {
     now: { gt: 1563449, lt: 2063449 }
 }
@@ -250,7 +248,7 @@ filter: {
 
 The logic from the above snippet can be expressed in the following way:
 
-```
+```graphql
 (transaction.now > 1563449) && (transaction.now < 2063449)
 ```
 
@@ -275,7 +273,7 @@ You can combine several struct filters over collection with logical OR in a sing
 
 Determine all messages related to the specified account:
 
-```
+```graphql
 query {
   messages(
   filter:{
@@ -296,7 +294,7 @@ query {
 
 Request messages of myAcc or messages with value more than 10000 nG (combine several `OR` operators) :
 
-```
+```graphql
 query {
   messages(
   filter:{

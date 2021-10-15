@@ -2,34 +2,38 @@
 
 * [TON SDK](README.md)
 
-## docs
+## Reference
 
-* [Modules](docs/modules/README.md)
-  * [Module abi](docs/modules/mod_abi.md)
-  * [Module boc](docs/modules/mod_boc.md)
-  * [Module client](docs/modules/mod_client.md)
-  * [Module crypto](docs/modules/mod_crypto.md)
-  * [Module debot](docs/modules/mod_debot.md)
-  * [Module net](docs/modules/mod_net.md)
-  * [Module processing](docs/modules/mod_processing.md)
-  * [Module tvm](docs/modules/mod_tvm.md)
-  * [Module utils](docs/modules/mod_utils.md)
-* [Types and Methods](https://tonlabs.github.io/ton-client-js/)
-* [API](docs/ton_os_api/README.md)
-  * [Networks](docs/ton_os_api/networks.md)
-  * [Web Playground](docs/ton_os_api/web_playground.md)
-  * [Schema](docs/ton_os_api/schema.md)
-  * [Query Language](docs/ton_os_api/query_language.md)
-  * [Field Descriptions](docs/ton_os_api/field_descriptions.md)
-  * [Samples](docs/ton_os_api/samples.md)
-* [Error API](docs/error_api.md)
-* [Error Codes](docs/error_codes.md)
-* [How to work with Application Objects in binding generators](docs/app_objects.md)
-* [JSON Interface to Ton Client](docs/json_interface.md)
+* [Types and Methods](reference/types-and-methods/README.md)
+  * [Modules](reference/types-and-methods/modules.md)
+  * [Module abi](reference/types-and-methods/mod_abi.md)
+  * [Module boc](reference/types-and-methods/mod_boc.md)
+  * [Module client](reference/types-and-methods/mod_client.md)
+  * [Module crypto](reference/types-and-methods/mod_crypto.md)
+  * [Module debot](reference/types-and-methods/mod_debot.md)
+  * [Module net](reference/types-and-methods/mod_net.md)
+  * [Module processing](reference/types-and-methods/mod_processing.md)
+  * [Module tvm](reference/types-and-methods/mod_tvm.md)
+  * [Module utils](reference/types-and-methods/mod_utils.md)
+* [Error API](reference/error_api.md)
+* [Error Codes](reference/error_codes.md)
+* [JavaScript Reference](https://tonlabs.github.io/ton-client-js/)
+* [Rust Reference](https://github.com/a-zorina/TON-SDK/tree/docs/docs/rust-api)
+* [TON OS API](reference/ton_os_api/README.md)
+  * [Networks](reference/ton_os_api/networks.md)
+  * [Web Playground](reference/ton_os_api/web_playground.md)
+  * [Schema](reference/ton_os_api/schema.md)
+  * [Query Language](reference/ton_os_api/query_language.md)
+  * [Field Descriptions](reference/ton_os_api/field_descriptions.md)
+  * [Samples](reference/ton_os_api/samples.md)
+
+## Samples
+
+* [JavaScript Samples](https://github.com/tonlabs/sdk-samples)
 
 ## guides
 
-* [Quick start](guides/quick_start.md)
+* [Quick start (JavaScript)](guides/quick_start.md)
 * [Installation](guides/installation/README.md)
   * [Add SDK to your App](guides/installation/add_sdk_to_your_app.md)
   * [Configure SDK](guides/installation/configure_sdk.md)
@@ -59,3 +63,8 @@
 ***
 
 * [AppKit JS documentation](https://azorina.gitbook.io/appkit-js/)
+
+## For Binding Developers
+
+* [How to work with Application Objects in binding generators](for-binding-developers/app_objects.md)
+* [JSON Interface to Ton Client](for-binding-developers/json_interface.md)

@@ -23,7 +23,7 @@ If you plan to develop and compile the contracts yourself then these docs will h
 
 Use TONDEV tool to [generate contract wrapper](https://github.com/tonlabs/tondev#create-contract-js-wrapper) that will have the following structure:
 
-```
+```javascript
 export type Contract = {
 /**
  * ABI of smart contract
@@ -51,7 +51,7 @@ The result name of the wrapper will be "ContractName||"Contract".js".
 
 The result file will look like this:
 
-```
+```javascript
 module.exports = {
 HelloContract: {
     abi: {

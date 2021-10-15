@@ -22,7 +22,7 @@ Events in blockchain are external outbound messages. In GraphQL API their `msg_t
 
 You can fetch events of you contract with this filter from graphql. Try it out in playground [main.ton.dev/graphql](https://main.ton.dev/graphql):
 
-```
+```graphql
 query{
 messages(
       filter:{ 
@@ -43,7 +43,7 @@ messages(
 
 Or subscribe to them:
 
-```
+```graphql
 subscription{
 messages(
       filter:{ 
@@ -66,7 +66,7 @@ messages(
 
 Let's assume our contract code is this:
 
-```
+```solidity
 pragma ton-solidity >= 0.38.2;
 pragma AbiHeader expire;
 
@@ -128,7 +128,7 @@ See the full sample here [https://github.com/tonlabs/sdk-samples/tree/master/cor
 
 ### Query
 
-```
+```javascript
 result = (await client.net.query_collection({
         collection: "messages",
         filter: {
@@ -145,7 +145,7 @@ result = (await client.net.query_collection({
 
 To subscribe to new events do this. Don't forget to specify your own callback.
 
-```
+```javascript
 const messageSubscription = await TonClient.default.net.subscribe_collection({
     collection: "messages",
     filter: {
@@ -159,7 +159,7 @@ const messageSubscription = await TonClient.default.net.subscribe_collection({
 
 ### Decode
 
-```
+```javascript
 const decoded = (await TonClient.default.abi.decode_message({
                     abi: abiContract(HelloEventsContract.abi),
                     message: params.result.boc,

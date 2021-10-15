@@ -32,7 +32,7 @@ Make sure you completed the previous step and [installed SDK properly](add_sdk_t
 
 The simplest initialization code can look like this: we just specify the network, other parameters are used by default. See the defaults below.
 
-```
+```graphql
 const client = new TonClient({
 network: { 
     endpoints: ['net.ton.dev'] 
@@ -40,30 +40,17 @@ network: {
 });
 ```
 
-### Using default config in AppKit
-
-If you are using `AppKit`, you can specify the default config. This will allow you to omit passing `client` object into every `AppKit` function later. If a function works with another client (another network), you need to create a client object for that network separately, like we did in the previous step, and pass it as a parameter.
-
-```
-TonClient.defaultConfig = {
-network: {
-    // Local node URL here
-    endpoints: ['net.ton.dev']
-  },
-};
-```
-
 If you are working with [local blockchain TON OS SE](https://github.com/tonlabs/tonos-se), specify [http://localhost](http://localhost) in the `endpoints`.
 
-Check the full list of [supported network endpoints](../../docs/ton_os_api/networks.md).
+Check the full list of [supported network endpoints](../../reference/ton_os_api/networks.md).
 
-You can find reference guide to `TonClient` here: [TON-SDK API Documentation](../../docs/modules/).
+You can find reference guide to `TonClient` here: [TON-SDK API Documentation](../../reference/types-and-methods/modules.md).
 
 ## Configure Client
 
 SDK provides a list of configuration parameters that can influence the behavior of the client. Use them when you create `TONClient` for more specific setup.
 
-```
+```graphql
 export type TONConfigData = {
 network?: { 
     endpoints?: string[],

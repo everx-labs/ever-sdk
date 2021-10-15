@@ -10,7 +10,7 @@ If you want to validate TON address and/or convert address to bounceable/non-bou
 
 Use `utils.convert_address` function for that.
 
-```text
+```javascript
 // Convert address to different types
 console.log("Multisig address in HEX:")
 let convertedAddress = (await tonClient.utils.convert_address({
@@ -27,4 +27,3 @@ If address is incorrect the function will fail with an error.
 ## Sample source code
 
 [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/multisig/work-with-multisig.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/multisig/work-with-multisig.js)
-

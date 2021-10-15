@@ -75,7 +75,7 @@ function send_message(
     strongly recommended, so that proper processing strategy can be\
     chosen.
 * `send_events`: _boolean_ – Flag for requesting events sending
-* `responseHandler`?: [_ResponseHandler_](./#ResponseHandler) – additional responses handler.
+* `responseHandler`?: [_ResponseHandler_](modules.md#ResponseHandler) – additional responses handler.
 
 #### Result
 
@@ -158,7 +158,7 @@ function wait_for_transaction(
     Use this field to get more informative errors.\
     Provide the same value as the `send_message` has returned.\
     If the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending.
-* `responseHandler`?: [_ResponseHandler_](./#ResponseHandler) – additional responses handler.
+* `responseHandler`?: [_ResponseHandler_](modules.md#ResponseHandler) – additional responses handler.
 
 #### Result
 
@@ -212,7 +212,7 @@ function process_message(
 
 * `message_encode_params`: [_ParamsOfEncodeMessage_](mod_abi.md#ParamsOfEncodeMessage) – Message encode parameters.
 * `send_events`: _boolean_ – Flag for requesting events sending
-* `responseHandler`?: [_ResponseHandler_](./#ResponseHandler) – additional responses handler.
+* `responseHandler`?: [_ResponseHandler_](modules.md#ResponseHandler) – additional responses handler.
 
 #### Result
 

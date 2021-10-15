@@ -23,7 +23,7 @@ The [mutation type](https://graphql.github.io/graphql-spec/June2018/#sec-Type-Sy
 
 The **subscription** root type – a long‐lived request that fetches data in response to source events.
 
-Check out [TON Labs SDK query module](../modules/mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
+Check out [TON Labs SDK query module](../types-and-methods/mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
 
 ## Non-root types
 
@@ -53,9 +53,9 @@ See non-root type descriptions in [Field descriptions](field_descriptions.md) se
 
 **Other queries**
 
-* getAccountsCount - number of accounts. **will be deprecated soon**. 
-* getTransactionsCount - number of transactions. **will be deprecated soon**. 
-* getAccountsTotalBalance - total balance of accounts. **will be deprecated soon**. 
+* getAccountsCount - number of accounts. **will be deprecated soon**.
+* getTransactionsCount - number of transactions. **will be deprecated soon**.
+* getAccountsTotalBalance - total balance of accounts. **will be deprecated soon**.
 * info - get information about the active GraphQL API version.
 
 ## Subscription types
@@ -63,18 +63,18 @@ See non-root type descriptions in [Field descriptions](field_descriptions.md) se
 * blocks
 * accounts
 * messages
-* transaction 
+* transaction
 * blocks_signatures
 
 ## Mutation types
 
-* postRequests - used to send messages in SDK libraries. 
+* postRequests - used to send messages in SDK libraries.
 
 ## Syntax
 
 Below you can see an example of a query for 5 random accounts filtered by balance range from 50 to 100 coins (in hex) and ordered in descending direction.
 
-```
+```graphql
 query {
   accounts(
     filter:{
