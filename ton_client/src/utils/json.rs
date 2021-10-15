@@ -65,6 +65,7 @@ impl CompareValuesResult {
 pub(crate) fn compare_values(
     a: &Value,
     b: &Value,
+    path: &str,
     ignore_fields: &HashSet<&'static str>,
 ) -> CompareValuesResult {
     match (a, b) {
@@ -80,23 +81,24 @@ pub(crate) fn compare_values(
             if get_string(a) == get_string(b) {
                 CompareValuesResult::Equal
             } else {
-                CompareValuesResult::Different(format!("{:?} != {:?}", a, b))
+                CompareValuesResult::Different(format!("field `{}`: {:?} != {:?}", path, a, b))
             }
         }
 
         (Value::Array(vec_a), Value::Array(vec_b)) =>
-            compare_vectors(vec_a, vec_b, ignore_fields),
+            compare_vectors(vec_a, vec_b, path, ignore_fields),
 
         (Value::Object(map_a), Value::Object(map_b)) =>
-            compare_maps(map_a, map_b, ignore_fields),
+            compare_maps(map_a, map_b, path, ignore_fields),
 
-        _ => CompareValuesResult::Different(format!("{:?} != {:?}", a, b))
+        _ => CompareValuesResult::Different(format!("field `{}`: {:?} != {:?}", path, a, b))
     }
 }
 
 fn compare_maps(
     map_a: &Map<String, Value>,
     map_b: &Map<String, Value>,
+    path: &str,
     ignore_fields: &HashSet<&'static str>,
 ) -> CompareValuesResult {
     let mut result = if count_fields(map_b, ignore_fields) > count_fields(map_a, ignore_fields) {
@@ -107,7 +109,9 @@ fn compare_maps(
 
     for key in map_a.keys().filter(|key| !ignore_fields.contains(key.as_str())) {
         if let Some(b) = map_b.get(key) {
-            result = result.apply_child_result(compare_values(&map_a[key], b, ignore_fields));
+            result = result.apply_child_result(
+                compare_values(&map_a[key], b, &format!("{}.{}", path, key), ignore_fields),
+            );
         } else {
             result = result.apply_child_result(CompareValuesResult::PartiallyMatches);
         }
@@ -119,11 +123,12 @@ fn compare_maps(
 fn compare_vectors(
     vec_a: &Vec<Value>,
     vec_b: &Vec<Value>,
+    path: &str,
     ignore_fields: &HashSet<&'static str>,
 ) -> CompareValuesResult {
     if vec_a.len() != vec_b.len() {
         return CompareValuesResult::Different(
-            format!("Arrays has different lengths ({} != {})", vec_a.len(), vec_b.len()),
+            format!("Field `{}`: arrays has different lengths ({} != {})", path, vec_a.len(), vec_b.len()),
         );
     }
 
@@ -134,7 +139,9 @@ fn compare_vectors(
 
     let mut result = CompareValuesResult::Equal;
     for i in 0..vec_a.len() {
-        result = result.apply_child_result(compare_values(&vec_a[i], &vec_b[i], ignore_fields));
+        result = result.apply_child_result(
+            compare_values(&vec_a[i], &vec_b[i], &format!("{}[{}]", path, i), ignore_fields),
+        );
     }
 
     result

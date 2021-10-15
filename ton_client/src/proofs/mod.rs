@@ -107,7 +107,7 @@ pub async fn proof_block_data(
     ).map_err(|err| Error::invalid_data(err))?;
 
     if let CompareValuesResult::Different(message) =
-        compare_values(&params.block, &block_map.into(), &COMPARE_JSON_IGNORE_FIELDS)
+        compare_values(&params.block, &block_map.into(), "blocks", &COMPARE_JSON_IGNORE_FIELDS)
     {
         return Err(Error::data_differs_from_proven(message));
     }
