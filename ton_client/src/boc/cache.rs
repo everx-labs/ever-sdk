@@ -19,6 +19,8 @@ use super::Error;
 use lru::LruCache;
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
+#[allow(unused_imports)]
+use std::str::FromStr;
 use tokio::sync::{Mutex, RwLock};
 use ton_types::{Cell, UInt256};
 
