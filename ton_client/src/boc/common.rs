@@ -50,7 +50,7 @@ pub struct ResultOfGetBocDepth {
     pub depth: u32,
 }
 
-/// Calculates BOC root hash
+/// Calculates BOC depth
 #[api_function]
 pub async fn get_boc_depth(
     context: std::sync::Arc<ClientContext>,

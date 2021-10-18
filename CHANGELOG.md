@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.24.0] – 2021-10-18
 
 ### New
-- `boc.get_boc_depth` function to get of the provided boc.
+- `boc.get_boc_depth` function to get depth of the provided boc.
 - `boc.decode_tvc` function returns additional fields `code_hash`, `code_depth`, `data_hash`, `data_depth` and `compiler_version`
 
 ## [1.23.0] – 2021-10-05
