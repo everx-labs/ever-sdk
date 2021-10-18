@@ -369,6 +369,20 @@ fn get_boc_hash() {
 }
 
 #[test]
+fn get_boc_depth() {
+    let client = TestClient::new();
+
+    let result: super::ResultOfGetBocDepth = client.request(
+        "boc.get_boc_depth",
+        super::ParamsOfGetBocDepth {
+            boc: base64::encode(include_bytes!("test_data/account.boc"))
+        }
+    ).unwrap();
+
+    assert_eq!(result.depth, 8);
+}
+
+#[test]
 fn get_code_from_tvc() {
     let client = TestClient::new();
 
@@ -667,14 +681,19 @@ fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeTvc
 fn test_tvc_encode() {
     let client = TestClient::new();
 
-    let tvc = TestClient::tvc(crate::tests::GIVER_V2, Some(2));
+    let tvc = TestClient::tvc("t24_initdata", Some(2));
     let decoded = ResultOfDecodeTvc {
-        code: Some(String::from("te6ccgECFAEAA6EAAib/APSkICLAAZL0oOGK7VNYMPShAwEBCvSkIPShAgAAAgEgBgQB/P9/Ie1E0CDXScIBn9P/0wD0Bfhqf/hh+Gb4Yo4b9AVt+GpwAYBA9A7yvdcL//hicPhjcPhmf/hh4tMAAY4SgQIA1xgg+QFY+EIg+GX5EPKo3iP4QvhFIG6SMHDeuvLgZSHTP9MfNDH4IyEBvvK5IfkAIPhKgQEA9A4gkTHeswUATvLgZvgAIfhKIgFVAcjLP1mBAQD0Q/hqIwRfBNMfAfAB+EdukvI83gIBIAwHAgFYCwgBCbjomPxQCQH++EFujhLtRNDT/9MA9AX4an/4Yfhm+GLe0XBtbwL4SoEBAPSGlQHXCz9/k3BwcOKRII43IyMjbwJvIsgizwv/Ic8LPzExAW8iIaQDWYAg9ENvAjQi+EqBAQD0fJUB1ws/f5NwcHDiAjUzMehfA8iCEHdEx+KCEIAAAACxzwsfIQoAom8iAssf9ADIglhgAAAAAAAAAAAAAAAAzwtmgQOYIs8xAbmWcc9AIc8XlXHPQSHN4iDJcfsAWzDA/44S+ELIy//4Rs8LAPhKAfQAye1U3n/4ZwDFuRar5/8ILdHG3aiaBBrpOEAz+n/6YB6Avw1P/ww/DN8MUcN+gK2/DU4AMAgegd5XuuF//wxOHwxuHwzP/ww8W98I0l5Gcm4/DNxfABo/CFkZf/8I2eFgHwlAPoAZPaqP/wzwAgEgDw0B17sV75NfhBbo4S7UTQ0//TAPQF+Gp/+GH4Zvhi3vpA1w1/ldTR0NN/39cMAJXU0dDSAN/RIiIic8hxzwsBIs8KAHPPQCTPFiP6AoBpz0Byz0AgySL7AF8F+EqBAQD0hpUB1ws/f5NwcHDikSCA4Ako4t+CMiAbuf+EojASEBgQEA9FswMfhq3iL4SoEBAPR8lQHXCz9/k3BwcOICNTMx6F8DXwP4QsjL//hGzwsA+EoB9ADJ7VR/+GcCASAREADHuORhh18ILdHCXaiaGn/6YB6Avw1P/ww/DN8MW9qaPwhfCKQN0kYOG9deXAy/AB8IWRl//wjZ4WAfCUA+gBk9qp8B5B9ghBodo92qfgBGHwhZGX//CNnhYB8JQD6AGT2qj/8M8AIC2hMSAC2vhCyMv/+EbPCwD4SgH0AMntVPgP8gCAB1pwIccAnSLQc9ch1wsAwAGQkOLgIdcNH5LyPOFTEcAAkODBAyKCEP////28sZLyPOAB8AH4R26S8jzeg=")),
-        data: Some(String::from("te6ccgEBBQEANQABAcABAgPPIAQCAQHeAwAD0CAAQdgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABA==")),
+        code: Some(String::from("te6ccgECEAEAAYkABCSK7VMg4wMgwP/jAiDA/uMC8gsNAgEPAoTtRNDXScMB+GYh2zzTAAGfgQIA1xgg+QFY+EL5EPKo3tM/AfhDIbnytCD4I4ED6KiCCBt3QKC58rT4Y9MfAds88jwFAwNK7UTQ10nDAfhmItDXCwOpOADcIccA4wIh1w0f8rwh4wMB2zzyPAwMAwIoIIIQBoFGw7rjAiCCEGi1Xz+64wIIBAIiMPhCbuMA+Ebyc9H4ANs88gAFCQIW7UTQ10nCAYqOgOILBgFccO1E0PQFcSGAQPQOk9cLB5Fw4vhqciGAQPQPjoDf+GuAQPQO8r3XC//4YnD4YwcBAogPA3Aw+Eby4Ez4Qm7jANHbPCKOICTQ0wH6QDAxyM+HIM6AYs9AXgHPkhoFGw7LB8zJcPsAkVvi4wDyAAsKCQAq+Ev4SvhD+ELIy//LP8+DywfMye1UAAj4SvhLACztRNDT/9M/0wAx0wfU0fhr+Gr4Y/hiAAr4RvLgTAIK9KQg9KEPDgAUc29sIDAuNTEuMAAA")),
+        code_depth: Some(7),
+        code_hash: Some(String::from("0ad23f96d7b1c1ce78dae573ac8cdf71523dc30f36316b5aaa5eb3cc540df0e0")),
+        data: Some(String::from("te6ccgEBAgEAKAABAcABAEPQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAg")),
+        data_depth: Some(1),
+        data_hash: Some(String::from("55a703465a160dce20481375de2e5b830c841c2787303835eb5821d62d65ca9d")),
         library: None,
         split_depth: None,
         tick: None,
         tock: None,
+        compiler_version: Some("sol 0.51.0".to_owned()),
     };
 
     check_encode_tvc(&client, tvc, decoded);
@@ -682,11 +701,16 @@ fn test_tvc_encode() {
     let tvc = base64::encode(include_bytes!("test_data/state_init_lib.boc"));
     let decoded = ResultOfDecodeTvc {
         code: Some(String::from("te6ccgEBBAEAhwABFP8A9KQT9LzyyAsBAgEgAwIA36X//3aiaGmP6f/o5CxSZ4WPkOeF/+T2qmRnxET/s2X/wQgC+vCAfQFANeegZLh9gEB354V/wQgD39JAfQFANeegZLhkZ82JA6Mrm6RBCAOt5or9AUA156BF6kMrY2N5YQO7e5NjIQxni2S4fYB9gEAAAtI=")),
+        code_depth: Some(2),
+        code_hash: Some(String::from("45910e27fe37d8dcf1fac777ebb3bda38ae1ea8389f81bfb1bc0079f3f67ef5b")),
         data: Some(String::from("te6ccgEBAQEAJgAASBHvVgMAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==")),
+        data_depth: Some(0),
+        data_hash: Some(String::from("97bfef744b0d45f78b901e2997fb55f6dbc1d396a8d2f8f4c3a5468c010db67a")),
         library: Some(String::from("te6ccgEBBgEAYAACAWIEAQFCv0EkKSBepm1vIATt+lcPb1az6F5ZuqG++8c7faXVW9xhAgEEEjQDAARWeAFCv1ou71BWd19blXL/OtY90qcdH7KByhd6Xhx0cw7MsuUTBQAPq6yrrausq6g=")),
         split_depth: None,
         tick: Some(true),
         tock: Some(true),
+        compiler_version: None,
     };
 
     check_encode_tvc(&client, tvc, decoded);
