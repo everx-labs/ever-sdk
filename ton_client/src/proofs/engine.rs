@@ -14,7 +14,6 @@ use crate::client::{Error, NetworkUID};
 use crate::ClientContext;
 use crate::encoding::base64_decode;
 use crate::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
-use crate::net::types::TrustedMcBlockId;
 use crate::proofs::{BlockProof, get_current_network_uid, ProofHelperEngine, resolve_initial_trusted_key_block, storage::ProofStorage};
 use crate::utils::json::JsonHelper;
 
@@ -58,15 +57,15 @@ impl ProofHelperEngineImpl {
         &self.storage
     }
 
-    fn gen_root_hash_prefix(root_hash: &str) -> &str {
-        &root_hash[..std::cmp::min(8, root_hash.len())]
+    fn gen_root_hash_prefix(root_hash: &[u8]) -> String {
+        hex::encode(&root_hash[..std::cmp::min(4, root_hash.len())])
     }
 
     pub(crate) fn gen_storage_key(network_uid: &NetworkUID, key: &str) -> String {
         format!(
             "{}/{}/{}",
-            Self::gen_root_hash_prefix(&network_uid.zerostate_root_hash),
-            Self::gen_root_hash_prefix(&network_uid.first_master_block_root_hash),
+            Self::gen_root_hash_prefix(network_uid.zerostate_root_hash.as_slice()),
+            Self::gen_root_hash_prefix(network_uid.first_master_block_root_hash.as_slice()),
             key,
         )
     }
@@ -501,39 +500,40 @@ impl ProofHelperEngineImpl {
 
     pub(crate) async fn download_trusted_key_block_proof(
         &self,
-        id: &TrustedMcBlockId,
+        trusted_seq_no: u32,
+        trusted_root_hash: &UInt256,
     ) -> Result<BlockProof> {
-        let proof_json = self.query_mc_proof(id.seq_no).await?;
+        let proof_json = self.query_mc_proof(trusted_seq_no).await?;
         let proof =  BlockProof::from_value(&proof_json)?;
-        if proof.id().seq_no() != id.seq_no {
+        if proof.id().seq_no() != trusted_seq_no {
             bail!(
                 "Proof for trusted key-block seq_no ({}) mismatches trusted key-block seq_no ({})",
                 proof.id().seq_no,
-                id.seq_no,
+                trusted_seq_no,
             );
         }
-        let trusted_root_hash = UInt256::from_str(&id.root_hash)?;
-        if *proof.id().root_hash() != trusted_root_hash {
+        if proof.id().root_hash() != trusted_root_hash {
             bail!(
                 "Proof for trusted key-block root_hash ({:?}) mismatches trusted key-block root_hash ({:?})",
                 proof.id().root_hash(),
                 trusted_root_hash,
             )
         }
-        self.write_mc_proof(id.seq_no, &proof_json).await?;
+        self.write_mc_proof(trusted_seq_no, &proof_json).await?;
 
         Ok(proof)
     }
 
     async fn require_trusted_key_block_proof(
         &self,
-        id: &TrustedMcBlockId,
+        trusted_seq_no: u32,
+        trusted_root_hash: &UInt256,
     ) -> Result<BlockProof> {
-        if let Some(value) = self.read_mc_proof(id.seq_no).await? {
+        if let Some(value) = self.read_mc_proof(trusted_seq_no).await? {
             return BlockProof::from_value(&value);
         }
 
-        self.download_trusted_key_block_proof(id).await
+        self.download_trusted_key_block_proof(trusted_seq_no, trusted_root_hash).await
     }
 
     pub(crate) async fn download_proof_chain<F: Fn(u32) -> R, R: Future<Output = Result<()>>>(
@@ -835,10 +835,10 @@ impl ProofHelperEngine for ProofHelperEngineImpl {
 
         let boc = self.query_zerostate_boc().await?;
 
-        let actual_hash = get_boc_hash(&boc)?;
-        let expected_hash = &get_current_network_uid(self.context()).await?
+        let actual_hash = UInt256::from_str(&get_boc_hash(&boc)?)?;
+        let expected_hash = get_current_network_uid(self.context()).await?
             .zerostate_root_hash;
-        if actual_hash != *expected_hash {
+        if actual_hash != expected_hash {
             bail!(
                 "Zerostate hashes mismatch (expected `{}`, but queried from DApp is `{}`)",
                 expected_hash,
@@ -856,41 +856,41 @@ impl ProofHelperEngine for ProofHelperEngineImpl {
             return BlockProof::from_value(&proof_json);
         }
 
-        let trusted_id = resolve_initial_trusted_key_block(self.context()).await?;
+        let (trusted_seq_no, trusted_root_hash) = resolve_initial_trusted_key_block(self.context(), mc_seq_no).await?;
         let zs_right_bound = self.read_zs_right_bound().await?;
-        let trusted_right_bound = self.read_trusted_block_right_bound(trusted_id.seq_no).await?;
+        let trusted_right_bound = self.read_trusted_block_right_bound(trusted_seq_no).await?;
 
-        if mc_seq_no == trusted_id.seq_no {
-            return self.download_trusted_key_block_proof(trusted_id).await;
+        if mc_seq_no == trusted_seq_no {
+            return self.download_trusted_key_block_proof(trusted_seq_no, &trusted_root_hash).await;
         }
 
-        self.require_trusted_key_block_proof(trusted_id).await?;
+        self.require_trusted_key_block_proof(trusted_seq_no, &trusted_root_hash).await?;
 
         let update_zs_right = move |mc_seq_no| async move {
             self.update_zs_right_bound(mc_seq_no).await
         };
 
         let update_trusted_right = move |mc_seq_no| async move {
-            self.update_trusted_block_right_bound(trusted_id.seq_no, mc_seq_no).await
+            self.update_trusted_block_right_bound(trusted_seq_no, mc_seq_no).await
         };
 
         if mc_seq_no > trusted_right_bound {
             self.download_proof_chain(trusted_right_bound + 1..mc_seq_no + 1, update_trusted_right).await
-        } else if mc_seq_no < trusted_id.seq_no && mc_seq_no > zs_right_bound {
+        } else if mc_seq_no < trusted_seq_no && mc_seq_no > zs_right_bound {
             self.download_proof_chain(zs_right_bound + 1..mc_seq_no + 1, update_zs_right).await
         } else if mc_seq_no <= zs_right_bound {
             // Chain from zerostate is broken
             self.download_proof_chain(1..mc_seq_no + 1, update_zs_right).await
-        } else if mc_seq_no > trusted_id.seq_no && mc_seq_no <= trusted_right_bound {
+        } else if mc_seq_no > trusted_seq_no && mc_seq_no <= trusted_right_bound {
             // Chain from trusted key-block to the right is broken
-            self.download_proof_chain(trusted_id.seq_no + 1..mc_seq_no + 1, update_trusted_right).await
+            self.download_proof_chain(trusted_seq_no + 1..mc_seq_no + 1, update_trusted_right).await
         } else {
             unreachable!(
-                "mc_seq_no: {}, zs_right: {}, trusted_right: {}, trusted_id: {:?}",
+                "mc_seq_no: {}, zs_right: {}, trusted_right: {}, trusted_seq_no: {:?}",
                 mc_seq_no,
                 zs_right_bound,
                 trusted_right_bound,
-                trusted_id,
+                trusted_seq_no,
             )
         }
     }

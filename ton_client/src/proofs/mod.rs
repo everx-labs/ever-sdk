@@ -10,12 +10,13 @@ use ton_block_json::BlockSerializationSet;
 use ton_types::{Cell, deserialize_tree_of_cells, UInt256};
 use ton_types::Result;
 
+pub(crate) use errors::ErrorCode;
+
 use crate::client::NetworkUID;
 use crate::ClientContext;
 use crate::encoding::base64_decode;
 use crate::error::ClientResult;
 use crate::net::{ParamsOfQueryCollection, query_collection};
-use crate::net::types::TrustedMcBlockId;
 use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::errors::Error;
 use crate::proofs::validators::{calc_subset_for_workchain, check_crypto_signatures};
@@ -25,8 +26,6 @@ pub mod errors;
 mod engine;
 pub(crate) mod storage;
 mod validators;
-
-pub(crate) use errors::ErrorCode;
 
 #[cfg(test)]
 mod tests;
@@ -114,18 +113,10 @@ pub async fn proof_block_data(
     Ok(())
 }
 
-// TODO: Update this JSON-file contents using CI:
-static INITIAL_TRUSTED_KEY_BLOCKS_JSON: &str = include_str!("trusted_key_blocks.json");
-
-#[derive(serde::Deserialize)]
-pub(crate) struct TrustedKeyBlockJsonEntry {
-    trusted_key_block: TrustedMcBlockId,
-}
-
 lazy_static! {
-    pub(crate) static ref INITIAL_TRUSTED_KEY_BLOCKS: HashMap<String, TrustedKeyBlockJsonEntry> =
-        serde_json::from_str(INITIAL_TRUSTED_KEY_BLOCKS_JSON)
-            .expect("FATAL: failed to parse trusted key-blocks JSON!");
+    pub(crate) static ref INITIAL_TRUSTED_KEY_BLOCKS: HashMap<[u8; 32], Vec<(u32, [u8; 32])>> =
+        bincode::deserialize(include_bytes!("trusted_key_blocks.bin"))
+            .expect("FATAL: failed to read trusted key-blocks binary file!");
 }
 
 pub(crate) struct Signatures {
@@ -623,21 +614,34 @@ async fn query_current_network_uid(
         bail!("Unable to resolve zerostate's root hash: prev_ref of the block #1 is not set");
     }
 
-    let first_master_block_root_hash = blocks[0].get_str("id")?.to_string();
-    let zerostate_root_hash = prev_ref.get_str("root_hash")?.to_string();
+    let first_master_block_root_hash = UInt256::from_str(blocks[0].get_str("id")?)?;
+    let zerostate_root_hash = UInt256::from_str(prev_ref.get_str("root_hash")?)?;
 
     Ok(Arc::new(NetworkUID { zerostate_root_hash, first_master_block_root_hash }))
 }
 
 async fn resolve_initial_trusted_key_block(
     context: &Arc<ClientContext>,
-) -> Result<&TrustedMcBlockId> {
+    mc_seq_no: u32,
+) -> Result<(u32, UInt256)> {
     let network_uid = get_current_network_uid(context).await?;
 
-    if let Some(hardcoded_mc_block) =
-        INITIAL_TRUSTED_KEY_BLOCKS.get(&network_uid.zerostate_root_hash)
+    if let Some(hardcoded_mc_blocks) =
+        INITIAL_TRUSTED_KEY_BLOCKS.get(network_uid.zerostate_root_hash.as_array())
     {
-        return Ok(&hardcoded_mc_block.trusted_key_block);
+        let index = match hardcoded_mc_blocks.binary_search_by_key(
+            &mc_seq_no, |(seq_no, _root_hash)| *seq_no,
+        ) {
+            Ok(seq_no) => seq_no,
+            Err(seq_no) => if seq_no >= hardcoded_mc_blocks.len() {
+                seq_no - 1
+            } else {
+                seq_no
+            },
+        };
+
+        let (seq_no, ref root_hash) = hardcoded_mc_blocks[index];
+        return Ok((seq_no, UInt256::from_slice(root_hash)));
     }
 
     bail!(
