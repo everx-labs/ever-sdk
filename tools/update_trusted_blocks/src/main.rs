@@ -128,7 +128,7 @@ async fn query_network_keyblocks(server_address: &'static str) -> Result<(UInt25
 async fn main() -> Result<()> {
     let args: Vec<String> = std::env::args().collect();
     if args.len() < 2 {
-        eprintln!("Usage: {} /path/trusted_key_blocks.bin", args[0]);
+        eprintln!("Usage: {} <file name with path to save trusted key blocks>", args[0]);
         std::process::exit(1);
     }
 
