@@ -35,7 +35,7 @@ use crate::net::{
 use super::std_client_env::ClientEnv;
 #[cfg(feature = "wasm")]
 use super::wasm_client_env::ClientEnv;
-use crate::proofs::storage::ProofStorage;
+use crate::utils::storage::KeyValueStorage;
 use ton_types::UInt256;
 
 #[derive(Default)]
@@ -67,7 +67,7 @@ pub struct ClientContext {
     pub(crate) blockchain_config: RwLock<Option<Arc<ton_executor::BlockchainConfig>>>,
 
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
-    pub(crate) storage: Arc<dyn ProofStorage>,
+    pub(crate) storages: RwLock<HashMap<String, Arc<dyn KeyValueStorage>>>,
 
     next_id: AtomicU32,
 }
@@ -104,11 +104,6 @@ Note that default values are used if parameters are omitted in config"#,
         };
 
         let bocs = Bocs::new(config.boc.cache_max_size);
-        let storage: Arc<dyn ProofStorage> = if config.cache_proofs {
-            Arc::new(crate::proofs::storage::LocalStorage::new(config.local_storage_path.clone()))
-        } else {
-            Arc::new(crate::proofs::storage::InMemoryProofStorage::new())
-        };
         Ok(Self {
             net: NetworkContext {
                 server_link,
@@ -123,7 +118,7 @@ Note that default values are used if parameters are omitted in config"#,
             bocs,
             blockchain_config: RwLock::new(None),
             app_requests: Mutex::new(HashMap::new()),
-            storage,
+            storages: Default::default(),
             next_id: AtomicU32::new(1),
         })
     }
@@ -159,6 +154,31 @@ Note that default values are used if parameters are omitted in config"#,
             AppRequestResult::Ok { result } => serde_json::from_value(result)
                 .map_err(|err| Error::can_not_parse_request_result(err)),
         }
+    }
+
+    pub(crate) async fn get_storage(&self, name: &String) -> ClientResult<Arc<dyn KeyValueStorage>> {
+        if let Some(value) = self.storages.read().await.get(name) {
+            return Ok(Arc::clone(value));
+        }
+
+        let storage: Arc<dyn KeyValueStorage> = if self.config.cache_proofs {
+            Arc::new(
+                crate::client::LocalStorage::new(
+                    self.config.local_storage_path.clone(),
+                    name.clone(),
+                ).await?
+            )
+        } else {
+            Arc::new(crate::utils::storage::InMemoryKeyValueStorage::new())
+        };
+
+        let mut write_guard = self.storages.write().await;
+        if let Some(value) = write_guard.get(name) {
+            return Ok(Arc::clone(value));
+        }
+        write_guard.insert(name.clone(), Arc::clone(&storage));
+
+        Ok(storage)
     }
 }
 

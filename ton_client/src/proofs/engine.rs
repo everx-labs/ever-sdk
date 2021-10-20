@@ -10,12 +10,13 @@ use ton_block::{BinTreeType, Block, Deserializable, InRefValue, ShardIdent, Shar
 use ton_types::{deserialize_tree_of_cells, Result, UInt256};
 
 use crate::boc::internal::get_boc_hash;
-use crate::client::{Error, NetworkUID};
+use crate::client::Error;
 use crate::ClientContext;
 use crate::encoding::base64_decode;
 use crate::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
-use crate::proofs::{BlockProof, get_current_network_uid, ProofHelperEngine, resolve_initial_trusted_key_block, storage::ProofStorage};
+use crate::proofs::{BlockProof, get_current_network_uid, ProofHelperEngine, resolve_initial_trusted_key_block};
 use crate::utils::json::JsonHelper;
+use crate::utils::storage::KeyValueStorage;
 
 const ZEROSTATE_KEY: &str = "zerostate";
 const ZEROSTATE_RIGHT_BOUND_KEY: &str = "zs_right_boundary_seq_no";
@@ -40,11 +41,25 @@ const PROOF_QUERY_RESULT: &str = "\
 
 pub(crate) struct ProofHelperEngineImpl {
     context: Arc<ClientContext>,
-    storage: Arc<dyn ProofStorage>,
+    storage: Arc<dyn KeyValueStorage>,
 }
 
 impl ProofHelperEngineImpl {
-    pub fn new(context: Arc<ClientContext>, storage: Arc<dyn ProofStorage>) -> Self {
+    pub async fn new(context: Arc<ClientContext>) -> Result<Self> {
+        let network_uid = get_current_network_uid(&context).await?;
+
+        let storage_name = format!(
+            "{}/{}",
+            Self::gen_root_hash_prefix(network_uid.zerostate_root_hash.as_slice()),
+            Self::gen_root_hash_prefix(network_uid.first_master_block_root_hash.as_slice()),
+        );
+
+        let storage = context.get_storage(&storage_name).await?;
+
+        Ok(Self::with_values(context, storage))
+    }
+
+    pub fn with_values(context: Arc<ClientContext>, storage: Arc<dyn KeyValueStorage>) -> Self {
         Self { context, storage }
     }
 
@@ -53,26 +68,12 @@ impl ProofHelperEngineImpl {
     }
 
     #[cfg(test)]
-    pub fn storage(&self) -> &Arc<dyn ProofStorage> {
+    pub fn storage(&self) -> &Arc<dyn KeyValueStorage> {
         &self.storage
     }
 
     fn gen_root_hash_prefix(root_hash: &[u8]) -> String {
         hex::encode(&root_hash[..std::cmp::min(4, root_hash.len())])
-    }
-
-    pub(crate) fn gen_storage_key(network_uid: &NetworkUID, key: &str) -> String {
-        format!(
-            "{}/{}/{}",
-            Self::gen_root_hash_prefix(network_uid.zerostate_root_hash.as_slice()),
-            Self::gen_root_hash_prefix(network_uid.first_master_block_root_hash.as_slice()),
-            key,
-        )
-    }
-
-    pub(crate) async fn get_storage_key(&self, key: &str) -> Result<String> {
-        let network_uid = get_current_network_uid(&self.context).await?;
-        Ok(Self::gen_storage_key(&network_uid, key))
     }
 
     fn mc_proof_key(mc_seq_no: u32) -> String {
@@ -137,35 +138,20 @@ impl ProofHelperEngineImpl {
         Ok(result)
     }
 
-    async fn get_bin(&self, key: &str) -> Result<Option<Vec<u8>>> {
-        self.storage.get_bin(&self.get_storage_key(key).await?).await
-    }
-
-    async fn put_bin(&self, key: &str, value: &[u8]) -> Result<()> {
-        self.storage.put_bin(&self.get_storage_key(key).await?, value).await
-    }
-
-    async fn get_str(&self, key: &str) -> Result<Option<String>> {
-        self.storage.get_str(&self.get_storage_key(key).await?).await
-    }
-
-    async fn put_str(&self, key: &str, value: &str) -> Result<()> {
-        self.storage.put_str(&self.get_storage_key(key).await?, value).await
-    }
-
     async fn get_value(&self, key: &str) -> Result<Option<Value>> {
-        self.get_str(key).await?
+        self.storage.get_str(key).await?
             .map(|value_str| serde_json::from_str(&value_str)
                 .map_err(|err| err.into()))
             .transpose()
     }
 
     async fn put_value(&self, key: &str, value: &Value) -> Result<()> {
-        self.put_str(
+        self.storage.put_str(
             key,
             &serde_json::to_string(value)
                 .map_err(|err| Error::internal_error(err))?,
         ).await
+            .map_err(|err| err.into())
     }
 
     async fn read_mc_proof(&self, mc_seq_no: u32) -> Result<Option<Value>> {
@@ -177,16 +163,18 @@ impl ProofHelperEngineImpl {
     }
 
     pub(crate) async fn read_block(&self, root_hash: &str) -> Result<Option<Vec<u8>>> {
-        self.get_bin(&Self::block_key(root_hash)).await
+        self.storage.get_bin(&Self::block_key(root_hash)).await
+            .map_err(|err| err.into())
     }
 
     pub(crate) async fn write_block(&self, root_hash: &str, boc: &[u8]) -> Result<()> {
-        self.put_bin(&Self::block_key(root_hash), boc).await
+        self.storage.put_bin(&Self::block_key(root_hash), boc).await
+            .map_err(|err| err.into())
     }
 
     pub(crate) async fn read_metadata_value_u32(&self, key: &str) -> Result<Option<u32>> {
         Ok(
-            self.get_bin(key).await?
+            self.storage.get_bin(key).await?
                 .map(|vec|
                     vec.try_into()
                         .ok()
@@ -196,7 +184,8 @@ impl ProofHelperEngineImpl {
     }
 
     pub(crate) async fn write_metadata_value_u32(&self, key: &str, value: u32) -> Result<()> {
-        self.put_bin(key, &value.to_le_bytes()).await
+        self.storage.put_bin(key, &value.to_le_bytes()).await
+            .map_err(|err| err.into())
     }
 
     pub(crate) async fn update_metadata_value_u32(
@@ -829,7 +818,7 @@ impl ProofHelperEngineImpl {
 #[async_trait::async_trait]
 impl ProofHelperEngine for ProofHelperEngineImpl {
     async fn load_zerostate(&self) -> Result<ShardStateUnsplit> {
-        if let Some(boc) = self.get_bin(ZEROSTATE_KEY).await? {
+        if let Some(boc) = self.storage.get_bin(ZEROSTATE_KEY).await? {
             return ShardStateUnsplit::construct_from_bytes(&boc);
         }
 
@@ -846,7 +835,7 @@ impl ProofHelperEngine for ProofHelperEngineImpl {
             );
         }
 
-        self.put_bin(ZEROSTATE_KEY, &boc).await?;
+        self.storage.put_bin(ZEROSTATE_KEY, &boc).await?;
 
         ShardStateUnsplit::construct_from_bytes(&boc)
     }

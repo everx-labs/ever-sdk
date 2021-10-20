@@ -18,6 +18,7 @@ use crate::error::ClientError;
 #[derive(ApiType)]
 pub enum ErrorCode {
     CompressionError = 701,
+    InternalError = 702,
 }
 
 pub struct Error;
@@ -33,5 +34,9 @@ impl Error {
 
     pub fn decompression_error<E: Display>(err: E) -> ClientError {
         error(ErrorCode::CompressionError, format!("Decompression error: {}", err))
+    }
+
+    pub fn internal_error<E: Display>(err: E) -> ClientError {
+        error(ErrorCode::InternalError, format!("Internal error: {}", err))
     }
 }

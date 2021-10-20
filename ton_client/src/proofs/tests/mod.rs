@@ -6,7 +6,7 @@ use ton_types::{Result, UInt256};
 
 use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_uid, resolve_initial_trusted_key_block, ParamsOfProofBlockData};
 use crate::proofs::engine::ProofHelperEngineImpl;
-use crate::proofs::storage::InMemoryProofStorage;
+use crate::utils::storage::InMemoryKeyValueStorage;
 use crate::proofs::validators::{calc_subset_for_workchain, calc_workchain_id, calc_workchain_id_by_adnl_id};
 use crate::tests::TestClient;
 use crate::net::{ParamsOfQueryCollection, query_collection};
@@ -221,24 +221,10 @@ async fn test_resolve_initial_trusted_key_block_main() -> Result<()> {
     Ok(())
 }
 
-#[test]
-fn test_gen_storage_key() {
-    let network_uid = crate::client::NetworkUID {
-        zerostate_root_hash:
-            UInt256::from_str("0123456790abcdef0123456790abcdef0123456790abcdef0123456790abcdef").unwrap(),
-        first_master_block_root_hash:
-            UInt256::from_str("abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789").unwrap(),
-    };
-    assert_eq!(
-        ProofHelperEngineImpl::gen_storage_key(&network_uid, "test"),
-        "01234567/abcdef01/test",
-    );
-}
-
 fn create_engine_mainnet() -> ProofHelperEngineImpl {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
-    let storage = Arc::new(InMemoryProofStorage::new());
-    ProofHelperEngineImpl::new(client.context(), storage)
+    let storage = Arc::new(InMemoryKeyValueStorage::new());
+    ProofHelperEngineImpl::with_values(client.context(), storage)
 }
 
 #[tokio::test]
@@ -378,7 +364,7 @@ async fn add_file_hashes_test() -> Result<()> {
 #[tokio::test]
 async fn mc_proofs_test() -> Result<()> {
     let engine = create_engine_mainnet();
-    let storage: &InMemoryProofStorage = engine.storage().in_memory();
+    let storage: &InMemoryKeyValueStorage = engine.storage().in_memory();
 
     let proof = BlockProof::from_value(&engine.query_mc_proof(100000).await?)?;
     proof.check_proof(&engine).await?;

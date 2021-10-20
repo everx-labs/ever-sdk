@@ -24,7 +24,6 @@ use crate::utils::json::{compare_values, CompareValuesResult, JsonHelper};
 
 pub mod errors;
 mod engine;
-pub(crate) mod storage;
 mod validators;
 
 #[cfg(test)]
@@ -56,8 +55,8 @@ pub async fn proof_block_data(
     context: Arc<ClientContext>,
     params: ParamsOfProofBlockData,
 ) -> ClientResult<()> {
-    let storage = Arc::clone(&context.storage);
-    let engine = ProofHelperEngineImpl::new(context, storage);
+    let engine = ProofHelperEngineImpl::new(context).await
+        .map_err(|err| Error::proof_check_failed(err))?;
 
     let id_opt = params.block["id"].as_str();
 
