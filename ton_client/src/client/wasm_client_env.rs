@@ -16,12 +16,12 @@ use crate::client::LOCAL_STORAGE_DEFAULT_DIR_NAME;
 use crate::error::ClientResult;
 use crate::utils::storage::KeyValueStorage;
 use futures::{Future, FutureExt, SinkExt, StreamExt};
-use indexed_db_futures::{IdbDatabase, IdbQuerySource, IdbTransactionMode};
+use indexed_db_futures::{IdbDatabase, IdbQuerySource};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Event, MessageEvent, Request, RequestInit, Response, Window};
+use web_sys::{Event, MessageEvent, Request, RequestInit, Response, Window, IdbTransactionMode};
 use js_sys::JSON;
 
 #[cfg(test)]
