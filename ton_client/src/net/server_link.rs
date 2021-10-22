@@ -209,10 +209,12 @@ impl NetworkState {
         *self.query_endpoint.write().await = None
     }
 
-    pub async fn refresh_query_endpoint(&self) {
+    pub async fn refresh_query_endpoint(&self) -> ClientResult<()> {
         let endpoint_guard = self.query_endpoint.write().await;
         if let Some(endpoint) = endpoint_guard.as_ref() {
-            let _ = endpoint.refresh(&self.client_env, &self.config).await;
+            endpoint.refresh(&self.client_env, &self.config).await
+        } else {
+            Ok(())
         }
     }
 
@@ -385,8 +387,8 @@ impl ServerLink {
         self.state.config_servers().await
     }
 
-    pub async fn query_endpoint(&self) -> Option<Arc<Endpoint>> {
-        self.state.query_endpoint().await
+    pub async fn state(&self) -> Arc<NetworkState> {
+        self.state.clone()
     }
 
     // Returns Stream with updates database fields by provided filter
@@ -441,15 +443,7 @@ impl ServerLink {
 
         if let Some(errors) = errors {
             if let Some(errors) = errors.as_array() {
-                if errors.len() > 0 {
-                    if let Some(error) = errors.get(0) {
-                        if let Some(message) = error.get("message") {
-                            if let Some(string) = message.as_str() {
-                                return Some(Error::graphql_error(string));
-                            }
-                        }
-                    }
-                }
+                return Some(Error::graphql_server_error(None, errors));
             }
         }
 
@@ -494,28 +488,30 @@ impl ServerLink {
                 )
                 .await;
 
-            let is_network_error = match &result {
-                Err(err) => crate::client::Error::is_network_error(err),
-                Ok(response) => !response.is_success()
+            let result = match result {
+                Err(err) => Err(err),
+                Ok(response) => match response.body_as_json() {
+                    Err(err) => Err(err),
+                    Ok(value) => match Self::try_extract_error(&value) {
+                        Some(err) => Err(err),
+                        None => Ok(value)
+                    }
+                }
             };
 
-            if is_network_error {
-                self.state.internal_suspend().await;
-                self.websocket_link.suspend().await;
-                self.websocket_link.resume().await;
-                retry_count += 1;
-                if retry_count <= network_retries_count {
-                    continue 'retries;
+            if let Err(err) = &result {
+                if crate::client::Error::is_network_error(err) {
+                    self.state.internal_suspend().await;
+                    self.websocket_link.suspend().await;
+                    self.websocket_link.resume().await;
+                    retry_count += 1;
+                    if retry_count <= network_retries_count {
+                        continue 'retries;
+                    }
                 }
             }
 
-            let response = result?.body_as_json()?;
-
-            return if let Some(error) = Self::try_extract_error(&response) {
-                Err(error)
-            } else {
-                Ok(response)
-            };
+            return result;
         }
     }
 

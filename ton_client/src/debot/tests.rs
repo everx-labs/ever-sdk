@@ -1352,6 +1352,63 @@ async fn test_debot_encryption_box() {
     ).await;
 }
 
+#[tokio::test(core_threads = 2)]
+async fn test_debot_encryption_box_get_info() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot11").await;
+    let steps = vec![];
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![],
+        build_info(abi, 11, vec![
+            format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
+            format!("0x5b5f76b54d976d72f1ada3063d1af2e5352edaf1ba86b3b311170d4d81056d61")
+        ]),
+        vec![],
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_signing_box_get_info() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot12").await;
+    let steps = vec![];
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![],
+        build_info(abi, 12, vec![
+            format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
+            format!("0xc13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a")
+        ]),
+        vec![],
+    ).await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_query() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot14").await;
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        vec![],
+        vec![],
+        build_info(abi, 14, vec![
+            format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
+            format!("0x5c6fd81616cdfb963632109c42144a3a885c8d0f2e8deb5d8e15872fb92f2811")
+        ]),
+        vec![],
+    ).await;
+}
+
+
 fn build_info(abi: String, n: u32, interfaces: Vec<String>) -> DebotInfo {
     let name = format!("TestDeBot{}", n);
     DebotInfo {

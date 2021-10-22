@@ -9,10 +9,10 @@ use crate::boc::internal::{
     deserialize_object_from_base64, get_boc_hash, serialize_cell_to_base64,
     serialize_object_to_base64
 };
-use crate::boc::{ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfGetCodeFromTvc};
+use crate::boc::{ParamsOfDecodeTvc, ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfDecodeTvc, ResultOfGetCodeFromTvc};
 use crate::crypto::KeyPair;
 use crate::encoding::account_decode;
-use crate::tests::{TestClient, EVENTS, HELLO};
+use crate::tests::{EVENTS, HELLO, TestClient};
 use crate::utils::conversion::abi_uint;
 use crate::{
     abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage},
@@ -130,6 +130,15 @@ fn encode_v2() {
         )
         .unwrap();
     assert_eq!(signed_with_box.message, "te6ccgECGAEAA6wAA0eIAAt9aqvShfTon7Lei1PVOhUEkEEZQkhDKPgNyzeTL6YSEbAHAgEA4bE5Gr3mWwDtlcEOWHr6slWoyQlpIWeYyw/00eKFGFkbAJMMFLWnu0mq4HSrPmktmzeeAboa4kxkFymCsRVt44dTHxAj/Hd67jWQF7peccWoU/dbMCBJBB6YdPCVZcJlJkAAAF0ZyXLg19VzGRotV8/gAQHAAwIDzyAGBAEB3gUAA9AgAEHaY+IEf47vXcayAvdLzji1Cn7rZgQJIIPTDp4SrLhMpMwCJv8A9KQgIsABkvSg4YrtU1gw9KEKCAEK9KQg9KEJAAACASANCwHI/38h7UTQINdJwgGOENP/0z/TANF/+GH4Zvhj+GKOGPQFcAGAQPQO8r3XC//4YnD4Y3D4Zn/4YeLTAAGOHYECANcYIPkBAdMAAZTT/wMBkwL4QuIg+GX5EPKoldMAAfJ64tM/AQwAao4e+EMhuSCfMCD4I4ED6KiCCBt3QKC53pL4Y+CANPI02NMfAfgjvPK50x8B8AH4R26S8jzeAgEgEw4CASAQDwC9uotV8/+EFujjXtRNAg10nCAY4Q0//TP9MA0X/4Yfhm+GP4Yo4Y9AVwAYBA9A7yvdcL//hicPhjcPhmf/hh4t74RvJzcfhm0fgA+ELIy//4Q88LP/hGzwsAye1Uf/hngCASASEQDluIAGtb8ILdHCfaiaGn/6Z/pgGi//DD8M3wx/DFvfSDK6mjofSBv6PwikDdJGDhvfCFdeXAyfABkZP2CEGRnwoRnRoIEB9AAAAAAAAAAAAAAAAAAIGeLZMCAQH2AGHwhZGX//CHnhZ/8I2eFgGT2qj/8M8ADFuZPCot8ILdHCfaiaGn/6Z/pgGi//DD8M3wx/DFva4b/yupo6Gn/7+j8AGRF7gAAAAAAAAAAAAAAAAhni2fA58jjyxi9EOeF/+S4/YAYfCFkZf/8IeeFn/wjZ4WAZPaqP/wzwAgFIFxQBCbi3xYJQFQH8+EFujhPtRNDT/9M/0wDRf/hh+Gb4Y/hi3tcN/5XU0dDT/9/R+ADIi9wAAAAAAAAAAAAAAAAQzxbPgc+Rx5YxeiHPC//JcfsAyIvcAAAAAAAAAAAAAAAAEM8Wz4HPklb4sEohzwv/yXH7ADD4QsjL//hDzws/+EbPCwDJ7VR/FgAE+GcActxwItDWAjHSADDcIccAkvI74CHXDR+S8jzhUxGS8jvhwQQighD////9vLGS8jzgAfAB+EdukvI83g==");
+
+    let without_sign: ResultOfEncodeMessage = client
+        .request(
+            "abi.encode_message",
+            deploy_params(Signer::None),
+        )
+        .unwrap();
+    assert_eq!(without_sign.message, "te6ccgECFwEAA2gAAqeIAQlSohYE8AjiqWNwltuoi4JpOxqFrrRd2cD25VrcnUJsEYpj4gR/ju9dxrIC90vOOLUKfutmBAkgg9MOnhKsuEykyAAAC6M5Llwa+q5jI0Wq+fwGAQEBwAICA88gBQMBAd4EAAPQIABB2AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAEAib/APSkICLAAZL0oOGK7VNYMPShCQcBCvSkIPShCAAAAgEgDAoByP9/Ie1E0CDXScIBjhDT/9M/0wDRf/hh+Gb4Y/hijhj0BXABgED0DvK91wv/+GJw+GNw+GZ/+GHi0wABjh2BAgDXGCD5AQHTAAGU0/8DAZMC+ELiIPhl+RDyqJXTAAHyeuLTPwELAGqOHvhDIbkgnzAg+COBA+iogggbd0Cgud6S+GPggDTyNNjTHwH4I7zyudMfAfAB+EdukvI83gIBIBINAgEgDw4AvbqLVfP/hBbo417UTQINdJwgGOENP/0z/TANF/+GH4Zvhj+GKOGPQFcAGAQPQO8r3XC//4YnD4Y3D4Zn/4YeLe+Ebyc3H4ZtH4APhCyMv/+EPPCz/4Rs8LAMntVH/4Z4AgEgERAA5biABrW/CC3Rwn2omhp/+mf6YBov/ww/DN8Mfwxb30gyupo6H0gb+j8IpA3SRg4b3whXXlwMnwAZGT9ghBkZ8KEZ0aCBAfQAAAAAAAAAAAAAAAAACBni2TAgEB9gBh8IWRl//wh54Wf/CNnhYBk9qo//DPAAxbmTwqLfCC3Rwn2omhp/+mf6YBov/ww/DN8Mfwxb2uG/8rqaOhp/+/o/ABkRe4AAAAAAAAAAAAAAAAIZ4tnwOfI48sYvRDnhf/kuP2AGHwhZGX//CHnhZ/8I2eFgGT2qj/8M8AIBSBYTAQm4t8WCUBQB/PhBbo4T7UTQ0//TP9MA0X/4Yfhm+GP4Yt7XDf+V1NHQ0//f0fgAyIvcAAAAAAAAAAAAAAAAEM8Wz4HPkceWMXohzwv/yXH7AMiL3AAAAAAAAAAAAAAAABDPFs+Bz5JW+LBKIc8L/8lx+wAw+ELIy//4Q88LP/hGzwsAye1UfxUABPhnAHLccCLQ1gIx0gAw3CHHAJLyO+Ah1w0fkvI84VMRkvI74cEEIoIQ/////byxkvI84AHwAfhHbpLyPN4=");
+
 
     // check run params
 
@@ -931,4 +940,65 @@ async fn test_decode_account_data() {
             "length": "0x000000000000000000000000000000000000000000000000000000000000000f"
         })
     );
+}
+
+#[test]
+fn test_init_data() {
+    let client = TestClient::new();
+    let (abi, tvc) = TestClient::package("t24_initdata", Some(2));
+
+    let data = client
+        .request::<_, ResultOfDecodeTvc>(
+            "boc.decode_tvc",
+            ParamsOfDecodeTvc {
+                tvc,
+                boc_cache: None,
+            },
+        )
+        .unwrap()
+        .data
+        .unwrap();
+    
+    let result: ResultOfDecodeInitialData = client
+        .request(
+            "abi.decode_initial_data",
+            ParamsOfDecodeInitialData {
+                abi: Some(abi.clone()),
+                data: data.clone(),
+            },
+        )
+        .unwrap();
+    assert_eq!(result.initial_data, Some(json!({})));
+    assert_eq!(result.initial_pubkey, hex::encode(&[0u8; 32]));
+
+    let initial_data = json!({
+        "a": abi_uint(123, 8),
+        "s": "some string",
+    });
+
+    let result: ResultOfUpdateInitialData = client
+        .request(
+            "abi.update_initial_data",
+            ParamsOfUpdateInitialData {
+                abi: Some(abi.clone()),
+                data,
+                initial_data: Some(initial_data.clone()),
+                initial_pubkey: Some(hex::encode(&[0x22u8; 32])),
+                boc_cache: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(result.data, "te6ccgEBBwEARwABAcABAgPPoAQCAQFIAwAWc29tZSBzdHJpbmcCASAGBQADHuAAQQiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIoA==");
+
+    let result: ResultOfDecodeInitialData = client
+        .request(
+            "abi.decode_initial_data",
+            ParamsOfDecodeInitialData {
+                abi: Some(abi.clone()),
+                data: result.data,
+            },
+        )
+        .unwrap();
+    assert_eq!(result.initial_data, Some(initial_data));
+    assert_eq!(result.initial_pubkey, hex::encode(&[0x22u8; 32]));
 }

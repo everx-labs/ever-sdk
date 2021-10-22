@@ -47,7 +47,7 @@ pub(crate) fn account_encode_ex(
     base64_params: Option<Base64AddressParams>,
 ) -> ClientResult<String> {
     match addr_type {
-        AccountAddressType::AccountId => Ok(value.get_address().to_hex_string()),
+        AccountAddressType::AccountId => Ok(format!("{:x}", value.get_address())),
         AccountAddressType::Hex => Ok(value.to_string()),
         AccountAddressType::Base64 => {
             let params =

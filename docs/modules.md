@@ -131,6 +131,10 @@ Where:
 
 [decode_account_data](mod_abi.md#decode_account_data) – Decodes account data using provided data BOC and ABI.
 
+[update_initial_data](mod_abi.md#update_initial_data) – Updates initial account data with initial values for the contract's static variables and owner's public key. This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
+
+[decode_initial_data](mod_abi.md#decode_initial_data) – Decodes initial values of a contract's static variables and owner's public key from account initial data This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
+
 ## [boc](mod_boc.md) – BOC manipulation module.
 
 [parse_message](mod_boc.md#parse_message) – Parses message boc into a JSON
@@ -155,7 +159,17 @@ Where:
 
 [cache_unpin](mod_boc.md#cache_unpin) – Unpin BOCs with specified pin.
 
-[encode_boc](mod_boc.md#encode_boc) – Encodes BOC from builder operations.
+[encode_boc](mod_boc.md#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type
+
+[get_code_salt](mod_boc.md#get_code_salt) – Returns the contract code's salt if it is present.
+
+[set_code_salt](mod_boc.md#set_code_salt) – Sets new salt to contract code.
+
+[decode_tvc](mod_boc.md#decode_tvc) – Decodes tvc into code, data, libraries and special options.
+
+[encode_tvc](mod_boc.md#encode_tvc) – Encodes tvc from code, data, libraries ans special options (see input params)
+
+[get_compiler_version](mod_boc.md#get_compiler_version) – Returns the compiler version used to compile the code.
 
 ## [processing](mod_processing.md) – Message processing module.
 
@@ -215,7 +229,7 @@ Where:
 
 [query_counterparties](mod_net.md#query_counterparties) – Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
 
-[query_transaction_tree](mod_net.md#query_transaction_tree) – Returns transactions tree for specific message.
+[query_transaction_tree](mod_net.md#query_transaction_tree) – Returns a tree of transactions triggered by a specific message.
 
 [create_block_iterator](mod_net.md#create_block_iterator) – Creates block iterator.
 

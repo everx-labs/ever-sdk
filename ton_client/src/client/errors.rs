@@ -60,6 +60,10 @@ impl Error {
             || error.code == ErrorCode::WebsocketReceiveError as u32
             || error.code == ErrorCode::WebsocketSendError as u32
             || error.code == ErrorCode::HttpRequestSendError as u32
+            || (error.code == crate::net::ErrorCode::GraphqlError as u32
+                && error.data["server_code"].as_i64() >= Some(500)
+                && error.data["server_code"].as_i64() <= Some(599)
+            )
     }
 
     pub fn internal_error<E: Display>(message: E) -> ClientError {

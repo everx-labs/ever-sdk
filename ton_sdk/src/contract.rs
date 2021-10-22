@@ -19,12 +19,12 @@ use chrono::prelude::Utc;
 use ed25519_dalek::{Keypair, PublicKey};
 use serde_json::Value;
 use std::convert::Into;
-use std::io::{Cursor, Read, Seek};
+use std::io::{Read, Seek};
 use ton_abi::json_abi::DecodedMessage;
 use ton_block::{AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash,
     Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit,
     InternalMessageHeader, CurrencyCollection};
-use ton_types::cells_serialization::deserialize_cells_tree;
+use ton_types::cells_serialization::deserialize_tree_of_cells;
 use ton_types::{error, fail, AccountId, Result, SliceData};
 
 pub struct Contract {}
@@ -64,32 +64,14 @@ impl ContractImage {
     {
         let mut state_init = StateInit::default();
 
-        let mut code_roots = deserialize_cells_tree(code)?;
-        if code_roots.len() != 1 {
-            bail!(SdkError::InvalidData {
-                msg: "Invalid code's bag of cells".into()
-            });
-        }
-        state_init.set_code(code_roots.remove(0));
+        state_init.set_code(deserialize_tree_of_cells(code)?);
 
-        if let Some(data_) = data {
-            let mut data_roots = deserialize_cells_tree(data_)?;
-            if data_roots.len() != 1 {
-                bail!(SdkError::InvalidData {
-                    msg: "Invalid data bag of cells".into()
-                });
-            }
-            state_init.set_data(data_roots.remove(0));
+        if let Some(data) = data {
+            state_init.set_data(deserialize_tree_of_cells(data)?);
         }
 
-        if let Some(library_) = library {
-            let mut library_roots = deserialize_cells_tree(library_)?;
-            if library_roots.len() != 1 {
-                bail!(SdkError::InvalidData {
-                    msg: "Invalid library's bag of cells".into()
-                });
-            }
-            state_init.set_library(library_roots.remove(0));
+        if let Some(library) = library {
+            state_init.set_library(deserialize_tree_of_cells(library)?);
         }
 
         let id = AccountId::from(state_init.hash()?);
@@ -108,16 +90,8 @@ impl ContractImage {
     where
         T: Read,
     {
-        let mut si_roots = deserialize_cells_tree(state_init_bag)?;
-        if si_roots.len() != 1 {
-            bail!(SdkError::InvalidData {
-                msg: "Invalid state init bag of cells".into()
-            });
-        }
-
-        let state_init: StateInit =
-            StateInit::construct_from(&mut SliceData::from(si_roots.remove(0)))?;
-
+        let cell = deserialize_tree_of_cells(state_init_bag)?;
+        let state_init: StateInit = StateInit::construct_from_cell(cell)?;
         let id = state_init.hash()?.into();
 
         Ok(Self { state_init, id })
@@ -678,15 +652,7 @@ impl Contract {
 
     /// Deserializes tree of cells from byte array into `SliceData`
     pub fn deserialize_tree_to_slice(data: &[u8]) -> Result<SliceData> {
-        let mut response_cells = deserialize_cells_tree(&mut Cursor::new(data))?;
-
-        if response_cells.len() != 1 {
-            bail!(SdkError::InvalidData {
-                msg: "Deserialize message error".to_owned()
-            });
-        }
-
-        Ok(response_cells.remove(0).into())
+        Ok(deserialize_tree_of_cells(&mut data.clone())?.into())
     }
 
     pub fn get_dst_from_msg(msg: &[u8]) -> Result<MsgAddressInt> {
@@ -700,17 +666,7 @@ impl Contract {
 
     /// Deserializes TvmMessage from byte array
     pub fn deserialize_message(message: &[u8]) -> Result<TvmMessage> {
-        let mut root_cells = deserialize_cells_tree(&mut Cursor::new(message))?;
-
-        if root_cells.len() != 1 {
-            bail!(SdkError::InvalidData {
-                msg: "Deserialize message error".to_owned()
-            });
-        }
-
-        Ok(TvmMessage::construct_from(
-            &mut root_cells.remove(0).into(),
-        )?)
+        TvmMessage::construct_from_bytes(message)
     }
 
     pub fn now() -> u32 {
