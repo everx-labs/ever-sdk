@@ -73,6 +73,11 @@ pub async fn proof_block_data(
         .map_err(|err| Error::invalid_data(err))?;
     let root_hash = cell.repr_hash();
 
+    // TODO: Manage untrusted and trusted (already proven) blocks separately.
+    //       For trusted blocks we don't need to do proof checking.
+    //       1. `write_block()` change to `write_untrusted_block()`
+    //       2. also add `write_trusted_block()` and `remove_untrusted_block()`
+    //          (or `trust_block()` for moving block from untrusted to trusted storage) functions.
     engine.write_block(&root_hash.as_hex_string(), &boc).await
         .map_err(|err| Error::internal_error(err))?;
 

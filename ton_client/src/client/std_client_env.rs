@@ -235,7 +235,7 @@ impl ClientEnv {
 }
 
 lazy_static! {
-    static ref KEY_FORMAT_RE: regex::Regex = regex::Regex::new(r#"^[a-zA-Z0-9_\./]+?$"#).unwrap();
+    static ref KEY_FORMAT_RE: regex::Regex = regex::Regex::new(r#"^[a-zA-Z0-9_\.]+?$"#).unwrap();
 }
 
 pub(crate) struct LocalStorage {

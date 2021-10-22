@@ -81,7 +81,7 @@ impl ProofHelperEngineImpl {
     }
 
     fn block_key(root_hash: &str) -> String {
-        format!("block_{}", root_hash)
+        format!("temp_block_{}", root_hash)
     }
 
     fn trusted_block_right_bound_key(seq_no: u32) -> String {

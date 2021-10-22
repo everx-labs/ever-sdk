@@ -16,7 +16,8 @@ use crate::client::LOCAL_STORAGE_DEFAULT_DIR_NAME;
 use crate::error::ClientResult;
 use crate::utils::storage::KeyValueStorage;
 use futures::{Future, FutureExt, SinkExt, StreamExt};
-use indexed_db_futures::{IdbDatabase, IdbQuerySource};
+use indexed_db_futures::{IdbDatabase, IdbQuerySource, IdbVersionChangeEvent};
+use indexed_db_futures::request::IdbOpenDbRequestLike;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
@@ -38,10 +39,14 @@ fn js_error_to_string(js_value: JsValue) -> String {
     }
 }
 
-fn js_value_to_string(value: &JsValue) -> ClientResult<String> {
-    JSON::stringify(value)
-        .map(|val| String::from(val))
-        .map_err(|_err| Error::internal_error("Cannot serialize JsValue"))
+fn js_value_to_string(js_value: &JsValue) -> ClientResult<String> {
+    if let Ok(txt) = js_value.clone().dyn_into::<js_sys::JsString>() {
+        Ok(String::from(txt))
+    } else {
+        JSON::stringify(js_value)
+            .map(|val| String::from(val))
+            .map_err(|_err| Error::internal_error("Cannot serialize JsValue"))
+    }
 }
 
 // web-sys and wasm-bindgen types are not `Send` so we cannot use them directly in async
@@ -391,71 +396,62 @@ impl LocalStorage {
         local_storage_path: Option<String>,
         storage_name: String,
     ) -> ClientResult<Self> {
-        let result = Ok(Self {
-            local_storage_path: local_storage_path.clone(),
-            storage_name: storage_name.clone(),
-        });
-
-        execute_spawned(
-            move || async move {
-                Self::create_storage(&local_storage_path, &storage_name).await
-            }
-        ).await??;
-
-        result
+        Ok(Self {
+            local_storage_path,
+            storage_name,
+        })
     }
 
-    async fn create_storage(
+    async fn open_db(
         local_storage_path: &Option<String>,
         storage_name: &str,
-    ) -> ClientResult<()> {
-        let db = Self::open_db(local_storage_path).await?;
-
-        // TODO: Process errors (store already exists)
-        db.create_object_store(storage_name)
-            .map_err(|err| Error::local_storage_error(err.message()))?;
-
-        Ok(())
-    }
-
-    async fn open_db(local_storage_path: &Option<String>) -> ClientResult<IdbDatabase> {
+    ) -> ClientResult<IdbDatabase> {
         let db_name = local_storage_path
             .as_ref()
             .map(|string| string.as_str())
             .unwrap_or(LOCAL_STORAGE_DEFAULT_DIR_NAME);
 
-        IdbDatabase::open(db_name)
-            .map_err(|err| Error::local_storage_error(err.message()))?
-            .into_future().await
+        let mut db_request = IdbDatabase::open(db_name)
+            .map_err(|err| Error::local_storage_error(err.message()))?;
+
+        let storage_name = storage_name.to_owned();
+        db_request.set_on_upgrade_needed(Some(move |event: &IdbVersionChangeEvent| -> Result<(), JsValue> {
+            if event.db().object_store_names().find(|name| *name == storage_name).is_none() {
+                event.db().create_object_store(&storage_name)?;
+            }
+            Ok(())
+        }));
+
+        db_request.into_future().await
             .map_err(|err| Error::local_storage_error(err.message()))
     }
 
-    async fn get_bin_internal(
+    async fn read_bin(
         local_storage_path: &Option<String>,
         storage_name: &str,
         key: &str,
     ) -> ClientResult<Option<Vec<u8>>> {
-        Ok(Self::get_str_internal(local_storage_path, storage_name, key).await?
+        Ok(Self::read_str(local_storage_path, storage_name, key).await?
             .map(|content_base64| base64::decode(&content_base64))
             .transpose()
             .map_err(|err| Error::local_storage_error(err))?)
     }
 
-    async fn put_bin_internal(
+    async fn write_bin(
         local_storage_path: &Option<String>,
         storage_name: &str,
         key: &str,
         value: &[u8],
     ) -> ClientResult<()> {
-        Self::put_str_internal(local_storage_path, storage_name, key, &base64::encode(value)).await
+        Self::write_str(local_storage_path, storage_name, key, &base64::encode(value)).await
     }
 
-    async fn get_str_internal(
+    async fn read_str(
         local_storage_path: &Option<String>,
         storage_name: &str,
         key: &str,
     ) -> ClientResult<Option<String>> {
-        let db = Self::open_db(local_storage_path).await?;
+        let db = Self::open_db(local_storage_path, storage_name).await?;
 
         let tx = db.transaction_on_one_with_mode(storage_name, IdbTransactionMode::Readonly)
             .map_err(|err| Error::local_storage_error(err.message()))?;
@@ -463,7 +459,7 @@ impl LocalStorage {
         let store = tx.object_store(storage_name)
             .map_err(|err| Error::local_storage_error(err.message()))?;
 
-        store.get_owned(key)
+        store.get(&JsValue::from_str(key))
             .map_err(|err| Error::local_storage_error(err.message()))?
             .await
             .map_err(|err| Error::local_storage_error(err.message()))?
@@ -471,13 +467,13 @@ impl LocalStorage {
             .transpose()
     }
 
-    async fn put_str_internal(
+    async fn write_str(
         local_storage_path: &Option<String>,
         storage_name: &str,
         key: &str,
         value: &str,
     ) -> ClientResult<()> {
-        let db = Self::open_db(local_storage_path).await?;
+        let db = Self::open_db(local_storage_path, storage_name).await?;
 
         let tx = db.transaction_on_one_with_mode(storage_name, IdbTransactionMode::Readwrite)
             .map_err(|err| Error::local_storage_error(err.message()))?;
@@ -497,7 +493,7 @@ impl LocalStorage {
         storage_name: &str,
         key: &str,
     ) -> ClientResult<()> {
-        let db = Self::open_db(local_storage_path).await?;
+        let db = Self::open_db(local_storage_path, storage_name).await?;
 
         let tx = db.transaction_on_one_with_mode(storage_name, IdbTransactionMode::Readwrite)
             .map_err(|err| Error::local_storage_error(err.message()))?;
@@ -521,7 +517,7 @@ impl KeyValueStorage for LocalStorage {
         let key = key.to_owned();
         execute_spawned(
             move || async move {
-                Self::get_bin_internal(&local_storage_path, &storage_name, &key).await
+                Self::read_bin(&local_storage_path, &storage_name, &key).await
             }
         ).await?
     }
@@ -533,7 +529,7 @@ impl KeyValueStorage for LocalStorage {
         let value = value.to_owned();
         execute_spawned(
             move || async move {
-                Self::put_bin_internal(&local_storage_path, &storage_name, &key, &value).await
+                Self::write_bin(&local_storage_path, &storage_name, &key, &value).await
             }
         ).await?
     }
@@ -544,7 +540,7 @@ impl KeyValueStorage for LocalStorage {
         let key = key.to_owned();
         execute_spawned(
             move || async move {
-                Self::get_str_internal(&local_storage_path, &storage_name, &key).await
+                Self::read_str(&local_storage_path, &storage_name, &key).await
             }
         ).await?
     }
@@ -556,7 +552,7 @@ impl KeyValueStorage for LocalStorage {
         let value = value.to_owned();
         execute_spawned(
             move || async move {
-                Self::put_str_internal(&local_storage_path, &storage_name, &key, &value).await
+                Self::write_str(&local_storage_path, &storage_name, &key, &value).await
             }
         ).await?
     }
