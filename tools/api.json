@@ -1,5 +1,5 @@
 {
-  "version": "1.23.0",
+  "version": "1.24.0",
   "modules": [
     {
       "name": "client",
@@ -6466,7 +6466,7 @@
             {
               "name": "boc",
               "type": "String",
-              "summary": "BOC encoded as base64",
+              "summary": "BOC encoded as base64 or BOC handle",
               "description": null
             }
           ],
@@ -6481,6 +6481,36 @@
               "name": "hash",
               "type": "String",
               "summary": "BOC root hash encoded with hex",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfGetBocDepth",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": "BOC encoded as base64 or BOC handle",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetBocDepth",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "depth",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "BOC root cell depth",
               "description": null
             }
           ],
@@ -6846,12 +6876,52 @@
               "description": null
             },
             {
+              "name": "code_hash",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Contract code hash",
+              "description": null
+            },
+            {
+              "name": "code_depth",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Contract code depth",
+              "description": null
+            },
+            {
               "name": "data",
               "type": "Optional",
               "optional_inner": {
                 "type": "String"
               },
               "summary": "Contract data BOC encoded as base64 or BOC handle",
+              "description": null
+            },
+            {
+              "name": "data_hash",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Contract data hash",
+              "description": null
+            },
+            {
+              "name": "data_depth",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Contract data depth",
               "description": null
             },
             {
@@ -6890,6 +6960,15 @@
                 "number_size": 32
               },
               "summary": "Is present and non-zero only in instances of large smart contracts",
+              "description": null
+            },
+            {
+              "name": "compiler_version",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Compiler version, for example 'sol 0.49.0'",
               "description": null
             }
           ],
@@ -7278,6 +7357,44 @@
               {
                 "type": "Ref",
                 "ref_name": "boc.ResultOfGetBocHash"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_boc_depth",
+          "summary": "Calculates BOC depth",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfGetBocDepth",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfGetBocDepth"
               }
             ]
           },

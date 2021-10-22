@@ -18,6 +18,8 @@ BOC manipulation module.
 
 [get_boc_hash](#get_boc_hash) – Calculates BOC root hash
 
+[get_boc_depth](#get_boc_depth) – Calculates BOC depth
+
 [get_code_from_tvc](#get_code_from_tvc) – Extracts code from TVC contract image
 
 [cache_get](#cache_get) – Get BOC from cache
@@ -56,6 +58,10 @@ BOC manipulation module.
 [ParamsOfGetBocHash](#ParamsOfGetBocHash)
 
 [ResultOfGetBocHash](#ResultOfGetBocHash)
+
+[ParamsOfGetBocDepth](#ParamsOfGetBocDepth)
+
+[ResultOfGetBocDepth](#ResultOfGetBocDepth)
 
 [ParamsOfGetCodeFromTvc](#ParamsOfGetCodeFromTvc)
 
@@ -287,12 +293,38 @@ function get_boc_hash(
 ): Promise<ResultOfGetBocHash>;
 ```
 ### Parameters
-- `boc`: _string_ – BOC encoded as base64
+- `boc`: _string_ – BOC encoded as base64 or BOC handle
 
 
 ### Result
 
 - `hash`: _string_ – BOC root hash encoded with hex
+
+
+## get_boc_depth
+
+Calculates BOC depth
+
+```ts
+type ParamsOfGetBocDepth = {
+    boc: string
+}
+
+type ResultOfGetBocDepth = {
+    depth: number
+}
+
+function get_boc_depth(
+    params: ParamsOfGetBocDepth,
+): Promise<ResultOfGetBocDepth>;
+```
+### Parameters
+- `boc`: _string_ – BOC encoded as base64 or BOC handle
+
+
+### Result
+
+- `depth`: _number_ – BOC root cell depth
 
 
 ## get_code_from_tvc
@@ -500,11 +532,16 @@ type ParamsOfDecodeTvc = {
 
 type ResultOfDecodeTvc = {
     code?: string,
+    code_hash?: string,
+    code_depth?: number,
     data?: string,
+    data_hash?: string,
+    data_depth?: number,
     library?: string,
     tick?: boolean,
     tock?: boolean,
-    split_depth?: number
+    split_depth?: number,
+    compiler_version?: string
 }
 
 function decode_tvc(
@@ -519,13 +556,18 @@ function decode_tvc(
 ### Result
 
 - `code`?: _string_ – Contract code BOC encoded as base64 or BOC handle
+- `code_hash`?: _string_ – Contract code hash
+- `code_depth`?: _number_ – Contract code depth
 - `data`?: _string_ – Contract data BOC encoded as base64 or BOC handle
+- `data_hash`?: _string_ – Contract data hash
+- `data_depth`?: _number_ – Contract data depth
 - `library`?: _string_ – Contract library BOC encoded as base64 or BOC handle
 - `tick`?: _boolean_ – `special.tick` field.
 <br>Specifies the contract ability to handle tick transactions
 - `tock`?: _boolean_ – `special.tock` field.
 <br>Specifies the contract ability to handle tock transactions
 - `split_depth`?: _number_ – Is present and non-zero only in instances of large smart contracts
+- `compiler_version`?: _string_ – Compiler version, for example 'sol 0.49.0'
 
 
 ## encode_tvc
@@ -706,7 +748,7 @@ type ParamsOfGetBocHash = {
     boc: string
 }
 ```
-- `boc`: _string_ – BOC encoded as base64
+- `boc`: _string_ – BOC encoded as base64 or BOC handle
 
 
 ## ResultOfGetBocHash
@@ -716,6 +758,24 @@ type ResultOfGetBocHash = {
 }
 ```
 - `hash`: _string_ – BOC root hash encoded with hex
+
+
+## ParamsOfGetBocDepth
+```ts
+type ParamsOfGetBocDepth = {
+    boc: string
+}
+```
+- `boc`: _string_ – BOC encoded as base64 or BOC handle
+
+
+## ResultOfGetBocDepth
+```ts
+type ResultOfGetBocDepth = {
+    depth: number
+}
+```
+- `depth`: _number_ – BOC root cell depth
 
 
 ## ParamsOfGetCodeFromTvc
@@ -928,21 +988,31 @@ type ParamsOfDecodeTvc = {
 ```ts
 type ResultOfDecodeTvc = {
     code?: string,
+    code_hash?: string,
+    code_depth?: number,
     data?: string,
+    data_hash?: string,
+    data_depth?: number,
     library?: string,
     tick?: boolean,
     tock?: boolean,
-    split_depth?: number
+    split_depth?: number,
+    compiler_version?: string
 }
 ```
 - `code`?: _string_ – Contract code BOC encoded as base64 or BOC handle
+- `code_hash`?: _string_ – Contract code hash
+- `code_depth`?: _number_ – Contract code depth
 - `data`?: _string_ – Contract data BOC encoded as base64 or BOC handle
+- `data_hash`?: _string_ – Contract data hash
+- `data_depth`?: _number_ – Contract data depth
 - `library`?: _string_ – Contract library BOC encoded as base64 or BOC handle
 - `tick`?: _boolean_ – `special.tick` field.
 <br>Specifies the contract ability to handle tick transactions
 - `tock`?: _boolean_ – `special.tock` field.
 <br>Specifies the contract ability to handle tock transactions
 - `split_depth`?: _number_ – Is present and non-zero only in instances of large smart contracts
+- `compiler_version`?: _string_ – Compiler version, for example 'sol 0.49.0'
 
 
 ## ParamsOfEncodeTvc
