@@ -39,7 +39,8 @@ function proof_block_data(
 enum ProofsErrorCode {
     InvalidData = 901,
     ProofCheckFailed = 902,
-    InternalError = 903
+    InternalError = 903,
+    DataDiffersFromProven = 904
 }
 ```
 One of the following value:
@@ -47,6 +48,7 @@ One of the following value:
 - `InvalidData = 901`
 - `ProofCheckFailed = 902`
 - `InternalError = 903`
+- `DataDiffersFromProven = 904`
 
 
 ## ParamsOfProofBlockData
