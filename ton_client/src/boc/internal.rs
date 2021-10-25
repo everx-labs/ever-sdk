@@ -162,7 +162,7 @@ pub(crate) async fn serialize_cell_to_boc(
     if let Some(cache_type) = boc_cache {
         context.bocs.add(cache_type, cell, None)
             .await
-            .map(|hash| format!("*{}", hash.to_hex_string()))
+            .map(|hash| format!("*{:x}", hash))
     } else {
         serialize_cell_to_base64(&cell, name)
     }

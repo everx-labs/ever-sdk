@@ -13,7 +13,7 @@
  */
 
 use crate::client::{ClientEnv, WebSocket};
-use crate::error::{ClientError, ClientResult};
+use crate::error::{AddNetworkUrl, ClientError, ClientResult};
 use crate::net::endpoint::Endpoint;
 use crate::net::gql::{GraphQLMessageFromClient, GraphQLMessageFromServer};
 use crate::net::server_link::NetworkState;
@@ -187,8 +187,11 @@ impl LinkHandler {
         let ws = match self.connect().await {
             Ok(ws) => {
                 if suspended {
-                    self.send_error_to_running_operations(Error::network_module_resumed())
-                        .await;
+                    self.send_error_to_running_operations(
+                        Error::network_module_resumed()
+                            .add_network_url_from_state(&self.state)
+                            .await,
+                    ).await;
                 }
                 ws
             }
@@ -370,14 +373,18 @@ impl LinkHandler {
             GraphQLMessageFromServer::ConnectionError { error } => {
                 next_phase = self
                     .handle_network_error(
-                        Error::graphql_server_error("connection", &vec![error]),
+                        Error::graphql_server_error(Some("connection"), &vec![error]),
                         false,
                     )
                     .await;
             }
             GraphQLMessageFromServer::Data { id, data, errors } => {
                 let event = if let Some(errors) = errors {
-                    GraphQLQueryEvent::Error(Error::graphql_server_error("operation", &errors))
+                    GraphQLQueryEvent::Error(
+                        Error::graphql_server_error(Some("operation"), &errors)
+                            .add_network_url_from_state(&self.state)
+                            .await,
+                    )
                 } else {
                     GraphQLQueryEvent::Data(data)
                 };
@@ -387,7 +394,7 @@ impl LinkHandler {
                 self.notify_with_remove(
                     true,
                     &id,
-                    GraphQLQueryEvent::Error(Error::graphql_error(error)),
+                    GraphQLQueryEvent::Error(Error::graphql_server_error(None, &[error])),
                 )
                 .await;
             }
@@ -400,18 +407,13 @@ impl LinkHandler {
     }
 
     async fn check_latency(&mut self) -> Option<Phase> {
-        let current = if let Some(x) = self.state.query_endpoint().await {
-            x
-        } else {
-            return None;
-        };
+        let current = self.state.query_endpoint().await?;
         if self.client_env.now_ms() < current.next_latency_detection_time() {
             return None;
         }
-        let resolved = Endpoint::resolve(&self.client_env, &self.config, &current.query_url).await;
-        match resolved.map(|x| x.latency()) {
-            Ok(latency) if latency <= self.config.max_latency as u64 => {
-                self.state.refresh_query_endpoint().await;
+        let result = self.state.refresh_query_endpoint().await;
+        match result {
+            Ok(_) if current.latency() <= self.config.max_latency as u64 => {
                 None
             }
             Ok(_) => Some(
@@ -454,7 +456,11 @@ impl LinkHandler {
     }
 
     async fn handle_network_error(&mut self, err: ClientError, suspended: bool) -> Phase {
-        self.send_error_to_running_operations(err).await;
+        self.send_error_to_running_operations(
+            err
+                .add_network_url_from_state(&self.state)
+                .await,
+        ).await;
         if !suspended {
             self.send_error_to_running_operations(Error::network_module_suspended())
                 .await;

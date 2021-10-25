@@ -13,7 +13,7 @@
 
 use num_traits::cast::ToPrimitive;
 use std::fmt;
-use ton_types::Result;
+use ton_types::{Result, UInt256};
 
 use crate::error::SdkError;
 
@@ -21,6 +21,12 @@ use crate::error::SdkError;
 pub struct StringId(String);
 
 pub type BlockId = StringId;
+
+impl From<UInt256> for StringId {
+    fn from(id: UInt256) -> Self {
+        StringId(id.as_hex_string())
+    }
+}
 
 impl From<String> for StringId {
     fn from(id: String) -> Self {

@@ -26,7 +26,17 @@ BOC manipulation module.
 
 [cache_unpin](#cache_unpin) – Unpin BOCs with specified pin.
 
-[encode_boc](#encode_boc) – Encodes BOC from builder operations.
+[encode_boc](#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type
+
+[get_code_salt](#get_code_salt) – Returns the contract code's salt if it is present.
+
+[set_code_salt](#set_code_salt) – Sets new salt to contract code.
+
+[decode_tvc](#decode_tvc) – Decodes tvc into code, data, libraries and special options.
+
+[encode_tvc](#encode_tvc) – Encodes tvc from code, data, libraries ans special options (see input params)
+
+[get_compiler_version](#get_compiler_version) – Returns the compiler version used to compile the code.
 
 ## Types
 [BocCacheType](#BocCacheType)
@@ -66,6 +76,26 @@ BOC manipulation module.
 [ParamsOfEncodeBoc](#ParamsOfEncodeBoc)
 
 [ResultOfEncodeBoc](#ResultOfEncodeBoc)
+
+[ParamsOfGetCodeSalt](#ParamsOfGetCodeSalt)
+
+[ResultOfGetCodeSalt](#ResultOfGetCodeSalt)
+
+[ParamsOfSetCodeSalt](#ParamsOfSetCodeSalt)
+
+[ResultOfSetCodeSalt](#ResultOfSetCodeSalt)
+
+[ParamsOfDecodeTvc](#ParamsOfDecodeTvc)
+
+[ResultOfDecodeTvc](#ResultOfDecodeTvc)
+
+[ParamsOfEncodeTvc](#ParamsOfEncodeTvc)
+
+[ResultOfEncodeTvc](#ResultOfEncodeTvc)
+
+[ParamsOfGetCompilerVersion](#ParamsOfGetCompilerVersion)
+
+[ResultOfGetCompilerVersion](#ResultOfGetCompilerVersion)
 
 
 # Functions
@@ -283,7 +313,7 @@ function get_code_from_tvc(
 ): Promise<ResultOfGetCodeFromTvc>;
 ```
 ### Parameters
-- `tvc`: _string_ – Contract TVC image encoded as base64
+- `tvc`: _string_ – Contract TVC image or image BOC handle
 
 
 ### Result
@@ -369,7 +399,7 @@ function cache_unpin(
 
 ## encode_boc
 
-Encodes BOC from builder operations.
+Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type
 
 ```ts
 type ParamsOfEncodeBoc = {
@@ -393,6 +423,175 @@ function encode_boc(
 ### Result
 
 - `boc`: _string_ – Encoded cell BOC or BOC cache key.
+
+
+## get_code_salt
+
+Returns the contract code's salt if it is present.
+
+```ts
+type ParamsOfGetCodeSalt = {
+    code: string,
+    boc_cache?: BocCacheType
+}
+
+type ResultOfGetCodeSalt = {
+    salt?: string
+}
+
+function get_code_salt(
+    params: ParamsOfGetCodeSalt,
+): Promise<ResultOfGetCodeSalt>;
+```
+### Parameters
+- `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+### Result
+
+- `salt`?: _string_ – Contract code salt if present.
+<br>BOC encoded as base64 or BOC handle
+
+
+## set_code_salt
+
+Sets new salt to contract code.
+
+Returns the new contract code with salt.
+
+```ts
+type ParamsOfSetCodeSalt = {
+    code: string,
+    salt: string,
+    boc_cache?: BocCacheType
+}
+
+type ResultOfSetCodeSalt = {
+    code: string
+}
+
+function set_code_salt(
+    params: ParamsOfSetCodeSalt,
+): Promise<ResultOfSetCodeSalt>;
+```
+### Parameters
+- `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
+- `salt`: _string_ – Code salt to set.
+<br>BOC encoded as base64 or BOC handle
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+### Result
+
+- `code`: _string_ – Contract code with salt set.
+<br>BOC encoded as base64 or BOC handle
+
+
+## decode_tvc
+
+Decodes tvc into code, data, libraries and special options.
+
+```ts
+type ParamsOfDecodeTvc = {
+    tvc: string,
+    boc_cache?: BocCacheType
+}
+
+type ResultOfDecodeTvc = {
+    code?: string,
+    data?: string,
+    library?: string,
+    tick?: boolean,
+    tock?: boolean,
+    split_depth?: number
+}
+
+function decode_tvc(
+    params: ParamsOfDecodeTvc,
+): Promise<ResultOfDecodeTvc>;
+```
+### Parameters
+- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+### Result
+
+- `code`?: _string_ – Contract code BOC encoded as base64 or BOC handle
+- `data`?: _string_ – Contract data BOC encoded as base64 or BOC handle
+- `library`?: _string_ – Contract library BOC encoded as base64 or BOC handle
+- `tick`?: _boolean_ – `special.tick` field.
+<br>Specifies the contract ability to handle tick transactions
+- `tock`?: _boolean_ – `special.tock` field.
+<br>Specifies the contract ability to handle tock transactions
+- `split_depth`?: _number_ – Is present and non-zero only in instances of large smart contracts
+
+
+## encode_tvc
+
+Encodes tvc from code, data, libraries ans special options (see input params)
+
+```ts
+type ParamsOfEncodeTvc = {
+    code?: string,
+    data?: string,
+    library?: string,
+    tick?: boolean,
+    tock?: boolean,
+    split_depth?: number,
+    boc_cache?: BocCacheType
+}
+
+type ResultOfEncodeTvc = {
+    tvc: string
+}
+
+function encode_tvc(
+    params: ParamsOfEncodeTvc,
+): Promise<ResultOfEncodeTvc>;
+```
+### Parameters
+- `code`?: _string_ – Contract code BOC encoded as base64 or BOC handle
+- `data`?: _string_ – Contract data BOC encoded as base64 or BOC handle
+- `library`?: _string_ – Contract library BOC encoded as base64 or BOC handle
+- `tick`?: _boolean_ – `special.tick` field.
+<br>Specifies the contract ability to handle tick transactions
+- `tock`?: _boolean_ – `special.tock` field.
+<br>Specifies the contract ability to handle tock transactions
+- `split_depth`?: _number_ – Is present and non-zero only in instances of large smart contracts
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+### Result
+
+- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
+
+
+## get_compiler_version
+
+Returns the compiler version used to compile the code.
+
+```ts
+type ParamsOfGetCompilerVersion = {
+    code: string
+}
+
+type ResultOfGetCompilerVersion = {
+    version?: string
+}
+
+function get_compiler_version(
+    params: ParamsOfGetCompilerVersion,
+): Promise<ResultOfGetCompilerVersion>;
+```
+### Parameters
+- `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
+
+
+### Result
+
+- `version`?: _string_ – Compiler version, for example 'sol 0.49.0'
 
 
 # Types
@@ -525,7 +724,7 @@ type ParamsOfGetCodeFromTvc = {
     tvc: string
 }
 ```
-- `tvc`: _string_ – Contract TVC image encoded as base64
+- `tvc`: _string_ – Contract TVC image or image BOC handle
 
 
 ## ResultOfGetCodeFromTvc
@@ -667,5 +866,132 @@ type ResultOfEncodeBoc = {
 }
 ```
 - `boc`: _string_ – Encoded cell BOC or BOC cache key.
+
+
+## ParamsOfGetCodeSalt
+```ts
+type ParamsOfGetCodeSalt = {
+    code: string,
+    boc_cache?: BocCacheType
+}
+```
+- `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+## ResultOfGetCodeSalt
+```ts
+type ResultOfGetCodeSalt = {
+    salt?: string
+}
+```
+- `salt`?: _string_ – Contract code salt if present.
+<br>BOC encoded as base64 or BOC handle
+
+
+## ParamsOfSetCodeSalt
+```ts
+type ParamsOfSetCodeSalt = {
+    code: string,
+    salt: string,
+    boc_cache?: BocCacheType
+}
+```
+- `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
+- `salt`: _string_ – Code salt to set.
+<br>BOC encoded as base64 or BOC handle
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+## ResultOfSetCodeSalt
+```ts
+type ResultOfSetCodeSalt = {
+    code: string
+}
+```
+- `code`: _string_ – Contract code with salt set.
+<br>BOC encoded as base64 or BOC handle
+
+
+## ParamsOfDecodeTvc
+```ts
+type ParamsOfDecodeTvc = {
+    tvc: string,
+    boc_cache?: BocCacheType
+}
+```
+- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+## ResultOfDecodeTvc
+```ts
+type ResultOfDecodeTvc = {
+    code?: string,
+    data?: string,
+    library?: string,
+    tick?: boolean,
+    tock?: boolean,
+    split_depth?: number
+}
+```
+- `code`?: _string_ – Contract code BOC encoded as base64 or BOC handle
+- `data`?: _string_ – Contract data BOC encoded as base64 or BOC handle
+- `library`?: _string_ – Contract library BOC encoded as base64 or BOC handle
+- `tick`?: _boolean_ – `special.tick` field.
+<br>Specifies the contract ability to handle tick transactions
+- `tock`?: _boolean_ – `special.tock` field.
+<br>Specifies the contract ability to handle tock transactions
+- `split_depth`?: _number_ – Is present and non-zero only in instances of large smart contracts
+
+
+## ParamsOfEncodeTvc
+```ts
+type ParamsOfEncodeTvc = {
+    code?: string,
+    data?: string,
+    library?: string,
+    tick?: boolean,
+    tock?: boolean,
+    split_depth?: number,
+    boc_cache?: BocCacheType
+}
+```
+- `code`?: _string_ – Contract code BOC encoded as base64 or BOC handle
+- `data`?: _string_ – Contract data BOC encoded as base64 or BOC handle
+- `library`?: _string_ – Contract library BOC encoded as base64 or BOC handle
+- `tick`?: _boolean_ – `special.tick` field.
+<br>Specifies the contract ability to handle tick transactions
+- `tock`?: _boolean_ – `special.tock` field.
+<br>Specifies the contract ability to handle tock transactions
+- `split_depth`?: _number_ – Is present and non-zero only in instances of large smart contracts
+- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+## ResultOfEncodeTvc
+```ts
+type ResultOfEncodeTvc = {
+    tvc: string
+}
+```
+- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
+
+
+## ParamsOfGetCompilerVersion
+```ts
+type ParamsOfGetCompilerVersion = {
+    code: string
+}
+```
+- `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
+
+
+## ResultOfGetCompilerVersion
+```ts
+type ResultOfGetCompilerVersion = {
+    version?: string
+}
+```
+- `version`?: _string_ – Compiler version, for example 'sol 0.49.0'
 
 

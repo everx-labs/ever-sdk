@@ -207,7 +207,7 @@ impl Bocs {
         &self, cache_type: BocCacheType, cell: Cell, size: Option<usize>
     ) -> ClientResult<UInt256> {
         let hash = cell.repr_hash();
-        log::debug!("Bocs::add {}", hash.to_hex_string());
+        log::debug!("Bocs::add {:x}", hash);
         match cache_type {
             BocCacheType::Pinned { pin } => self.add_pinned(hash.clone(), pin, cell).await,
             BocCacheType::Unpinned => {
@@ -264,7 +264,7 @@ pub async fn cache_set(
     };
     context.bocs.add(params.cache_type, cell, size)
         .await
-        .map(|hash| ResultOfBocCacheSet { boc_ref: format!("*{}", hash.to_hex_string()) })
+        .map(|hash| ResultOfBocCacheSet { boc_ref: format!("*{:x}", hash) })
 }
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
