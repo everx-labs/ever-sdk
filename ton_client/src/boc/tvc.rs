@@ -215,6 +215,20 @@ pub struct ResultOfGetCompilerVersion {
     pub version: Option<String>,
 }
 
+pub fn get_compiler_version_from_cell(
+    code: Cell,
+) -> ClientResult<Option<String>> {
+    let (_, version) = get_salt_and_ver(code)?;
+
+    version.map(|cell| {
+        let bytes = cell.data();
+        String::from_utf8(bytes[..bytes.len() - 1].to_vec())
+            .map_err(|err| Error::invalid_boc(
+                format!("can not convert version cell to string: {}", err)))
+    })
+        .transpose()
+}
+
 /// Returns the compiler version used to compile the code.
 #[api_function]
 pub async fn get_compiler_version(
@@ -222,16 +236,7 @@ pub async fn get_compiler_version(
     params: ParamsOfGetCompilerVersion,
 ) -> ClientResult<ResultOfGetCompilerVersion> {
     let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code").await?;
-    
-    let (_, version) = get_salt_and_ver(code)?;
-
-    let version = version.map(|cell| {
-        let bytes = cell.data();
-        String::from_utf8(bytes[..bytes.len() - 1].to_vec())
-            .map_err(|err| Error::invalid_boc(
-                format!("can not convert version cell to string: {}", err)))
-    })
-        .transpose()?;
+    let version = get_compiler_version_from_cell(code)?;
 
     Ok(ResultOfGetCompilerVersion { version })
 }
@@ -312,8 +317,16 @@ pub struct ParamsOfDecodeTvc {
 pub struct ResultOfDecodeTvc {
     /// Contract code BOC encoded as base64 or BOC handle
     pub code: Option<String>,
+    /// Contract code hash
+    pub code_hash: Option<String>,
+    /// Contract code depth
+    pub code_depth: Option<u32>,
     /// Contract data BOC encoded as base64 or BOC handle
     pub data: Option<String>,
+    /// Contract data hash
+    pub data_hash: Option<String>,
+    /// Contract data depth
+    pub data_depth: Option<u32>,
     /// Contract library BOC encoded as base64 or BOC handle
     pub library: Option<String>,
     /// `special.tick` field. Specifies the contract ability to handle tick transactions
@@ -322,6 +335,8 @@ pub struct ResultOfDecodeTvc {
     pub tock: Option<bool>,
     /// Is present and non-zero only in instances of large smart contracts
     pub split_depth: Option<u32>,
+    /// Compiler version, for example 'sol 0.49.0'
+    pub compiler_version: Option<String>,
 }
 
 /// Decodes tvc into code, data, libraries and special options.
@@ -341,16 +356,31 @@ pub async fn decode_tvc(
                 Ok(None)
             }
     }};
+    let code_depth = tvc.object.code.as_ref().map(|cell| cell.repr_depth() as u32);
+    let code_hash = tvc.object.code.as_ref().map(|cell| cell.repr_hash().as_hex_string());
+    let compiler_version = tvc.object.code.clone()
+        .map(|cell| get_compiler_version_from_cell(cell).ok())
+        .flatten()
+        .flatten();
     let code = serialize("code", tvc.object.code, params.boc_cache.clone()).await?;
+
+    let data_depth = tvc.object.data.as_ref().map(|cell| cell.repr_depth() as u32);
+    let data_hash = tvc.object.data.as_ref().map(|cell| cell.repr_hash().as_hex_string());
     let data = serialize("data", tvc.object.data, params.boc_cache.clone()).await?;
+
     let library = serialize("library", tvc.object.library.root().cloned(), params.boc_cache.clone()).await?;
     
     Ok(ResultOfDecodeTvc {
         code,
+        code_depth,
+        code_hash,
         data,
+        data_depth,
+        data_hash,
         library,
         tick: tvc.object.special.as_ref().map(|val| val.tick),
         tock: tvc.object.special.as_ref().map(|val| val.tick),
         split_depth: tvc.object.split_depth.map(|val| val.0),
+        compiler_version,
     })
 }

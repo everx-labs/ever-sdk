@@ -356,7 +356,8 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
         crate::boc::get_blockchain_config,
         crate::boc::blockchain_config::get_blockchain_config_api,
     );
-    module.register_async_fn(crate::boc::get_boc_hash, crate::boc::hash::get_boc_hash_api);
+    module.register_async_fn(crate::boc::get_boc_hash, crate::boc::common::get_boc_hash_api);
+    module.register_async_fn(crate::boc::get_boc_depth, crate::boc::common::get_boc_depth_api);
     module.register_async_fn(
         crate::boc::get_code_from_tvc,
         crate::boc::tvc::get_code_from_tvc_api,

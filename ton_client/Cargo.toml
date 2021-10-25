@@ -1,6 +1,6 @@
 [package]
 name = "ton_client"
-version = "1.23.0"
+version = "1.24.0"
 authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -20,12 +20,12 @@ api_derive = { path = "../api/derive" }
 api_info = { path = "../api/info" }
 ton_sdk = { path = "../ton_sdk", default-features = false }
 
-ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git" }
-ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git" }
-ton_block_json = { git = "https://github.com/tonlabs/ton-labs-block-json.git" }
-ton_executor = { git = "https://github.com/tonlabs/ton-labs-executor.git", default-features = false }
-ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git" }
-ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", default-features = false }
+ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git", tag = "2.1.1" }
+ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git", tag = "1.7.27" }
+ton_block_json = { git = "https://github.com/tonlabs/ton-labs-block-json.git", tag = "0.6.24" }
+ton_executor = { git = "https://github.com/tonlabs/ton-labs-executor.git", tag = "1.15.31", default-features = false }
+ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git", tag = "1.10.10" }
+ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", tag = "1.8.19", default-features = false }
 
 lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
 sodalite = { git = "https://github.com/tonlabs/sodalite.git", features = ["rand"] }
@@ -63,6 +63,8 @@ serde_repr = "0.1.7"
 sha2 = "0.9.5"
 tokio = { version = "0.2.13", features = ["sync", "stream"], default-features = false }
 zstd = { version = "0.7.0", default-features = false }
+# TODO: remove fixed versioning when indexmap compilation issue is resolved
+indexmap = "=1.6.2"
 # TODO: remove fixed versioning when tiny-bip39 compilation issue is resolved
 tiny-bip39 = "=0.7.3"
 

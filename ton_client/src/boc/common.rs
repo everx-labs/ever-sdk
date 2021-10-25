@@ -17,7 +17,7 @@ use crate::error::ClientResult;
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfGetBocHash {
-    /// BOC encoded as base64
+    /// BOC encoded as base64 or BOC handle
     pub boc: String,
 }
 
@@ -36,4 +36,28 @@ pub async fn get_boc_hash(
     let (_, cell) = deserialize_cell_from_boc(&context, &params.boc, "").await?;
     let hash = cell.repr_hash().as_hex_string();
     Ok(ResultOfGetBocHash { hash })
+}
+
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
+pub struct ParamsOfGetBocDepth {
+    /// BOC encoded as base64 or BOC handle
+    pub boc: String,
+}
+
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
+pub struct ResultOfGetBocDepth {
+    /// BOC root cell depth
+    pub depth: u32,
+}
+
+/// Calculates BOC depth
+#[api_function]
+pub async fn get_boc_depth(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfGetBocDepth,
+) -> ClientResult<ResultOfGetBocDepth> {
+    let (_, cell) = deserialize_cell_from_boc(&context, &params.boc, "").await?;
+    Ok(ResultOfGetBocDepth { 
+        depth: cell.repr_depth() as u32
+    })
 }
