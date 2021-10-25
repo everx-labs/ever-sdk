@@ -14,6 +14,7 @@
 mod client;
 mod client_env;
 pub(crate) mod errors;
+pub(crate) mod storage;
 #[cfg(not(feature = "wasm"))]
 mod std_client_env;
 #[cfg(not(feature = "wasm"))]

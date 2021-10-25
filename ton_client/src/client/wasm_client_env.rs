@@ -13,8 +13,8 @@
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
 use crate::client::LOCAL_STORAGE_DEFAULT_DIR_NAME;
+use crate::client::storage::KeyValueStorage;
 use crate::error::ClientResult;
-use crate::utils::storage::KeyValueStorage;
 use futures::{Future, FutureExt, SinkExt, StreamExt};
 use indexed_db_futures::{IdbDatabase, IdbQuerySource, IdbVersionChangeEvent};
 use indexed_db_futures::request::IdbOpenDbRequestLike;
@@ -407,8 +407,7 @@ impl LocalStorage {
         storage_name: &str,
     ) -> ClientResult<IdbDatabase> {
         let db_name = local_storage_path
-            .as_ref()
-            .map(|string| string.as_str())
+            .as_deref()
             .unwrap_or(LOCAL_STORAGE_DEFAULT_DIR_NAME);
 
         let mut db_request = IdbDatabase::open(db_name)

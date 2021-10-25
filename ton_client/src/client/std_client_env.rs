@@ -15,8 +15,8 @@ use super::{Error, FetchMethod, FetchResult, WebSocket};
 use crate::client::{LOCAL_STORAGE_DEFAULT_DIR_NAME};
 #[cfg(test)]
 use crate::client::network_mock::NetworkMock;
+use crate::client::storage::KeyValueStorage;
 use crate::error::ClientResult;
-use crate::utils::storage::KeyValueStorage;
 use futures::{Future, SinkExt, StreamExt};
 use lazy_static::lazy_static;
 use reqwest::{

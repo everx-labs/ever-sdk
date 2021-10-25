@@ -4,9 +4,9 @@ use serde_json::Value;
 use ton_block::{BinTreeType, Block, BlockIdExt, Deserializable, InRefValue, MASTERCHAIN_ID, ShardHashes, ShardIdent, ShardStateUnsplit};
 use ton_types::{Result, UInt256};
 
+use crate::client::storage::InMemoryKeyValueStorage;
 use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_uid, resolve_initial_trusted_key_block, ParamsOfProofBlockData};
 use crate::proofs::engine::ProofHelperEngineImpl;
-use crate::utils::storage::InMemoryKeyValueStorage;
 use crate::proofs::validators::{calc_subset_for_workchain, calc_workchain_id, calc_workchain_id_by_adnl_id};
 use crate::tests::TestClient;
 use crate::net::{ParamsOfQueryCollection, query_collection};

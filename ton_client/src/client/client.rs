@@ -35,7 +35,7 @@ use crate::net::{
 use super::std_client_env::ClientEnv;
 #[cfg(feature = "wasm")]
 use super::wasm_client_env::ClientEnv;
-use crate::utils::storage::KeyValueStorage;
+use crate::client::storage::KeyValueStorage;
 use ton_types::UInt256;
 
 #[derive(Default)]
@@ -169,7 +169,7 @@ Note that default values are used if parameters are omitted in config"#,
                 ).await?
             )
         } else {
-            Arc::new(crate::utils::storage::InMemoryKeyValueStorage::new())
+            Arc::new(InMemoryKeyValueStorage::new())
         };
 
         let mut write_guard = self.storages.write().await;

@@ -11,12 +11,12 @@ use ton_types::{deserialize_tree_of_cells, Result, UInt256};
 
 use crate::boc::internal::get_boc_hash;
 use crate::client::Error;
+use crate::client::storage::KeyValueStorage;
 use crate::ClientContext;
 use crate::encoding::base64_decode;
 use crate::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
 use crate::proofs::{BlockProof, get_current_network_uid, ProofHelperEngine, resolve_initial_trusted_key_block};
 use crate::utils::json::JsonHelper;
-use crate::utils::storage::KeyValueStorage;
 
 const ZEROSTATE_KEY: &str = "zerostate";
 const ZEROSTATE_RIGHT_BOUND_KEY: &str = "zs_right_boundary_seq_no";
@@ -49,7 +49,7 @@ impl ProofHelperEngineImpl {
         let network_uid = get_current_network_uid(&context).await?;
 
         let storage_name = format!(
-            "{}/{}",
+            "proofs/{}/{}",
             Self::gen_root_hash_prefix(network_uid.zerostate_root_hash.as_slice()),
             Self::gen_root_hash_prefix(network_uid.first_master_block_root_hash.as_slice()),
         );

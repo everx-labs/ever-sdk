@@ -20,7 +20,6 @@ pub(crate) mod conversion;
 pub(crate) mod compression;
 pub(crate) mod json;
 mod errors;
-pub(crate) mod storage;
 
 pub use calc_storage_fee::{
     calc_storage_fee, ParamsOfCalcStorageFee, ResultOfCalcStorageFee

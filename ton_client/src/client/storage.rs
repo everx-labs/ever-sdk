@@ -1,5 +1,5 @@
+use crate::client::Error;
 use crate::error::ClientResult;
-use crate::utils::Error;
 
 #[async_trait::async_trait]
 pub trait KeyValueStorage: Send + Sync {

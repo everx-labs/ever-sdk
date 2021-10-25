@@ -1,7 +1,7 @@
 use ton_types::Result;
 
 use crate::client::LocalStorage;
-use crate::utils::storage::KeyValueStorage;
+use crate::client::storage::KeyValueStorage;
 
 #[cfg(not(feature = "wasm"))]
 mod env {
