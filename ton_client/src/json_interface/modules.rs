@@ -323,6 +323,10 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::decode_initial_data,
         crate::abi::init_data::decode_initial_data_api,
     );
+    module.register_async_fn(
+        crate::abi::decode_boc,
+        crate::abi::decode_boc::decode_boc_api,
+    );
     module.register();
 }
 
