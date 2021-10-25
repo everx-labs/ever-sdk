@@ -151,6 +151,8 @@ Where:
 
 [get_boc_hash](mod_boc.md#get_boc_hash) – Calculates BOC root hash
 
+[get_boc_depth](mod_boc.md#get_boc_depth) – Calculates BOC depth
+
 [get_code_from_tvc](mod_boc.md#get_code_from_tvc) – Extracts code from TVC contract image
 
 [cache_get](mod_boc.md#cache_get) – Get BOC from cache
