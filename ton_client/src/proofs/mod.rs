@@ -24,7 +24,6 @@ use crate::utils::json::{compare_values, CompareValuesResult, JsonHelper};
 
 pub mod errors;
 mod engine;
-pub(crate) mod storage;
 mod validators;
 
 #[cfg(test)]
@@ -39,25 +38,69 @@ lazy_static::lazy_static! {
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfProofBlockData {
     /// Single block's data as queried from DApp server, without modifications.
-    /// The required field is `id` or top-level `boc`, others are optional.
+    /// The required fields are `id` and/or top-level `boc`, others are optional.
     pub block: Value,
 }
 
-/// Proves that block's data queried from DApp server can be trusted.
-/// Automatically checks block proofs and compares given data with the proven.
-/// If block's BOC is not provided, it will be queried from DApp
-/// (in this case it is required to provide `id` of block in the JSON).
-/// If `cache_proofs` in config is set to `true` (default), downloaded proofs and masterchain BOCs
+/// Proves that given block's data, which is queried from DApp server, can be trusted.
+/// This function checks block proofs and compares given data with the proven.
+/// If the given data differs from the proven, the exception will be thrown.
+/// The input param is the single block's JSON object, which was queried from DApp server using
+/// functions such as `net.query`, `net.query_collection` or `net.wait_for_collection`.
+/// If block's BOC is not provided in the JSON, it will be queried from DApp server
+/// (in this case it is required to provide at least `id` of block).
+///
+/// If `cache_proofs` in config is set to `true` (default), downloaded proofs and master-chain BOCs
 /// are saved into the persistent local storage (e.g. file system for native environments or
-/// browser's local storage for the web); otherwise all data are cached only in memory in current
+/// browser's IndexedDB for the web); otherwise all data are cached only in memory in current
 /// client's context and will be lost after destruction of the client.
+///
+/// Why Proofs are Needed
+///
+/// Proofs are needed to ensure that the data downloaded from a DApp server are real blockchain
+/// data. Checking proofs can protect from the malicious DApp server which can potentially provide
+/// fake data, or also from "Man in the Middle" attacks class.
+///
+/// What Proofs are
+///
+/// Simply, proof is a list of signatures of validators', which have signed this particular master-
+/// block.
+///
+/// The very first validator set's public keys are included in the zero-state. Whe know a root hash
+/// of the zero-state, because it is stored in the network configuration file, it is our authority
+/// root. For proving zero-state it is enough to calculate and compare its root hash.
+///
+/// In each new validator cycle the validator set is changed. The new one is stored in a key-block,
+/// which is signed by the validator set, which we already trust, the next validator set will be
+/// stored to the new key-block and signed by the current validator set, and so on.
+///
+/// In order to prove any block in the master-chain we need to check, that it has been signed by
+/// a trusted validator set. So we need to check all key-blocks' proofs, started from the zero-state
+/// and until the block, which we want to prove. But it can take a lot of time and traffic to
+/// download and prove all key-blocks on a client. For solving this, special trusted blocks are used
+/// in TON-SDK.
+///
+/// The trusted block is the authority root, as well, as the zero-state. Each trusted block is the
+/// `id` (e.g. `root_hash`) of the already proven key-block. There are can be plenty of trusted
+/// blocks, so there are can be a lot of authority roots. The hashes of trusted blocks for MainNet
+/// and DevNet are hardcoded in SDK in a separated binary file and can be updated for each release.
+/// The user also will be able to provide their hashes of trusted blocks for other networks, as
+/// well, as for MainNet and DevNet. By using trusted key-blocks, in order to prove any block, we
+/// can prove key-blocks' chain to the closest previous trusted key-block, not only to the zero-
+/// state.
+///
+/// But shard-blocks don't have proofs on DApp server. In this case, in order to prove any of shard-
+/// block, we search for a corresponding master-block, which consists root hash of this shard-block,
+/// or some shard block which is linked to that block in shard-chain. After proving this master-
+/// block, we traverse through each link and calculate and compare hashes with links, one-by-one.
+/// After that we can ensure that this shard-block is also has been proven.
 #[api_function]
 pub async fn proof_block_data(
     context: Arc<ClientContext>,
     params: ParamsOfProofBlockData,
 ) -> ClientResult<()> {
-    let storage = Arc::clone(&context.storage);
-    let engine = ProofHelperEngineImpl::new(context, storage);
+    let engine = ProofHelperEngineImpl::new(context).await
+        .map_err(|err| Error::proof_check_failed(err))?;
 
     let id_opt = params.block["id"].as_str();
 
@@ -74,6 +117,11 @@ pub async fn proof_block_data(
         .map_err(|err| Error::invalid_data(err))?;
     let root_hash = cell.repr_hash();
 
+    // TODO: Manage untrusted and trusted (already proven) blocks separately.
+    //       For trusted blocks we don't need to do proof checking.
+    //       1. `write_block()` change to `write_untrusted_block()`
+    //       2. also add `write_trusted_block()` and `remove_untrusted_block()`
+    //          (or `trust_block()` for moving block from untrusted to trusted storage) functions.
     engine.write_block(&root_hash.as_hex_string(), &boc).await
         .map_err(|err| Error::internal_error(err))?;
 

@@ -14,14 +14,15 @@
 mod client;
 mod client_env;
 pub(crate) mod errors;
+pub(crate) mod storage;
 #[cfg(not(feature = "wasm"))]
 mod std_client_env;
 #[cfg(not(feature = "wasm"))]
-pub(crate) use std_client_env::ClientEnv;
+pub(crate) use std_client_env::{ClientEnv, LocalStorage};
 #[cfg(feature = "wasm")]
 mod wasm_client_env;
 #[cfg(feature = "wasm")]
-pub(crate) use wasm_client_env::ClientEnv;
+pub(crate) use wasm_client_env::{ClientEnv, LocalStorage};
 
 #[cfg(not(feature = "wasm"))]
 #[cfg(test)]
@@ -46,14 +47,6 @@ use api_info::API;
 use std::sync::Arc;
 
 pub(crate) const LOCAL_STORAGE_DEFAULT_DIR_NAME: &str = ".tonclient";
-
-lazy_static! {
-    static ref KEY_FORMAT_RE: regex::Regex = regex::Regex::new(r#"^[a-zA-Z0-9_\./]+?$"#).unwrap();
-}
-
-pub(crate) fn is_storage_key_correct(key: &str) -> bool {
-    KEY_FORMAT_RE.is_match(key)
-}
 
 pub fn core_version() -> String {
     env!("CARGO_PKG_VERSION").into()

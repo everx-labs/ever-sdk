@@ -1,9 +1,12 @@
 use ton_types::Result;
 
-use crate::client::{ClientEnv, is_storage_key_correct};
+use crate::client::LocalStorage;
+use crate::client::storage::KeyValueStorage;
 
 #[cfg(not(feature = "wasm"))]
 mod env {
+    use crate::client::std_client_env::LocalStorage;
+
     pub struct LocalStoragePathManager {
         path: Option<String>,
     }
@@ -36,6 +39,21 @@ mod env {
             }
         }
     }
+
+    #[test]
+    fn test_storage_key_validation() {
+        assert!(!LocalStorage::is_storage_key_correct(""));
+        assert!(!LocalStorage::is_storage_key_correct("-"));
+        assert!(!LocalStorage::is_storage_key_correct("A B"));
+        assert!(!LocalStorage::is_storage_key_correct("  a  "));
+        assert!(LocalStorage::is_storage_key_correct("123"));
+        assert!(LocalStorage::is_storage_key_correct("a"));
+        assert!(LocalStorage::is_storage_key_correct("a1"));
+        assert!(LocalStorage::is_storage_key_correct("1a"));
+        assert!(LocalStorage::is_storage_key_correct("a_"));
+        assert!(LocalStorage::is_storage_key_correct("very_long_ident_232352"));
+        assert!(LocalStorage::is_storage_key_correct("directory/filename_123"));
+    }
 }
 
 #[cfg(feature = "wasm")]
@@ -55,26 +73,11 @@ mod env {
     }
 }
 
-#[test]
-fn test_storage_key_validation() {
-    assert!(!is_storage_key_correct(""));
-    assert!(!is_storage_key_correct("-"));
-    assert!(!is_storage_key_correct("A B"));
-    assert!(!is_storage_key_correct("  a  "));
-    assert!(is_storage_key_correct("123"));
-    assert!(is_storage_key_correct("a"));
-    assert!(is_storage_key_correct("a1"));
-    assert!(is_storage_key_correct("1a"));
-    assert!(is_storage_key_correct("a_"));
-    assert!(is_storage_key_correct("very_long_ident_232352"));
-    assert!(is_storage_key_correct("directory/filename_123"));
-}
-
 #[cfg(not(feature = "wasm"))]
 #[test]
 fn test_storage_path_calculation() {
     assert_eq!(
-        ClientEnv::calc_storage_path(&None, "test"),
+        LocalStorage::calc_storage_path(&None, "test"),
         home::home_dir()
             .unwrap_or(std::path::PathBuf::from("/"))
             .join(crate::client::LOCAL_STORAGE_DEFAULT_DIR_NAME)
@@ -83,7 +86,7 @@ fn test_storage_path_calculation() {
 
     const LOCAL_STORAGE_PATH: &str = "/local-storage";
     assert_eq!(
-        ClientEnv::calc_storage_path(&Some(LOCAL_STORAGE_PATH.to_string()), "test"),
+        LocalStorage::calc_storage_path(&Some(LOCAL_STORAGE_PATH.to_string()), "test"),
         std::path::Path::new(LOCAL_STORAGE_PATH).join("test"),
     );
 }
@@ -92,33 +95,35 @@ fn test_storage_path_calculation() {
 async fn test_local_storage() -> Result<()> {
     let path = self::env::LocalStoragePathManager::new();
 
+    let storage = LocalStorage::new(path.as_ref().clone(), "test".to_string()).await?;
+
     const KEY1_NAME: &str = "key1";
     const KEY2_NAME: &str = "key2";
 
-    assert!(ClientEnv::read_local_storage(path.as_ref(), KEY1_NAME).await?.is_none());
-    assert!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY1_NAME).await?.is_none());
-    assert!(ClientEnv::read_local_storage(path.as_ref(), KEY2_NAME).await?.is_none());
-    assert!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY2_NAME).await?.is_none());
+    assert!(storage.get_str(KEY1_NAME).await?.is_none());
+    assert!(storage.get_bin(KEY1_NAME).await?.is_none());
+    assert!(storage.get_str(KEY2_NAME).await?.is_none());
+    assert!(storage.get_bin(KEY2_NAME).await?.is_none());
 
-    ClientEnv::write_local_storage(path.as_ref(), KEY1_NAME, "test1").await?;
+    storage.put_str(KEY1_NAME, "test1").await?;
 
-    assert_eq!(ClientEnv::read_local_storage(path.as_ref(), KEY1_NAME).await?, Some("test1".to_string()));
-    assert_eq!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY1_NAME).await?, Some(b"test1".to_vec()));
-    assert!(ClientEnv::read_local_storage(path.as_ref(), KEY2_NAME).await?.is_none());
-    assert!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY2_NAME).await?.is_none());
+    assert_eq!(storage.get_str(KEY1_NAME).await?, Some("test1".to_string()));
+    assert_eq!(storage.get_bin(KEY1_NAME).await?, Some(b"test1".to_vec()));
+    assert!(storage.get_str(KEY2_NAME).await?.is_none());
+    assert!(storage.get_bin(KEY2_NAME).await?.is_none());
 
-    ClientEnv::bin_write_local_storage(path.as_ref(), KEY2_NAME, b"test2").await?;
+    storage.put_bin(KEY2_NAME, b"test2").await?;
 
-    assert_eq!(ClientEnv::read_local_storage(path.as_ref(), KEY1_NAME).await?, Some("test1".to_string()));
-    assert_eq!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY1_NAME).await?, Some(b"test1".to_vec()));
-    assert_eq!(ClientEnv::read_local_storage(path.as_ref(), KEY2_NAME).await?, Some("test2".to_string()));
-    assert_eq!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY2_NAME).await?, Some(b"test2".to_vec()));
+    assert_eq!(storage.get_str(KEY1_NAME).await?, Some("test1".to_string()));
+    assert_eq!(storage.get_bin(KEY1_NAME).await?, Some(b"test1".to_vec()));
+    assert_eq!(storage.get_str(KEY2_NAME).await?, Some("test2".to_string()));
+    assert_eq!(storage.get_bin(KEY2_NAME).await?, Some(b"test2".to_vec()));
 
-    ClientEnv::remove_local_storage(path.as_ref(), KEY1_NAME).await?;
+    storage.remove(KEY1_NAME).await?;
 
-    assert!(ClientEnv::read_local_storage(path.as_ref(), KEY1_NAME).await?.is_none());
-    assert!(ClientEnv::bin_read_local_storage(path.as_ref(), KEY1_NAME).await?.is_none());
-    assert_eq!(ClientEnv::read_local_storage(path.as_ref(), KEY2_NAME).await?, Some("test2".to_string()));
+    assert!(storage.get_str(KEY1_NAME).await?.is_none());
+    assert!(storage.get_bin(KEY1_NAME).await?.is_none());
+    assert_eq!(storage.get_str(KEY2_NAME).await?, Some("test2".to_string()));
 
     Ok(())
 }

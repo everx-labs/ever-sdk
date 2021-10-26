@@ -12,9 +12,10 @@
 */
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
-use crate::client::{is_storage_key_correct, LOCAL_STORAGE_DEFAULT_DIR_NAME};
+use crate::client::{LOCAL_STORAGE_DEFAULT_DIR_NAME};
 #[cfg(test)]
 use crate::client::network_mock::NetworkMock;
+use crate::client::storage::KeyValueStorage;
 use crate::error::ClientResult;
 use futures::{Future, SinkExt, StreamExt};
 use lazy_static::lazy_static;
@@ -100,27 +101,6 @@ impl ClientEnv {
                 }
             })
             .collect()
-    }
-
-    pub(crate) fn calc_storage_path(local_storage_path: &Option<String>, key: &str) -> PathBuf {
-        let local_storage_path = local_storage_path
-            .clone()
-            .map(|path| PathBuf::from(path))
-            .unwrap_or_else(|| {
-                home::home_dir()
-                    .unwrap_or(PathBuf::from("/"))
-                    .join(LOCAL_STORAGE_DEFAULT_DIR_NAME)
-            });
-
-        local_storage_path.join(key)
-    }
-
-    fn key_to_path(local_storage_path: &Option<String>, key: &str) -> ClientResult<PathBuf> {
-        if !is_storage_key_correct(key) {
-            Error::invalid_storage_key(key);
-        }
-
-        Ok(Self::calc_storage_path(local_storage_path, key))
     }
 }
 
@@ -252,13 +232,69 @@ impl ClientEnv {
                 .map_err(|err| Error::http_request_parse_error(err))?,
         })
     }
+}
 
-    /// Read binary value by a given key from the local storage
-    pub async fn bin_read_local_storage(
+lazy_static! {
+    static ref KEY_FORMAT_RE: regex::Regex = regex::Regex::new(r#"^[a-zA-Z0-9_\.]+?$"#).unwrap();
+}
+
+pub(crate) struct LocalStorage {
+    local_storage_path: Option<String>,
+    storage_name: String,
+}
+
+impl LocalStorage {
+    pub async fn new(
+        local_storage_path: Option<String>,
+        storage_name: String,
+    ) -> ClientResult<Self> {
+        tokio::fs::create_dir_all(Self::calc_storage_path(&local_storage_path, &storage_name)).await
+            .map_err(|err| Error::local_storage_error(err))?;
+
+        Ok(Self {
+            local_storage_path,
+            storage_name,
+        })
+    }
+
+    fn calc_storage_path(
         local_storage_path: &Option<String>,
-        key: &str,
-    ) -> ClientResult<Option<Vec<u8>>> {
-        let path = Self::key_to_path(local_storage_path, key)?;
+        storage_name: &str,
+    ) -> PathBuf {
+        let local_storage_path = local_storage_path
+            .clone()
+            .map(|path| PathBuf::from(path))
+            .unwrap_or_else(|| {
+                home::home_dir()
+                    .unwrap_or(PathBuf::from("/"))
+                    .join(LOCAL_STORAGE_DEFAULT_DIR_NAME)
+            });
+
+        local_storage_path
+            .join(storage_name)
+    }
+
+    pub fn is_storage_key_correct(key: &str) -> bool {
+        KEY_FORMAT_RE.is_match(key)
+    }
+
+    fn key_to_path(&self, key: &str) -> ClientResult<PathBuf> {
+        if !Self::is_storage_key_correct(key) {
+            return Err(Error::invalid_storage_key(key));
+        }
+
+        Ok(
+            Self::calc_storage_path(&self.local_storage_path, &self.storage_name)
+                .join(key)
+        )
+    }
+}
+
+#[async_trait::async_trait]
+impl KeyValueStorage for LocalStorage {
+    /// Get binary value by a given key from the storage
+    async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
+        let path = self.key_to_path(key)?;
 
         match tokio::fs::read(&path).await {
             Ok(value) => Ok(Some(value)),
@@ -270,51 +306,31 @@ impl ClientEnv {
         }
     }
 
-    /// Read string value by a given key from the local storage
-    pub async fn read_local_storage(
-        local_storage_path: &Option<String>,
-        key: &str,
-    ) -> ClientResult<Option<String>> {
-        Self::bin_read_local_storage(local_storage_path, key).await
+    /// Put binary value by a given key into the storage
+    async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()> {
+        let path = self.key_to_path(key)?;
+
+        tokio::fs::write(&path, value).await
+            .map_err(|err| Error::local_storage_error(err))
+    }
+
+    /// Get string value by a given key from the storage
+    async fn get_str(&self, key: &str) -> ClientResult<Option<String>> {
+        self.get_bin(key).await
             .map(|opt| opt.map(|vec| String::from_utf8(vec)))?
             .transpose()
             .map_err(|err| Error::local_storage_error(err))
             .map_err(|err| err.into())
     }
 
-    /// Write binary value by a given key into the local storage
-    pub async fn bin_write_local_storage(
-        local_storage_path: &Option<String>,
-        key: &str,
-        value: &[u8],
-    ) -> ClientResult<()> {
-        let path = Self::key_to_path(local_storage_path, key)?;
-
-        if let Some(path) = path.parent() {
-            tokio::fs::create_dir_all(path).await
-                .map_err(|err| Error::local_storage_error(err))?;
-        }
-
-        tokio::fs::write(&path, value).await
-            .map_err(|err| Error::local_storage_error(err))
+    /// Put string value by a given key into the storage
+    async fn put_str(&self, key: &str, value: &str) -> ClientResult<()> {
+        self.put_bin(key, value.as_bytes()).await
     }
 
-    /// Write string value by a given key into the local storage
-    pub async fn write_local_storage(
-        local_storage_path: &Option<String>,
-        key: &str,
-        value: &str,
-    ) -> ClientResult<()> {
-        Self::bin_write_local_storage(local_storage_path, key, value.as_bytes()).await
-    }
-
-    /// Remove value by a given key out of the local storage
-    #[allow(dead_code)]
-    pub async fn remove_local_storage(
-        local_storage_path: &Option<String>,
-        key: &str,
-    ) -> ClientResult<()> {
-        let path = Self::key_to_path(local_storage_path, key)?;
+    /// Remove value by a given key
+    async fn remove(&self, key: &str) -> ClientResult<()> {
+        let path = self.key_to_path(key)?;
 
         tokio::fs::remove_file(&path).await
             .map_err(|err| Error::local_storage_error(err))

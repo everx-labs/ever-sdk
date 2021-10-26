@@ -249,7 +249,7 @@
               "description": null
             },
             {
-              "name": "InvalidStorageKey",
+              "name": "LocalStorageError",
               "type": "Number",
               "value": "35",
               "summary": null,
@@ -12395,6 +12395,13 @@
               "name": "InternalError",
               "type": "Number",
               "value": "903",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DataDiffersFromProven",
+              "type": "Number",
+              "value": "904",
               "summary": null,
               "description": null
             }

@@ -14,6 +14,7 @@
 use lockfree::map::Map as LockfreeMap;
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
+use std::future::Future;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
@@ -21,21 +22,21 @@ use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
 use super::{AppRequestResult, Error, ParamsOfAppRequest};
 use crate::abi::AbiConfig;
 use crate::boc::{BocConfig, cache::Bocs};
+use crate::client::storage::KeyValueStorage;
 use crate::crypto::CryptoConfig;
 use crate::crypto::boxes::{signing_box::SigningBox, encryption_box::EncryptionBox};
 use crate::debot::DEngine;
 use crate::error::ClientResult;
 use crate::json_interface::interop::ResponseType;
 use crate::json_interface::request::Request;
+
 use crate::net::{
     subscriptions::SubscriptionAction, ChainIterator, NetworkConfig, ServerLink,
 };
-
 #[cfg(not(feature = "wasm"))]
 use super::std_client_env::ClientEnv;
 #[cfg(feature = "wasm")]
 use super::wasm_client_env::ClientEnv;
-use crate::proofs::storage::ProofStorage;
 use ton_types::UInt256;
 
 #[derive(Default)]
@@ -67,7 +68,7 @@ pub struct ClientContext {
     pub(crate) blockchain_config: RwLock<Option<Arc<ton_executor::BlockchainConfig>>>,
 
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
-    pub(crate) storage: Arc<dyn ProofStorage>,
+    pub(crate) proofs_storage: RwLock<Option<Arc<dyn KeyValueStorage>>>,
 
     next_id: AtomicU32,
 }
@@ -104,11 +105,6 @@ Note that default values are used if parameters are omitted in config"#,
         };
 
         let bocs = Bocs::new(config.boc.cache_max_size);
-        let storage: Arc<dyn ProofStorage> = if config.cache_proofs {
-            Arc::new(crate::proofs::storage::LocalStorage::new(config.local_storage_path.clone()))
-        } else {
-            Arc::new(crate::proofs::storage::InMemoryProofStorage::new())
-        };
         Ok(Self {
             net: NetworkContext {
                 server_link,
@@ -123,7 +119,7 @@ Note that default values are used if parameters are omitted in config"#,
             bocs,
             blockchain_config: RwLock::new(None),
             app_requests: Mutex::new(HashMap::new()),
-            storage,
+            proofs_storage: Default::default(),
             next_id: AtomicU32::new(1),
         })
     }
