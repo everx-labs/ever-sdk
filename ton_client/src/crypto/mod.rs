@@ -36,7 +36,8 @@ pub use crate::crypto::boxes::signing_box::{
 pub use crate::crypto::boxes::encryption_box::{
     register_encryption_box, remove_encryption_box, create_encryption_box,
     encryption_box_get_info, encryption_box_encrypt, encryption_box_decrypt,
-    CipherMode, RegisteredEncryptionBox, EncryptionBoxHandle, EncryptionBoxInfo, EncryptionAlgorithm,
+    EncryptionBox, CipherMode, RegisteredEncryptionBox, EncryptionBoxHandle,
+    EncryptionBoxInfo, EncryptionAlgorithm,
     ParamsOfEncryptionBoxGetInfo, ResultOfEncryptionBoxGetInfo,
     ParamsOfEncryptionBoxEncrypt, ResultOfEncryptionBoxEncrypt,
     ParamsOfEncryptionBoxDecrypt, ResultOfEncryptionBoxDecrypt,

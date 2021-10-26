@@ -17,7 +17,7 @@ pub(crate) mod blockchain_config;
 pub(crate) mod cache;
 pub(crate) mod encode;
 mod errors;
-pub(crate) mod hash;
+pub(crate) mod common;
 pub(crate) mod internal;
 pub(crate) mod parse;
 pub(crate) mod tvc;
@@ -34,7 +34,10 @@ pub use cache::{
 };
 pub use encode::{encode_boc, BuilderOp, ParamsOfEncodeBoc, ResultOfEncodeBoc};
 pub use errors::{Error, ErrorCode};
-pub use hash::{get_boc_hash, ParamsOfGetBocHash, ResultOfGetBocHash};
+pub use common::{
+    get_boc_depth, get_boc_hash,
+    ParamsOfGetBocDepth, ResultOfGetBocDepth, ParamsOfGetBocHash, ResultOfGetBocHash,
+};
 pub use parse::{
     parse_account, parse_block, parse_message, parse_shardstate, parse_transaction, required_boc,
     source_boc, ParamsOfParse, ParamsOfParseShardstate, ResultOfParse,
