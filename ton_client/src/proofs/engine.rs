@@ -46,27 +46,7 @@ pub(crate) struct ProofHelperEngineImpl {
 
 impl ProofHelperEngineImpl {
     pub async fn new(context: Arc<ClientContext>) -> Result<Self> {
-        let network_uid = get_current_network_uid(&context).await?;
-
-        let storage_name = format!(
-            "proofs/{}/{}",
-            Self::gen_root_hash_prefix(network_uid.zerostate_root_hash.as_slice()),
-            Self::gen_root_hash_prefix(network_uid.first_master_block_root_hash.as_slice()),
-        );
-
-        let context_cloned = Arc::clone(&context);
-        let storage = context.get_proofs_storage(async move {
-            Ok(if context_cloned.config.cache_proofs {
-                Arc::new(
-                    crate::client::LocalStorage::new(
-                        context_cloned.config.local_storage_path.clone(),
-                        storage_name,
-                    ).await?
-                ) as Arc<dyn KeyValueStorage>
-            } else {
-                Arc::new(InMemoryKeyValueStorage::new()) as Arc<dyn KeyValueStorage>
-            })
-        }).await?;
+        let storage = Self::obtain_proof_storage(&context).await?;
 
         Ok(Self::with_values(context, storage))
     }
@@ -82,6 +62,39 @@ impl ProofHelperEngineImpl {
     #[cfg(test)]
     pub fn storage(&self) -> &Arc<dyn KeyValueStorage> {
         &self.storage
+    }
+
+    async fn obtain_proof_storage(context: &Arc<ClientContext>) -> Result<Arc<dyn KeyValueStorage>> {
+        if let Some(storage) = context.proofs_storage.read().await.as_ref() {
+            return Ok(Arc::clone(storage));
+        }
+
+        let new_storage = if !context.config.cache_proofs {
+            Arc::new(InMemoryKeyValueStorage::new()) as Arc<dyn KeyValueStorage>
+        } else {
+            let network_uid = get_current_network_uid(&context).await?;
+
+            let storage_name = format!(
+                "proofs/{}/{}",
+                Self::gen_root_hash_prefix(network_uid.zerostate_root_hash.as_slice()),
+                Self::gen_root_hash_prefix(network_uid.first_master_block_root_hash.as_slice()),
+            );
+            Arc::new(
+                crate::client::LocalStorage::new(
+                    context.config.local_storage_path.clone(),
+                    storage_name,
+                ).await?
+            ) as Arc<dyn KeyValueStorage>
+        };
+
+        let mut write_guard = context.proofs_storage.write().await;
+        if let Some(storage) = write_guard.as_ref() {
+            return Ok(Arc::clone(storage));
+        }
+
+        *write_guard = Some(Arc::clone(&new_storage));
+
+        Ok(new_storage)
     }
 
     fn gen_root_hash_prefix(root_hash: &[u8]) -> String {

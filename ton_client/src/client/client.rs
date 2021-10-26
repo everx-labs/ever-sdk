@@ -156,25 +156,6 @@ Note that default values are used if parameters are omitted in config"#,
                 .map_err(|err| Error::can_not_parse_request_result(err)),
         }
     }
-
-    pub(crate) async fn get_proofs_storage(
-        &self,
-        on_create: impl Future<Output = ClientResult<Arc<dyn KeyValueStorage>>>,
-    ) -> ClientResult<Arc<dyn KeyValueStorage>> {
-        if let Some(storage) = self.proofs_storage.read().await.as_ref() {
-            return Ok(Arc::clone(storage));
-        }
-
-        let new_storage = on_create.await?;
-
-        let mut write_guard = self.proofs_storage.write().await;
-        if let Some(storage) = write_guard.as_ref() {
-            return Ok(Arc::clone(storage));
-        }
-        *write_guard = Some(Arc::clone(&new_storage));
-
-        Ok(new_storage)
-    }
 }
 
 #[derive(Deserialize, Debug, Clone, ApiType)]
