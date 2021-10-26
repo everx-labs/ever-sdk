@@ -14,6 +14,7 @@
 #[cfg(test)]
 mod tests;
 
+pub(crate) mod decode_boc;
 pub(crate) mod decode_data;
 pub(crate) mod decode_message;
 pub(crate) mod encode_account;
@@ -27,7 +28,8 @@ mod types;
 
 use serde::{Deserialize, Deserializer};
 
-pub use decode_data::{decode_account_data, ParamsOfDecodeAccountData, ResultOfDecodeData};
+pub use decode_boc::{decode_boc, ParamsOfDecodeBoc, ResultOfDecodeBoc};
+pub use decode_data::{decode_account_data, ParamsOfDecodeAccountData, ResultOfDecodeAccountData};
 pub use decode_message::{
     decode_message, decode_message_body, DecodedMessageBody, MessageBodyType,
     ParamsOfDecodeMessage, ParamsOfDecodeMessageBody,

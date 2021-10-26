@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.25.0] – 2021-10-25
+
+### New
+- `abi.decode_boc` function to decode custom BOC data into JSON parameters.
+
 ## [1.24.0] – 2021-10-18
 
 ### New
