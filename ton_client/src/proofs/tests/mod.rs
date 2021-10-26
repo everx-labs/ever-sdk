@@ -304,7 +304,7 @@ async fn query_file_hash_test() -> Result<()> {
     let file_hash_from_next = UInt256::from_str(
         &engine.query_file_hash_from_next_block(1).await?.unwrap(),
     )?;
-    let file_hash_from_boc = engine.download_boc_and_calc_file_hash(
+    let file_hash_from_boc = engine.download_block_boc_and_calc_file_hash(
         "4bba527c0f5301ac01194020edb6c237158bae872348ba36b0137d523fadd864",
     ).await?;
 
@@ -320,7 +320,7 @@ async fn query_file_hash_test() -> Result<()> {
 #[tokio::test]
 async fn query_mc_proof_test() -> Result<()> {
     let engine = create_engine_mainnet();
-    let proof_json = engine.query_mc_proof(1).await?;
+    let proof_json = engine.query_mc_block_proof(1).await?;
     let proof = BlockProof::from_value(&proof_json)?;
 
     assert_eq!(
@@ -351,7 +351,7 @@ async fn add_file_hashes_test() -> Result<()> {
 
     assert_eq!(proofs.len(), 10);
 
-    engine.add_file_hashes(&mut proofs).await?;
+    engine.add_mc_blocks_file_hashes(&mut proofs).await?;
 
     for (seq_no, proof) in &proofs {
         let file_hash = engine.query_file_hash_from_next_block(*seq_no).await?.unwrap();
@@ -366,7 +366,7 @@ async fn mc_proofs_test() -> Result<()> {
     let engine = create_engine_mainnet();
     let storage: &InMemoryKeyValueStorage = engine.storage().in_memory();
 
-    let proof = BlockProof::from_value(&engine.query_mc_proof(100000).await?)?;
+    let proof = BlockProof::from_value(&engine.query_mc_block_proof(100000).await?)?;
     proof.check_proof(&engine).await?;
 
     storage.dump();
@@ -378,7 +378,7 @@ async fn mc_proofs_test() -> Result<()> {
         engine.context(), 10000000,
     ).await?;
 
-    let proof = BlockProof::from_value(&engine.query_mc_proof(trusted_seq_no + 1000).await?)?;
+    let proof = BlockProof::from_value(&engine.query_mc_block_proof(trusted_seq_no + 1000).await?)?;
     proof.check_proof(&engine).await?;
 
     storage.dump();
@@ -393,7 +393,7 @@ async fn mc_proofs_test() -> Result<()> {
 #[tokio::test]
 async fn extract_top_shard_block_test() -> Result<()> {
     let engine = create_engine_mainnet();
-    let boc = engine.download_boc(
+    let boc = engine.download_block_boc(
         "01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95",
     ).await?;
     let block = Block::construct_from_bytes(&boc)?;
@@ -514,19 +514,19 @@ async fn check_shard_block_test() -> Result<()> {
 async fn check_mc_proof_test() -> Result<()> {
     let engine = create_engine_mainnet();
 
-    engine.check_mc_proof(
+    engine.check_mc_block_proof(
         100,
         &UInt256::from_str("01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95")?,
     ).await?;
 
     // From cache:
-    engine.check_mc_proof(
+    engine.check_mc_block_proof(
         100,
         &UInt256::from_str("01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95")?,
     ).await?;
 
     assert!(
-        engine.check_mc_proof(
+        engine.check_mc_block_proof(
             101,
             &UInt256::from_str("01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95")?,
         ).await.is_err(),
@@ -534,7 +534,7 @@ async fn check_mc_proof_test() -> Result<()> {
 
     // From cache:
     assert!(
-        engine.check_mc_proof(
+        engine.check_mc_block_proof(
             100,
             &UInt256::from_str("1111111111111111111111111111111111111111111111111111111111111111")?,
         ).await.is_err(),

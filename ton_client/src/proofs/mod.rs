@@ -6,8 +6,8 @@ use std::sync::Arc;
 use failure::{bail, err_msg};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, MerkleProof, ShardIdent, ShardStateUnsplit, ValidatorDescr};
-use ton_block_json::BlockSerializationSet;
+use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, HashmapAugType, MerkleProof, ShardIdent, ShardStateUnsplit, Transaction, ValidatorDescr};
+use ton_block_json::{BlockSerializationSet, TransactionSerializationSet, };
 use ton_types::{Cell, deserialize_tree_of_cells, UInt256};
 use ton_types::Result;
 
@@ -63,7 +63,7 @@ impl Default for ProofsConfig {
 }
 
 lazy_static::lazy_static! {
-    static ref COMPARE_JSON_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
+    static ref COMPARE_BLOCK_JSON_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
         "gen_software_capabilities",
     ]).collect();
 }
@@ -143,7 +143,7 @@ pub async fn proof_block_data(
     let boc = if let Some(boc) = params.block["boc"].as_str() {
         base64_decode(boc)?
     } else if let Some(id) = id_opt {
-        engine.download_boc(id).await
+        engine.download_block_boc(id).await
             .map_err(|err| Error::proof_check_failed(err))?
     } else {
         return Err(Error::invalid_data("Block's BOC or id are required"));
@@ -152,25 +152,10 @@ pub async fn proof_block_data(
     let cell = deserialize_tree_of_cells(&mut Cursor::new(&boc))
         .map_err(|err| Error::invalid_data(err))?;
     let root_hash = cell.repr_hash();
-
-    // TODO: Manage untrusted and trusted (already proven) blocks separately.
-    //       For trusted blocks we don't need to do proof checking.
-    //       1. `write_block()` change to `write_untrusted_block()`
-    //       2. also add `write_trusted_block()` and `remove_untrusted_block()`
-    //          (or `trust_block()` for moving block from untrusted to trusted storage) functions.
-    engine.write_block(&root_hash.as_hex_string(), &boc).await
-        .map_err(|err| Error::internal_error(err))?;
-
     let block = Block::construct_from_cell(cell)
         .map_err(|err| Error::invalid_data(err))?;
 
-    let info = block.read_info()
-        .map_err(|err| Error::invalid_data(err))?;
-    if info.shard().is_masterchain() {
-        engine.check_mc_proof(info.seq_no(), &root_hash).await
-    } else {
-        engine.check_shard_block(&boc).await
-    }.map_err(|err| Error::proof_check_failed(err))?;
+    engine.proof_block_boc(&root_hash, &block, &boc).await?;
 
     // TODO: Add proof information to the resulting JSON:
     //       1. Convert crate::proofs::BlockProof into ton_block::BlockProof (not implemented yet);
@@ -193,7 +178,147 @@ pub async fn proof_block_data(
             &params.block,
             &block_map.into(),
             "blocks",
-            &COMPARE_JSON_IGNORE_FIELDS,
+            &COMPARE_BLOCK_JSON_IGNORE_FIELDS,
+        )
+    {
+        return Err(Error::data_differs_from_proven(message));
+    }
+
+    Ok(())
+}
+
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
+pub struct ParamsOfProofTransactionData {
+    /// Single transaction's data as queried from DApp server, without modifications.
+    /// The required fields are `id` and/or top-level `boc`, others are optional.
+    /// In order to reduce network requests count, it is recommended to provide `block_id` and `boc`
+    /// of transaction.
+    pub transaction: Value,
+}
+
+#[api_function]
+pub async fn proof_transaction_data(
+    context: Arc<ClientContext>,
+    params: ParamsOfProofTransactionData,
+) -> ClientResult<()> {
+    let engine = ProofHelperEngineImpl::new(context).await
+        .map_err(|err| Error::proof_check_failed(err))?;
+
+    let id_opt = params.transaction["id"].as_str();
+    let mut block_id_opt = params.transaction["block_id"].as_str()
+        .map(|str| str.to_owned());
+    let mut boc_opt = params.transaction["boc"].as_str()
+        .map(|str| str.to_owned());
+
+    if id_opt.is_none() && boc_opt.is_none() {
+        return Err(Error::invalid_data("Transaction's BOC or id are required"));
+    }
+
+    if let Some(id) = id_opt {
+        let mut fields = Vec::new();
+        if boc_opt.is_none() {
+            fields.push("boc");
+        }
+        if block_id_opt.is_none() {
+            fields.push("block_id");
+        }
+
+        if fields.len() > 0 {
+            let transaction_json = engine.query_transaction_data(id, &fields.join(" ")).await
+                .map_err(|err| Error::proof_check_failed(err))?;
+            if boc_opt.is_none() {
+                boc_opt = transaction_json["boc"].as_str()
+                    .map(|str| str.to_owned());
+            }
+            if block_id_opt.is_none() {
+                block_id_opt = transaction_json["block_id"].as_str()
+                    .map(|str| str.to_owned());
+            }
+        }
+    }
+
+    let boc = base64_decode(
+        &boc_opt.ok_or_else(|| Error::internal_error("BOC is not found"))?
+    )?;
+
+    let cell = deserialize_tree_of_cells(&mut Cursor::new(&boc))
+        .map_err(|err| Error::invalid_data(err))?;
+    let root_hash = cell.repr_hash();
+
+    if block_id_opt.is_none() {
+        let transaction_json = engine.query_transaction_data(
+            &root_hash.as_hex_string(),
+            "block_id",
+        ).await
+            .map_err(|err| Error::proof_check_failed(err))?;
+        block_id_opt = transaction_json["block_id"].as_str()
+            .map(|str| str.to_owned());
+    }
+
+    let block_id = block_id_opt.ok_or_else(|| Error::internal_error("block_id is not found"))?;
+    let block_boc = engine.download_block_boc(&block_id).await
+        .map_err(|err| Error::internal_error(err))?;
+
+    let block_cell = deserialize_tree_of_cells(&mut Cursor::new(&block_boc))
+        .map_err(|err| Error::invalid_data(err))?;
+    let block_id = block_cell.repr_hash();
+    let block = Block::construct_from_cell(block_cell)
+        .map_err(|err| Error::invalid_data(err))?;
+
+    engine.proof_block_boc(&block_id, &block, &block_boc).await?;
+
+    let block_info = block.read_info()
+        .map_err(|err| Error::invalid_data(err))?;
+    let block_extra = block.read_extra()
+        .map_err(|err| Error::invalid_data(err))?;
+    let in_msg_descr = block_extra.read_in_msg_descr()
+        .map_err(|err| Error::invalid_data(err))?;
+
+    let mut transaction_found_in_block = false;
+    in_msg_descr.iterate_objects(|msg| {
+        if let Some(transaction_cell) = msg.transaction_cell() {
+            if root_hash == transaction_cell.repr_hash() {
+                transaction_found_in_block = true;
+                return Ok(false);
+            }
+        };
+        Ok(true)
+    })
+        .map_err(|err| Error::internal_error(err))?;
+
+    if !transaction_found_in_block {
+        return Err(Error::proof_check_failed(
+            format!(
+                "Transaction with `root_hash`: {} not found in block with `id`: {}",
+                root_hash,
+                block_id,
+            )
+        ));
+    }
+
+    let transaction = Transaction::construct_from_cell(cell)
+        .map_err(|err| Error::invalid_data(err))?;
+
+    let transaction_map = ton_block_json::db_serialize_transaction_ex(
+        "id",
+        &TransactionSerializationSet {
+            transaction,
+            id: root_hash,
+            status: ton_block::TransactionProcessingStatus::Finalized,
+            block_id: Some(block_id),
+            workchain_id: block_info.shard().workchain_id(),
+            boc,
+            proof: None,
+        },
+        ton_block_json::SerializationMode::QServer,
+    ).map_err(|err| Error::invalid_data(err))?;
+
+    if let CompareValuesResult::Different(message) =
+        compare_values(
+            &params.transaction,
+            &transaction_map.into(),
+            "transactions",
+            &HashSet::new(),
         )
     {
         return Err(Error::data_differs_from_proven(message));

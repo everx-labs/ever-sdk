@@ -10,12 +10,13 @@ use ton_block::{BinTreeType, Block, Deserializable, InRefValue, ShardIdent, Shar
 use ton_types::{deserialize_tree_of_cells, Result, UInt256};
 
 use crate::boc::internal::get_boc_hash;
-use crate::client::Error;
 use crate::client::storage::{InMemoryKeyValueStorage, KeyValueStorage};
 use crate::ClientContext;
 use crate::encoding::base64_decode;
+use crate::error::ClientResult;
 use crate::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
 use crate::proofs::{BlockProof, get_current_network_uid, ProofHelperEngine, resolve_initial_trusted_key_block};
+use crate::proofs::Error;
 use crate::utils::json::JsonHelper;
 
 const ZEROSTATE_KEY: &str = "zerostate";
@@ -183,7 +184,7 @@ impl ProofHelperEngineImpl {
         self.get_value(&Self::mc_proof_key(mc_seq_no)).await
     }
 
-    async fn write_mc_proof(&self, mc_seq_no: u32, value: &Value) -> Result<()> {
+    async fn write_mc_block_proof(&self, mc_seq_no: u32, value: &Value) -> Result<()> {
         self.put_value(&Self::mc_proof_key(mc_seq_no), value).await
     }
 
@@ -294,7 +295,7 @@ impl ProofHelperEngineImpl {
         Ok(Some(blocks[0].1["prev_ref"].get_str("file_hash")?.to_string()))
     }
 
-    pub(crate) async fn download_boc(
+    pub(crate) async fn download_block_boc(
         &self,
         root_hash: &str,
     ) -> Result<Vec<u8>> {
@@ -326,11 +327,11 @@ impl ProofHelperEngineImpl {
         }
     }
 
-    pub(crate) async fn download_boc_and_calc_file_hash(
+    pub(crate) async fn download_block_boc_and_calc_file_hash(
         &self,
         root_hash: &str,
     ) -> Result<UInt256> {
-        let boc = self.download_boc(root_hash).await?;
+        let boc = self.download_block_boc(root_hash).await?;
 
         Ok(UInt256::calc_file_hash(&boc))
     }
@@ -343,11 +344,11 @@ impl ProofHelperEngineImpl {
         if let Some(file_hash) = self.query_file_hash_from_next_block(mc_seq_no).await? {
             return Ok(file_hash);
         }
-        let file_hash = self.download_boc_and_calc_file_hash(root_hash).await?;
+        let file_hash = self.download_block_boc_and_calc_file_hash(root_hash).await?;
         Ok(file_hash.as_hex_string())
     }
 
-    pub(crate) async fn query_mc_proof(&self, mc_seq_no: u32) -> Result<Value> {
+    pub(crate) async fn query_mc_block_proof(&self, mc_seq_no: u32) -> Result<Value> {
         let mut blocks = Self::preprocess_query_result(query_collection(
             Arc::clone(&self.context),
             ParamsOfQueryCollection {
@@ -375,7 +376,7 @@ impl ProofHelperEngineImpl {
         Ok(result)
     }
 
-    pub(crate) async fn check_mc_proof(
+    pub(crate) async fn check_mc_block_proof(
         &self,
         mc_seq_no: u32,
         root_hash: &UInt256,
@@ -394,7 +395,7 @@ impl ProofHelperEngineImpl {
             return Ok(());
         }
 
-        let proof_json = self.query_mc_proof(mc_seq_no).await?;
+        let proof_json = self.query_mc_block_proof(mc_seq_no).await?;
         let proof = BlockProof::from_value(&proof_json)?;
 
         let expected_root_hash = proof.id().root_hash();
@@ -411,7 +412,7 @@ impl ProofHelperEngineImpl {
 
         proof.check_proof(self).await?;
 
-        self.write_mc_proof(mc_seq_no, &proof_json).await?;
+        self.write_mc_block_proof(mc_seq_no, &proof_json).await?;
 
         Ok(())
     }
@@ -457,7 +458,7 @@ impl ProofHelperEngineImpl {
         }
     }
 
-    pub(crate) async fn add_file_hashes(
+    pub(crate) async fn add_mc_blocks_file_hashes(
         &self,
         mut proofs_sorted: &mut [(u32, Value)],
     ) -> Result<()> {
@@ -517,7 +518,7 @@ impl ProofHelperEngineImpl {
         trusted_seq_no: u32,
         trusted_root_hash: &UInt256,
     ) -> Result<BlockProof> {
-        let proof_json = self.query_mc_proof(trusted_seq_no).await?;
+        let proof_json = self.query_mc_block_proof(trusted_seq_no).await?;
         let proof =  BlockProof::from_value(&proof_json)?;
         if proof.id().seq_no() != trusted_seq_no {
             bail!(
@@ -533,7 +534,7 @@ impl ProofHelperEngineImpl {
                 trusted_root_hash,
             )
         }
-        self.write_mc_proof(trusted_seq_no, &proof_json).await?;
+        self.write_mc_block_proof(trusted_seq_no, &proof_json).await?;
 
         Ok(proof)
     }
@@ -560,14 +561,14 @@ impl ProofHelperEngineImpl {
         }
 
         let mut proof_values = self.query_key_blocks_proofs(mc_seq_no_range).await?;
-        self.add_file_hashes(&mut proof_values).await?;
+        self.add_mc_blocks_file_hashes(&mut proof_values).await?;
 
         let mut last_proof = None;
         for (mc_seq_no, proof_json) in proof_values {
             let proof = BlockProof::from_value(&proof_json)?;
             proof.check_proof(self).await?;
 
-            self.write_mc_proof(mc_seq_no, &proof_json).await?;
+            self.write_mc_block_proof(mc_seq_no, &proof_json).await?;
             on_store_block(mc_seq_no).await?;
 
             last_proof = Some(proof);
@@ -740,11 +741,11 @@ impl ProofHelperEngineImpl {
                     info.seq_no(),
                 ).await?
             {
-                let mc_proof_json = self.query_mc_proof(mc_seq_no).await?;
+                let mc_proof_json = self.query_mc_block_proof(mc_seq_no).await?;
                 let mc_proof = BlockProof::from_value(&mc_proof_json)?;
                 let (_mc_block, _mc_block_info) = mc_proof.check_proof(self).await?;
 
-                let mc_boc = self.download_boc(
+                let mc_boc = self.download_block_boc(
                     &mc_proof.id().root_hash().as_hex_string(),
                 ).await?;
                 let mc_cell = deserialize_tree_of_cells(&mut Cursor::new(&mc_boc))?;
@@ -837,6 +838,54 @@ impl ProofHelperEngineImpl {
             // TODO: Rewrite using wait_for():
             self.context.env.set_timer(1000).await.ok();
         }
+    }
+
+    pub(crate) async fn query_transaction_data(&self, id: &str, fields: &str) -> Result<Value> {
+        let mut transactions = query_collection(
+            Arc::clone(&self.context),
+            ParamsOfQueryCollection {
+                collection: "transactions".to_string(),
+                result: fields.to_string(),
+                filter: Some(json!({
+                    "id": {
+                        "eq": id,
+                    },
+                })),
+                limit: Some(1),
+                ..Default::default()
+            }
+        ).await?.result;
+
+        if transactions.is_empty() {
+            bail!("Unable to download transaction data from DApp server");
+        }
+
+        Ok(transactions.remove(0))
+    }
+
+    pub(crate) async fn proof_block_boc(
+        &self,
+        root_hash: &UInt256,
+        block: &Block,
+        boc: &Vec<u8>,
+    ) -> ClientResult<()> {
+        // TODO: Manage untrusted and trusted (already proven) blocks separately.
+        //       For trusted blocks we don't need to do proof checking.
+        //       1. `write_block()` change to `write_untrusted_block()`
+        //       2. also add `write_trusted_block()` and `remove_untrusted_block()`
+        //          (or `trust_block()` for moving block from untrusted to trusted storage) functions.
+        self.write_block(&root_hash.as_hex_string(), &boc).await
+            .map_err(|err| Error::internal_error(err))?;
+
+        let info = block.read_info()
+            .map_err(|err| Error::invalid_data(err))?;
+        if info.shard().is_masterchain() {
+            self.check_mc_block_proof(info.seq_no(), &root_hash).await
+        } else {
+            self.check_shard_block(&boc).await
+        }.map_err(|err| Error::proof_check_failed(err))?;
+
+        Ok(())
     }
 }
 
