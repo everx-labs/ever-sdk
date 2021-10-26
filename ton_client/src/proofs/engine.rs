@@ -11,7 +11,7 @@ use ton_types::{deserialize_tree_of_cells, Result, UInt256};
 
 use crate::boc::internal::get_boc_hash;
 use crate::client::Error;
-use crate::client::storage::KeyValueStorage;
+use crate::client::storage::{InMemoryKeyValueStorage, KeyValueStorage};
 use crate::ClientContext;
 use crate::encoding::base64_decode;
 use crate::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
@@ -54,7 +54,19 @@ impl ProofHelperEngineImpl {
             Self::gen_root_hash_prefix(network_uid.first_master_block_root_hash.as_slice()),
         );
 
-        let storage = context.get_storage(&storage_name).await?;
+        let context_cloned = Arc::clone(&context);
+        let storage = context.get_proofs_storage(async move {
+            Ok(if context_cloned.config.cache_proofs {
+                Arc::new(
+                    crate::client::LocalStorage::new(
+                        context_cloned.config.local_storage_path.clone(),
+                        storage_name,
+                    ).await?
+                ) as Arc<dyn KeyValueStorage>
+            } else {
+                Arc::new(InMemoryKeyValueStorage::new()) as Arc<dyn KeyValueStorage>
+            })
+        }).await?;
 
         Ok(Self::with_values(context, storage))
     }

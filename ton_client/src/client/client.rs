@@ -14,6 +14,7 @@
 use lockfree::map::Map as LockfreeMap;
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
+use std::future::Future;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
@@ -21,21 +22,21 @@ use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
 use super::{AppRequestResult, Error, ParamsOfAppRequest};
 use crate::abi::AbiConfig;
 use crate::boc::{BocConfig, cache::Bocs};
+use crate::client::storage::KeyValueStorage;
 use crate::crypto::CryptoConfig;
 use crate::crypto::boxes::{signing_box::SigningBox, encryption_box::EncryptionBox};
 use crate::debot::DEngine;
 use crate::error::ClientResult;
 use crate::json_interface::interop::ResponseType;
 use crate::json_interface::request::Request;
+
 use crate::net::{
     subscriptions::SubscriptionAction, ChainIterator, NetworkConfig, ServerLink,
 };
-
 #[cfg(not(feature = "wasm"))]
 use super::std_client_env::ClientEnv;
 #[cfg(feature = "wasm")]
 use super::wasm_client_env::ClientEnv;
-use crate::client::storage::KeyValueStorage;
 use ton_types::UInt256;
 
 #[derive(Default)]
@@ -67,7 +68,7 @@ pub struct ClientContext {
     pub(crate) blockchain_config: RwLock<Option<Arc<ton_executor::BlockchainConfig>>>,
 
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
-    pub(crate) storages: RwLock<HashMap<String, Arc<dyn KeyValueStorage>>>,
+    pub(crate) proofs_storage: RwLock<Option<Arc<dyn KeyValueStorage>>>,
 
     next_id: AtomicU32,
 }
@@ -118,7 +119,7 @@ Note that default values are used if parameters are omitted in config"#,
             bocs,
             blockchain_config: RwLock::new(None),
             app_requests: Mutex::new(HashMap::new()),
-            storages: Default::default(),
+            proofs_storage: Default::default(),
             next_id: AtomicU32::new(1),
         })
     }
@@ -156,29 +157,23 @@ Note that default values are used if parameters are omitted in config"#,
         }
     }
 
-    pub(crate) async fn get_storage(&self, name: &String) -> ClientResult<Arc<dyn KeyValueStorage>> {
-        if let Some(value) = self.storages.read().await.get(name) {
-            return Ok(Arc::clone(value));
+    pub(crate) async fn get_proofs_storage(
+        &self,
+        on_create: impl Future<Output = ClientResult<Arc<dyn KeyValueStorage>>>,
+    ) -> ClientResult<Arc<dyn KeyValueStorage>> {
+        if let Some(storage) = self.proofs_storage.read().await.as_ref() {
+            return Ok(Arc::clone(storage));
         }
 
-        let storage: Arc<dyn KeyValueStorage> = if self.config.cache_proofs {
-            Arc::new(
-                crate::client::LocalStorage::new(
-                    self.config.local_storage_path.clone(),
-                    name.clone(),
-                ).await?
-            )
-        } else {
-            Arc::new(InMemoryKeyValueStorage::new())
-        };
+        let new_storage = on_create.await?;
 
-        let mut write_guard = self.storages.write().await;
-        if let Some(value) = write_guard.get(name) {
-            return Ok(Arc::clone(value));
+        let mut write_guard = self.proofs_storage.write().await;
+        if let Some(storage) = write_guard.as_ref() {
+            return Ok(Arc::clone(storage));
         }
-        write_guard.insert(name.clone(), Arc::clone(&storage));
+        *write_guard = Some(Arc::clone(&new_storage));
 
-        Ok(storage)
+        Ok(new_storage)
     }
 }
 
