@@ -112,7 +112,7 @@ impl Value {
         let builder =
             TokenValue::pack_values_into_chain(&tokens[..], vec![], &ABI_VERSION_2_0).unwrap();
         let serialized =
-            serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()?;
+            serialize_cell_to_base64(&builder.into_cell().unwrap(), "QueryValue").ok()?;
         Some(serialized)
     }
 
@@ -124,7 +124,7 @@ impl Value {
         .ok()?;
         let builder =
             TokenValue::pack_values_into_chain(&tokens[..], vec![], &ABI_VERSION_2_0).ok()?;
-        serialize_cell_to_base64(&ton_types::Cell::from(&builder), "QueryValue").ok()
+        serialize_cell_to_base64(&builder.into_cell().unwrap(), "QueryValue").ok()
     }
 }
 
