@@ -6,10 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### New
 - New module `proofs` is introduced!  
-- Function `proof_block_data`  that proofs block data, retrieved from Graphql API. 
+- Function `proofs.proof_block_data`  that proofs block data, retrieved from Graphql API. 
   
   It is the first function from proofs series:) Wait for others(`proof_transaction_data`, `proof_account_data`, `proof_message_data`) in the next releases. 
-  
+
   Read about it more in the documentation. 
 
 - `abi.decode_boc` function to decode custom BOC data into JSON parameters.
