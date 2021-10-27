@@ -570,7 +570,7 @@ fn register_debot(handlers: &mut RuntimeHandlers) {
     module.register();
 }
 
-/// [UNSTABLE](UNSTABLE.md) Module for proving queried data.
+/// [UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.
 #[derive(ApiModule)]
 #[api_module(name = "proofs")]
 pub struct ProofsModule;

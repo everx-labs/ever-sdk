@@ -37,12 +37,13 @@ lazy_static::lazy_static! {
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfProofBlockData {
-    /// Single block's data that needs proof as queried from DApp server, without modifications.
+    /// Single block's data, retrieved from TONOS API, that needs proof.
     /// Required fields are `id` and/or top-level `boc` (for block identification), others are optional.
     pub block: Value,
 }
 
-/// Proves that given block's data, which is queried from DApp server, can be trusted.
+/// Proves that a given block's data, which is queried from TONOS API, can be trusted.
+/// 
 /// This function checks block proofs and compares given data with the proven.
 /// If the given data differs from the proven, the exception will be thrown.
 /// The input param is a single block's JSON object, which was queried from DApp server using
@@ -55,13 +56,13 @@ pub struct ParamsOfProofBlockData {
 /// browser's IndexedDB for the web); otherwise all the data is cached only in memory in current
 /// client's context and will be lost after destruction of the client.
 ///
-/// Why Proofs are Needed
+/// **Why Proofs are neded**
 ///
 /// Proofs are needed to ensure that the data downloaded from a DApp server is real blockchain
 /// data. Checking proofs can protect from the malicious DApp server which can potentially provide
 /// fake data, or also from "Man in the Middle" attacks class.
 ///
-/// What Proofs are
+/// **What Proofs are**
 ///
 /// Simply, proof is a list of signatures of validators', which have signed this particular master-
 /// block.
