@@ -570,6 +570,21 @@ fn register_debot(handlers: &mut RuntimeHandlers) {
     module.register();
 }
 
+/// [UNSTABLE](UNSTABLE.md) Module for proving queried data.
+#[derive(ApiModule)]
+#[api_module(name = "proofs")]
+pub struct ProofsModule;
+
+fn register_proofs(handlers: &mut RuntimeHandlers) {
+    let mut module = ModuleReg::new::<ProofsModule>(handlers);
+    module.register_error_code::<crate::proofs::ErrorCode>();
+
+    module.register_type::<crate::proofs::ParamsOfProofBlockData>();
+
+    module.register_async_fn(crate::proofs::proof_block_data, crate::proofs::proof_block_data_api);
+    module.register();
+}
+
 pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_client(handlers);
     register_crypto(handlers);
@@ -580,4 +595,5 @@ pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_tvm(handlers);
     register_net(handlers);
     register_debot(handlers);
+    register_proofs(handlers);
 }
