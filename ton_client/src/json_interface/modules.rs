@@ -580,8 +580,10 @@ fn register_proofs(handlers: &mut RuntimeHandlers) {
     module.register_error_code::<crate::proofs::ErrorCode>();
 
     module.register_type::<crate::proofs::ParamsOfProofBlockData>();
+    module.register_type::<crate::proofs::ParamsOfProofTransactionData>();
 
     module.register_async_fn(crate::proofs::proof_block_data, crate::proofs::proof_block_data_api);
+    module.register_async_fn(crate::proofs::proof_transaction_data, crate::proofs::proof_transaction_data_api);
     module.register();
 }
 

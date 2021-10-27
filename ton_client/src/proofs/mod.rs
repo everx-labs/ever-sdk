@@ -12,6 +12,7 @@ use ton_types::{Cell, deserialize_tree_of_cells, UInt256};
 use ton_types::Result;
 
 pub(crate) use errors::ErrorCode;
+use json::{compare_values, CompareValuesResult};
 
 use crate::client::NetworkUID;
 use crate::ClientContext;
@@ -21,7 +22,7 @@ use crate::net::{ParamsOfQueryCollection, query_collection};
 use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::errors::Error;
 use crate::proofs::validators::{calc_subset_for_workchain, check_crypto_signatures};
-use crate::utils::json::{compare_values, CompareValuesResult, JsonHelper};
+use crate::utils::json::JsonHelper;
 
 pub mod errors;
 mod engine;
@@ -29,6 +30,7 @@ mod validators;
 
 #[cfg(test)]
 mod tests;
+mod json;
 
 #[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct ProofsConfig {
@@ -271,27 +273,27 @@ pub async fn proof_transaction_data(
         .map_err(|err| Error::invalid_data(err))?;
     let block_extra = block.read_extra()
         .map_err(|err| Error::invalid_data(err))?;
-    let in_msg_descr = block_extra.read_in_msg_descr()
+    let account_blocks = block_extra.read_account_blocks()
         .map_err(|err| Error::invalid_data(err))?;
 
     let mut transaction_found_in_block = false;
-    in_msg_descr.iterate_objects(|msg| {
-        if let Some(transaction_cell) = msg.transaction_cell() {
-            if root_hash == transaction_cell.repr_hash() {
+    account_blocks.iterate_objects(|account_block| {
+        account_block.transaction_iterate_full(|_key, cell, _cc| {
+            if root_hash == cell.repr_hash() {
                 transaction_found_in_block = true;
                 return Ok(false);
             }
-        };
-        Ok(true)
+            Ok(true)
+        })
     })
         .map_err(|err| Error::internal_error(err))?;
 
     if !transaction_found_in_block {
         return Err(Error::proof_check_failed(
             format!(
-                "Transaction with `root_hash`: {} not found in block with `id`: {}",
-                root_hash,
-                block_id,
+                "Transaction with `id`: {} not found in block with `id`: {}",
+                root_hash.as_hex_string(),
+                block_id.as_hex_string(),
             )
         ));
     }
