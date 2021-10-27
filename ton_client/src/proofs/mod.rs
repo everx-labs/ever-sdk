@@ -37,27 +37,27 @@ lazy_static::lazy_static! {
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfProofBlockData {
-    /// Single block's data as queried from DApp server, without modifications.
-    /// The required fields are `id` and/or top-level `boc`, others are optional.
+    /// Single block's data that needs proof as queried from DApp server, without modifications.
+    /// Required fields are `id` and/or top-level `boc` (for block identification), others are optional.
     pub block: Value,
 }
 
 /// Proves that given block's data, which is queried from DApp server, can be trusted.
 /// This function checks block proofs and compares given data with the proven.
 /// If the given data differs from the proven, the exception will be thrown.
-/// The input param is the single block's JSON object, which was queried from DApp server using
+/// The input param is a single block's JSON object, which was queried from DApp server using
 /// functions such as `net.query`, `net.query_collection` or `net.wait_for_collection`.
 /// If block's BOC is not provided in the JSON, it will be queried from DApp server
 /// (in this case it is required to provide at least `id` of block).
 ///
 /// If `cache_proofs` in config is set to `true` (default), downloaded proofs and master-chain BOCs
 /// are saved into the persistent local storage (e.g. file system for native environments or
-/// browser's IndexedDB for the web); otherwise all data are cached only in memory in current
+/// browser's IndexedDB for the web); otherwise all the data is cached only in memory in current
 /// client's context and will be lost after destruction of the client.
 ///
 /// Why Proofs are Needed
 ///
-/// Proofs are needed to ensure that the data downloaded from a DApp server are real blockchain
+/// Proofs are needed to ensure that the data downloaded from a DApp server is real blockchain
 /// data. Checking proofs can protect from the malicious DApp server which can potentially provide
 /// fake data, or also from "Man in the Middle" attacks class.
 ///
@@ -81,19 +81,20 @@ pub struct ParamsOfProofBlockData {
 /// in TON-SDK.
 ///
 /// The trusted block is the authority root, as well, as the zero-state. Each trusted block is the
-/// `id` (e.g. `root_hash`) of the already proven key-block. There are can be plenty of trusted
-/// blocks, so there are can be a lot of authority roots. The hashes of trusted blocks for MainNet
-/// and DevNet are hardcoded in SDK in a separated binary file and can be updated for each release.
-/// The user also will be able to provide their hashes of trusted blocks for other networks, as
-/// well, as for MainNet and DevNet. By using trusted key-blocks, in order to prove any block, we
-/// can prove key-blocks' chain to the closest previous trusted key-block, not only to the zero-
-/// state.
+/// `id` (e.g. `root_hash`) of the already proven key-block. There can be plenty of trusted
+/// blocks, so there can be a lot of authority roots. The hashes of trusted blocks for MainNet
+/// and DevNet are hardcoded in SDK in a separated binary file (trusted_key_blocks.bin) and can 
+/// be updated for each release.
+/// In future SDK releases, one will also be able to provide their hashes of trusted blocks for other 
+/// networks, besides for MainNet and DevNet. 
+/// By using trusted key-blocks, in order to prove any block, we can prove chain of key-blocks to the 
+/// closest previous trusted key-block, not only to the zero-state.
 ///
-/// But shard-blocks don't have proofs on DApp server. In this case, in order to prove any of shard-
-/// block, we search for a corresponding master-block, which consists root hash of this shard-block,
+/// But shard-blocks don't have proofs on DApp server. In this case, in order to prove any shard-
+/// block data, we search for a corresponding master-block, which contains the root hash of this shard-block,
 /// or some shard block which is linked to that block in shard-chain. After proving this master-
 /// block, we traverse through each link and calculate and compare hashes with links, one-by-one.
-/// After that we can ensure that this shard-block is also has been proven.
+/// After that we can ensure that this shard-block has also been proven.
 #[api_function]
 pub async fn proof_block_data(
     context: Arc<ClientContext>,
