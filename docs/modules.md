@@ -135,6 +135,8 @@ Where:
 
 [decode_initial_data](mod_abi.md#decode_initial_data) – Decodes initial values of a contract's static variables and owner's public key from account initial data This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
 
+[decode_boc](mod_abi.md#decode_boc) – Decodes BOC into JSON as a set of provided parameters.
+
 ## [boc](mod_boc.md) – BOC manipulation module.
 
 [parse_message](mod_boc.md#parse_message) – Parses message boc into a JSON
@@ -261,5 +263,5 @@ Where:
 
 ## [proofs](mod_proofs.md) – [UNSTABLE](UNSTABLE.md) Module for proving queried data.
 
-[proof_block_data](mod_proofs.md#proof_block_data) – Proves that block's data queried from DApp server can be trusted. Automatically checks block proofs and compares given data with the proven. If block's BOC is not provided, it will be queried from DApp (in this case it is required to provide `id` of block in the JSON). If `cache_proofs` in config is set to `true` (default), downloaded proofs and masterchain BOCs are saved into the persistent local storage (e.g.
+[proof_block_data](mod_proofs.md#proof_block_data) – Proves that given block's data, which is queried from DApp server, can be trusted. This function checks block proofs and compares given data with the proven. If the given data differs from the proven, the exception will be thrown. The input param is a single block's JSON object, which was queried from DApp server using functions such as `net.query`, `net.query_collection` or `net.wait_for_collection`. If block's BOC is not provided in the JSON, it will be queried from DApp server (in this case it is required to provide at least `id` of block).
 

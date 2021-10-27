@@ -1,5 +1,5 @@
 {
-  "version": "1.24.0",
+  "version": "1.25.0",
   "modules": [
     {
       "name": "client",
@@ -5757,7 +5757,7 @@
           "description": null
         },
         {
-          "name": "ResultOfDecodeData",
+          "name": "ResultOfDecodeAccountData",
           "type": "Struct",
           "struct_fields": [
             {
@@ -5880,6 +5880,51 @@
               "name": "initial_pubkey",
               "type": "String",
               "summary": "Initial account owner's public key",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfDecodeBoc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "params",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "abi.AbiParam"
+              },
+              "summary": "Parameters to decode from BOC",
+              "description": null
+            },
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": "Data BOC or BOC handle",
+              "description": null
+            },
+            {
+              "name": "allow_partial",
+              "type": "Boolean",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfDecodeBoc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Decoded data as a JSON structure.",
               "description": null
             }
           ],
@@ -6224,7 +6269,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "abi.ResultOfDecodeData"
+                "ref_name": "abi.ResultOfDecodeAccountData"
               }
             ]
           },
@@ -6301,6 +6346,44 @@
               {
                 "type": "Ref",
                 "ref_name": "abi.ResultOfDecodeInitialData"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "decode_boc",
+          "summary": "Decodes BOC into JSON as a set of provided parameters.",
+          "description": "Solidity functions use ABI types for [builder encoding](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#tvmbuilderstore).\nThe simplest way to decode such a BOC is to use ABI decoding.\nABI has it own rules for fields layout in cells so manually encoded\nBOC can not be described in terms of ABI rules.\n\nTo solve this problem we introduce a new ABI type `Ref(<ParamType>)`\nwhich allows to store `ParamType` ABI parameter in cell reference and, thus,\ndecode manually encoded BOCs. This type is available only in `decode_boc` function\nand will not be available in ABI messages encoding until it is included into some ABI revision.\n\nSuch BOC descriptions covers most users needs. If someone wants to decode some BOC which\ncan not be described by these rules (i.e. BOC with TLB containing constructors of flags\ndefining some parsing conditions) then they can decode the fields up to fork condition,\ncheck the parsed data manually, expand the parsing schema and then decode the whole BOC\nwith the full schema.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfDecodeBoc",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "abi.ResultOfDecodeBoc"
               }
             ]
           },
@@ -12417,7 +12500,7 @@
               "name": "block",
               "type": "Ref",
               "ref_name": "Value",
-              "summary": "Single block's data as queried from DApp server, without modifications. The required field is `id` or top-level `boc`, others are optional.",
+              "summary": "Single block's data that needs proof as queried from DApp server, without modifications. Required fields are `id` and/or top-level `boc` (for block identification), others are optional.",
               "description": null
             }
           ],
@@ -12428,8 +12511,8 @@
       "functions": [
         {
           "name": "proof_block_data",
-          "summary": "Proves that block's data queried from DApp server can be trusted. Automatically checks block proofs and compares given data with the proven. If block's BOC is not provided, it will be queried from DApp (in this case it is required to provide `id` of block in the JSON). If `cache_proofs` in config is set to `true` (default), downloaded proofs and masterchain BOCs are saved into the persistent local storage (e.g.",
-          "description": "file system for native environments or browser's local storage for the web); otherwise all data are cached only in memory in current\nclient's context and will be lost after destruction of the client.",
+          "summary": "Proves that given block's data, which is queried from DApp server, can be trusted. This function checks block proofs and compares given data with the proven. If the given data differs from the proven, the exception will be thrown. The input param is a single block's JSON object, which was queried from DApp server using functions such as `net.query`, `net.query_collection` or `net.wait_for_collection`. If block's BOC is not provided in the JSON, it will be queried from DApp server (in this case it is required to provide at least `id` of block).",
+          "description": "If `cache_proofs` in config is set to `true` (default), downloaded proofs and master-chain BOCs\nare saved into the persistent local storage (e.g. file system for native environments or\nbrowser's IndexedDB for the web); otherwise all the data is cached only in memory in current\nclient's context and will be lost after destruction of the client.\n\nWhy Proofs are Needed\n\nProofs are needed to ensure that the data downloaded from a DApp server is real blockchain\ndata. Checking proofs can protect from the malicious DApp server which can potentially provide\nfake data, or also from \"Man in the Middle\" attacks class.\n\nWhat Proofs are\n\nSimply, proof is a list of signatures of validators', which have signed this particular master-\nblock.\n\nThe very first validator set's public keys are included in the zero-state. Whe know a root hash\nof the zero-state, because it is stored in the network configuration file, it is our authority\nroot. For proving zero-state it is enough to calculate and compare its root hash.\n\nIn each new validator cycle the validator set is changed. The new one is stored in a key-block,\nwhich is signed by the validator set, which we already trust, the next validator set will be\nstored to the new key-block and signed by the current validator set, and so on.\n\nIn order to prove any block in the master-chain we need to check, that it has been signed by\na trusted validator set. So we need to check all key-blocks' proofs, started from the zero-state\nand until the block, which we want to prove. But it can take a lot of time and traffic to\ndownload and prove all key-blocks on a client. For solving this, special trusted blocks are used\nin TON-SDK.\n\nThe trusted block is the authority root, as well, as the zero-state. Each trusted block is the\n`id` (e.g. `root_hash`) of the already proven key-block. There can be plenty of trusted\nblocks, so there can be a lot of authority roots. The hashes of trusted blocks for MainNet\nand DevNet are hardcoded in SDK in a separated binary file (trusted_key_blocks.bin) and can\nbe updated for each release.\nIn future SDK releases, one will also be able to provide their hashes of trusted blocks for other\nnetworks, besides for MainNet and DevNet.\nBy using trusted key-blocks, in order to prove any block, we can prove chain of key-blocks to the\nclosest previous trusted key-block, not only to the zero-state.\n\nBut shard-blocks don't have proofs on DApp server. In this case, in order to prove any shard-\nblock data, we search for a corresponding master-block, which contains the root hash of this shard-block,\nor some shard block which is linked to that block in shard-chain. After proving this master-\nblock, we traverse through each link and calculate and compare hashes with links, one-by-one.\nAfter that we can ensure that this shard-block has also been proven.",
           "params": [
             {
               "name": "context",
