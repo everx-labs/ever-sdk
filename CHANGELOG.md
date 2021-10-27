@@ -5,9 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [1.25.0] – 2021-10-25
 
 ### New
-- New module `proofs` is introduced!
-  For now, we added the first function `proof_block_data` from proofs series:) Wait for others(`proof_transaction_data`, `proof_account_data`, `proof_message_data`) in the next releases. 
+- New module `proofs` is introduced!  
+- Function `proof_block_data`  that proofs block data, retrieved from Graphql API. 
+  
+  It is the first function from proofs series:) Wait for others(`proof_transaction_data`, `proof_account_data`, `proof_message_data`) in the next releases. 
+  
   Read about it more in the documentation. 
+
 - `abi.decode_boc` function to decode custom BOC data into JSON parameters.
 - `Ref(<ParamType>)` type was added to ABI.   
   Solidity functions use ABI types for builder encoding. The simplest way to decode such a BOC is to use ABI decoding. ABI has it own rules for fields layout in cells so manually encoded BOC can not be described in terms of ABI rules. To solve this problem we introduce a new ABI type `Ref(<ParamType>)` which allows to store `ParamType` ABI parameter in cell reference and, thus, decode manually encoded BOCs. This type is available only in `decode_boc` function and will not be available in ABI messages encoding until it is included into some ABI revision.
