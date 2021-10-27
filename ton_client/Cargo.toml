@@ -100,6 +100,7 @@ features = [
 ]
 
 [dev-dependencies]
+graphql-parser = "0.3.0"
 dirs = "2.0.2"
 log4rs = "^0"
 pretty_assertions = "0.6.1"
