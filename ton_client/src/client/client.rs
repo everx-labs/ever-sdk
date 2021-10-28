@@ -14,7 +14,6 @@
 use lockfree::map::Map as LockfreeMap;
 use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
-use std::future::Future;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
