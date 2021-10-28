@@ -69,7 +69,7 @@ impl ProofHelperEngineImpl {
             return Ok(Arc::clone(storage));
         }
 
-        let new_storage = if !context.config.cache_proofs {
+        let new_storage = if !context.config.proofs.cache_in_local_storage {
             Arc::new(InMemoryKeyValueStorage::new()) as Arc<dyn KeyValueStorage>
         } else {
             let network_uid = get_current_network_uid(&context).await?;

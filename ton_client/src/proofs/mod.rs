@@ -4,6 +4,7 @@ use std::io::Cursor;
 use std::sync::Arc;
 
 use failure::{bail, err_msg};
+use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, MerkleProof, ShardIdent, ShardStateUnsplit, ValidatorDescr};
 use ton_block_json::BlockSerializationSet;
@@ -29,6 +30,38 @@ mod validators;
 #[cfg(test)]
 mod tests;
 
+#[derive(Deserialize, Debug, Clone, ApiType)]
+pub struct ProofsConfig {
+    /// Cache proofs in the local storage. Default is `true`.
+    /// If this value is set to `true`, downloaded proofs and master-chain BOCs are saved into the
+    /// persistent local storage (e.g. file system for native environments or browser's IndexedDB
+    /// for the web); otherwise all the data is cached only in memory in current client's context
+    /// and will be lost after destruction of the client.
+    #[serde(
+        default = "default_cache_in_local_storage",
+        deserialize_with = "deserialize_cache_in_local_storage"
+    )]
+    pub cache_in_local_storage: bool,
+}
+
+fn default_cache_in_local_storage() -> bool {
+    true
+}
+
+fn deserialize_cache_in_local_storage<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> std::result::Result<bool, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_cache_in_local_storage()))
+}
+
+impl Default for ProofsConfig {
+    fn default() -> Self {
+        Self {
+            cache_in_local_storage: default_cache_in_local_storage(),
+        }
+    }
+}
+
 lazy_static::lazy_static! {
     static ref COMPARE_JSON_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
         "gen_software_capabilities",
@@ -38,7 +71,8 @@ lazy_static::lazy_static! {
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfProofBlockData {
     /// Single block's data, retrieved from TONOS API, that needs proof.
-    /// Required fields are `id` and/or top-level `boc` (for block identification), others are optional.
+    /// Required fields are `id` and/or top-level `boc` (for block identification), others are
+    /// optional.
     pub block: Value,
 }
 
@@ -51,12 +85,12 @@ pub struct ParamsOfProofBlockData {
 /// If block's BOC is not provided in the JSON, it will be queried from DApp server
 /// (in this case it is required to provide at least `id` of block).
 ///
-/// If `cache_proofs` in config is set to `true` (default), downloaded proofs and master-chain BOCs
-/// are saved into the persistent local storage (e.g. file system for native environments or
-/// browser's IndexedDB for the web); otherwise all the data is cached only in memory in current
-/// client's context and will be lost after destruction of the client.
+/// If `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and
+/// master-chain BOCs are saved into the persistent local storage (e.g. file system for native
+/// environments or browser's IndexedDB for the web); otherwise all the data is cached only in
+/// memory in current client's context and will be lost after destruction of the client.
 ///
-/// **Why Proofs are neded**
+/// **Why Proofs are needed**
 ///
 /// Proofs are needed to ensure that the data downloaded from a DApp server is real blockchain
 /// data. Checking proofs can protect from the malicious DApp server which can potentially provide
@@ -86,16 +120,16 @@ pub struct ParamsOfProofBlockData {
 /// blocks, so there can be a lot of authority roots. The hashes of trusted blocks for MainNet
 /// and DevNet are hardcoded in SDK in a separated binary file (trusted_key_blocks.bin) and can 
 /// be updated for each release.
-/// In future SDK releases, one will also be able to provide their hashes of trusted blocks for other 
-/// networks, besides for MainNet and DevNet. 
-/// By using trusted key-blocks, in order to prove any block, we can prove chain of key-blocks to the 
-/// closest previous trusted key-block, not only to the zero-state.
+/// In future SDK releases, one will also be able to provide their hashes of trusted blocks for
+/// other networks, besides for MainNet and DevNet.
+/// By using trusted key-blocks, in order to prove any block, we can prove chain of key-blocks to
+/// the closest previous trusted key-block, not only to the zero-state.
 ///
 /// But shard-blocks don't have proofs on DApp server. In this case, in order to prove any shard-
-/// block data, we search for a corresponding master-block, which contains the root hash of this shard-block,
-/// or some shard block which is linked to that block in shard-chain. After proving this master-
-/// block, we traverse through each link and calculate and compare hashes with links, one-by-one.
-/// After that we can ensure that this shard-block has also been proven.
+/// block data, we search for a corresponding master-block, which contains the root hash of this
+/// shard-block, or some shard block which is linked to that block in shard-chain. After proving
+/// this master-block, we traverse through each link and calculate and compare hashes with links,
+/// one-by-one. After that we can ensure that this shard-block has also been proven.
 #[api_function]
 pub async fn proof_block_data(
     context: Arc<ClientContext>,
@@ -155,7 +189,12 @@ pub async fn proof_block_data(
     ).map_err(|err| Error::invalid_data(err))?;
 
     if let CompareValuesResult::Different(message) =
-        compare_values(&params.block, &block_map.into(), "blocks", &COMPARE_JSON_IGNORE_FIELDS)
+        compare_values(
+            &params.block,
+            &block_map.into(),
+            "blocks",
+            &COMPARE_JSON_IGNORE_FIELDS,
+        )
     {
         return Err(Error::data_differs_from_proven(message));
     }
