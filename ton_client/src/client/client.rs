@@ -17,6 +17,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
+use ton_types::UInt256;
 
 use super::{AppRequestResult, Error, ParamsOfAppRequest};
 use crate::abi::AbiConfig;
@@ -28,15 +29,14 @@ use crate::debot::DEngine;
 use crate::error::ClientResult;
 use crate::json_interface::interop::ResponseType;
 use crate::json_interface::request::Request;
-
 use crate::net::{
     subscriptions::SubscriptionAction, ChainIterator, NetworkConfig, ServerLink,
 };
+use crate::proofs::ProofsConfig;
 #[cfg(not(feature = "wasm"))]
 use super::std_client_env::ClientEnv;
 #[cfg(feature = "wasm")]
 use super::wasm_client_env::ClientEnv;
-use ton_types::UInt256;
 
 #[derive(Default)]
 pub struct Boxes {
@@ -167,23 +167,14 @@ pub struct ClientConfig {
     pub abi: AbiConfig,
     #[serde(default, deserialize_with = "deserialize_boc_config")]
     pub boc: BocConfig,
+    #[serde(default, deserialize_with = "deserialize_proofs_config")]
+    pub proofs: ProofsConfig,
 
     /// For file based storage is a folder name where SDK will store its data.
     /// For browser based is a browser async storage key prefix.
     /// Default (recommended) value is "~/.tonclient" for native environments and ".tonclient"
     /// for web-browser.
     pub local_storage_path: Option<String>,
-
-    /// Cache proofs in the local storage. Default is `true`.
-    #[serde(
-        default = "default_cache_proofs",
-        deserialize_with = "deserialize_cache_proofs"
-    )]
-    pub cache_proofs: bool,
-}
-
-fn default_cache_proofs() -> bool {
-    true
 }
 
 fn deserialize_network_config<'de, D: Deserializer<'de>>(
@@ -210,10 +201,10 @@ fn deserialize_boc_config<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
 }
 
-fn deserialize_cache_proofs<'de, D: Deserializer<'de>>(
+fn deserialize_proofs_config<'de, D: Deserializer<'de>>(
     deserializer: D,
-) -> Result<bool, D::Error> {
-    Ok(Option::deserialize(deserializer)?.unwrap_or(default_cache_proofs()))
+) -> Result<ProofsConfig, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
 }
 
 impl Default for ClientConfig {
@@ -223,8 +214,8 @@ impl Default for ClientConfig {
             crypto: Default::default(),
             abi: Default::default(),
             boc: Default::default(),
+            proofs: Default::default(),
             local_storage_path: Default::default(),
-            cache_proofs: default_cache_proofs(),
         }
     }
 }

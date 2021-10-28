@@ -4,6 +4,7 @@ use std::io::Cursor;
 use std::sync::Arc;
 
 use failure::{bail, err_msg};
+use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, MerkleProof, ShardIdent, ShardStateUnsplit, ValidatorDescr};
 use ton_block_json::BlockSerializationSet;
@@ -28,6 +29,37 @@ mod validators;
 
 #[cfg(test)]
 mod tests;
+
+#[derive(Deserialize, Debug, Clone, ApiType)]
+pub struct ProofsConfig {
+    /// Cache proofs in the local storage. Default is `true`.
+    /// If this value is set to `true`, SDK will store already checked proofs to the local storage
+    /// in order to speed up next checks; otherwise, proofs will be stored only in the RAM and will
+    /// be lost after client destroying.
+    #[serde(
+        default = "default_cache_in_local_storage",
+        deserialize_with = "deserialize_cache_in_local_storage"
+    )]
+    pub cache_in_local_storage: bool,
+}
+
+fn default_cache_in_local_storage() -> bool {
+    true
+}
+
+fn deserialize_cache_in_local_storage<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> std::result::Result<bool, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_cache_in_local_storage()))
+}
+
+impl Default for ProofsConfig {
+    fn default() -> Self {
+        Self {
+            cache_in_local_storage: default_cache_in_local_storage(),
+        }
+    }
+}
 
 lazy_static::lazy_static! {
     static ref COMPARE_JSON_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
