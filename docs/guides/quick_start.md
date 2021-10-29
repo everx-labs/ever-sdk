@@ -2,13 +2,13 @@
 
 Create your first DApp and run it on local blockchain
 
-* [Prerequisites](quick_start.md#prerequisites)
-* [Prepare development environment](quick_start.md#prepare-development-environment)
-* [Start local node (SE)](quick_start.md#start-local-node-se)
-* [Install demo application](quick_start.md#install-demo-application)
-* [Run it!](quick_start.md#run-it)
-* [Detailed sample explanation](quick_start.md#detailed-sample-explanation)
-* [Source code](quick_start.md#source-code)
+* [Prerequisites](quick\_start.md#prerequisites)
+* [Prepare development environment](quick\_start.md#prepare-development-environment)
+* [Start local node (SE)](quick\_start.md#start-local-node-se)
+* [Install demo application](quick\_start.md#install-demo-application)
+* [Run it!](quick\_start.md#run-it)
+* [Detailed sample explanation](quick\_start.md#detailed-sample-explanation)
+* [Source code](quick\_start.md#source-code)
 
 ## Prerequisites
 
@@ -222,15 +222,15 @@ module.exports = {
 }
 ```
 
-HelloWallet.js contains artifacts received from contract compilation. Read more [here](installation/add_contract_to_your_app.md).
+HelloWallet.js contains artifacts received from contract compilation. Read more [here](installation/add\_contract\_to\_your\_app.md).
 
 The script implements the following logic:
 
 1. Links the project with Node.js [TON-SDK](https://github.com/tonlabs/TON-SDK) binary. If you plan to use JS SDK in Web, link it with Wasm binary. Read more [here](https://github.com/tonlabs/ton-client-js).
-2. `TONClient` instance is created and initialized with [TON OS SE](https://github.com/tonlabs/tonos-se) ("[http://localhost](http://localhost)", local blockchain) endpoint. See the list of other available [endpoints](../reference/ton_os_api/networks.md).
-3. new `Account` type object is initialized with a generated key pair, `HelloWallet` object and client object. Read more about Account initialization [here](work_with_contracts/deploy.md).
+2. `TONClient` instance is created and initialized with [TON OS SE](https://github.com/tonlabs/tonos-se) ("[http://localhost](http://localhost)", local blockchain) endpoint. See the list of other available [endpoints](../reference/ton-os-api/networks.md).
+3. new `Account` type object is initialized with a generated key pair, `HelloWallet` object and client object. Read more about Account initialization [here](work\_with\_contracts/deploy.md).
 4. Future address of the contract is calculated and printed to console.
-5. `deploy` function is used to deploy the contract. Flag `useGiver: true` allows to sponsor deploy with TON OS SE giver that is hard coded as the default Account giver. [You can re-assign it to your own giver](work_with_contracts/deploy.md#transfer-funds-to-the-future-address).
+5. `deploy` function is used to deploy the contract. Flag `useGiver: true` allows to sponsor deploy with TON OS SE giver that is hard coded as the default Account giver. [You can re-assign it to your own giver](work\_with\_contracts/deploy.md#transfer-funds-to-the-future-address).
 6. `run` function is used to execute contract function `touch` on-chain.
 7. `runLocal` function is used to tun get method `getTimestamp` is executed off-chain - locally to read the contract's data.
 8. `run` function is used to execute contract function `sendValue` on-chain to send some tokens to a randomly generated address.
