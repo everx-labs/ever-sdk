@@ -9,25 +9,23 @@ use crate::boc::internal::{
     deserialize_object_from_base64, get_boc_hash, serialize_cell_to_base64,
     serialize_object_to_base64
 };
-use crate::boc::{ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfGetCodeFromTvc};
+use crate::boc::{ParamsOfDecodeTvc, ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfDecodeTvc, ResultOfGetCodeFromTvc};
 use crate::crypto::KeyPair;
 use crate::encoding::account_decode;
-use crate::tests::{TestClient, EVENTS, HELLO};
+use crate::tests::{EVENTS, HELLO, TestClient};
 use crate::utils::conversion::abi_uint;
 use crate::{
     abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage},
     boc::ResultOfParse,
-    ClientContext,
 };
 
 use std::io::Cursor;
 use ton_abi::Contract;
 use ton_block::{CurrencyCollection, Deserializable, InternalMessageHeader, Message, Serializable};
 use ton_sdk::ContractImage;
-use ton_types::Result;
+use ton_types::{BuilderData, IBitstring, Result};
 
 use super::*;
-use std::sync::Arc;
 
 #[test]
 fn encode_v2() {
@@ -907,18 +905,17 @@ const ACCOUNT_ABI: &str = r#"{
 	]
 }"#;
 
-#[tokio::test]
-async fn test_decode_account_data() {
+#[test]
+fn test_decode_account_data() {
     let abi = Abi::Json(ACCOUNT_ABI.to_owned());
     let state = deserialize_object_from_base64::<ton_block::StateInit>(ACCOUNT_STATE, "state").unwrap();
     let data = serialize_cell_to_base64(&state.object.data.unwrap(), "data").unwrap();
 
-    let context = Arc::new(ClientContext::new(Default::default()).unwrap());
-    let decoded = decode_account_data(
-        context,
+    let client = TestClient::new();
+    let decoded = client.request::<_, ResultOfDecodeAccountData>(
+        "abi.decode_account_data",
         ParamsOfDecodeAccountData { data, abi },
     )
-    .await
     .unwrap()
     .data;
 
@@ -938,6 +935,137 @@ async fn test_decode_account_data() {
             "a": "49206c696b652069742e",
             "b": "",
             "length": "0x000000000000000000000000000000000000000000000000000000000000000f"
+        })
+    );
+}
+
+#[test]
+fn test_init_data() {
+    let client = TestClient::new();
+    let (abi, tvc) = TestClient::package("t24_initdata", Some(2));
+
+    let data = client
+        .request::<_, ResultOfDecodeTvc>(
+            "boc.decode_tvc",
+            ParamsOfDecodeTvc {
+                tvc,
+                boc_cache: None,
+            },
+        )
+        .unwrap()
+        .data
+        .unwrap();
+    
+    let result: ResultOfDecodeInitialData = client
+        .request(
+            "abi.decode_initial_data",
+            ParamsOfDecodeInitialData {
+                abi: Some(abi.clone()),
+                data: data.clone(),
+            },
+        )
+        .unwrap();
+    assert_eq!(result.initial_data, Some(json!({})));
+    assert_eq!(result.initial_pubkey, hex::encode(&[0u8; 32]));
+
+    let initial_data = json!({
+        "a": abi_uint(123, 8),
+        "s": "some string",
+    });
+
+    let result: ResultOfUpdateInitialData = client
+        .request(
+            "abi.update_initial_data",
+            ParamsOfUpdateInitialData {
+                abi: Some(abi.clone()),
+                data,
+                initial_data: Some(initial_data.clone()),
+                initial_pubkey: Some(hex::encode(&[0x22u8; 32])),
+                boc_cache: None,
+            },
+        )
+        .unwrap();
+    assert_eq!(result.data, "te6ccgEBBwEARwABAcABAgPPoAQCAQFIAwAWc29tZSBzdHJpbmcCASAGBQADHuAAQQiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIoA==");
+
+    let result: ResultOfDecodeInitialData = client
+        .request(
+            "abi.decode_initial_data",
+            ParamsOfDecodeInitialData {
+                abi: Some(abi.clone()),
+                data: result.data,
+            },
+        )
+        .unwrap();
+    assert_eq!(result.initial_data, Some(initial_data));
+    assert_eq!(result.initial_pubkey, hex::encode(&[0x22u8; 32]));
+}
+
+#[test]
+fn test_decode_boc() {
+    let mut builder = BuilderData::new();
+    builder.append_u32(0).unwrap();
+    builder.append_reference(123u64.write_to_new_cell().unwrap());
+    builder.append_bit_one().unwrap();
+
+    let boc = serialize_cell_to_base64(&builder.into_cell().unwrap(), "").unwrap();
+
+    let mut params = vec![
+        AbiParam {
+            name: "a".to_owned(),
+            param_type: "uint32".to_owned(),
+            ..Default::default()
+        },
+        AbiParam {
+            name: "b".to_owned(),
+            param_type: "ref(int64)".to_owned(),
+            ..Default::default()
+        },
+        AbiParam {
+            name: "c".to_owned(),
+            param_type: "bool".to_owned(),
+            ..Default::default()
+        },
+    ];
+
+    let client = TestClient::new();
+    let decoded = client.request::<_, ResultOfDecodeBoc>(
+        "abi.decode_boc",
+        ParamsOfDecodeBoc { 
+            boc: boc.clone(),
+            params: params.clone(),
+            allow_partial: false
+        },
+    )
+    .unwrap()
+    .data;
+
+    assert_eq!(
+        decoded,
+        json!({
+            "a": "0",
+            "b": "123",
+            "c": true,
+        })
+    );
+
+    params.pop();
+
+    let decoded = client.request::<_, ResultOfDecodeBoc>(
+        "abi.decode_boc",
+        ParamsOfDecodeBoc { 
+            boc: boc.clone(),
+            params: params.clone(),
+            allow_partial: true
+        },
+    )
+    .unwrap()
+    .data;
+
+    assert_eq!(
+        decoded,
+        json!({
+            "a": "0",
+            "b": "123",
         })
     );
 }

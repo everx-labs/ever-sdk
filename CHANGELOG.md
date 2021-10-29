@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.25.0] – 2021-10-25
+
+### New
+- New module [`proofs`](./docs/mod_proofs.md) is introduced!  
+- Function [`proofs.proof_block_data`](./docs/mod_proofs.md#proof_block_data)  that proofs block data, retrieved from Graphql API. 
+  
+  It is the first function from proofs series :) Wait for others(`proof_transaction_data`, `proof_account_data`, `proof_message_data`) in the next releases. 
+
+  Read about it more in the [documentation](./docs/mod_proofs.md#proof_block_data). 
+
+- [`abi.decode_boc`](./docs/mod_abi.md#decode_boc) function to decode custom BOC data into JSON parameters.
+- `Ref(<ParamType>)` type was added to ABI.   
+  Solidity functions use ABI types for builder encoding. The simplest way to decode such a BOC is to use ABI decoding. ABI has it own rules for fields layout in cells so manually encoded BOC can not be described in terms of ABI rules. To solve this problem we introduce a new ABI type `Ref(<ParamType>)` which allows to store `ParamType` ABI parameter in cell reference and, thus, decode manually encoded BOCs. This type is available only in `decode_boc` function and will not be available in ABI messages encoding until it is included into some ABI revision.
+
+## [1.24.0] – 2021-10-18
+
+### New
+- `boc.get_boc_depth` function to get depth of the provided boc.
+- `boc.decode_tvc` function returns additional fields `code_hash`, `code_depth`, `data_hash`, `data_depth` and `compiler_version`
+
+- **Debot module**:
+    - added `parse` function to Json interface.
+
+## [1.23.0] – 2021-10-05
+
+### New
+- `boc.get_code_salt` and `boc.set_code_salt` functions for contract code salt management.
+- `boc.encode_tvc` and `boc.decode_tvc` functions for TVC image encoding and decoding
+- `boc.get_compiler_version` function extracting compiler version from contract code
+- `abi.update_initial_data` and `abi.decode_initial_data` function for pre-deployment contract data management
+
 ## [1.22.0] – 2021-09-20
 
 ### New

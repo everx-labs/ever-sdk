@@ -12,20 +12,28 @@
 */
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
+use crate::client::{LOCAL_STORAGE_DEFAULT_DIR_NAME};
 #[cfg(test)]
 use crate::client::network_mock::NetworkMock;
+use crate::client::storage::KeyValueStorage;
 use crate::error::ClientResult;
 use futures::{Future, SinkExt, StreamExt};
+use lazy_static::lazy_static;
 use reqwest::{
     header::{HeaderMap, HeaderName, HeaderValue},
     Client as HttpClient, ClientBuilder, Method,
 };
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::str::FromStr;
 use tokio::runtime::Runtime;
 #[cfg(test)]
 use tokio::sync::RwLock;
 use tokio_tungstenite::tungstenite::Message as WsMessage;
+
+#[cfg(test)]
+#[path = "client_env_tests.rs"]
+mod client_env_tests;
 
 lazy_static! {
     static ref RUNTIME_CONTAINER: ClientResult<Runtime> = create_runtime();
@@ -223,5 +231,108 @@ impl ClientEnv {
                 .await
                 .map_err(|err| Error::http_request_parse_error(err))?,
         })
+    }
+}
+
+lazy_static! {
+    static ref KEY_FORMAT_RE: regex::Regex = regex::Regex::new(r#"^[a-zA-Z0-9_\.]+?$"#).unwrap();
+}
+
+pub(crate) struct LocalStorage {
+    local_storage_path: Option<String>,
+    storage_name: String,
+}
+
+impl LocalStorage {
+    pub async fn new(
+        local_storage_path: Option<String>,
+        storage_name: String,
+    ) -> ClientResult<Self> {
+        tokio::fs::create_dir_all(Self::calc_storage_path(&local_storage_path, &storage_name)).await
+            .map_err(|err| Error::local_storage_error(err))?;
+
+        Ok(Self {
+            local_storage_path,
+            storage_name,
+        })
+    }
+
+    fn calc_storage_path(
+        local_storage_path: &Option<String>,
+        storage_name: &str,
+    ) -> PathBuf {
+        let local_storage_path = local_storage_path
+            .clone()
+            .map(|path| PathBuf::from(path))
+            .unwrap_or_else(|| {
+                home::home_dir()
+                    .unwrap_or(PathBuf::from("/"))
+                    .join(LOCAL_STORAGE_DEFAULT_DIR_NAME)
+            });
+
+        local_storage_path
+            .join(storage_name)
+    }
+
+    pub fn is_storage_key_correct(key: &str) -> bool {
+        KEY_FORMAT_RE.is_match(key)
+    }
+
+    fn key_to_path(&self, key: &str) -> ClientResult<PathBuf> {
+        if !Self::is_storage_key_correct(key) {
+            return Err(Error::invalid_storage_key(key));
+        }
+
+        Ok(
+            Self::calc_storage_path(&self.local_storage_path, &self.storage_name)
+                .join(key)
+        )
+    }
+}
+
+#[async_trait::async_trait]
+impl KeyValueStorage for LocalStorage {
+    /// Get binary value by a given key from the storage
+    async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
+        let path = self.key_to_path(key)?;
+
+        match tokio::fs::read(&path).await {
+            Ok(value) => Ok(Some(value)),
+            Err(err) => if err.kind() == std::io::ErrorKind::NotFound {
+                Ok(None)
+            } else {
+                Err(Error::local_storage_error(err))
+            }
+        }
+    }
+
+    /// Put binary value by a given key into the storage
+    async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()> {
+        let path = self.key_to_path(key)?;
+
+        tokio::fs::write(&path, value).await
+            .map_err(|err| Error::local_storage_error(err))
+    }
+
+    /// Get string value by a given key from the storage
+    async fn get_str(&self, key: &str) -> ClientResult<Option<String>> {
+        self.get_bin(key).await
+            .map(|opt| opt.map(|vec| String::from_utf8(vec)))?
+            .transpose()
+            .map_err(|err| Error::local_storage_error(err))
+            .map_err(|err| err.into())
+    }
+
+    /// Put string value by a given key into the storage
+    async fn put_str(&self, key: &str, value: &str) -> ClientResult<()> {
+        self.put_bin(key, value.as_bytes()).await
+    }
+
+    /// Remove value by a given key
+    async fn remove(&self, key: &str) -> ClientResult<()> {
+        let path = self.key_to_path(key)?;
+
+        tokio::fs::remove_file(&path).await
+            .map_err(|err| Error::local_storage_error(err))
     }
 }

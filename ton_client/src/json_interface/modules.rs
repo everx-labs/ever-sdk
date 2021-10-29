@@ -315,6 +315,18 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::decode_account_data,
         crate::abi::decode_data::decode_account_data_api,
     );
+    module.register_async_fn(
+        crate::abi::update_initial_data,
+        crate::abi::init_data::update_initial_data_api,
+    );
+    module.register_async_fn(
+        crate::abi::decode_initial_data,
+        crate::abi::init_data::decode_initial_data_api,
+    );
+    module.register_async_fn(
+        crate::abi::decode_boc,
+        crate::abi::decode_boc::decode_boc_api,
+    );
     module.register();
 }
 
@@ -348,7 +360,8 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
         crate::boc::get_blockchain_config,
         crate::boc::blockchain_config::get_blockchain_config_api,
     );
-    module.register_async_fn(crate::boc::get_boc_hash, crate::boc::hash::get_boc_hash_api);
+    module.register_async_fn(crate::boc::get_boc_hash, crate::boc::common::get_boc_hash_api);
+    module.register_async_fn(crate::boc::get_boc_depth, crate::boc::common::get_boc_depth_api);
     module.register_async_fn(
         crate::boc::get_code_from_tvc,
         crate::boc::tvc::get_code_from_tvc_api,
@@ -358,6 +371,11 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
     module.register_async_fn(crate::boc::cache_unpin, crate::boc::cache::cache_unpin_api);
     module.register_type::<BuilderOp>();
     module.register_async_fn(crate::boc::encode_boc, crate::boc::encode::encode_boc_api);
+    module.register_async_fn(crate::boc::get_code_salt, crate::boc::tvc::get_code_salt_api);
+    module.register_async_fn(crate::boc::set_code_salt, crate::boc::tvc::set_code_salt_api);
+    module.register_async_fn(crate::boc::decode_tvc, crate::boc::tvc::decode_tvc_api);
+    module.register_async_fn(crate::boc::encode_tvc, crate::boc::tvc::encode_tvc_api);
+    module.register_async_fn(crate::boc::get_compiler_version, crate::boc::tvc::get_compiler_version_api);
     module.register();
 }
 
@@ -552,6 +570,21 @@ fn register_debot(handlers: &mut RuntimeHandlers) {
     module.register();
 }
 
+/// [UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.
+#[derive(ApiModule)]
+#[api_module(name = "proofs")]
+pub struct ProofsModule;
+
+fn register_proofs(handlers: &mut RuntimeHandlers) {
+    let mut module = ModuleReg::new::<ProofsModule>(handlers);
+    module.register_error_code::<crate::proofs::ErrorCode>();
+
+    module.register_type::<crate::proofs::ParamsOfProofBlockData>();
+
+    module.register_async_fn(crate::proofs::proof_block_data, crate::proofs::proof_block_data_api);
+    module.register();
+}
+
 pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_client(handlers);
     register_crypto(handlers);
@@ -562,4 +595,5 @@ pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_tvm(handlers);
     register_net(handlers);
     register_debot(handlers);
+    register_proofs(handlers);
 }

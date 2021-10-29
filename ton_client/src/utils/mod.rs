@@ -18,6 +18,7 @@ mod tests;
 pub(crate) mod calc_storage_fee;
 pub(crate) mod conversion;
 pub(crate) mod compression;
+pub(crate) mod json;
 mod errors;
 
 pub use calc_storage_fee::{

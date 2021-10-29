@@ -1,6 +1,7 @@
 use crate::abi::{Error, ParamsOfEncodeMessage};
-use crate::error::ClientResult;
+use crate::error::{ClientError, ClientResult};
 use crate::{processing, ClientContext};
+use std::convert::TryInto;
 use std::sync::Arc;
 use ton_abi::{Token, TokenValue};
 
@@ -100,6 +101,17 @@ pub struct AbiParam {
     pub param_type: String,
     #[serde(default)]
     pub components: Vec<AbiParam>,
+}
+
+impl TryInto<ton_abi::Param> for AbiParam {
+    type Error = ClientError;
+
+    fn try_into(self) -> ClientResult<ton_abi::Param> {
+        serde_json::from_value(
+            serde_json::to_value(&self)
+                .map_err(|err| Error::invalid_json(err))?
+        ).map_err(|err| Error::invalid_json(err))
+    }
 }
 
 /// The ABI function header.
