@@ -155,7 +155,8 @@ enum ClientErrorCode {
     UnexpectedCallbackResponse = 31,
     CanNotParseNumber = 32,
     InternalError = 33,
-    InvalidHandle = 34
+    InvalidHandle = 34,
+    LocalStorageError = 35
 }
 ```
 One of the following value:
@@ -194,6 +195,7 @@ One of the following value:
 - `CanNotParseNumber = 32`
 - `InternalError = 33`
 - `InvalidHandle = 34`
+- `LocalStorageError = 35`
 
 
 ## ClientError
@@ -215,13 +217,18 @@ type ClientConfig = {
     network?: NetworkConfig,
     crypto?: CryptoConfig,
     abi?: AbiConfig,
-    boc?: BocConfig
+    boc?: BocConfig,
+    local_storage_path?: string,
+    cache_proofs?: boolean
 }
 ```
 - `network`?: _[NetworkConfig](mod_client.md#NetworkConfig)_
 - `crypto`?: _[CryptoConfig](mod_client.md#CryptoConfig)_
 - `abi`?: _[AbiConfig](mod_client.md#AbiConfig)_
 - `boc`?: _[BocConfig](mod_client.md#BocConfig)_
+- `local_storage_path`?: _string_ – For file based storage is a folder name where SDK will store its data. For browser based is a browser async storage key prefix. Default (recommended) value is "~/.tonclient" for native environments and ".tonclient" for web-browser.
+- `cache_proofs`?: _boolean_ – Cache proofs in the local storage.
+<br>Default is `true`.
 
 
 ## NetworkConfig
@@ -263,7 +270,7 @@ type NetworkConfig = {
 <br>Default is 2.
 - `latency_detection_interval`?: _number_ – Frequency of sync latency detection.
 <br>Library periodically checks the current endpoint for blockchain data syncronization latency.<br>If the latency (time-lag) is less then `NetworkConfig.max_latency`<br>then library selects another endpoint.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
-- `max_latency`?: _number_ – Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data syncronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.
+- `max_latency`?: _number_ – Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data synchronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.
 <br>Must be specified in milliseconds. Default is 60000 (1 min).
 - `query_timeout`?: _number_ – Default timeout for http requests.
 <br>Is is used when no timeout specified for the request to limit the answer waiting time. If no answer received during the timeout requests ends with<br>error.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
