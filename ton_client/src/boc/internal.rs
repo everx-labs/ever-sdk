@@ -11,9 +11,11 @@
 * limitations under the License.
 */
 
-use crate::{ClientContext};
+use crate::ClientContext;
 use crate::boc::{BocCacheType, Error};
 use crate::error::ClientResult;
+#[allow(unused_imports)]
+use std::str::FromStr;
 use ton_block::{Deserializable, Serializable};
 use ton_types::{UInt256, deserialize_tree_of_cells};
 

@@ -16,6 +16,7 @@ pub enum ErrorCode {
     InvalidAbi = 311,
     InvalidFunctionId = 312,
     InvalidData = 313,
+    EncodeInitialDataFailed = 314,
 }
 
 pub struct Error;
@@ -111,4 +112,10 @@ impl Error {
         )
     }
 
+    pub fn encode_init_data_failed<E: Display>(err: E) -> ClientError {
+        error(
+            ErrorCode::EncodeInitialDataFailed,
+            format!("Encode initial data failed: {}", err),
+        )
+    }
 }

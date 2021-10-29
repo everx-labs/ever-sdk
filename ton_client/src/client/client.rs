@@ -17,10 +17,12 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
+use ton_types::UInt256;
 
 use super::{AppRequestResult, Error, ParamsOfAppRequest};
 use crate::abi::AbiConfig;
 use crate::boc::{BocConfig, cache::Bocs};
+use crate::client::storage::KeyValueStorage;
 use crate::crypto::CryptoConfig;
 use crate::crypto::boxes::{signing_box::SigningBox, encryption_box::EncryptionBox};
 use crate::debot::DEngine;
@@ -30,7 +32,7 @@ use crate::json_interface::request::Request;
 use crate::net::{
     subscriptions::SubscriptionAction, ChainIterator, NetworkConfig, ServerLink,
 };
-
+use crate::proofs::ProofsConfig;
 #[cfg(not(feature = "wasm"))]
 use super::std_client_env::ClientEnv;
 #[cfg(feature = "wasm")]
@@ -42,10 +44,17 @@ pub struct Boxes {
     pub(crate) encryption_boxes: LockfreeMap<u32, Box<dyn EncryptionBox + Send + Sync>>,
 }
 
+#[derive(Debug)]
+pub(crate) struct NetworkUID {
+    pub(crate) zerostate_root_hash: UInt256,
+    pub(crate) first_master_block_root_hash: UInt256,
+}
+
 pub struct NetworkContext {
     pub(crate) server_link: Option<ServerLink>,
     pub(crate) subscriptions: Mutex<HashMap<u32, mpsc::Sender<SubscriptionAction>>>,
     pub(crate) iterators: Mutex<HashMap<u32, Arc<Mutex<Box<dyn ChainIterator + Send + Sync>>>>>,
+    pub(crate) network_uid: RwLock<Option<Arc<NetworkUID>>>,
 }
 
 pub struct ClientContext {
@@ -58,6 +67,7 @@ pub struct ClientContext {
     pub(crate) blockchain_config: RwLock<Option<Arc<ton_executor::BlockchainConfig>>>,
 
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
+    pub(crate) proofs_storage: RwLock<Option<Arc<dyn KeyValueStorage>>>,
 
     next_id: AtomicU32,
 }
@@ -93,20 +103,23 @@ Note that default values are used if parameters are omitted in config"#,
             None
         };
 
+        let bocs = Bocs::new(config.boc.cache_max_size);
         Ok(Self {
             net: NetworkContext {
                 server_link,
                 subscriptions: Default::default(),
                 iterators: Default::default(),
+                network_uid: Default::default(),
             },
+            config,
             env,
             debots: LockfreeMap::new(),
             boxes: Default::default(),
-            bocs: Bocs::new(config.boc.cache_max_size),
-            app_requests: Mutex::new(HashMap::new()),
-            next_id: AtomicU32::new(1),
-            config,
+            bocs,
             blockchain_config: RwLock::new(None),
+            app_requests: Mutex::new(HashMap::new()),
+            proofs_storage: Default::default(),
+            next_id: AtomicU32::new(1),
         })
     }
 
@@ -154,6 +167,14 @@ pub struct ClientConfig {
     pub abi: AbiConfig,
     #[serde(default, deserialize_with = "deserialize_boc_config")]
     pub boc: BocConfig,
+    #[serde(default, deserialize_with = "deserialize_proofs_config")]
+    pub proofs: ProofsConfig,
+
+    /// For file based storage is a folder name where SDK will store its data.
+    /// For browser based is a browser async storage key prefix.
+    /// Default (recommended) value is "~/.tonclient" for native environments and ".tonclient"
+    /// for web-browser.
+    pub local_storage_path: Option<String>,
 }
 
 fn deserialize_network_config<'de, D: Deserializer<'de>>(
@@ -180,6 +201,12 @@ fn deserialize_boc_config<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
 }
 
+fn deserialize_proofs_config<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<ProofsConfig, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
+}
+
 impl Default for ClientConfig {
     fn default() -> Self {
         Self {
@@ -187,6 +214,8 @@ impl Default for ClientConfig {
             crypto: Default::default(),
             abi: Default::default(),
             boc: Default::default(),
+            proofs: Default::default(),
+            local_storage_path: Default::default(),
         }
     }
 }

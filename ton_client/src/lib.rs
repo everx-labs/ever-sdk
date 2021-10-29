@@ -33,6 +33,7 @@ pub mod error;
 pub mod json_interface;
 pub mod net;
 pub mod processing;
+pub mod proofs;
 pub mod tvm;
 pub mod utils;
 
