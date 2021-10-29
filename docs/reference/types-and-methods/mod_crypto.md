@@ -1,272 +1,271 @@
 # Module crypto
 
-## Module crypto
-
 Crypto functions.
 
-### Functions
-
-[factorize](mod_crypto.md#factorize) – Integer factorization
-
-[modular_power](mod_crypto.md#modular_power) – Modular exponentiation
-
-[ton_crc16](mod_crypto.md#ton_crc16) – Calculates CRC16 using TON algorithm.
-
-[generate_random_bytes](mod_crypto.md#generate_random_bytes) – Generates random byte array of the specified length and returns it in `base64` format
-
-[convert_public_key_to_ton_safe_format](mod_crypto.md#convert_public_key_to_ton_safe_format) – Converts public key to ton safe_format
-
-[generate_random_sign_keys](mod_crypto.md#generate_random_sign_keys) – Generates random ed25519 key pair.
-
-[sign](mod_crypto.md#sign) – Signs a data using the provided keys.
-
-[verify_signature](mod_crypto.md#verify_signature) – Verifies signed data using the provided public key. Raises error if verification is failed.
-
-[sha256](mod_crypto.md#sha256) – Calculates SHA256 hash of the specified data.
-
-[sha512](mod_crypto.md#sha512) – Calculates SHA512 hash of the specified data.
-
-[scrypt](mod_crypto.md#scrypt) – Perform `scrypt` encryption
-
-[nacl_sign_keypair_from_secret_key](mod_crypto.md#nacl_sign_keypair_from_secret_key) – Generates a key pair for signing from the secret key
-
-[nacl_sign](mod_crypto.md#nacl_sign) – Signs data using the signer's secret key.
-
-[nacl_sign_open](mod_crypto.md#nacl_sign_open) – Verifies the signature and returns the unsigned message
-
-[nacl_sign_detached](mod_crypto.md#nacl_sign_detached) – Signs the message using the secret key and returns a signature.
-
-[nacl_sign_detached_verify](mod_crypto.md#nacl_sign_detached_verify) – Verifies the signature with public key and `unsigned` data.
-
-[nacl_box_keypair](mod_crypto.md#nacl_box_keypair) – Generates a random NaCl key pair
-
-[nacl_box_keypair_from_secret_key](mod_crypto.md#nacl_box_keypair_from_secret_key) – Generates key pair from a secret key
-
-[nacl_box](mod_crypto.md#nacl_box) – Public key authenticated encryption
-
-[nacl_box_open](mod_crypto.md#nacl_box_open) – Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.
-
-[nacl_secret_box](mod_crypto.md#nacl_secret_box) – Encrypt and authenticate message using nonce and secret key.
-
-[nacl_secret_box_open](mod_crypto.md#nacl_secret_box_open) – Decrypts and verifies cipher text using `nonce` and secret `key`.
-
-[mnemonic_words](mod_crypto.md#mnemonic_words) – Prints the list of words from the specified dictionary
-
-[mnemonic_from_random](mod_crypto.md#mnemonic_from_random) – Generates a random mnemonic
-
-[mnemonic_from_entropy](mod_crypto.md#mnemonic_from_entropy) – Generates mnemonic from pre-generated entropy
-
-[mnemonic_verify](mod_crypto.md#mnemonic_verify) – Validates a mnemonic phrase
-
-[mnemonic_derive_sign_keys](mod_crypto.md#mnemonic_derive_sign_keys) – Derives a key pair for signing from the seed phrase
-
-[hdkey_xprv_from_mnemonic](mod_crypto.md#hdkey_xprv_from_mnemonic) – Generates an extended master private key that will be the root for all the derived keys
-
-[hdkey_derive_from_xprv](mod_crypto.md#hdkey_derive_from_xprv) – Returns extended private key derived from the specified extended private key and child index
-
-[hdkey_derive_from_xprv_path](mod_crypto.md#hdkey_derive_from_xprv_path) – Derives the extended private key from the specified key and path
-
-[hdkey_secret_from_xprv](mod_crypto.md#hdkey_secret_from_xprv) – Extracts the private key from the serialized extended private key
-
-[hdkey_public_from_xprv](mod_crypto.md#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
-
-[chacha20](mod_crypto.md#chacha20) – Performs symmetric `chacha20` encryption.
-
-[register_signing_box](mod_crypto.md#register_signing_box) – Register an application implemented signing box.
-
-[get_signing_box](mod_crypto.md#get_signing_box) – Creates a default signing box implementation.
-
-[signing_box_get_public_key](mod_crypto.md#signing_box_get_public_key) – Returns public key of signing key pair.
-
-[signing_box_sign](mod_crypto.md#signing_box_sign) – Returns signed user data.
-
-[remove_signing_box](mod_crypto.md#remove_signing_box) – Removes signing box from SDK.
-
-[register_encryption_box](mod_crypto.md#register_encryption_box) – Register an application implemented encryption box.
-
-[remove_encryption_box](mod_crypto.md#remove_encryption_box) – Removes encryption box from SDK
-
-[encryption_box_get_info](mod_crypto.md#encryption_box_get_info) – Queries info from the given encryption box
-
-[encryption_box_encrypt](mod_crypto.md#encryption_box_encrypt) – Encrypts data using given encryption box Note.
-
-[encryption_box_decrypt](mod_crypto.md#encryption_box_decrypt) – Decrypts data using given encryption box Note.
-
-[create_encryption_box](mod_crypto.md#create_encryption_box) – Creates encryption box with specified algorithm
-
-### Types
-
-[CryptoErrorCode](mod_crypto.md#CryptoErrorCode)
-
-[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)
-
-[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)
-
-[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo) – Encryption box information
-
-[EncryptionAlgorithm](mod_crypto.md#EncryptionAlgorithm)
-
-[CipherMode](mod_crypto.md#CipherMode)
-
-[AesParams](mod_crypto.md#AesParams)
-
-[AesInfo](mod_crypto.md#AesInfo)
-
-[ParamsOfFactorize](mod_crypto.md#ParamsOfFactorize)
-
-[ResultOfFactorize](mod_crypto.md#ResultOfFactorize)
-
-[ParamsOfModularPower](mod_crypto.md#ParamsOfModularPower)
-
-[ResultOfModularPower](mod_crypto.md#ResultOfModularPower)
-
-[ParamsOfTonCrc16](mod_crypto.md#ParamsOfTonCrc16)
-
-[ResultOfTonCrc16](mod_crypto.md#ResultOfTonCrc16)
-
-[ParamsOfGenerateRandomBytes](mod_crypto.md#ParamsOfGenerateRandomBytes)
-
-[ResultOfGenerateRandomBytes](mod_crypto.md#ResultOfGenerateRandomBytes)
-
-[ParamsOfConvertPublicKeyToTonSafeFormat](mod_crypto.md#ParamsOfConvertPublicKeyToTonSafeFormat)
-
-[ResultOfConvertPublicKeyToTonSafeFormat](mod_crypto.md#ResultOfConvertPublicKeyToTonSafeFormat)
-
-[KeyPair](mod_crypto.md#KeyPair)
-
-[ParamsOfSign](mod_crypto.md#ParamsOfSign)
-
-[ResultOfSign](mod_crypto.md#ResultOfSign)
-
-[ParamsOfVerifySignature](mod_crypto.md#ParamsOfVerifySignature)
-
-[ResultOfVerifySignature](mod_crypto.md#ResultOfVerifySignature)
-
-[ParamsOfHash](mod_crypto.md#ParamsOfHash)
-
-[ResultOfHash](mod_crypto.md#ResultOfHash)
-
-[ParamsOfScrypt](mod_crypto.md#ParamsOfScrypt)
-
-[ResultOfScrypt](mod_crypto.md#ResultOfScrypt)
-
-[ParamsOfNaclSignKeyPairFromSecret](mod_crypto.md#ParamsOfNaclSignKeyPairFromSecret)
-
-[ParamsOfNaclSign](mod_crypto.md#ParamsOfNaclSign)
-
-[ResultOfNaclSign](mod_crypto.md#ResultOfNaclSign)
-
-[ParamsOfNaclSignOpen](mod_crypto.md#ParamsOfNaclSignOpen)
-
-[ResultOfNaclSignOpen](mod_crypto.md#ResultOfNaclSignOpen)
-
-[ResultOfNaclSignDetached](mod_crypto.md#ResultOfNaclSignDetached)
-
-[ParamsOfNaclSignDetachedVerify](mod_crypto.md#ParamsOfNaclSignDetachedVerify)
-
-[ResultOfNaclSignDetachedVerify](mod_crypto.md#ResultOfNaclSignDetachedVerify)
-
-[ParamsOfNaclBoxKeyPairFromSecret](mod_crypto.md#ParamsOfNaclBoxKeyPairFromSecret)
-
-[ParamsOfNaclBox](mod_crypto.md#ParamsOfNaclBox)
-
-[ResultOfNaclBox](mod_crypto.md#ResultOfNaclBox)
-
-[ParamsOfNaclBoxOpen](mod_crypto.md#ParamsOfNaclBoxOpen)
-
-[ResultOfNaclBoxOpen](mod_crypto.md#ResultOfNaclBoxOpen)
-
-[ParamsOfNaclSecretBox](mod_crypto.md#ParamsOfNaclSecretBox)
-
-[ParamsOfNaclSecretBoxOpen](mod_crypto.md#ParamsOfNaclSecretBoxOpen)
-
-[ParamsOfMnemonicWords](mod_crypto.md#ParamsOfMnemonicWords)
-
-[ResultOfMnemonicWords](mod_crypto.md#ResultOfMnemonicWords)
-
-[ParamsOfMnemonicFromRandom](mod_crypto.md#ParamsOfMnemonicFromRandom)
-
-[ResultOfMnemonicFromRandom](mod_crypto.md#ResultOfMnemonicFromRandom)
-
-[ParamsOfMnemonicFromEntropy](mod_crypto.md#ParamsOfMnemonicFromEntropy)
-
-[ResultOfMnemonicFromEntropy](mod_crypto.md#ResultOfMnemonicFromEntropy)
-
-[ParamsOfMnemonicVerify](mod_crypto.md#ParamsOfMnemonicVerify)
-
-[ResultOfMnemonicVerify](mod_crypto.md#ResultOfMnemonicVerify)
-
-[ParamsOfMnemonicDeriveSignKeys](mod_crypto.md#ParamsOfMnemonicDeriveSignKeys)
-
-[ParamsOfHDKeyXPrvFromMnemonic](mod_crypto.md#ParamsOfHDKeyXPrvFromMnemonic)
-
-[ResultOfHDKeyXPrvFromMnemonic](mod_crypto.md#ResultOfHDKeyXPrvFromMnemonic)
-
-[ParamsOfHDKeyDeriveFromXPrv](mod_crypto.md#ParamsOfHDKeyDeriveFromXPrv)
-
-[ResultOfHDKeyDeriveFromXPrv](mod_crypto.md#ResultOfHDKeyDeriveFromXPrv)
-
-[ParamsOfHDKeyDeriveFromXPrvPath](mod_crypto.md#ParamsOfHDKeyDeriveFromXPrvPath)
-
-[ResultOfHDKeyDeriveFromXPrvPath](mod_crypto.md#ResultOfHDKeyDeriveFromXPrvPath)
-
-[ParamsOfHDKeySecretFromXPrv](mod_crypto.md#ParamsOfHDKeySecretFromXPrv)
-
-[ResultOfHDKeySecretFromXPrv](mod_crypto.md#ResultOfHDKeySecretFromXPrv)
-
-[ParamsOfHDKeyPublicFromXPrv](mod_crypto.md#ParamsOfHDKeyPublicFromXPrv)
-
-[ResultOfHDKeyPublicFromXPrv](mod_crypto.md#ResultOfHDKeyPublicFromXPrv)
-
-[ParamsOfChaCha20](mod_crypto.md#ParamsOfChaCha20)
-
-[ResultOfChaCha20](mod_crypto.md#ResultOfChaCha20)
-
-[RegisteredSigningBox](mod_crypto.md#RegisteredSigningBox)
-
-[ParamsOfAppSigningBox](mod_crypto.md#ParamsOfAppSigningBox) – Signing box callbacks.
-
-[ResultOfAppSigningBox](mod_crypto.md#ResultOfAppSigningBox) – Returning values from signing box callbacks.
-
-[ResultOfSigningBoxGetPublicKey](mod_crypto.md#ResultOfSigningBoxGetPublicKey)
-
-[ParamsOfSigningBoxSign](mod_crypto.md#ParamsOfSigningBoxSign)
-
-[ResultOfSigningBoxSign](mod_crypto.md#ResultOfSigningBoxSign)
-
-[RegisteredEncryptionBox](mod_crypto.md#RegisteredEncryptionBox)
-
-[ParamsOfAppEncryptionBox](mod_crypto.md#ParamsOfAppEncryptionBox) – Encryption box callbacks.
-
-[ResultOfAppEncryptionBox](mod_crypto.md#ResultOfAppEncryptionBox) – Returning values from signing box callbacks.
-
-[ParamsOfEncryptionBoxGetInfo](mod_crypto.md#ParamsOfEncryptionBoxGetInfo)
-
-[ResultOfEncryptionBoxGetInfo](mod_crypto.md#ResultOfEncryptionBoxGetInfo)
-
-[ParamsOfEncryptionBoxEncrypt](mod_crypto.md#ParamsOfEncryptionBoxEncrypt)
-
-[ResultOfEncryptionBoxEncrypt](mod_crypto.md#ResultOfEncryptionBoxEncrypt)
-
-[ParamsOfEncryptionBoxDecrypt](mod_crypto.md#ParamsOfEncryptionBoxDecrypt)
-
-[ResultOfEncryptionBoxDecrypt](mod_crypto.md#ResultOfEncryptionBoxDecrypt)
-
-[ParamsOfCreateEncryptionBox](mod_crypto.md#ParamsOfCreateEncryptionBox)
-
-[AppSigningBox](mod_crypto.md#AppSigningBox)
-
-[AppEncryptionBox](mod_crypto.md#AppEncryptionBox)
 
 ## Functions
+[factorize](#factorize) – Integer factorization
 
-### factorize
+[modular_power](#modular_power) – Modular exponentiation
+
+[ton_crc16](#ton_crc16) – Calculates CRC16 using TON algorithm.
+
+[generate_random_bytes](#generate_random_bytes) – Generates random byte array of the specified length and returns it in `base64` format
+
+[convert_public_key_to_ton_safe_format](#convert_public_key_to_ton_safe_format) – Converts public key to ton safe_format
+
+[generate_random_sign_keys](#generate_random_sign_keys) – Generates random ed25519 key pair.
+
+[sign](#sign) – Signs a data using the provided keys.
+
+[verify_signature](#verify_signature) – Verifies signed data using the provided public key. Raises error if verification is failed.
+
+[sha256](#sha256) – Calculates SHA256 hash of the specified data.
+
+[sha512](#sha512) – Calculates SHA512 hash of the specified data.
+
+[scrypt](#scrypt) – Perform `scrypt` encryption
+
+[nacl_sign_keypair_from_secret_key](#nacl_sign_keypair_from_secret_key) – Generates a key pair for signing from the secret key
+
+[nacl_sign](#nacl_sign) – Signs data using the signer's secret key.
+
+[nacl_sign_open](#nacl_sign_open) – Verifies the signature and returns the unsigned message
+
+[nacl_sign_detached](#nacl_sign_detached) – Signs the message using the secret key and returns a signature.
+
+[nacl_sign_detached_verify](#nacl_sign_detached_verify) – Verifies the signature with public key and `unsigned` data.
+
+[nacl_box_keypair](#nacl_box_keypair) – Generates a random NaCl key pair
+
+[nacl_box_keypair_from_secret_key](#nacl_box_keypair_from_secret_key) – Generates key pair from a secret key
+
+[nacl_box](#nacl_box) – Public key authenticated encryption
+
+[nacl_box_open](#nacl_box_open) – Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.
+
+[nacl_secret_box](#nacl_secret_box) – Encrypt and authenticate message using nonce and secret key.
+
+[nacl_secret_box_open](#nacl_secret_box_open) – Decrypts and verifies cipher text using `nonce` and secret `key`.
+
+[mnemonic_words](#mnemonic_words) – Prints the list of words from the specified dictionary
+
+[mnemonic_from_random](#mnemonic_from_random) – Generates a random mnemonic
+
+[mnemonic_from_entropy](#mnemonic_from_entropy) – Generates mnemonic from pre-generated entropy
+
+[mnemonic_verify](#mnemonic_verify) – Validates a mnemonic phrase
+
+[mnemonic_derive_sign_keys](#mnemonic_derive_sign_keys) – Derives a key pair for signing from the seed phrase
+
+[hdkey_xprv_from_mnemonic](#hdkey_xprv_from_mnemonic) – Generates an extended master private key that will be the root for all the derived keys
+
+[hdkey_derive_from_xprv](#hdkey_derive_from_xprv) – Returns extended private key derived from the specified extended private key and child index
+
+[hdkey_derive_from_xprv_path](#hdkey_derive_from_xprv_path) – Derives the extended private key from the specified key and path
+
+[hdkey_secret_from_xprv](#hdkey_secret_from_xprv) – Extracts the private key from the serialized extended private key
+
+[hdkey_public_from_xprv](#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
+
+[chacha20](#chacha20) – Performs symmetric `chacha20` encryption.
+
+[register_signing_box](#register_signing_box) – Register an application implemented signing box.
+
+[get_signing_box](#get_signing_box) – Creates a default signing box implementation.
+
+[signing_box_get_public_key](#signing_box_get_public_key) – Returns public key of signing key pair.
+
+[signing_box_sign](#signing_box_sign) – Returns signed user data.
+
+[remove_signing_box](#remove_signing_box) – Removes signing box from SDK.
+
+[register_encryption_box](#register_encryption_box) – Register an application implemented encryption box.
+
+[remove_encryption_box](#remove_encryption_box) – Removes encryption box from SDK
+
+[encryption_box_get_info](#encryption_box_get_info) – Queries info from the given encryption box
+
+[encryption_box_encrypt](#encryption_box_encrypt) – Encrypts data using given encryption box Note.
+
+[encryption_box_decrypt](#encryption_box_decrypt) – Decrypts data using given encryption box Note.
+
+[create_encryption_box](#create_encryption_box) – Creates encryption box with specified algorithm
+
+## Types
+[CryptoErrorCode](#CryptoErrorCode)
+
+[SigningBoxHandle](#SigningBoxHandle)
+
+[EncryptionBoxHandle](#EncryptionBoxHandle)
+
+[EncryptionBoxInfo](#EncryptionBoxInfo) – Encryption box information
+
+[EncryptionAlgorithm](#EncryptionAlgorithm)
+
+[CipherMode](#CipherMode)
+
+[AesParams](#AesParams)
+
+[AesInfo](#AesInfo)
+
+[ParamsOfFactorize](#ParamsOfFactorize)
+
+[ResultOfFactorize](#ResultOfFactorize)
+
+[ParamsOfModularPower](#ParamsOfModularPower)
+
+[ResultOfModularPower](#ResultOfModularPower)
+
+[ParamsOfTonCrc16](#ParamsOfTonCrc16)
+
+[ResultOfTonCrc16](#ResultOfTonCrc16)
+
+[ParamsOfGenerateRandomBytes](#ParamsOfGenerateRandomBytes)
+
+[ResultOfGenerateRandomBytes](#ResultOfGenerateRandomBytes)
+
+[ParamsOfConvertPublicKeyToTonSafeFormat](#ParamsOfConvertPublicKeyToTonSafeFormat)
+
+[ResultOfConvertPublicKeyToTonSafeFormat](#ResultOfConvertPublicKeyToTonSafeFormat)
+
+[KeyPair](#KeyPair)
+
+[ParamsOfSign](#ParamsOfSign)
+
+[ResultOfSign](#ResultOfSign)
+
+[ParamsOfVerifySignature](#ParamsOfVerifySignature)
+
+[ResultOfVerifySignature](#ResultOfVerifySignature)
+
+[ParamsOfHash](#ParamsOfHash)
+
+[ResultOfHash](#ResultOfHash)
+
+[ParamsOfScrypt](#ParamsOfScrypt)
+
+[ResultOfScrypt](#ResultOfScrypt)
+
+[ParamsOfNaclSignKeyPairFromSecret](#ParamsOfNaclSignKeyPairFromSecret)
+
+[ParamsOfNaclSign](#ParamsOfNaclSign)
+
+[ResultOfNaclSign](#ResultOfNaclSign)
+
+[ParamsOfNaclSignOpen](#ParamsOfNaclSignOpen)
+
+[ResultOfNaclSignOpen](#ResultOfNaclSignOpen)
+
+[ResultOfNaclSignDetached](#ResultOfNaclSignDetached)
+
+[ParamsOfNaclSignDetachedVerify](#ParamsOfNaclSignDetachedVerify)
+
+[ResultOfNaclSignDetachedVerify](#ResultOfNaclSignDetachedVerify)
+
+[ParamsOfNaclBoxKeyPairFromSecret](#ParamsOfNaclBoxKeyPairFromSecret)
+
+[ParamsOfNaclBox](#ParamsOfNaclBox)
+
+[ResultOfNaclBox](#ResultOfNaclBox)
+
+[ParamsOfNaclBoxOpen](#ParamsOfNaclBoxOpen)
+
+[ResultOfNaclBoxOpen](#ResultOfNaclBoxOpen)
+
+[ParamsOfNaclSecretBox](#ParamsOfNaclSecretBox)
+
+[ParamsOfNaclSecretBoxOpen](#ParamsOfNaclSecretBoxOpen)
+
+[ParamsOfMnemonicWords](#ParamsOfMnemonicWords)
+
+[ResultOfMnemonicWords](#ResultOfMnemonicWords)
+
+[ParamsOfMnemonicFromRandom](#ParamsOfMnemonicFromRandom)
+
+[ResultOfMnemonicFromRandom](#ResultOfMnemonicFromRandom)
+
+[ParamsOfMnemonicFromEntropy](#ParamsOfMnemonicFromEntropy)
+
+[ResultOfMnemonicFromEntropy](#ResultOfMnemonicFromEntropy)
+
+[ParamsOfMnemonicVerify](#ParamsOfMnemonicVerify)
+
+[ResultOfMnemonicVerify](#ResultOfMnemonicVerify)
+
+[ParamsOfMnemonicDeriveSignKeys](#ParamsOfMnemonicDeriveSignKeys)
+
+[ParamsOfHDKeyXPrvFromMnemonic](#ParamsOfHDKeyXPrvFromMnemonic)
+
+[ResultOfHDKeyXPrvFromMnemonic](#ResultOfHDKeyXPrvFromMnemonic)
+
+[ParamsOfHDKeyDeriveFromXPrv](#ParamsOfHDKeyDeriveFromXPrv)
+
+[ResultOfHDKeyDeriveFromXPrv](#ResultOfHDKeyDeriveFromXPrv)
+
+[ParamsOfHDKeyDeriveFromXPrvPath](#ParamsOfHDKeyDeriveFromXPrvPath)
+
+[ResultOfHDKeyDeriveFromXPrvPath](#ResultOfHDKeyDeriveFromXPrvPath)
+
+[ParamsOfHDKeySecretFromXPrv](#ParamsOfHDKeySecretFromXPrv)
+
+[ResultOfHDKeySecretFromXPrv](#ResultOfHDKeySecretFromXPrv)
+
+[ParamsOfHDKeyPublicFromXPrv](#ParamsOfHDKeyPublicFromXPrv)
+
+[ResultOfHDKeyPublicFromXPrv](#ResultOfHDKeyPublicFromXPrv)
+
+[ParamsOfChaCha20](#ParamsOfChaCha20)
+
+[ResultOfChaCha20](#ResultOfChaCha20)
+
+[RegisteredSigningBox](#RegisteredSigningBox)
+
+[ParamsOfAppSigningBox](#ParamsOfAppSigningBox) – Signing box callbacks.
+
+[ResultOfAppSigningBox](#ResultOfAppSigningBox) – Returning values from signing box callbacks.
+
+[ResultOfSigningBoxGetPublicKey](#ResultOfSigningBoxGetPublicKey)
+
+[ParamsOfSigningBoxSign](#ParamsOfSigningBoxSign)
+
+[ResultOfSigningBoxSign](#ResultOfSigningBoxSign)
+
+[RegisteredEncryptionBox](#RegisteredEncryptionBox)
+
+[ParamsOfAppEncryptionBox](#ParamsOfAppEncryptionBox) – Encryption box callbacks.
+
+[ResultOfAppEncryptionBox](#ResultOfAppEncryptionBox) – Returning values from signing box callbacks.
+
+[ParamsOfEncryptionBoxGetInfo](#ParamsOfEncryptionBoxGetInfo)
+
+[ResultOfEncryptionBoxGetInfo](#ResultOfEncryptionBoxGetInfo)
+
+[ParamsOfEncryptionBoxEncrypt](#ParamsOfEncryptionBoxEncrypt)
+
+[ResultOfEncryptionBoxEncrypt](#ResultOfEncryptionBoxEncrypt)
+
+[ParamsOfEncryptionBoxDecrypt](#ParamsOfEncryptionBoxDecrypt)
+
+[ResultOfEncryptionBoxDecrypt](#ResultOfEncryptionBoxDecrypt)
+
+[ParamsOfCreateEncryptionBox](#ParamsOfCreateEncryptionBox)
+
+[AppSigningBox](#AppSigningBox)
+
+[AppEncryptionBox](#AppEncryptionBox)
+
+
+# Functions
+## factorize
 
 Integer factorization
 
-Performs prime factorization – decomposition of a composite number into a product of smaller prime integers (factors). See \[[https://en.wikipedia.org/wiki/Integer_factorization](https://en.wikipedia.org/wiki/Integer_factorization)]
+Performs prime factorization – decomposition of a composite number
+into a product of smaller prime integers (factors).
+See [https://en.wikipedia.org/wiki/Integer_factorization]
 
-```typescript
+```ts
 type ParamsOfFactorize = {
     composite: string
 }
@@ -279,22 +278,23 @@ function factorize(
     params: ParamsOfFactorize,
 ): Promise<ResultOfFactorize>;
 ```
+### Parameters
+- `composite`: _string_ – Hexadecimal representation of u64 composite number.
 
-#### Parameters
 
-* `composite`: _string_ – Hexadecimal representation of u64 composite number.
+### Result
 
-#### Result
+- `factors`: _string[]_ – Two factors of composite or empty if composite can't be factorized.
 
-* `factors`: _string\[]_ – Two factors of composite or empty if composite can't be factorized.
 
-### modular_power
+## modular_power
 
 Modular exponentiation
 
-Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`). See \[[https://en.wikipedia.org/wiki/Modular_exponentiation](https://en.wikipedia.org/wiki/Modular_exponentiation)]
+Performs modular exponentiation for big integers (`base`^`exponent` mod `modulus`).
+See [https://en.wikipedia.org/wiki/Modular_exponentiation]
 
-```typescript
+```ts
 type ParamsOfModularPower = {
     base: string,
     exponent: string,
@@ -309,22 +309,22 @@ function modular_power(
     params: ParamsOfModularPower,
 ): Promise<ResultOfModularPower>;
 ```
+### Parameters
+- `base`: _string_ – `base` argument of calculation.
+- `exponent`: _string_ – `exponent` argument of calculation.
+- `modulus`: _string_ – `modulus` argument of calculation.
 
-#### Parameters
 
-* `base`: _string_ – `base` argument of calculation.
-* `exponent`: _string_ – `exponent` argument of calculation.
-* `modulus`: _string_ – `modulus` argument of calculation.
+### Result
 
-#### Result
+- `modular_power`: _string_ – Result of modular exponentiation
 
-* `modular_power`: _string_ – Result of modular exponentiation
 
-### ton_crc16
+## ton_crc16
 
 Calculates CRC16 using TON algorithm.
 
-```typescript
+```ts
 type ParamsOfTonCrc16 = {
     data: string
 }
@@ -337,23 +337,21 @@ function ton_crc16(
     params: ParamsOfTonCrc16,
 ): Promise<ResultOfTonCrc16>;
 ```
+### Parameters
+- `data`: _string_ – Input data for CRC calculation.
+<br>Encoded with `base64`.
 
-#### Parameters
 
-*   `data`: _string_ – Input data for CRC calculation.
+### Result
 
-    \
-    Encoded with `base64`.
+- `crc`: _number_ – Calculated CRC for input data.
 
-#### Result
 
-* `crc`: _number_ – Calculated CRC for input data.
-
-### generate_random_bytes
+## generate_random_bytes
 
 Generates random byte array of the specified length and returns it in `base64` format
 
-```typescript
+```ts
 type ParamsOfGenerateRandomBytes = {
     length: number
 }
@@ -366,20 +364,20 @@ function generate_random_bytes(
     params: ParamsOfGenerateRandomBytes,
 ): Promise<ResultOfGenerateRandomBytes>;
 ```
+### Parameters
+- `length`: _number_ – Size of random byte array.
 
-#### Parameters
 
-* `length`: _number_ – Size of random byte array.
+### Result
 
-#### Result
+- `bytes`: _string_ – Generated bytes encoded in `base64`.
 
-* `bytes`: _string_ – Generated bytes encoded in `base64`.
 
-### convert_public_key_to_ton_safe_format
+## convert_public_key_to_ton_safe_format
 
 Converts public key to ton safe_format
 
-```typescript
+```ts
 type ParamsOfConvertPublicKeyToTonSafeFormat = {
     public_key: string
 }
@@ -392,20 +390,20 @@ function convert_public_key_to_ton_safe_format(
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
 ): Promise<ResultOfConvertPublicKeyToTonSafeFormat>;
 ```
+### Parameters
+- `public_key`: _string_ – Public key - 64 symbols hex string
 
-#### Parameters
 
-* `public_key`: _string_ – Public key - 64 symbols hex string
+### Result
 
-#### Result
+- `ton_public_key`: _string_ – Public key represented in TON safe format.
 
-* `ton_public_key`: _string_ – Public key represented in TON safe format.
 
-### generate_random_sign_keys
+## generate_random_sign_keys
 
 Generates random ed25519 key pair.
 
-```typescript
+```ts
 type KeyPair = {
     public: string,
     secret: string
@@ -414,16 +412,18 @@ type KeyPair = {
 function generate_random_sign_keys(): Promise<KeyPair>;
 ```
 
-#### Result
 
-* `public`: _string_ – Public key - 64 symbols hex string
-* `secret`: _string_ – Private key - u64 symbols hex string
+### Result
 
-### sign
+- `public`: _string_ – Public key - 64 symbols hex string
+- `secret`: _string_ – Private key - u64 symbols hex string
+
+
+## sign
 
 Signs a data using the provided keys.
 
-```typescript
+```ts
 type ParamsOfSign = {
     unsigned: string,
     keys: KeyPair
@@ -438,22 +438,22 @@ function sign(
     params: ParamsOfSign,
 ): Promise<ResultOfSign>;
 ```
+### Parameters
+- `unsigned`: _string_ – Data that must be signed encoded in `base64`.
+- `keys`: _[KeyPair](mod_crypto.md#KeyPair)_ – Sign keys.
 
-#### Parameters
 
-* `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-* `keys`: [_KeyPair_](mod_crypto.md#KeyPair) – Sign keys.
+### Result
 
-#### Result
+- `signed`: _string_ – Signed data combined with signature encoded in `base64`.
+- `signature`: _string_ – Signature encoded in `hex`.
 
-* `signed`: _string_ – Signed data combined with signature encoded in `base64`.
-* `signature`: _string_ – Signature encoded in `hex`.
 
-### verify_signature
+## verify_signature
 
 Verifies signed data using the provided public key. Raises error if verification is failed.
 
-```typescript
+```ts
 type ParamsOfVerifySignature = {
     signed: string,
     public: string
@@ -467,21 +467,21 @@ function verify_signature(
     params: ParamsOfVerifySignature,
 ): Promise<ResultOfVerifySignature>;
 ```
+### Parameters
+- `signed`: _string_ – Signed data that must be verified encoded in `base64`.
+- `public`: _string_ – Signer's public key - 64 symbols hex string
 
-#### Parameters
 
-* `signed`: _string_ – Signed data that must be verified encoded in `base64`.
-* `public`: _string_ – Signer's public key - 64 symbols hex string
+### Result
 
-#### Result
+- `unsigned`: _string_ – Unsigned data encoded in `base64`.
 
-* `unsigned`: _string_ – Unsigned data encoded in `base64`.
 
-### sha256
+## sha256
 
 Calculates SHA256 hash of the specified data.
 
-```typescript
+```ts
 type ParamsOfHash = {
     data: string
 }
@@ -494,26 +494,22 @@ function sha256(
     params: ParamsOfHash,
 ): Promise<ResultOfHash>;
 ```
+### Parameters
+- `data`: _string_ – Input data for hash calculation.
+<br>Encoded with `base64`.
 
-#### Parameters
 
-*   `data`: _string_ – Input data for hash calculation.
+### Result
 
-    \
-    Encoded with `base64`.
+- `hash`: _string_ – Hash of input `data`.
+<br>Encoded with 'hex'.
 
-#### Result
 
-*   `hash`: _string_ – Hash of input `data`.
-
-    \
-    Encoded with 'hex'.
-
-### sha512
+## sha512
 
 Calculates SHA512 hash of the specified data.
 
-```typescript
+```ts
 type ParamsOfHash = {
     data: string
 }
@@ -526,44 +522,38 @@ function sha512(
     params: ParamsOfHash,
 ): Promise<ResultOfHash>;
 ```
+### Parameters
+- `data`: _string_ – Input data for hash calculation.
+<br>Encoded with `base64`.
 
-#### Parameters
 
-*   `data`: _string_ – Input data for hash calculation.
+### Result
 
-    \
-    Encoded with `base64`.
+- `hash`: _string_ – Hash of input `data`.
+<br>Encoded with 'hex'.
 
-#### Result
 
-*   `hash`: _string_ – Hash of input `data`.
-
-    \
-    Encoded with 'hex'.
-
-### scrypt
+## scrypt
 
 Perform `scrypt` encryption
 
-Derives key from `password` and `key` using `scrypt` algorithm. See \[[https://en.wikipedia.org/wiki/Scrypt](https://en.wikipedia.org/wiki/Scrypt)].
+Derives key from `password` and `key` using `scrypt` algorithm.
+See [https://en.wikipedia.org/wiki/Scrypt].
 
-## Arguments
+# Arguments
+- `log_n` - The log2 of the Scrypt parameter `N`
+- `r` - The Scrypt parameter `r`
+- `p` - The Scrypt parameter `p`
+# Conditions
+- `log_n` must be less than `64`
+- `r` must be greater than `0` and less than or equal to `4294967295`
+- `p` must be greater than `0` and less than `4294967295`
+# Recommended values sufficient for most use-cases
+- `log_n = 15` (`n = 32768`)
+- `r = 8`
+- `p = 1`
 
-* `log_n` - The log2 of the Scrypt parameter `N`
-* `r` - The Scrypt parameter `r`
-*   `p` - The Scrypt parameter `p`
-
-    **Conditions**
-* `log_n` must be less than `64`
-* `r` must be greater than `0` and less than or equal to `4294967295`
-*   `p` must be greater than `0` and less than `4294967295`
-
-    **Recommended values sufficient for most use-cases**
-* `log_n = 15` (`n = 32768`)
-* `r = 8`
-* `p = 1`
-
-```typescript
+```ts
 type ParamsOfScrypt = {
     password: string,
     salt: string,
@@ -581,30 +571,30 @@ function scrypt(
     params: ParamsOfScrypt,
 ): Promise<ResultOfScrypt>;
 ```
+### Parameters
+- `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
+- `salt`: _string_ – Salt bytes that modify the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
+- `log_n`: _number_ – CPU/memory cost parameter
+- `r`: _number_ – The block size parameter, which fine-tunes sequential memory read size and performance.
+- `p`: _number_ – Parallelization parameter.
+- `dk_len`: _number_ – Intended output length in octets of the derived key.
 
-#### Parameters
 
-* `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
-* `salt`: _string_ – Salt bytes that modify the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
-* `log_n`: _number_ – CPU/memory cost parameter
-* `r`: _number_ – The block size parameter, which fine-tunes sequential memory read size and performance.
-* `p`: _number_ – Parallelization parameter.
-* `dk_len`: _number_ – Intended output length in octets of the derived key.
+### Result
 
-#### Result
+- `key`: _string_ – Derived key.
+<br>Encoded with `hex`.
 
-*   `key`: _string_ – Derived key.
 
-    \
-    Encoded with `hex`.
-
-### nacl_sign_keypair_from_secret_key
+## nacl_sign_keypair_from_secret_key
 
 Generates a key pair for signing from the secret key
 
-**NOTE:** In the result the secret key is actually the concatenation of secret and public keys (128 symbols hex string) by design of [NaCL](http://nacl.cr.yp.to/sign.html). See also [the stackexchange question](https://crypto.stackexchange.com/questions/54353/).
+**NOTE:** In the result the secret key is actually the concatenation
+of secret and public keys (128 symbols hex string) by design of [NaCL](http://nacl.cr.yp.to/sign.html).
+See also [the stackexchange question](https://crypto.stackexchange.com/questions/54353/).
 
-```typescript
+```ts
 type ParamsOfNaclSignKeyPairFromSecret = {
     secret: string
 }
@@ -618,21 +608,21 @@ function nacl_sign_keypair_from_secret_key(
     params: ParamsOfNaclSignKeyPairFromSecret,
 ): Promise<KeyPair>;
 ```
+### Parameters
+- `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
-#### Parameters
 
-* `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
+### Result
 
-#### Result
+- `public`: _string_ – Public key - 64 symbols hex string
+- `secret`: _string_ – Private key - u64 symbols hex string
 
-* `public`: _string_ – Public key - 64 symbols hex string
-* `secret`: _string_ – Private key - u64 symbols hex string
 
-### nacl_sign
+## nacl_sign
 
 Signs data using the signer's secret key.
 
-```typescript
+```ts
 type ParamsOfNaclSign = {
     unsigned: string,
     secret: string
@@ -646,25 +636,26 @@ function nacl_sign(
     params: ParamsOfNaclSign,
 ): Promise<ResultOfNaclSign>;
 ```
+### Parameters
+- `unsigned`: _string_ – Data that must be signed encoded in `base64`.
+- `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
 
-#### Parameters
 
-* `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-* `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
+### Result
 
-#### Result
+- `signed`: _string_ – Signed data, encoded in `base64`.
 
-* `signed`: _string_ – Signed data, encoded in `base64`.
 
-### nacl_sign_open
+## nacl_sign_open
 
 Verifies the signature and returns the unsigned message
 
-Verifies the signature in `signed` using the signer's public key `public` and returns the message `unsigned`.
+Verifies the signature in `signed` using the signer's public key `public`
+and returns the message `unsigned`.
 
 If the signature fails verification, crypto_sign_open raises an exception.
 
-```typescript
+```ts
 type ParamsOfNaclSignOpen = {
     signed: string,
     public: string
@@ -678,26 +669,25 @@ function nacl_sign_open(
     params: ParamsOfNaclSignOpen,
 ): Promise<ResultOfNaclSignOpen>;
 ```
+### Parameters
+- `signed`: _string_ – Signed data that must be unsigned.
+<br>Encoded with `base64`.
+- `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string
 
-#### Parameters
 
-*   `signed`: _string_ – Signed data that must be unsigned.
+### Result
 
-    \
-    Encoded with `base64`.
-* `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string
+- `unsigned`: _string_ – Unsigned data, encoded in `base64`.
 
-#### Result
 
-* `unsigned`: _string_ – Unsigned data, encoded in `base64`.
-
-### nacl_sign_detached
+## nacl_sign_detached
 
 Signs the message using the secret key and returns a signature.
 
-Signs the message `unsigned` using the secret key `secret` and returns a signature `signature`.
+Signs the message `unsigned` using the secret key `secret`
+and returns a signature `signature`.
 
-```typescript
+```ts
 type ParamsOfNaclSign = {
     unsigned: string,
     secret: string
@@ -711,21 +701,21 @@ function nacl_sign_detached(
     params: ParamsOfNaclSign,
 ): Promise<ResultOfNaclSignDetached>;
 ```
+### Parameters
+- `unsigned`: _string_ – Data that must be signed encoded in `base64`.
+- `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
 
-#### Parameters
 
-* `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-* `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
+### Result
 
-#### Result
+- `signature`: _string_ – Signature encoded in `hex`.
 
-* `signature`: _string_ – Signature encoded in `hex`.
 
-### nacl_sign_detached_verify
+## nacl_sign_detached_verify
 
 Verifies the signature with public key and `unsigned` data.
 
-```typescript
+```ts
 type ParamsOfNaclSignDetachedVerify = {
     unsigned: string,
     signature: string,
@@ -740,28 +730,24 @@ function nacl_sign_detached_verify(
     params: ParamsOfNaclSignDetachedVerify,
 ): Promise<ResultOfNaclSignDetachedVerify>;
 ```
+### Parameters
+- `unsigned`: _string_ – Unsigned data that must be verified.
+<br>Encoded with `base64`.
+- `signature`: _string_ – Signature that must be verified.
+<br>Encoded with `hex`.
+- `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string.
 
-#### Parameters
 
-*   `unsigned`: _string_ – Unsigned data that must be verified.
+### Result
 
-    \
-    Encoded with `base64`.
-*   `signature`: _string_ – Signature that must be verified.
+- `succeeded`: _boolean_ – `true` if verification succeeded or `false` if it failed
 
-    \
-    Encoded with `hex`.
-* `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string.
 
-#### Result
-
-* `succeeded`: _boolean_ – `true` if verification succeeded or `false` if it failed
-
-### nacl_box_keypair
+## nacl_box_keypair
 
 Generates a random NaCl key pair
 
-```typescript
+```ts
 type KeyPair = {
     public: string,
     secret: string
@@ -770,16 +756,18 @@ type KeyPair = {
 function nacl_box_keypair(): Promise<KeyPair>;
 ```
 
-#### Result
 
-* `public`: _string_ – Public key - 64 symbols hex string
-* `secret`: _string_ – Private key - u64 symbols hex string
+### Result
 
-### nacl_box_keypair_from_secret_key
+- `public`: _string_ – Public key - 64 symbols hex string
+- `secret`: _string_ – Private key - u64 symbols hex string
+
+
+## nacl_box_keypair_from_secret_key
 
 Generates key pair from a secret key
 
-```typescript
+```ts
 type ParamsOfNaclBoxKeyPairFromSecret = {
     secret: string
 }
@@ -793,23 +781,24 @@ function nacl_box_keypair_from_secret_key(
     params: ParamsOfNaclBoxKeyPairFromSecret,
 ): Promise<KeyPair>;
 ```
+### Parameters
+- `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
-#### Parameters
 
-* `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
+### Result
 
-#### Result
+- `public`: _string_ – Public key - 64 symbols hex string
+- `secret`: _string_ – Private key - u64 symbols hex string
 
-* `public`: _string_ – Public key - 64 symbols hex string
-* `secret`: _string_ – Private key - u64 symbols hex string
 
-### nacl_box
+## nacl_box
 
 Public key authenticated encryption
 
-Encrypt and authenticate a message using the senders secret key, the receivers public key, and a nonce.
+Encrypt and authenticate a message using the senders secret key, the receivers public
+key, and a nonce.
 
-```typescript
+```ts
 type ParamsOfNaclBox = {
     decrypted: string,
     nonce: string,
@@ -825,23 +814,23 @@ function nacl_box(
     params: ParamsOfNaclBox,
 ): Promise<ResultOfNaclBox>;
 ```
+### Parameters
+- `decrypted`: _string_ – Data that must be encrypted encoded in `base64`.
+- `nonce`: _string_ – Nonce, encoded in `hex`
+- `their_public`: _string_ – Receiver's public key - unprefixed 0-padded to 64 symbols hex string
+- `secret`: _string_ – Sender's private key - unprefixed 0-padded to 64 symbols hex string
 
-#### Parameters
 
-* `decrypted`: _string_ – Data that must be encrypted encoded in `base64`.
-* `nonce`: _string_ – Nonce, encoded in `hex`
-* `their_public`: _string_ – Receiver's public key - unprefixed 0-padded to 64 symbols hex string
-* `secret`: _string_ – Sender's private key - unprefixed 0-padded to 64 symbols hex string
+### Result
 
-#### Result
+- `encrypted`: _string_ – Encrypted data encoded in `base64`.
 
-* `encrypted`: _string_ – Encrypted data encoded in `base64`.
 
-### nacl_box_open
+## nacl_box_open
 
 Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.
 
-```typescript
+```ts
 type ParamsOfNaclBoxOpen = {
     encrypted: string,
     nonce: string,
@@ -857,26 +846,24 @@ function nacl_box_open(
     params: ParamsOfNaclBoxOpen,
 ): Promise<ResultOfNaclBoxOpen>;
 ```
+### Parameters
+- `encrypted`: _string_ – Data that must be decrypted.
+<br>Encoded with `base64`.
+- `nonce`: _string_
+- `their_public`: _string_ – Sender's public key - unprefixed 0-padded to 64 symbols hex string
+- `secret`: _string_ – Receiver's private key - unprefixed 0-padded to 64 symbols hex string
 
-#### Parameters
 
-*   `encrypted`: _string_ – Data that must be decrypted.
+### Result
 
-    \
-    Encoded with `base64`.
-* `nonce`: _string_
-* `their_public`: _string_ – Sender's public key - unprefixed 0-padded to 64 symbols hex string
-* `secret`: _string_ – Receiver's private key - unprefixed 0-padded to 64 symbols hex string
+- `decrypted`: _string_ – Decrypted data encoded in `base64`.
 
-#### Result
 
-* `decrypted`: _string_ – Decrypted data encoded in `base64`.
-
-### nacl_secret_box
+## nacl_secret_box
 
 Encrypt and authenticate message using nonce and secret key.
 
-```typescript
+```ts
 type ParamsOfNaclSecretBox = {
     decrypted: string,
     nonce: string,
@@ -891,25 +878,23 @@ function nacl_secret_box(
     params: ParamsOfNaclSecretBox,
 ): Promise<ResultOfNaclBox>;
 ```
+### Parameters
+- `decrypted`: _string_ – Data that must be encrypted.
+<br>Encoded with `base64`.
+- `nonce`: _string_ – Nonce in `hex`
+- `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
-#### Parameters
 
-*   `decrypted`: _string_ – Data that must be encrypted.
+### Result
 
-    \
-    Encoded with `base64`.
-* `nonce`: _string_ – Nonce in `hex`
-* `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
+- `encrypted`: _string_ – Encrypted data encoded in `base64`.
 
-#### Result
 
-* `encrypted`: _string_ – Encrypted data encoded in `base64`.
-
-### nacl_secret_box_open
+## nacl_secret_box_open
 
 Decrypts and verifies cipher text using `nonce` and secret `key`.
 
-```typescript
+```ts
 type ParamsOfNaclSecretBoxOpen = {
     encrypted: string,
     nonce: string,
@@ -924,25 +909,23 @@ function nacl_secret_box_open(
     params: ParamsOfNaclSecretBoxOpen,
 ): Promise<ResultOfNaclBoxOpen>;
 ```
+### Parameters
+- `encrypted`: _string_ – Data that must be decrypted.
+<br>Encoded with `base64`.
+- `nonce`: _string_ – Nonce in `hex`
+- `key`: _string_ – Public key - unprefixed 0-padded to 64 symbols hex string
 
-#### Parameters
 
-*   `encrypted`: _string_ – Data that must be decrypted.
+### Result
 
-    \
-    Encoded with `base64`.
-* `nonce`: _string_ – Nonce in `hex`
-* `key`: _string_ – Public key - unprefixed 0-padded to 64 symbols hex string
+- `decrypted`: _string_ – Decrypted data encoded in `base64`.
 
-#### Result
 
-* `decrypted`: _string_ – Decrypted data encoded in `base64`.
-
-### mnemonic_words
+## mnemonic_words
 
 Prints the list of words from the specified dictionary
 
-```typescript
+```ts
 type ParamsOfMnemonicWords = {
     dictionary?: number
 }
@@ -955,22 +938,22 @@ function mnemonic_words(
     params: ParamsOfMnemonicWords,
 ): Promise<ResultOfMnemonicWords>;
 ```
+### Parameters
+- `dictionary`?: _number_ – Dictionary identifier
 
-#### Parameters
 
-* `dictionary`?: _number_ – Dictionary identifier
+### Result
 
-#### Result
+- `words`: _string_ – The list of mnemonic words
 
-* `words`: _string_ – The list of mnemonic words
 
-### mnemonic_from_random
+## mnemonic_from_random
 
 Generates a random mnemonic
 
 Generates a random mnemonic from the specified dictionary and word count
 
-```typescript
+```ts
 type ParamsOfMnemonicFromRandom = {
     dictionary?: number,
     word_count?: number
@@ -984,21 +967,21 @@ function mnemonic_from_random(
     params: ParamsOfMnemonicFromRandom,
 ): Promise<ResultOfMnemonicFromRandom>;
 ```
+### Parameters
+- `dictionary`?: _number_ – Dictionary identifier
+- `word_count`?: _number_ – Mnemonic word count
 
-#### Parameters
 
-* `dictionary`?: _number_ – Dictionary identifier
-* `word_count`?: _number_ – Mnemonic word count
+### Result
 
-#### Result
+- `phrase`: _string_ – String of mnemonic words
 
-* `phrase`: _string_ – String of mnemonic words
 
-### mnemonic_from_entropy
+## mnemonic_from_entropy
 
 Generates mnemonic from pre-generated entropy
 
-```typescript
+```ts
 type ParamsOfMnemonicFromEntropy = {
     entropy: string,
     dictionary?: number,
@@ -1013,27 +996,26 @@ function mnemonic_from_entropy(
     params: ParamsOfMnemonicFromEntropy,
 ): Promise<ResultOfMnemonicFromEntropy>;
 ```
+### Parameters
+- `entropy`: _string_ – Entropy bytes.
+<br>Hex encoded.
+- `dictionary`?: _number_ – Dictionary identifier
+- `word_count`?: _number_ – Mnemonic word count
 
-#### Parameters
 
-*   `entropy`: _string_ – Entropy bytes.
+### Result
 
-    \
-    Hex encoded.
-* `dictionary`?: _number_ – Dictionary identifier
-* `word_count`?: _number_ – Mnemonic word count
+- `phrase`: _string_ – Phrase
 
-#### Result
 
-* `phrase`: _string_ – Phrase
-
-### mnemonic_verify
+## mnemonic_verify
 
 Validates a mnemonic phrase
 
-The phrase supplied will be checked for word length and validated according to the checksum specified in BIP0039.
+The phrase supplied will be checked for word length and validated according to the checksum
+specified in BIP0039.
 
-```typescript
+```ts
 type ParamsOfMnemonicVerify = {
     phrase: string,
     dictionary?: number,
@@ -1048,24 +1030,25 @@ function mnemonic_verify(
     params: ParamsOfMnemonicVerify,
 ): Promise<ResultOfMnemonicVerify>;
 ```
+### Parameters
+- `phrase`: _string_ – Phrase
+- `dictionary`?: _number_ – Dictionary identifier
+- `word_count`?: _number_ – Word count
 
-#### Parameters
 
-* `phrase`: _string_ – Phrase
-* `dictionary`?: _number_ – Dictionary identifier
-* `word_count`?: _number_ – Word count
+### Result
 
-#### Result
+- `valid`: _boolean_ – Flag indicating if the mnemonic is valid or not
 
-* `valid`: _boolean_ – Flag indicating if the mnemonic is valid or not
 
-### mnemonic_derive_sign_keys
+## mnemonic_derive_sign_keys
 
 Derives a key pair for signing from the seed phrase
 
-Validates the seed phrase, generates master key and then derives the key pair from the master key and the specified path
+Validates the seed phrase, generates master key and then derives
+the key pair from the master key and the specified path
 
-```typescript
+```ts
 type ParamsOfMnemonicDeriveSignKeys = {
     phrase: string,
     path?: string,
@@ -1082,24 +1065,24 @@ function mnemonic_derive_sign_keys(
     params: ParamsOfMnemonicDeriveSignKeys,
 ): Promise<KeyPair>;
 ```
+### Parameters
+- `phrase`: _string_ – Phrase
+- `path`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
+- `dictionary`?: _number_ – Dictionary identifier
+- `word_count`?: _number_ – Word count
 
-#### Parameters
 
-* `phrase`: _string_ – Phrase
-* `path`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
-* `dictionary`?: _number_ – Dictionary identifier
-* `word_count`?: _number_ – Word count
+### Result
 
-#### Result
+- `public`: _string_ – Public key - 64 symbols hex string
+- `secret`: _string_ – Private key - u64 symbols hex string
 
-* `public`: _string_ – Public key - 64 symbols hex string
-* `secret`: _string_ – Private key - u64 symbols hex string
 
-### hdkey_xprv_from_mnemonic
+## hdkey_xprv_from_mnemonic
 
 Generates an extended master private key that will be the root for all the derived keys
 
-```typescript
+```ts
 type ParamsOfHDKeyXPrvFromMnemonic = {
     phrase: string,
     dictionary?: number,
@@ -1114,22 +1097,22 @@ function hdkey_xprv_from_mnemonic(
     params: ParamsOfHDKeyXPrvFromMnemonic,
 ): Promise<ResultOfHDKeyXPrvFromMnemonic>;
 ```
+### Parameters
+- `phrase`: _string_ – String with seed phrase
+- `dictionary`?: _number_ – Dictionary identifier
+- `word_count`?: _number_ – Mnemonic word count
 
-#### Parameters
 
-* `phrase`: _string_ – String with seed phrase
-* `dictionary`?: _number_ – Dictionary identifier
-* `word_count`?: _number_ – Mnemonic word count
+### Result
 
-#### Result
+- `xprv`: _string_ – Serialized extended master private key
 
-* `xprv`: _string_ – Serialized extended master private key
 
-### hdkey_derive_from_xprv
+## hdkey_derive_from_xprv
 
 Returns extended private key derived from the specified extended private key and child index
 
-```typescript
+```ts
 type ParamsOfHDKeyDeriveFromXPrv = {
     xprv: string,
     child_index: number,
@@ -1144,22 +1127,22 @@ function hdkey_derive_from_xprv(
     params: ParamsOfHDKeyDeriveFromXPrv,
 ): Promise<ResultOfHDKeyDeriveFromXPrv>;
 ```
+### Parameters
+- `xprv`: _string_ – Serialized extended private key
+- `child_index`: _number_ – Child index (see BIP-0032)
+- `hardened`: _boolean_ – Indicates the derivation of hardened/not-hardened key (see BIP-0032)
 
-#### Parameters
 
-* `xprv`: _string_ – Serialized extended private key
-* `child_index`: _number_ – Child index (see BIP-0032)
-* `hardened`: _boolean_ – Indicates the derivation of hardened/not-hardened key (see BIP-0032)
+### Result
 
-#### Result
+- `xprv`: _string_ – Serialized extended private key
 
-* `xprv`: _string_ – Serialized extended private key
 
-### hdkey_derive_from_xprv_path
+## hdkey_derive_from_xprv_path
 
 Derives the extended private key from the specified key and path
 
-```typescript
+```ts
 type ParamsOfHDKeyDeriveFromXPrvPath = {
     xprv: string,
     path: string
@@ -1173,21 +1156,21 @@ function hdkey_derive_from_xprv_path(
     params: ParamsOfHDKeyDeriveFromXPrvPath,
 ): Promise<ResultOfHDKeyDeriveFromXPrvPath>;
 ```
+### Parameters
+- `xprv`: _string_ – Serialized extended private key
+- `path`: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
 
-#### Parameters
 
-* `xprv`: _string_ – Serialized extended private key
-* `path`: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
+### Result
 
-#### Result
+- `xprv`: _string_ – Derived serialized extended private key
 
-* `xprv`: _string_ – Derived serialized extended private key
 
-### hdkey_secret_from_xprv
+## hdkey_secret_from_xprv
 
 Extracts the private key from the serialized extended private key
 
-```typescript
+```ts
 type ParamsOfHDKeySecretFromXPrv = {
     xprv: string
 }
@@ -1200,20 +1183,20 @@ function hdkey_secret_from_xprv(
     params: ParamsOfHDKeySecretFromXPrv,
 ): Promise<ResultOfHDKeySecretFromXPrv>;
 ```
+### Parameters
+- `xprv`: _string_ – Serialized extended private key
 
-#### Parameters
 
-* `xprv`: _string_ – Serialized extended private key
+### Result
 
-#### Result
+- `secret`: _string_ – Private key - 64 symbols hex string
 
-* `secret`: _string_ – Private key - 64 symbols hex string
 
-### hdkey_public_from_xprv
+## hdkey_public_from_xprv
 
 Extracts the public key from the serialized extended private key
 
-```typescript
+```ts
 type ParamsOfHDKeyPublicFromXPrv = {
     xprv: string
 }
@@ -1226,20 +1209,20 @@ function hdkey_public_from_xprv(
     params: ParamsOfHDKeyPublicFromXPrv,
 ): Promise<ResultOfHDKeyPublicFromXPrv>;
 ```
+### Parameters
+- `xprv`: _string_ – Serialized extended private key
 
-#### Parameters
 
-* `xprv`: _string_ – Serialized extended private key
+### Result
 
-#### Result
+- `public`: _string_ – Public key - 64 symbols hex string
 
-* `public`: _string_ – Public key - 64 symbols hex string
 
-### chacha20
+## chacha20
 
 Performs symmetric `chacha20` encryption.
 
-```typescript
+```ts
 type ParamsOfChaCha20 = {
     data: string,
     key: string,
@@ -1254,34 +1237,26 @@ function chacha20(
     params: ParamsOfChaCha20,
 ): Promise<ResultOfChaCha20>;
 ```
+### Parameters
+- `data`: _string_ – Source data to be encrypted or decrypted.
+<br>Must be encoded with `base64`.
+- `key`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
 
-#### Parameters
 
-*   `data`: _string_ – Source data to be encrypted or decrypted.
+### Result
 
-    \
-    Must be encoded with `base64`.
-*   `key`: _string_ – 256-bit key.
+- `data`: _string_ – Encrypted/decrypted data.
+<br>Encoded with `base64`.
 
-    \
-    Must be encoded with `hex`.
-*   `nonce`: _string_ – 96-bit nonce.
 
-    \
-    Must be encoded with `hex`.
-
-#### Result
-
-*   `data`: _string_ – Encrypted/decrypted data.
-
-    \
-    Encoded with `base64`.
-
-### register_signing_box
+## register_signing_box
 
 Register an application implemented signing box.
 
-```typescript
+```ts
 type RegisteredSigningBox = {
     handle: SigningBoxHandle
 }
@@ -1291,15 +1266,17 @@ function register_signing_box(
 ): Promise<RegisteredSigningBox>;
 ```
 
-#### Result
 
-* `handle`: [_SigningBoxHandle_](mod_crypto.md#SigningBoxHandle) – Handle of the signing box.
+### Result
 
-### get_signing_box
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+
+
+## get_signing_box
 
 Creates a default signing box implementation.
 
-```typescript
+```ts
 type KeyPair = {
     public: string,
     secret: string
@@ -1313,21 +1290,21 @@ function get_signing_box(
     params: KeyPair,
 ): Promise<RegisteredSigningBox>;
 ```
+### Parameters
+- `public`: _string_ – Public key - 64 symbols hex string
+- `secret`: _string_ – Private key - u64 symbols hex string
 
-#### Parameters
 
-* `public`: _string_ – Public key - 64 symbols hex string
-* `secret`: _string_ – Private key - u64 symbols hex string
+### Result
 
-#### Result
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
 
-* `handle`: [_SigningBoxHandle_](mod_crypto.md#SigningBoxHandle) – Handle of the signing box.
 
-### signing_box_get_public_key
+## signing_box_get_public_key
 
 Returns public key of signing key pair.
 
-```typescript
+```ts
 type RegisteredSigningBox = {
     handle: SigningBoxHandle
 }
@@ -1340,23 +1317,21 @@ function signing_box_get_public_key(
     params: RegisteredSigningBox,
 ): Promise<ResultOfSigningBoxGetPublicKey>;
 ```
+### Parameters
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
 
-#### Parameters
 
-* `handle`: [_SigningBoxHandle_](mod_crypto.md#SigningBoxHandle) – Handle of the signing box.
+### Result
 
-#### Result
+- `pubkey`: _string_ – Public key of signing box.
+<br>Encoded with hex
 
-*   `pubkey`: _string_ – Public key of signing box.
 
-    \
-    Encoded with hex
-
-### signing_box_sign
+## signing_box_sign
 
 Returns signed user data.
 
-```typescript
+```ts
 type ParamsOfSigningBoxSign = {
     signing_box: SigningBoxHandle,
     unsigned: string
@@ -1370,27 +1345,23 @@ function signing_box_sign(
     params: ParamsOfSigningBoxSign,
 ): Promise<ResultOfSigningBoxSign>;
 ```
+### Parameters
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+- `unsigned`: _string_ – Unsigned user data.
+<br>Must be encoded with `base64`.
 
-#### Parameters
 
-* `signing_box`: [_SigningBoxHandle_](mod_crypto.md#SigningBoxHandle) – Signing Box handle.
-*   `unsigned`: _string_ – Unsigned user data.
+### Result
 
-    \
-    Must be encoded with `base64`.
+- `signature`: _string_ – Data signature.
+<br>Encoded with `hex`.
 
-#### Result
 
-*   `signature`: _string_ – Data signature.
-
-    \
-    Encoded with `hex`.
-
-### remove_signing_box
+## remove_signing_box
 
 Removes signing box from SDK.
 
-```typescript
+```ts
 type RegisteredSigningBox = {
     handle: SigningBoxHandle
 }
@@ -1399,16 +1370,15 @@ function remove_signing_box(
     params: RegisteredSigningBox,
 ): Promise<void>;
 ```
+### Parameters
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
 
-#### Parameters
 
-* `handle`: [_SigningBoxHandle_](mod_crypto.md#SigningBoxHandle) – Handle of the signing box.
-
-### register_encryption_box
+## register_encryption_box
 
 Register an application implemented encryption box.
 
-```typescript
+```ts
 type RegisteredEncryptionBox = {
     handle: EncryptionBoxHandle
 }
@@ -1418,15 +1388,17 @@ function register_encryption_box(
 ): Promise<RegisteredEncryptionBox>;
 ```
 
-#### Result
 
-* `handle`: [_EncryptionBoxHandle_](mod_crypto.md#EncryptionBoxHandle) – Handle of the encryption box
+### Result
 
-### remove_encryption_box
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
+
+
+## remove_encryption_box
 
 Removes encryption box from SDK
 
-```typescript
+```ts
 type RegisteredEncryptionBox = {
     handle: EncryptionBoxHandle
 }
@@ -1435,16 +1407,15 @@ function remove_encryption_box(
     params: RegisteredEncryptionBox,
 ): Promise<void>;
 ```
+### Parameters
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
 
-#### Parameters
 
-* `handle`: [_EncryptionBoxHandle_](mod_crypto.md#EncryptionBoxHandle) – Handle of the encryption box
-
-### encryption_box_get_info
+## encryption_box_get_info
 
 Queries info from the given encryption box
 
-```typescript
+```ts
 type ParamsOfEncryptionBoxGetInfo = {
     encryption_box: EncryptionBoxHandle
 }
@@ -1457,22 +1428,23 @@ function encryption_box_get_info(
     params: ParamsOfEncryptionBoxGetInfo,
 ): Promise<ResultOfEncryptionBoxGetInfo>;
 ```
+### Parameters
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
 
-#### Parameters
 
-* `encryption_box`: [_EncryptionBoxHandle_](mod_crypto.md#EncryptionBoxHandle) – Encryption box handle
+### Result
 
-#### Result
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_ – Encryption box information
 
-* `info`: [_EncryptionBoxInfo_](mod_crypto.md#EncryptionBoxInfo) – Encryption box information
 
-### encryption_box_encrypt
+## encryption_box_encrypt
 
 Encrypts data using given encryption box Note.
 
-Block cipher algorithms pad data to cipher block size so encrypted data can be longer then original data. Client should store the original data size after encryption and use it after decryption to retrieve the original data from decrypted data.
+Block cipher algorithms pad data to cipher block size so encrypted data can be longer then original data. Client should store the original data size after encryption and use it after
+decryption to retrieve the original data from decrypted data.
 
-```typescript
+```ts
 type ParamsOfEncryptionBoxEncrypt = {
     encryption_box: EncryptionBoxHandle,
     data: string
@@ -1486,26 +1458,25 @@ function encryption_box_encrypt(
     params: ParamsOfEncryptionBoxEncrypt,
 ): Promise<ResultOfEncryptionBoxEncrypt>;
 ```
+### Parameters
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `data`: _string_ – Data to be encrypted, encoded in Base64
 
-#### Parameters
 
-* `encryption_box`: [_EncryptionBoxHandle_](mod_crypto.md#EncryptionBoxHandle) – Encryption box handle
-* `data`: _string_ – Data to be encrypted, encoded in Base64
+### Result
 
-#### Result
+- `data`: _string_ – Encrypted data, encoded in Base64.
+<br>Padded to cipher block size
 
-*   `data`: _string_ – Encrypted data, encoded in Base64.
 
-    \
-    Padded to cipher block size
-
-### encryption_box_decrypt
+## encryption_box_decrypt
 
 Decrypts data using given encryption box Note.
 
-Block cipher algorithms pad data to cipher block size so encrypted data can be longer then original data. Client should store the original data size after encryption and use it after decryption to retrieve the original data from decrypted data.
+Block cipher algorithms pad data to cipher block size so encrypted data can be longer then original data. Client should store the original data size after encryption and use it after
+decryption to retrieve the original data from decrypted data.
 
-```typescript
+```ts
 type ParamsOfEncryptionBoxDecrypt = {
     encryption_box: EncryptionBoxHandle,
     data: string
@@ -1519,21 +1490,21 @@ function encryption_box_decrypt(
     params: ParamsOfEncryptionBoxDecrypt,
 ): Promise<ResultOfEncryptionBoxDecrypt>;
 ```
+### Parameters
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `data`: _string_ – Data to be decrypted, encoded in Base64
 
-#### Parameters
 
-* `encryption_box`: [_EncryptionBoxHandle_](mod_crypto.md#EncryptionBoxHandle) – Encryption box handle
-* `data`: _string_ – Data to be decrypted, encoded in Base64
+### Result
 
-#### Result
+- `data`: _string_ – Decrypted data, encoded in Base64.
 
-* `data`: _string_ – Decrypted data, encoded in Base64.
 
-### create_encryption_box
+## create_encryption_box
 
 Creates encryption box with specified algorithm
 
-```typescript
+```ts
 type ParamsOfCreateEncryptionBox = {
     algorithm: EncryptionAlgorithm
 }
@@ -1546,20 +1517,18 @@ function create_encryption_box(
     params: ParamsOfCreateEncryptionBox,
 ): Promise<RegisteredEncryptionBox>;
 ```
+### Parameters
+- `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#EncryptionAlgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
 
-#### Parameters
 
-* `algorithm`: [_EncryptionAlgorithm_](mod_crypto.md#EncryptionAlgorithm) – Encryption algorithm specifier including cipher parameters (key, IV, etc)
+### Result
 
-#### Result
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
 
-* `handle`: [_EncryptionBoxHandle_](mod_crypto.md#EncryptionBoxHandle) – Handle of the encryption box
 
-## Types
-
-### CryptoErrorCode
-
-```typescript
+# Types
+## CryptoErrorCode
+```ts
 enum CryptoErrorCode {
     InvalidPublicKey = 100,
     InvalidSecretKey = 101,
@@ -1590,54 +1559,53 @@ enum CryptoErrorCode {
     IvRequired = 129
 }
 ```
-
 One of the following value:
 
-* `InvalidPublicKey = 100`
-* `InvalidSecretKey = 101`
-* `InvalidKey = 102`
-* `InvalidFactorizeChallenge = 106`
-* `InvalidBigInt = 107`
-* `ScryptFailed = 108`
-* `InvalidKeySize = 109`
-* `NaclSecretBoxFailed = 110`
-* `NaclBoxFailed = 111`
-* `NaclSignFailed = 112`
-* `Bip39InvalidEntropy = 113`
-* `Bip39InvalidPhrase = 114`
-* `Bip32InvalidKey = 115`
-* `Bip32InvalidDerivePath = 116`
-* `Bip39InvalidDictionary = 117`
-* `Bip39InvalidWordCount = 118`
-* `MnemonicGenerationFailed = 119`
-* `MnemonicFromEntropyFailed = 120`
-* `SigningBoxNotRegistered = 121`
-* `InvalidSignature = 122`
-* `EncryptionBoxNotRegistered = 123`
-* `InvalidIvSize = 124`
-* `UnsupportedCipherMode = 125`
-* `CannotCreateCipher = 126`
-* `EncryptDataError = 127`
-* `DecryptDataError = 128`
-* `IvRequired = 129`
+- `InvalidPublicKey = 100`
+- `InvalidSecretKey = 101`
+- `InvalidKey = 102`
+- `InvalidFactorizeChallenge = 106`
+- `InvalidBigInt = 107`
+- `ScryptFailed = 108`
+- `InvalidKeySize = 109`
+- `NaclSecretBoxFailed = 110`
+- `NaclBoxFailed = 111`
+- `NaclSignFailed = 112`
+- `Bip39InvalidEntropy = 113`
+- `Bip39InvalidPhrase = 114`
+- `Bip32InvalidKey = 115`
+- `Bip32InvalidDerivePath = 116`
+- `Bip39InvalidDictionary = 117`
+- `Bip39InvalidWordCount = 118`
+- `MnemonicGenerationFailed = 119`
+- `MnemonicFromEntropyFailed = 120`
+- `SigningBoxNotRegistered = 121`
+- `InvalidSignature = 122`
+- `EncryptionBoxNotRegistered = 123`
+- `InvalidIvSize = 124`
+- `UnsupportedCipherMode = 125`
+- `CannotCreateCipher = 126`
+- `EncryptDataError = 127`
+- `DecryptDataError = 128`
+- `IvRequired = 129`
 
-### SigningBoxHandle
 
-```typescript
+## SigningBoxHandle
+```ts
 type SigningBoxHandle = number
 ```
 
-### EncryptionBoxHandle
 
-```typescript
+## EncryptionBoxHandle
+```ts
 type EncryptionBoxHandle = number
 ```
 
-### EncryptionBoxInfo
 
+## EncryptionBoxInfo
 Encryption box information
 
-```typescript
+```ts
 type EncryptionBoxInfo = {
     hdpath?: string,
     algorithm?: string,
@@ -1645,37 +1613,35 @@ type EncryptionBoxInfo = {
     public?: any
 }
 ```
+- `hdpath`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
+- `algorithm`?: _string_ – Cryptographic algorithm, used by this encryption box
+- `options`?: _any_ – Options, depends on algorithm and specific encryption box implementation
+- `public`?: _any_ – Public information, depends on algorithm
 
-* `hdpath`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
-* `algorithm`?: _string_ – Cryptographic algorithm, used by this encryption box
-* `options`?: _any_ – Options, depends on algorithm and specific encryption box implementation
-* `public`?: _any_ – Public information, depends on algorithm
 
-### EncryptionAlgorithm
-
-```typescript
+## EncryptionAlgorithm
+```ts
 type EncryptionAlgorithm = ({
     type: 'AES'
 } & AesParams)
 ```
-
-Depends on value of the `type` field.
+Depends on value of the  `type` field.
 
 When _type_ is _'AES'_
 
-* `mode`: [_CipherMode_](mod_crypto.md#CipherMode)
-* `key`: _string_
-* `iv`?: _string_
+- `mode`: _[CipherMode](mod_crypto.md#CipherMode)_
+- `key`: _string_
+- `iv`?: _string_
+
 
 Variant constructors:
 
-```typescript
+```ts
 function encryptionAlgorithmAES(params: AesParams): EncryptionAlgorithm;
 ```
 
-### CipherMode
-
-```typescript
+## CipherMode
+```ts
 enum CipherMode {
     CBC = "CBC",
     CFB = "CFB",
@@ -1684,235 +1650,209 @@ enum CipherMode {
     OFB = "OFB"
 }
 ```
-
 One of the following value:
 
-* `CBC = "CBC"`
-* `CFB = "CFB"`
-* `CTR = "CTR"`
-* `ECB = "ECB"`
-* `OFB = "OFB"`
+- `CBC = "CBC"`
+- `CFB = "CFB"`
+- `CTR = "CTR"`
+- `ECB = "ECB"`
+- `OFB = "OFB"`
 
-### AesParams
 
-```typescript
+## AesParams
+```ts
 type AesParams = {
     mode: CipherMode,
     key: string,
     iv?: string
 }
 ```
+- `mode`: _[CipherMode](mod_crypto.md#CipherMode)_
+- `key`: _string_
+- `iv`?: _string_
 
-* `mode`: [_CipherMode_](mod_crypto.md#CipherMode)
-* `key`: _string_
-* `iv`?: _string_
 
-### AesInfo
-
-```typescript
+## AesInfo
+```ts
 type AesInfo = {
     mode: CipherMode,
     iv?: string
 }
 ```
+- `mode`: _[CipherMode](mod_crypto.md#CipherMode)_
+- `iv`?: _string_
 
-* `mode`: [_CipherMode_](mod_crypto.md#CipherMode)
-* `iv`?: _string_
 
-### ParamsOfFactorize
-
-```typescript
+## ParamsOfFactorize
+```ts
 type ParamsOfFactorize = {
     composite: string
 }
 ```
+- `composite`: _string_ – Hexadecimal representation of u64 composite number.
 
-* `composite`: _string_ – Hexadecimal representation of u64 composite number.
 
-### ResultOfFactorize
-
-```typescript
+## ResultOfFactorize
+```ts
 type ResultOfFactorize = {
     factors: string[]
 }
 ```
+- `factors`: _string[]_ – Two factors of composite or empty if composite can't be factorized.
 
-* `factors`: _string\[]_ – Two factors of composite or empty if composite can't be factorized.
 
-### ParamsOfModularPower
-
-```typescript
+## ParamsOfModularPower
+```ts
 type ParamsOfModularPower = {
     base: string,
     exponent: string,
     modulus: string
 }
 ```
+- `base`: _string_ – `base` argument of calculation.
+- `exponent`: _string_ – `exponent` argument of calculation.
+- `modulus`: _string_ – `modulus` argument of calculation.
 
-* `base`: _string_ – `base` argument of calculation.
-* `exponent`: _string_ – `exponent` argument of calculation.
-* `modulus`: _string_ – `modulus` argument of calculation.
 
-### ResultOfModularPower
-
-```typescript
+## ResultOfModularPower
+```ts
 type ResultOfModularPower = {
     modular_power: string
 }
 ```
+- `modular_power`: _string_ – Result of modular exponentiation
 
-* `modular_power`: _string_ – Result of modular exponentiation
 
-### ParamsOfTonCrc16
-
-```typescript
+## ParamsOfTonCrc16
+```ts
 type ParamsOfTonCrc16 = {
     data: string
 }
 ```
+- `data`: _string_ – Input data for CRC calculation.
+<br>Encoded with `base64`.
 
-*   `data`: _string_ – Input data for CRC calculation.
 
-    \
-    Encoded with `base64`.
-
-### ResultOfTonCrc16
-
-```typescript
+## ResultOfTonCrc16
+```ts
 type ResultOfTonCrc16 = {
     crc: number
 }
 ```
+- `crc`: _number_ – Calculated CRC for input data.
 
-* `crc`: _number_ – Calculated CRC for input data.
 
-### ParamsOfGenerateRandomBytes
-
-```typescript
+## ParamsOfGenerateRandomBytes
+```ts
 type ParamsOfGenerateRandomBytes = {
     length: number
 }
 ```
+- `length`: _number_ – Size of random byte array.
 
-* `length`: _number_ – Size of random byte array.
 
-### ResultOfGenerateRandomBytes
-
-```typescript
+## ResultOfGenerateRandomBytes
+```ts
 type ResultOfGenerateRandomBytes = {
     bytes: string
 }
 ```
+- `bytes`: _string_ – Generated bytes encoded in `base64`.
 
-* `bytes`: _string_ – Generated bytes encoded in `base64`.
 
-### ParamsOfConvertPublicKeyToTonSafeFormat
-
-```typescript
+## ParamsOfConvertPublicKeyToTonSafeFormat
+```ts
 type ParamsOfConvertPublicKeyToTonSafeFormat = {
     public_key: string
 }
 ```
+- `public_key`: _string_ – Public key - 64 symbols hex string
 
-* `public_key`: _string_ – Public key - 64 symbols hex string
 
-### ResultOfConvertPublicKeyToTonSafeFormat
-
-```typescript
+## ResultOfConvertPublicKeyToTonSafeFormat
+```ts
 type ResultOfConvertPublicKeyToTonSafeFormat = {
     ton_public_key: string
 }
 ```
+- `ton_public_key`: _string_ – Public key represented in TON safe format.
 
-* `ton_public_key`: _string_ – Public key represented in TON safe format.
 
-### KeyPair
-
-```typescript
+## KeyPair
+```ts
 type KeyPair = {
     public: string,
     secret: string
 }
 ```
+- `public`: _string_ – Public key - 64 symbols hex string
+- `secret`: _string_ – Private key - u64 symbols hex string
 
-* `public`: _string_ – Public key - 64 symbols hex string
-* `secret`: _string_ – Private key - u64 symbols hex string
 
-### ParamsOfSign
-
-```typescript
+## ParamsOfSign
+```ts
 type ParamsOfSign = {
     unsigned: string,
     keys: KeyPair
 }
 ```
+- `unsigned`: _string_ – Data that must be signed encoded in `base64`.
+- `keys`: _[KeyPair](mod_crypto.md#KeyPair)_ – Sign keys.
 
-* `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-* `keys`: [_KeyPair_](mod_crypto.md#KeyPair) – Sign keys.
 
-### ResultOfSign
-
-```typescript
+## ResultOfSign
+```ts
 type ResultOfSign = {
     signed: string,
     signature: string
 }
 ```
+- `signed`: _string_ – Signed data combined with signature encoded in `base64`.
+- `signature`: _string_ – Signature encoded in `hex`.
 
-* `signed`: _string_ – Signed data combined with signature encoded in `base64`.
-* `signature`: _string_ – Signature encoded in `hex`.
 
-### ParamsOfVerifySignature
-
-```typescript
+## ParamsOfVerifySignature
+```ts
 type ParamsOfVerifySignature = {
     signed: string,
     public: string
 }
 ```
+- `signed`: _string_ – Signed data that must be verified encoded in `base64`.
+- `public`: _string_ – Signer's public key - 64 symbols hex string
 
-* `signed`: _string_ – Signed data that must be verified encoded in `base64`.
-* `public`: _string_ – Signer's public key - 64 symbols hex string
 
-### ResultOfVerifySignature
-
-```typescript
+## ResultOfVerifySignature
+```ts
 type ResultOfVerifySignature = {
     unsigned: string
 }
 ```
+- `unsigned`: _string_ – Unsigned data encoded in `base64`.
 
-* `unsigned`: _string_ – Unsigned data encoded in `base64`.
 
-### ParamsOfHash
-
-```typescript
+## ParamsOfHash
+```ts
 type ParamsOfHash = {
     data: string
 }
 ```
+- `data`: _string_ – Input data for hash calculation.
+<br>Encoded with `base64`.
 
-*   `data`: _string_ – Input data for hash calculation.
 
-    \
-    Encoded with `base64`.
-
-### ResultOfHash
-
-```typescript
+## ResultOfHash
+```ts
 type ResultOfHash = {
     hash: string
 }
 ```
+- `hash`: _string_ – Hash of input `data`.
+<br>Encoded with 'hex'.
 
-*   `hash`: _string_ – Hash of input `data`.
 
-    \
-    Encoded with 'hex'.
-
-### ParamsOfScrypt
-
-```typescript
+## ParamsOfScrypt
+```ts
 type ParamsOfScrypt = {
     password: string,
     salt: string,
@@ -1922,137 +1862,118 @@ type ParamsOfScrypt = {
     dk_len: number
 }
 ```
+- `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
+- `salt`: _string_ – Salt bytes that modify the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
+- `log_n`: _number_ – CPU/memory cost parameter
+- `r`: _number_ – The block size parameter, which fine-tunes sequential memory read size and performance.
+- `p`: _number_ – Parallelization parameter.
+- `dk_len`: _number_ – Intended output length in octets of the derived key.
 
-* `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
-* `salt`: _string_ – Salt bytes that modify the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
-* `log_n`: _number_ – CPU/memory cost parameter
-* `r`: _number_ – The block size parameter, which fine-tunes sequential memory read size and performance.
-* `p`: _number_ – Parallelization parameter.
-* `dk_len`: _number_ – Intended output length in octets of the derived key.
 
-### ResultOfScrypt
-
-```typescript
+## ResultOfScrypt
+```ts
 type ResultOfScrypt = {
     key: string
 }
 ```
+- `key`: _string_ – Derived key.
+<br>Encoded with `hex`.
 
-*   `key`: _string_ – Derived key.
 
-    \
-    Encoded with `hex`.
-
-### ParamsOfNaclSignKeyPairFromSecret
-
-```typescript
+## ParamsOfNaclSignKeyPairFromSecret
+```ts
 type ParamsOfNaclSignKeyPairFromSecret = {
     secret: string
 }
 ```
+- `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
-* `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
-### ParamsOfNaclSign
-
-```typescript
+## ParamsOfNaclSign
+```ts
 type ParamsOfNaclSign = {
     unsigned: string,
     secret: string
 }
 ```
+- `unsigned`: _string_ – Data that must be signed encoded in `base64`.
+- `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
 
-* `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-* `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
 
-### ResultOfNaclSign
-
-```typescript
+## ResultOfNaclSign
+```ts
 type ResultOfNaclSign = {
     signed: string
 }
 ```
+- `signed`: _string_ – Signed data, encoded in `base64`.
 
-* `signed`: _string_ – Signed data, encoded in `base64`.
 
-### ParamsOfNaclSignOpen
-
-```typescript
+## ParamsOfNaclSignOpen
+```ts
 type ParamsOfNaclSignOpen = {
     signed: string,
     public: string
 }
 ```
+- `signed`: _string_ – Signed data that must be unsigned.
+<br>Encoded with `base64`.
+- `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string
 
-*   `signed`: _string_ – Signed data that must be unsigned.
 
-    \
-    Encoded with `base64`.
-* `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string
-
-### ResultOfNaclSignOpen
-
-```typescript
+## ResultOfNaclSignOpen
+```ts
 type ResultOfNaclSignOpen = {
     unsigned: string
 }
 ```
+- `unsigned`: _string_ – Unsigned data, encoded in `base64`.
 
-* `unsigned`: _string_ – Unsigned data, encoded in `base64`.
 
-### ResultOfNaclSignDetached
-
-```typescript
+## ResultOfNaclSignDetached
+```ts
 type ResultOfNaclSignDetached = {
     signature: string
 }
 ```
+- `signature`: _string_ – Signature encoded in `hex`.
 
-* `signature`: _string_ – Signature encoded in `hex`.
 
-### ParamsOfNaclSignDetachedVerify
-
-```typescript
+## ParamsOfNaclSignDetachedVerify
+```ts
 type ParamsOfNaclSignDetachedVerify = {
     unsigned: string,
     signature: string,
     public: string
 }
 ```
+- `unsigned`: _string_ – Unsigned data that must be verified.
+<br>Encoded with `base64`.
+- `signature`: _string_ – Signature that must be verified.
+<br>Encoded with `hex`.
+- `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string.
 
-*   `unsigned`: _string_ – Unsigned data that must be verified.
 
-    \
-    Encoded with `base64`.
-*   `signature`: _string_ – Signature that must be verified.
-
-    \
-    Encoded with `hex`.
-* `public`: _string_ – Signer's public key - unprefixed 0-padded to 64 symbols hex string.
-
-### ResultOfNaclSignDetachedVerify
-
-```typescript
+## ResultOfNaclSignDetachedVerify
+```ts
 type ResultOfNaclSignDetachedVerify = {
     succeeded: boolean
 }
 ```
+- `succeeded`: _boolean_ – `true` if verification succeeded or `false` if it failed
 
-* `succeeded`: _boolean_ – `true` if verification succeeded or `false` if it failed
 
-### ParamsOfNaclBoxKeyPairFromSecret
-
-```typescript
+## ParamsOfNaclBoxKeyPairFromSecret
+```ts
 type ParamsOfNaclBoxKeyPairFromSecret = {
     secret: string
 }
 ```
+- `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
-* `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
-### ParamsOfNaclBox
-
-```typescript
+## ParamsOfNaclBox
+```ts
 type ParamsOfNaclBox = {
     decrypted: string,
     nonce: string,
@@ -2060,25 +1981,23 @@ type ParamsOfNaclBox = {
     secret: string
 }
 ```
+- `decrypted`: _string_ – Data that must be encrypted encoded in `base64`.
+- `nonce`: _string_ – Nonce, encoded in `hex`
+- `their_public`: _string_ – Receiver's public key - unprefixed 0-padded to 64 symbols hex string
+- `secret`: _string_ – Sender's private key - unprefixed 0-padded to 64 symbols hex string
 
-* `decrypted`: _string_ – Data that must be encrypted encoded in `base64`.
-* `nonce`: _string_ – Nonce, encoded in `hex`
-* `their_public`: _string_ – Receiver's public key - unprefixed 0-padded to 64 symbols hex string
-* `secret`: _string_ – Sender's private key - unprefixed 0-padded to 64 symbols hex string
 
-### ResultOfNaclBox
-
-```typescript
+## ResultOfNaclBox
+```ts
 type ResultOfNaclBox = {
     encrypted: string
 }
 ```
+- `encrypted`: _string_ – Encrypted data encoded in `base64`.
 
-* `encrypted`: _string_ – Encrypted data encoded in `base64`.
 
-### ParamsOfNaclBoxOpen
-
-```typescript
+## ParamsOfNaclBoxOpen
+```ts
 type ParamsOfNaclBoxOpen = {
     encrypted: string,
     nonce: string,
@@ -2086,155 +2005,135 @@ type ParamsOfNaclBoxOpen = {
     secret: string
 }
 ```
+- `encrypted`: _string_ – Data that must be decrypted.
+<br>Encoded with `base64`.
+- `nonce`: _string_
+- `their_public`: _string_ – Sender's public key - unprefixed 0-padded to 64 symbols hex string
+- `secret`: _string_ – Receiver's private key - unprefixed 0-padded to 64 symbols hex string
 
-*   `encrypted`: _string_ – Data that must be decrypted.
 
-    \
-    Encoded with `base64`.
-* `nonce`: _string_
-* `their_public`: _string_ – Sender's public key - unprefixed 0-padded to 64 symbols hex string
-* `secret`: _string_ – Receiver's private key - unprefixed 0-padded to 64 symbols hex string
-
-### ResultOfNaclBoxOpen
-
-```typescript
+## ResultOfNaclBoxOpen
+```ts
 type ResultOfNaclBoxOpen = {
     decrypted: string
 }
 ```
+- `decrypted`: _string_ – Decrypted data encoded in `base64`.
 
-* `decrypted`: _string_ – Decrypted data encoded in `base64`.
 
-### ParamsOfNaclSecretBox
-
-```typescript
+## ParamsOfNaclSecretBox
+```ts
 type ParamsOfNaclSecretBox = {
     decrypted: string,
     nonce: string,
     key: string
 }
 ```
+- `decrypted`: _string_ – Data that must be encrypted.
+<br>Encoded with `base64`.
+- `nonce`: _string_ – Nonce in `hex`
+- `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
-*   `decrypted`: _string_ – Data that must be encrypted.
 
-    \
-    Encoded with `base64`.
-* `nonce`: _string_ – Nonce in `hex`
-* `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
-
-### ParamsOfNaclSecretBoxOpen
-
-```typescript
+## ParamsOfNaclSecretBoxOpen
+```ts
 type ParamsOfNaclSecretBoxOpen = {
     encrypted: string,
     nonce: string,
     key: string
 }
 ```
+- `encrypted`: _string_ – Data that must be decrypted.
+<br>Encoded with `base64`.
+- `nonce`: _string_ – Nonce in `hex`
+- `key`: _string_ – Public key - unprefixed 0-padded to 64 symbols hex string
 
-*   `encrypted`: _string_ – Data that must be decrypted.
 
-    \
-    Encoded with `base64`.
-* `nonce`: _string_ – Nonce in `hex`
-* `key`: _string_ – Public key - unprefixed 0-padded to 64 symbols hex string
-
-### ParamsOfMnemonicWords
-
-```typescript
+## ParamsOfMnemonicWords
+```ts
 type ParamsOfMnemonicWords = {
     dictionary?: number
 }
 ```
+- `dictionary`?: _number_ – Dictionary identifier
 
-* `dictionary`?: _number_ – Dictionary identifier
 
-### ResultOfMnemonicWords
-
-```typescript
+## ResultOfMnemonicWords
+```ts
 type ResultOfMnemonicWords = {
     words: string
 }
 ```
+- `words`: _string_ – The list of mnemonic words
 
-* `words`: _string_ – The list of mnemonic words
 
-### ParamsOfMnemonicFromRandom
-
-```typescript
+## ParamsOfMnemonicFromRandom
+```ts
 type ParamsOfMnemonicFromRandom = {
     dictionary?: number,
     word_count?: number
 }
 ```
+- `dictionary`?: _number_ – Dictionary identifier
+- `word_count`?: _number_ – Mnemonic word count
 
-* `dictionary`?: _number_ – Dictionary identifier
-* `word_count`?: _number_ – Mnemonic word count
 
-### ResultOfMnemonicFromRandom
-
-```typescript
+## ResultOfMnemonicFromRandom
+```ts
 type ResultOfMnemonicFromRandom = {
     phrase: string
 }
 ```
+- `phrase`: _string_ – String of mnemonic words
 
-* `phrase`: _string_ – String of mnemonic words
 
-### ParamsOfMnemonicFromEntropy
-
-```typescript
+## ParamsOfMnemonicFromEntropy
+```ts
 type ParamsOfMnemonicFromEntropy = {
     entropy: string,
     dictionary?: number,
     word_count?: number
 }
 ```
+- `entropy`: _string_ – Entropy bytes.
+<br>Hex encoded.
+- `dictionary`?: _number_ – Dictionary identifier
+- `word_count`?: _number_ – Mnemonic word count
 
-*   `entropy`: _string_ – Entropy bytes.
 
-    \
-    Hex encoded.
-* `dictionary`?: _number_ – Dictionary identifier
-* `word_count`?: _number_ – Mnemonic word count
-
-### ResultOfMnemonicFromEntropy
-
-```typescript
+## ResultOfMnemonicFromEntropy
+```ts
 type ResultOfMnemonicFromEntropy = {
     phrase: string
 }
 ```
+- `phrase`: _string_ – Phrase
 
-* `phrase`: _string_ – Phrase
 
-### ParamsOfMnemonicVerify
-
-```typescript
+## ParamsOfMnemonicVerify
+```ts
 type ParamsOfMnemonicVerify = {
     phrase: string,
     dictionary?: number,
     word_count?: number
 }
 ```
+- `phrase`: _string_ – Phrase
+- `dictionary`?: _number_ – Dictionary identifier
+- `word_count`?: _number_ – Word count
 
-* `phrase`: _string_ – Phrase
-* `dictionary`?: _number_ – Dictionary identifier
-* `word_count`?: _number_ – Word count
 
-### ResultOfMnemonicVerify
-
-```typescript
+## ResultOfMnemonicVerify
+```ts
 type ResultOfMnemonicVerify = {
     valid: boolean
 }
 ```
+- `valid`: _boolean_ – Flag indicating if the mnemonic is valid or not
 
-* `valid`: _boolean_ – Flag indicating if the mnemonic is valid or not
 
-### ParamsOfMnemonicDeriveSignKeys
-
-```typescript
+## ParamsOfMnemonicDeriveSignKeys
+```ts
 type ParamsOfMnemonicDeriveSignKeys = {
     phrase: string,
     path?: string,
@@ -2242,173 +2141,151 @@ type ParamsOfMnemonicDeriveSignKeys = {
     word_count?: number
 }
 ```
+- `phrase`: _string_ – Phrase
+- `path`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
+- `dictionary`?: _number_ – Dictionary identifier
+- `word_count`?: _number_ – Word count
 
-* `phrase`: _string_ – Phrase
-* `path`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
-* `dictionary`?: _number_ – Dictionary identifier
-* `word_count`?: _number_ – Word count
 
-### ParamsOfHDKeyXPrvFromMnemonic
-
-```typescript
+## ParamsOfHDKeyXPrvFromMnemonic
+```ts
 type ParamsOfHDKeyXPrvFromMnemonic = {
     phrase: string,
     dictionary?: number,
     word_count?: number
 }
 ```
+- `phrase`: _string_ – String with seed phrase
+- `dictionary`?: _number_ – Dictionary identifier
+- `word_count`?: _number_ – Mnemonic word count
 
-* `phrase`: _string_ – String with seed phrase
-* `dictionary`?: _number_ – Dictionary identifier
-* `word_count`?: _number_ – Mnemonic word count
 
-### ResultOfHDKeyXPrvFromMnemonic
-
-```typescript
+## ResultOfHDKeyXPrvFromMnemonic
+```ts
 type ResultOfHDKeyXPrvFromMnemonic = {
     xprv: string
 }
 ```
+- `xprv`: _string_ – Serialized extended master private key
 
-* `xprv`: _string_ – Serialized extended master private key
 
-### ParamsOfHDKeyDeriveFromXPrv
-
-```typescript
+## ParamsOfHDKeyDeriveFromXPrv
+```ts
 type ParamsOfHDKeyDeriveFromXPrv = {
     xprv: string,
     child_index: number,
     hardened: boolean
 }
 ```
+- `xprv`: _string_ – Serialized extended private key
+- `child_index`: _number_ – Child index (see BIP-0032)
+- `hardened`: _boolean_ – Indicates the derivation of hardened/not-hardened key (see BIP-0032)
 
-* `xprv`: _string_ – Serialized extended private key
-* `child_index`: _number_ – Child index (see BIP-0032)
-* `hardened`: _boolean_ – Indicates the derivation of hardened/not-hardened key (see BIP-0032)
 
-### ResultOfHDKeyDeriveFromXPrv
-
-```typescript
+## ResultOfHDKeyDeriveFromXPrv
+```ts
 type ResultOfHDKeyDeriveFromXPrv = {
     xprv: string
 }
 ```
+- `xprv`: _string_ – Serialized extended private key
 
-* `xprv`: _string_ – Serialized extended private key
 
-### ParamsOfHDKeyDeriveFromXPrvPath
-
-```typescript
+## ParamsOfHDKeyDeriveFromXPrvPath
+```ts
 type ParamsOfHDKeyDeriveFromXPrvPath = {
     xprv: string,
     path: string
 }
 ```
+- `xprv`: _string_ – Serialized extended private key
+- `path`: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
 
-* `xprv`: _string_ – Serialized extended private key
-* `path`: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
 
-### ResultOfHDKeyDeriveFromXPrvPath
-
-```typescript
+## ResultOfHDKeyDeriveFromXPrvPath
+```ts
 type ResultOfHDKeyDeriveFromXPrvPath = {
     xprv: string
 }
 ```
+- `xprv`: _string_ – Derived serialized extended private key
 
-* `xprv`: _string_ – Derived serialized extended private key
 
-### ParamsOfHDKeySecretFromXPrv
-
-```typescript
+## ParamsOfHDKeySecretFromXPrv
+```ts
 type ParamsOfHDKeySecretFromXPrv = {
     xprv: string
 }
 ```
+- `xprv`: _string_ – Serialized extended private key
 
-* `xprv`: _string_ – Serialized extended private key
 
-### ResultOfHDKeySecretFromXPrv
-
-```typescript
+## ResultOfHDKeySecretFromXPrv
+```ts
 type ResultOfHDKeySecretFromXPrv = {
     secret: string
 }
 ```
+- `secret`: _string_ – Private key - 64 symbols hex string
 
-* `secret`: _string_ – Private key - 64 symbols hex string
 
-### ParamsOfHDKeyPublicFromXPrv
-
-```typescript
+## ParamsOfHDKeyPublicFromXPrv
+```ts
 type ParamsOfHDKeyPublicFromXPrv = {
     xprv: string
 }
 ```
+- `xprv`: _string_ – Serialized extended private key
 
-* `xprv`: _string_ – Serialized extended private key
 
-### ResultOfHDKeyPublicFromXPrv
-
-```typescript
+## ResultOfHDKeyPublicFromXPrv
+```ts
 type ResultOfHDKeyPublicFromXPrv = {
     public: string
 }
 ```
+- `public`: _string_ – Public key - 64 symbols hex string
 
-* `public`: _string_ – Public key - 64 symbols hex string
 
-### ParamsOfChaCha20
-
-```typescript
+## ParamsOfChaCha20
+```ts
 type ParamsOfChaCha20 = {
     data: string,
     key: string,
     nonce: string
 }
 ```
+- `data`: _string_ – Source data to be encrypted or decrypted.
+<br>Must be encoded with `base64`.
+- `key`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
 
-*   `data`: _string_ – Source data to be encrypted or decrypted.
 
-    \
-    Must be encoded with `base64`.
-*   `key`: _string_ – 256-bit key.
-
-    \
-    Must be encoded with `hex`.
-*   `nonce`: _string_ – 96-bit nonce.
-
-    \
-    Must be encoded with `hex`.
-
-### ResultOfChaCha20
-
-```typescript
+## ResultOfChaCha20
+```ts
 type ResultOfChaCha20 = {
     data: string
 }
 ```
+- `data`: _string_ – Encrypted/decrypted data.
+<br>Encoded with `base64`.
 
-*   `data`: _string_ – Encrypted/decrypted data.
 
-    \
-    Encoded with `base64`.
-
-### RegisteredSigningBox
-
-```typescript
+## RegisteredSigningBox
+```ts
 type RegisteredSigningBox = {
     handle: SigningBoxHandle
 }
 ```
+- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
 
-* `handle`: [_SigningBoxHandle_](mod_crypto.md#SigningBoxHandle) – Handle of the signing box.
 
-### ParamsOfAppSigningBox
-
+## ParamsOfAppSigningBox
 Signing box callbacks.
 
-```typescript
+```ts
 type ParamsOfAppSigningBox = {
     type: 'GetPublicKey'
 } | {
@@ -2416,31 +2293,32 @@ type ParamsOfAppSigningBox = {
     unsigned: string
 }
 ```
-
-Depends on value of the `type` field.
+Depends on value of the  `type` field.
 
 When _type_ is _'GetPublicKey'_
 
 Get signing box public key
 
+
 When _type_ is _'Sign'_
 
 Sign data
 
-* `unsigned`: _string_ – Data to sign encoded as base64
+
+- `unsigned`: _string_ – Data to sign encoded as base64
+
 
 Variant constructors:
 
-```typescript
+```ts
 function paramsOfAppSigningBoxGetPublicKey(): ParamsOfAppSigningBox;
 function paramsOfAppSigningBoxSign(unsigned: string): ParamsOfAppSigningBox;
 ```
 
-### ResultOfAppSigningBox
-
+## ResultOfAppSigningBox
 Returning values from signing box callbacks.
 
-```typescript
+```ts
 type ResultOfAppSigningBox = {
     type: 'GetPublicKey'
     public_key: string
@@ -2449,84 +2327,75 @@ type ResultOfAppSigningBox = {
     signature: string
 }
 ```
-
-Depends on value of the `type` field.
+Depends on value of the  `type` field.
 
 When _type_ is _'GetPublicKey'_
 
 Result of getting public key
 
-* `public_key`: _string_ – Signing box public key
+
+- `public_key`: _string_ – Signing box public key
 
 When _type_ is _'Sign'_
 
 Result of signing data
 
-* `signature`: _string_ – Data signature encoded as hex
+
+- `signature`: _string_ – Data signature encoded as hex
+
 
 Variant constructors:
 
-```typescript
+```ts
 function resultOfAppSigningBoxGetPublicKey(public_key: string): ResultOfAppSigningBox;
 function resultOfAppSigningBoxSign(signature: string): ResultOfAppSigningBox;
 ```
 
-### ResultOfSigningBoxGetPublicKey
-
-```typescript
+## ResultOfSigningBoxGetPublicKey
+```ts
 type ResultOfSigningBoxGetPublicKey = {
     pubkey: string
 }
 ```
+- `pubkey`: _string_ – Public key of signing box.
+<br>Encoded with hex
 
-*   `pubkey`: _string_ – Public key of signing box.
 
-    \
-    Encoded with hex
-
-### ParamsOfSigningBoxSign
-
-```typescript
+## ParamsOfSigningBoxSign
+```ts
 type ParamsOfSigningBoxSign = {
     signing_box: SigningBoxHandle,
     unsigned: string
 }
 ```
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+- `unsigned`: _string_ – Unsigned user data.
+<br>Must be encoded with `base64`.
 
-* `signing_box`: [_SigningBoxHandle_](mod_crypto.md#SigningBoxHandle) – Signing Box handle.
-*   `unsigned`: _string_ – Unsigned user data.
 
-    \
-    Must be encoded with `base64`.
-
-### ResultOfSigningBoxSign
-
-```typescript
+## ResultOfSigningBoxSign
+```ts
 type ResultOfSigningBoxSign = {
     signature: string
 }
 ```
+- `signature`: _string_ – Data signature.
+<br>Encoded with `hex`.
 
-*   `signature`: _string_ – Data signature.
 
-    \
-    Encoded with `hex`.
-
-### RegisteredEncryptionBox
-
-```typescript
+## RegisteredEncryptionBox
+```ts
 type RegisteredEncryptionBox = {
     handle: EncryptionBoxHandle
 }
 ```
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
 
-* `handle`: [_EncryptionBoxHandle_](mod_crypto.md#EncryptionBoxHandle) – Handle of the encryption box
 
-### ParamsOfAppEncryptionBox
-
+## ParamsOfAppEncryptionBox
 Encryption box callbacks.
 
-```typescript
+```ts
 type ParamsOfAppEncryptionBox = {
     type: 'GetInfo'
 } | {
@@ -2537,38 +2406,40 @@ type ParamsOfAppEncryptionBox = {
     data: string
 }
 ```
-
-Depends on value of the `type` field.
+Depends on value of the  `type` field.
 
 When _type_ is _'GetInfo'_
 
 Get encryption box info
 
+
 When _type_ is _'Encrypt'_
 
 Encrypt data
 
-* `data`: _string_ – Data, encoded in Base64
+
+- `data`: _string_ – Data, encoded in Base64
 
 When _type_ is _'Decrypt'_
 
 Decrypt data
 
-* `data`: _string_ – Data, encoded in Base64
+
+- `data`: _string_ – Data, encoded in Base64
+
 
 Variant constructors:
 
-```typescript
+```ts
 function paramsOfAppEncryptionBoxGetInfo(): ParamsOfAppEncryptionBox;
 function paramsOfAppEncryptionBoxEncrypt(data: string): ParamsOfAppEncryptionBox;
 function paramsOfAppEncryptionBoxDecrypt(data: string): ParamsOfAppEncryptionBox;
 ```
 
-### ResultOfAppEncryptionBox
-
+## ResultOfAppEncryptionBox
 Returning values from signing box callbacks.
 
-```typescript
+```ts
 type ResultOfAppEncryptionBox = {
     type: 'GetInfo'
     info: EncryptionBoxInfo
@@ -2580,115 +2451,110 @@ type ResultOfAppEncryptionBox = {
     data: string
 }
 ```
-
-Depends on value of the `type` field.
+Depends on value of the  `type` field.
 
 When _type_ is _'GetInfo'_
 
 Result of getting encryption box info
 
-* `info`: [_EncryptionBoxInfo_](mod_crypto.md#EncryptionBoxInfo)
+
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_
 
 When _type_ is _'Encrypt'_
 
 Result of encrypting data
 
-* `data`: _string_ – Encrypted data, encoded in Base64
+
+- `data`: _string_ – Encrypted data, encoded in Base64
 
 When _type_ is _'Decrypt'_
 
 Result of decrypting data
 
-* `data`: _string_ – Decrypted data, encoded in Base64
+
+- `data`: _string_ – Decrypted data, encoded in Base64
+
 
 Variant constructors:
 
-```typescript
+```ts
 function resultOfAppEncryptionBoxGetInfo(info: EncryptionBoxInfo): ResultOfAppEncryptionBox;
 function resultOfAppEncryptionBoxEncrypt(data: string): ResultOfAppEncryptionBox;
 function resultOfAppEncryptionBoxDecrypt(data: string): ResultOfAppEncryptionBox;
 ```
 
-### ParamsOfEncryptionBoxGetInfo
-
-```typescript
+## ParamsOfEncryptionBoxGetInfo
+```ts
 type ParamsOfEncryptionBoxGetInfo = {
     encryption_box: EncryptionBoxHandle
 }
 ```
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
 
-* `encryption_box`: [_EncryptionBoxHandle_](mod_crypto.md#EncryptionBoxHandle) – Encryption box handle
 
-### ResultOfEncryptionBoxGetInfo
-
-```typescript
+## ResultOfEncryptionBoxGetInfo
+```ts
 type ResultOfEncryptionBoxGetInfo = {
     info: EncryptionBoxInfo
 }
 ```
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_ – Encryption box information
 
-* `info`: [_EncryptionBoxInfo_](mod_crypto.md#EncryptionBoxInfo) – Encryption box information
 
-### ParamsOfEncryptionBoxEncrypt
-
-```typescript
+## ParamsOfEncryptionBoxEncrypt
+```ts
 type ParamsOfEncryptionBoxEncrypt = {
     encryption_box: EncryptionBoxHandle,
     data: string
 }
 ```
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `data`: _string_ – Data to be encrypted, encoded in Base64
 
-* `encryption_box`: [_EncryptionBoxHandle_](mod_crypto.md#EncryptionBoxHandle) – Encryption box handle
-* `data`: _string_ – Data to be encrypted, encoded in Base64
 
-### ResultOfEncryptionBoxEncrypt
-
-```typescript
+## ResultOfEncryptionBoxEncrypt
+```ts
 type ResultOfEncryptionBoxEncrypt = {
     data: string
 }
 ```
+- `data`: _string_ – Encrypted data, encoded in Base64.
+<br>Padded to cipher block size
 
-*   `data`: _string_ – Encrypted data, encoded in Base64.
 
-    \
-    Padded to cipher block size
-
-### ParamsOfEncryptionBoxDecrypt
-
-```typescript
+## ParamsOfEncryptionBoxDecrypt
+```ts
 type ParamsOfEncryptionBoxDecrypt = {
     encryption_box: EncryptionBoxHandle,
     data: string
 }
 ```
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `data`: _string_ – Data to be decrypted, encoded in Base64
 
-* `encryption_box`: [_EncryptionBoxHandle_](mod_crypto.md#EncryptionBoxHandle) – Encryption box handle
-* `data`: _string_ – Data to be decrypted, encoded in Base64
 
-### ResultOfEncryptionBoxDecrypt
-
-```typescript
+## ResultOfEncryptionBoxDecrypt
+```ts
 type ResultOfEncryptionBoxDecrypt = {
     data: string
 }
 ```
+- `data`: _string_ – Decrypted data, encoded in Base64.
 
-* `data`: _string_ – Decrypted data, encoded in Base64.
 
-### ParamsOfCreateEncryptionBox
-
-```typescript
+## ParamsOfCreateEncryptionBox
+```ts
 type ParamsOfCreateEncryptionBox = {
     algorithm: EncryptionAlgorithm
 }
 ```
+- `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#EncryptionAlgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
 
-* `algorithm`: [_EncryptionAlgorithm_](mod_crypto.md#EncryptionAlgorithm) – Encryption algorithm specifier including cipher parameters (key, IV, etc)
 
-### AppSigningBox
+## AppSigningBox
 
-```typescript
+```ts
+
 type ResultOfAppSigningBoxGetPublicKey = {
     public_key: string
 }
@@ -2707,11 +2573,11 @@ export interface AppSigningBox {
 }
 ```
 
-### get_public_key
+## get_public_key
 
 Get signing box public key
 
-```typescript
+```ts
 type ResultOfAppSigningBoxGetPublicKey = {
     public_key: string
 }
@@ -2719,15 +2585,17 @@ type ResultOfAppSigningBoxGetPublicKey = {
 function get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKey>;
 ```
 
-#### Result
 
-* `public_key`: _string_ – Signing box public key
+### Result
 
-### sign
+- `public_key`: _string_ – Signing box public key
+
+
+## sign
 
 Sign data
 
-```typescript
+```ts
 type ParamsOfAppSigningBoxSign = {
     unsigned: string
 }
@@ -2740,18 +2608,19 @@ function sign(
     params: ParamsOfAppSigningBoxSign,
 ): Promise<ResultOfAppSigningBoxSign>;
 ```
+### Parameters
+- `unsigned`: _string_ – Data to sign encoded as base64
 
-#### Parameters
 
-* `unsigned`: _string_ – Data to sign encoded as base64
+### Result
 
-#### Result
+- `signature`: _string_ – Data signature encoded as hex
 
-* `signature`: _string_ – Data signature encoded as hex
 
-### AppEncryptionBox
+## AppEncryptionBox
 
-```typescript
+```ts
+
 type ResultOfAppEncryptionBoxGetInfo = {
     info: EncryptionBoxInfo
 }
@@ -2779,11 +2648,11 @@ export interface AppEncryptionBox {
 }
 ```
 
-### get_info
+## get_info
 
 Get encryption box info
 
-```typescript
+```ts
 type ResultOfAppEncryptionBoxGetInfo = {
     info: EncryptionBoxInfo
 }
@@ -2791,15 +2660,17 @@ type ResultOfAppEncryptionBoxGetInfo = {
 function get_info(): Promise<ResultOfAppEncryptionBoxGetInfo>;
 ```
 
-#### Result
 
-* `info`: [_EncryptionBoxInfo_](mod_crypto.md#EncryptionBoxInfo)
+### Result
 
-### encrypt
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_
+
+
+## encrypt
 
 Encrypt data
 
-```typescript
+```ts
 type ParamsOfAppEncryptionBoxEncrypt = {
     data: string
 }
@@ -2812,20 +2683,20 @@ function encrypt(
     params: ParamsOfAppEncryptionBoxEncrypt,
 ): Promise<ResultOfAppEncryptionBoxEncrypt>;
 ```
+### Parameters
+- `data`: _string_ – Data, encoded in Base64
 
-#### Parameters
 
-* `data`: _string_ – Data, encoded in Base64
+### Result
 
-#### Result
+- `data`: _string_ – Encrypted data, encoded in Base64
 
-* `data`: _string_ – Encrypted data, encoded in Base64
 
-### decrypt
+## decrypt
 
 Decrypt data
 
-```typescript
+```ts
 type ParamsOfAppEncryptionBoxDecrypt = {
     data: string
 }
@@ -2838,11 +2709,12 @@ function decrypt(
     params: ParamsOfAppEncryptionBoxDecrypt,
 ): Promise<ResultOfAppEncryptionBoxDecrypt>;
 ```
+### Parameters
+- `data`: _string_ – Data, encoded in Base64
 
-#### Parameters
 
-* `data`: _string_ – Data, encoded in Base64
+### Result
 
-#### Result
+- `data`: _string_ – Decrypted data, encoded in Base64
 
-* `data`: _string_ – Decrypted data, encoded in Base64
+

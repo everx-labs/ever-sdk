@@ -9,5 +9,6 @@ This section contains documents describing TON SDK Types and Methods supported b
 * [Module debot](mod_debot.md)
 * [Module net](mod_net.md)
 * [Module processing](mod_processing.md)
+* [Module proofs](mod_proofs.md)
 * [Module tvm](mod_tvm.md)
 * [Module utils](mod_utils.md)
