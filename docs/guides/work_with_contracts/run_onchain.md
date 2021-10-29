@@ -9,7 +9,7 @@ Learn how to run methods of a contract on-chain
 
 > [See the API reference](../../reference/types-and-methods/modules.md).
 
-Core api is more flexible then AppKit and you can perform a lot of complex logic using it. But you will need to write more code with it as well :)
+Core api is more flexible than AppKit and you can perform a lot of complex logic using it. But you will need to write more code with it as well :)
 
 You need to [define the contract in your node.js](../installation/add_contract_to_your_app.md) application before running its methods.
 
@@ -136,4 +136,4 @@ console.log(`Touch fees: ${JSON.stringify(touch_processing_result.fees,null,2)}`
 
 See the full example in sdk samples repository: [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index_pattern2.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index_pattern2.js)
 
-Check out [AppKit documentation](https://github.com/tonlabs/appkit-js/blob/main/docs/guides/2\_run_onchain_with_appkit.md) for this use case.
+Check out [AppKit documentation](https://github.com/tonlabs/appkit-js/blob/main/docs/guides/run_onchain_with_appkit.md) for this use case.
