@@ -1,6 +1,6 @@
 # Table of contents
 
-* [TON SDK](README.md)
+* [TON SDK](../README.md)
 
 ## Reference
 
@@ -67,4 +67,4 @@
 
 ***
 
-* [AppKit JS documentation](https://azorina.gitbook.io/appkit-js/)
+* [AppKit JS documentation](https://tonlabs.gitbook.io/appkit-js/)

@@ -235,17 +235,17 @@ Where:
 
 [remove\_iterator](mod_net.md#remove_iterator) – Removes an iterator
 
-### [debot](mod_debot.md) – [UNSTABLE](https://github.com/a-zorina/TON-SDK/tree/fb9d3810396a3e3f948a7f78b2bc77900a947baf/docs/UNSTABLE.md) Module for working with debot.
+### [debot](mod_debot.md) – [UNSTABLE](https://github.com/tonlabs/TON-SDK/blob/master/docs/UNSTABLE.md) Module for working with debot.
 
-[init](mod_debot.md#init) – [UNSTABLE](https://github.com/a-zorina/TON-SDK/tree/fb9d3810396a3e3f948a7f78b2bc77900a947baf/docs/UNSTABLE.md) Creates and instance of DeBot.
+[init](mod_debot.md#init) – [UNSTABLE](https://github.com/tonlabs/TON-SDK/blob/master/docs/UNSTABLE.md) Creates and instance of DeBot.
 
-[start](mod_debot.md#start) – [UNSTABLE](https://github.com/a-zorina/TON-SDK/tree/fb9d3810396a3e3f948a7f78b2bc77900a947baf/docs/UNSTABLE.md) Starts the DeBot.
+[start](mod_debot.md#start) – [UNSTABLE](https://github.com/tonlabs/TON-SDK/blob/master/docs/UNSTABLE.md) Starts the DeBot.
 
-[fetch](mod_debot.md#fetch) – [UNSTABLE](https://github.com/a-zorina/TON-SDK/tree/fb9d3810396a3e3f948a7f78b2bc77900a947baf/docs/UNSTABLE.md) Fetches DeBot metadata from blockchain.
+[fetch](mod_debot.md#fetch) – [UNSTABLE](https://github.com/tonlabs/TON-SDK/blob/master/docs/UNSTABLE.md) Fetches DeBot metadata from blockchain.
 
-[execute](mod_debot.md#execute) – [UNSTABLE](https://github.com/a-zorina/TON-SDK/tree/fb9d3810396a3e3f948a7f78b2bc77900a947baf/docs/UNSTABLE.md) Executes debot action.
+[execute](mod_debot.md#execute) – [UNSTABLE](https://github.com/tonlabs/TON-SDK/blob/master/docs/UNSTABLE.md) Executes debot action.
 
-[send](mod_debot.md#send) – [UNSTABLE](https://github.com/a-zorina/TON-SDK/tree/fb9d3810396a3e3f948a7f78b2bc77900a947baf/docs/UNSTABLE.md) Sends message to Debot.
+[send](mod_debot.md#send) – [UNSTABLE](https://github.com/tonlabs/TON-SDK/blob/master/docs/UNSTABLE.md) Sends message to Debot.
 
-[remove](mod_debot.md#remove) – [UNSTABLE](https://github.com/a-zorina/TON-SDK/tree/fb9d3810396a3e3f948a7f78b2bc77900a947baf/docs/UNSTABLE.md) Destroys debot handle.
+[remove](mod_debot.md#remove) – [UNSTABLE](https://github.com/tonlabs/TON-SDK/blob/master/docs/UNSTABLE.md) Destroys debot handle.
 

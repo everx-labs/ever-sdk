@@ -16,7 +16,7 @@ Find out how to deploy a contract to Free TON Blockchain with SDK
 * [Deploy a contract from another contract](deploy.md#deploy-a-contract-from-another-contract)
 * [Sample Source Code](deploy.md#sample-source-code)
 
-> [See the API reference](https://github.com/a-zorina/TON-SDK/tree/fb9d3810396a3e3f948a7f78b2bc77900a947baf/guides/docs/modules.md).
+> [See the API reference](../../reference/types-and-methods/modules.md).
 
 Core api is more flexible than [AppKit](https://github.com/tonlabs/appkit-js/), and you can perform a lot of complex logic using it. But you will need to write more code with it as well:)
 
