@@ -1,8 +1,6 @@
-<p align="center"><a href="https://github.com/tonlabs/TON-SDK"><img src="assets/ton-sdk-blue.png" height="60"/></a></p> 
-<h1 align="center">TON-SDK</h1>
-<p align="center">Core Client Library built on the TON OS GraphQL API</p>
-<p align="center">for Free TON DApp development</p>
+# TON SDK
 
+Core Client Library built on the TON OS GraphQL API for Free TON DApp development
 
 **Get quick help in our telegram channel:**
 
@@ -24,15 +22,15 @@
   
 # Useful links
 
-[Quick Start (Javascript)](https://docs.ton.dev/86757ecb2/p/33b76d-quick-start)    
+[Quick Start (Javascript)](docs/guides/quick_start.md)    
 
-[Error descriptions](https://docs.ton.dev/86757ecb2/p/443ce4-errors)
+[Error descriptions](docs/reference/error_codes.md)
 
 [JavaScript SDK Types and Methods (API Reference)](https://tonlabs.github.io/ton-client-js/)
 
-[Core Types and Methods (API Reference)](https://github.com/tonlabs/TON-SDK/blob/master/docs/modules.md)     
+[Core Types and Methods (API Reference)](docs/reference/types-and-methods/modules.md)     
 
-[Guides](https://docs.ton.dev/86757ecb2/p/783f9d-sdk)  
+[Guides](docs/guides)  
 
 # What is Core Free TON Client Library
 
@@ -55,8 +53,8 @@ DApp etc.
 Client Library exposes all the functionality through a few of exported functions. All 
 interaction with library is performed using JSON-RPC like protocol.
 
-Library works over [GraphQL API](https://docs.ton.dev/86757ecb2/p/793337-ton-os-api) of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). 
-So, it can be used to interact directly with [TON OS Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks).  
+Library works over [GraphQL API](docs/reference/ton-os-api/README.md) of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). 
+So, it can be used to interact directly with [TON OS Clouds](docs/reference/ton-os-api/networks.md).  
 
 # SDKs in other languages (bindings over TON-SDK)
 
@@ -99,12 +97,12 @@ You have some options:
   JSON-RPC interface. This interface exports several extern "C" functions. So you can build
   a dynamic or static link library and link it to your application as any other external 
   libraries. The JSON Interface is fully "C" compliant. You can find description 
-  in section [JSON Interface](docs/json_interface.md).
+  in section [JSON Interface](docs/for-binding-developers/json_interface.md).
 - use bindings already written by TON Labs and community. Below you can find a list of known 
   bindings.
 - write your own binding to chosen language and share it with community.
 
-If you choose using JSON Interface please read this document [JSON Interface](docs/json_interface.md).   
+If you choose using JSON Interface please read this document [JSON Interface](docs/for-binding-developers/json_interface.md).   
 Here you can find directions how to use `json_interface` and write your own binding.
  
 # How to avoid Soft Breaking Problems
@@ -205,7 +203,7 @@ To run test suite use standard Rust test command
 ```
 cargo test
 ```
-SDK tests need [TON OS API](https://docs.ton.dev/86757ecb2/p/793337-ton-os-api) endpoint to run on. 
+SDK tests need [TON OS API](docs/reference/ton-os-api/networks.md) endpoint to run on. 
 Such an API is exposed by a [DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server) which runs in real networks and by local blockchain [TON OS SE](https://github.com/tonlabs/tonos-se).
 
 TON OS SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`.
