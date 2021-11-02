@@ -1,5 +1,4 @@
-use std::array::IntoIter;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use std::io::Cursor;
 use std::sync::Arc;
 
@@ -7,12 +6,10 @@ use failure::{bail, err_msg};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, HashmapAugType, MerkleProof, ShardIdent, ShardStateUnsplit, Transaction, ValidatorDescr};
-use ton_block_json::{BlockSerializationSet, TransactionSerializationSet, };
 use ton_types::{Cell, deserialize_tree_of_cells, UInt256};
 use ton_types::Result;
 
 pub(crate) use errors::ErrorCode;
-use json::{compare_values, CompareValuesResult};
 
 use crate::client::NetworkUID;
 use crate::ClientContext;
@@ -21,7 +18,6 @@ use crate::error::ClientResult;
 use crate::net::{ParamsOfQueryCollection, query_collection};
 use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::errors::Error;
-use crate::proofs::json::JsonPath;
 use crate::proofs::validators::{calc_subset_for_workchain, check_crypto_signatures};
 use crate::utils::json::JsonHelper;
 
@@ -63,144 +59,6 @@ impl Default for ProofsConfig {
             cache_in_local_storage: default_cache_in_local_storage(),
         }
     }
-}
-
-lazy_static::lazy_static! {
-    static ref COMPARE_BLOCK_JSON_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
-        "gen_software_capabilities",
-    ]).collect();
-
-    static ref COMPARE_BLOCK_JSON_NUMERIC_FIELDS: HashSet<&'static str> = IntoIter::new([
-        "account_blocks.transactions.lt",
-        "account_blocks.transactions.total_fees",
-        "account_blocks.transactions.total_fees_other.value",
-        "end_lt",
-        "gen_software_capabilities",
-        "in_msg_descr.fwd_fee",
-        "in_msg_descr.ihr_fee",
-        "in_msg_descr.in_msg.fwd_fee_remaining",
-        "in_msg_descr.out_msg.fwd_fee_remaining",
-        "in_msg_descr.transit_fee",
-        "master.config.p14.basechain_block_fee",
-        "master.config.p14.masterchain_block_fee",
-        "master.config.p17.max_stake",
-        "master.config.p17.min_stake",
-        "master.config.p17.min_total_stake",
-        "master.config.p18.bit_price_ps",
-        "master.config.p18.cell_price_ps",
-        "master.config.p18.mc_bit_price_ps",
-        "master.config.p18.mc_cell_price_ps",
-        "master.config.p20.block_gas_limit",
-        "master.config.p20.delete_due_limit",
-        "master.config.p20.flat_gas_limit",
-        "master.config.p20.flat_gas_price",
-        "master.config.p20.freeze_due_limit",
-        "master.config.p20.gas_credit",
-        "master.config.p20.gas_limit",
-        "master.config.p20.gas_price",
-        "master.config.p20.special_gas_limit",
-        "master.config.p21.block_gas_limit",
-        "master.config.p21.delete_due_limit",
-        "master.config.p21.flat_gas_limit",
-        "master.config.p21.flat_gas_price",
-        "master.config.p21.freeze_due_limit",
-        "master.config.p21.gas_credit",
-        "master.config.p21.gas_limit",
-        "master.config.p21.gas_price",
-        "master.config.p21.special_gas_limit",
-        "master.config.p24.bit_price",
-        "master.config.p24.cell_price",
-        "master.config.p24.lump_price",
-        "master.config.p25.bit_price",
-        "master.config.p25.cell_price",
-        "master.config.p25.lump_price",
-        "master.config.p32.list.weight",
-        "master.config.p32.total_weight",
-        "master.config.p33.list.weight",
-        "master.config.p33.total_weight",
-        "master.config.p34.list.weight",
-        "master.config.p34.total_weight",
-        "master.config.p35.list.weight",
-        "master.config.p35.total_weight",
-        "master.config.p36.list.weight",
-        "master.config.p36.total_weight",
-        "master.config.p37.list.weight",
-        "master.config.p37.total_weight",
-        "master.config.p8.capabilities",
-        "master.recover_create_msg.fwd_fee",
-        "master.recover_create_msg.ihr_fee",
-        "master.recover_create_msg.in_msg.fwd_fee_remaining",
-        "master.recover_create_msg.out_msg.fwd_fee_remaining",
-        "master.recover_create_msg.transit_fee",
-        "master.shard_fees.create",
-        "master.shard_fees.create_other.value",
-        "master.shard_fees.fees",
-        "master.shard_fees.fees_other.value",
-        "master.shard_hashes.descr.end_lt",
-        "master.shard_hashes.descr.fees_collected",
-        "master.shard_hashes.descr.fees_collected_other.value",
-        "master.shard_hashes.descr.funds_created",
-        "master.shard_hashes.descr.funds_created_other.value",
-        "master.shard_hashes.descr.start_lt",
-        "master_ref.end_lt",
-        "out_msg_descr.import_block_lt",
-        "out_msg_descr.imported.fwd_fee",
-        "out_msg_descr.imported.ihr_fee",
-        "out_msg_descr.imported.in_msg.fwd_fee_remaining",
-        "out_msg_descr.imported.out_msg.fwd_fee_remaining",
-        "out_msg_descr.imported.transit_fee",
-        "out_msg_descr.next_addr_pfx",
-        "out_msg_descr.out_msg.fwd_fee_remaining",
-        "out_msg_descr.reimport.fwd_fee",
-        "out_msg_descr.reimport.ihr_fee",
-        "out_msg_descr.reimport.in_msg.fwd_fee_remaining",
-        "out_msg_descr.reimport.out_msg.fwd_fee_remaining",
-        "out_msg_descr.reimport.transit_fee",
-        "prev_alt_ref.end_lt",
-        "prev_ref.end_lt",
-        "prev_vert_alt_ref.end_lt",
-        "prev_vert_ref.end_lt",
-        "start_lt",
-        "value_flow.created",
-        "value_flow.created_other.value",
-        "value_flow.exported",
-        "value_flow.exported_other.value",
-        "value_flow.fees_collected",
-        "value_flow.fees_collected_other.value",
-        "value_flow.fees_imported",
-        "value_flow.fees_imported_other.value",
-        "value_flow.from_prev_blk",
-        "value_flow.from_prev_blk_other.value",
-        "value_flow.imported",
-        "value_flow.imported_other.value",
-        "value_flow.minted",
-        "value_flow.minted_other.value",
-        "value_flow.to_next_blk",
-        "value_flow.to_next_blk_other.value",
-    ]).collect();
-
-    static ref COMPARE_TRANSACTIONS_JSON_NUMERIC_FIELDS: HashSet<&'static str> = IntoIter::new([
-        "action.total_action_fees",
-        "action.total_fwd_fees",
-        "balance_delta",
-        "balance_delta_other.value",
-        "bounce.fwd_fees",
-        "bounce.msg_fees",
-        "bounce.req_fwd_fees",
-        "compute.gas_fees",
-        "compute.gas_limit",
-        "compute.gas_used",
-        "credit.credit",
-        "credit.credit_other.value",
-        "credit.due_fees_collected",
-        "ext_in_msg_fee",
-        "lt",
-        "prev_trans_lt",
-        "storage.storage_fees_collected",
-        "storage.storage_fees_due",
-        "total_fees",
-        "total_fees_other.value",
-    ]).collect();
 }
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
@@ -292,35 +150,10 @@ pub async fn proof_block_data(
 
     engine.proof_block_boc(&root_hash, &block, &boc).await?;
 
-    // TODO: Add proof information to the resulting JSON:
-    //       1. Convert crate::proofs::BlockProof into ton_block::BlockProof (not implemented yet);
-    //       2. Get map using ton_block_json::db_serialize_proof();
-    //       3. Merge two maps into a single JSON;
-    //       4. [TBD] Increase required comparison result to CompareValuesResult::Subset.
-    let block_map = ton_block_json::db_serialize_block_ex(
-        "id",
-        &BlockSerializationSet {
-            block,
-            id: root_hash,
-            status: ton_block::BlockProcessingStatus::Finalized,
-            boc
-        },
-        ton_block_json::SerializationMode::QServer,
-    ).map_err(|err| Error::invalid_data(err))?;
+    let block_json = json::serialize_block(root_hash, block, boc)
+        .map_err(|err| Error::invalid_data(err))?;
 
-    if let CompareValuesResult::Different(message) =
-        compare_values(
-            &params.block,
-            &block_map.into(),
-            JsonPath::new("blocks"),
-            &COMPARE_BLOCK_JSON_IGNORE_FIELDS,
-            &COMPARE_BLOCK_JSON_NUMERIC_FIELDS,
-        )
-    {
-        return Err(Error::data_differs_from_proven(message));
-    }
-
-    Ok(())
+    json::compare_blocks(&params.block, &block_json)
 }
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
@@ -435,33 +268,15 @@ pub async fn proof_transaction_data(
     let transaction = Transaction::construct_from_cell(cell)
         .map_err(|err| Error::invalid_data(err))?;
 
-    let transaction_map = ton_block_json::db_serialize_transaction_ex(
-        "id",
-        &TransactionSerializationSet {
-            transaction,
-            id: root_hash,
-            status: ton_block::TransactionProcessingStatus::Finalized,
-            block_id: Some(block_id),
-            workchain_id: block_info.shard().workchain_id(),
-            boc,
-            proof: None,
-        },
-        ton_block_json::SerializationMode::QServer,
+    let transaction_json = json::serialize_transaction(
+        root_hash,
+        transaction,
+        block_id,
+        block_info.shard().workchain_id(),
+        boc,
     ).map_err(|err| Error::invalid_data(err))?;
 
-    if let CompareValuesResult::Different(message) =
-        compare_values(
-            &params.transaction,
-            &transaction_map.into(),
-            JsonPath::new("transactions"),
-            &HashSet::new(),
-            &COMPARE_TRANSACTIONS_JSON_NUMERIC_FIELDS,
-        )
-    {
-        return Err(Error::data_differs_from_proven(message));
-    }
-
-    Ok(())
+    json::compare_transactions(&params.transaction, &transaction_json)
 }
 
 lazy_static! {

@@ -641,36 +641,6 @@ fn gen_full_schema_query(object_type: &str) -> Result<String> {
 async fn proof_block_data_test() -> Result<()> {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
 
-    let proof_json = query_block_data(
-        client.context(),
-        "5a049e5b761c1cb4bbedf0df8efb202b55a243ad194f8cb03c6e34cac48d448c",
-        r#"
-            id
-            workchain_id
-            shard
-            seq_no
-            gen_utime
-            start_lt
-            end_lt
-            signatures {
-                proof
-                catchain_seqno
-                validator_list_hash_short
-                sig_weight
-                signatures {
-                    node_id
-                    r
-                    s
-                }
-            }
-        "#
-    ).await?;
-
-    client.request_async(
-        "proofs.proof_block_data",
-        ParamsOfProofBlockData { block: proof_json },
-    ).await?;
-
     let mut block_json = query_block_data(
         client.context(),
         "8bde590a572437332977e68bace66fa00f9cebac6baa57f6bf2d2f1276db2848",
@@ -706,6 +676,39 @@ async fn proof_block_data_test() -> Result<()> {
         client.request_async::<_, ()>(
             "proofs.proof_block_data",
             ParamsOfProofBlockData { block: block_json },
+        ).await
+            .is_err()
+    );
+
+    let proof_json = query_block_data(
+        client.context(),
+        "5a049e5b761c1cb4bbedf0df8efb202b55a243ad194f8cb03c6e34cac48d448c",
+        r#"
+            id
+            workchain_id
+            shard
+            seq_no
+            gen_utime
+            start_lt
+            end_lt
+            signatures {
+                proof
+                catchain_seqno
+                validator_list_hash_short
+                sig_weight
+                signatures {
+                    node_id
+                    r
+                    s
+                }
+            }
+        "#
+    ).await?;
+
+    assert!(
+        client.request_async::<_, ()>(
+            "proofs.proof_block_data",
+            ParamsOfProofBlockData { block: proof_json },
         ).await
             .is_err()
     );
