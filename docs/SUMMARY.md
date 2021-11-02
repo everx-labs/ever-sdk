@@ -19,7 +19,7 @@
 * [Error API](reference/error\_api.md)
 * [Error Codes](reference/error\_codes.md)
 * [JavaScript Reference](https://tonlabs.github.io/ton-client-js/)
-* [Rust Reference](https://github.com/tonlabs/TON-SDK/tree/Gitbook/docs/reference/rust-api)
+* [Rust Reference](https://github.com/tonlabs/TON-SDK/tree/master/docs/reference/rust-api)
 * [TON OS API](reference/ton-os-api/README.md)
   * [Networks](reference/ton-os-api/networks.md)
   * [Web Playground](reference/ton-os-api/web\_playground.md)
