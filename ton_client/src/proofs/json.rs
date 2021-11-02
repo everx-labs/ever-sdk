@@ -1,4 +1,5 @@
 use std::array::IntoIter;
+use std::borrow::Cow;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
 use std::str::FromStr;
@@ -238,31 +239,42 @@ pub(crate) fn compare_values(
     numeric_fields: &HashSet<&'static str>,
 ) -> ClientResult<()> {
     match (a, b) {
-        (Value::Null, Value::Null) => Ok(()),
-        (Value::Null, _) => Ok(()),
+        (Value::Null, Value::Null) => return Ok(()),
+        (Value::Null, _) => return Ok(()),
 
         (Value::Bool(_), Value::Bool(_))
             | (Value::Number(_), Value::Number(_))
-            | (Value::Number(_), Value::String(_))
+        => {
+            if a == b {
+                return Ok(());
+            }
+        }
+
+        (Value::Number(_), Value::String(_))
             | (Value::String(_), Value::Number(_))
             | (Value::String(_), Value::String(_))
         => {
             let is_numeric = numeric_fields.contains(path.gen_flat_str().as_str());
-            if get_string(a, is_numeric) == get_string(b, is_numeric) {
-                Ok(())
-            } else {
-                Err(Error::data_differs_from_proven(format!("field `{}`: {:?} != {:?}", path, a, b)))
+
+            if !is_numeric && a.is_string() && b.is_string() {
+                if a.as_str().unwrap().eq_ignore_ascii_case(b.as_str().unwrap()) {
+                    return Ok(());
+                }
+            } else if get_string(a, is_numeric).eq_ignore_ascii_case(&get_string(b, is_numeric)) {
+                return Ok(());
             }
         }
 
         (Value::Array(vec_a), Value::Array(vec_b)) =>
-            compare_vectors(vec_a, vec_b, path, ignore_fields, numeric_fields),
+            return compare_vectors(vec_a, vec_b, path, ignore_fields, numeric_fields),
 
         (Value::Object(map_a), Value::Object(map_b)) =>
-            compare_maps(map_a, map_b, path, ignore_fields, numeric_fields),
+            return compare_maps(map_a, map_b, path, ignore_fields, numeric_fields),
 
-        _ => Err(Error::data_differs_from_proven(format!("field `{}`: {:?} != {:?}", path, a, b)))
+        _ => (),
     }
+
+    Err(Error::data_differs_from_proven(format!("field `{}`: {:?} != {:?}", path, a, b)))
 }
 
 fn compare_maps(
@@ -315,24 +327,18 @@ fn compare_vectors(
     Ok(())
 }
 
-fn get_string(value: &Value, is_numeric: bool) -> String {
+fn get_string(value: &Value, is_numeric: bool) -> Cow<str> {
     let result = match value {
-        Value::String(v) => v.to_string().to_ascii_lowercase(),
-        _ => value.to_string(),
+        Value::String(v) => Cow::from(v),
+        _ => Cow::from(value.to_string()),
     };
 
     if is_numeric {
         if let Ok(value) = i128::from_str(&result) {
             if value < 0 {
-                return format!("-0x{:x}", value.abs());
+                return Cow::from(format!("-0x{:x}", value.abs()));
             }
-            return format!("0x{:x}", value);
-        }
-        if let Ok(value) = i128::from_str_radix(&result, 16) {
-            if value < 0 {
-                return format!("-0x{:x}", value.abs());
-            }
-            return format!("0x{:x}", value);
+            return Cow::from(format!("0x{:x}", value));
         }
     }
 
