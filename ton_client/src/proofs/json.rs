@@ -232,20 +232,20 @@ impl Display for JsonPath<'_, '_> {
 }
 
 pub(crate) fn compare_values(
-    a: &Value,
-    b: &Value,
+    actual: &Value,
+    expected: &Value,
     path: JsonPath<'_, '_>,
     ignore_fields: &HashSet<&'static str>,
     numeric_fields: &HashSet<&'static str>,
 ) -> ClientResult<()> {
-    match (a, b) {
+    match (actual, expected) {
         (Value::Null, Value::Null) => return Ok(()),
         (Value::Null, _) => return Ok(()),
 
         (Value::Bool(_), Value::Bool(_))
             | (Value::Number(_), Value::Number(_))
         => {
-            if a == b {
+            if actual == expected {
                 return Ok(());
             }
         }
@@ -256,42 +256,51 @@ pub(crate) fn compare_values(
         => {
             let is_numeric = numeric_fields.contains(path.gen_flat_str().as_str());
 
-            if !is_numeric && a.is_string() && b.is_string() {
-                if a.as_str().unwrap().eq_ignore_ascii_case(b.as_str().unwrap()) {
+            if !is_numeric && actual.is_string() && expected.is_string() {
+                if actual.as_str().unwrap().eq_ignore_ascii_case(expected.as_str().unwrap()) {
                     return Ok(());
                 }
-            } else if get_string(a, is_numeric).eq_ignore_ascii_case(&get_string(b, is_numeric)) {
+            } else if get_string(actual, is_numeric)
+                .eq_ignore_ascii_case(&get_string(expected, is_numeric))
+            {
                 return Ok(());
             }
         }
 
-        (Value::Array(vec_a), Value::Array(vec_b)) =>
-            return compare_vectors(vec_a, vec_b, path, ignore_fields, numeric_fields),
+        (Value::Array(vec_actual), Value::Array(vec_expected)) =>
+            return compare_vectors(vec_actual, vec_expected, path, ignore_fields, numeric_fields),
 
-        (Value::Object(map_a), Value::Object(map_b)) =>
-            return compare_maps(map_a, map_b, path, ignore_fields, numeric_fields),
+        (Value::Object(map_actual), Value::Object(map_expected)) =>
+            return compare_maps(map_actual, map_expected, path, ignore_fields, numeric_fields),
 
         _ => (),
     }
 
-    Err(Error::data_differs_from_proven(format!("field `{}`: {:?} != {:?}", path, a, b)))
+    Err(Error::data_differs_from_proven(
+        format!(
+            "field `{path}`: expected {expected:?}, actual {actual:?}",
+            path = path,
+            actual = actual,
+            expected = expected,
+        )
+    ))
 }
 
 fn compare_maps(
-    map_a: &Map<String, Value>,
-    map_b: &Map<String, Value>,
+    map_actual: &Map<String, Value>,
+    map_expected: &Map<String, Value>,
     path: JsonPath<'_, '_>,
     ignore_fields: &HashSet<&'static str>,
     numeric_fields: &HashSet<&'static str>,
 ) -> ClientResult<()> {
-    for key in map_a.keys()
+    for key in map_actual.keys()
         .filter(
             |key| !ignore_fields.contains(path.join_field(key).gen_flat_str().as_str())
         )
     {
         compare_values(
-            &map_a[key],
-            map_b.get(key).unwrap_or(&Value::Null),
+            &map_actual[key],
+            map_expected.get(key).unwrap_or(&Value::Null),
             path.join_field(key),
             ignore_fields,
             numeric_fields,
@@ -302,22 +311,27 @@ fn compare_maps(
 }
 
 fn compare_vectors(
-    vec_a: &Vec<Value>,
-    vec_b: &Vec<Value>,
+    vec_actual: &Vec<Value>,
+    vec_expected: &Vec<Value>,
     path: JsonPath<'_, '_>,
     ignore_fields: &HashSet<&'static str>,
     numeric_fields: &HashSet<&'static str>,
 ) -> ClientResult<()> {
-    if vec_a.len() != vec_b.len() {
+    if vec_actual.len() != vec_expected.len() {
         return Err(Error::data_differs_from_proven(
-            format!("Field `{}`: arrays has different lengths ({} != {})", path, vec_a.len(), vec_b.len()),
+            format!(
+                "Field `{path}`: arrays has different lengths (expected {len_expected}, actual {len_actual})",
+                path = path,
+                len_actual = vec_actual.len(),
+                len_expected = vec_expected.len(),
+            )
         ));
     }
 
-    for i in 0..vec_a.len() {
+    for i in 0..vec_actual.len() {
         compare_values(
-            &vec_a[i],
-            &vec_b[i],
+            &vec_actual[i],
+            &vec_expected[i],
             path.join_index(i),
             ignore_fields,
             numeric_fields,
@@ -452,20 +466,20 @@ pub(crate) fn serialize_transaction(
     Ok(value)
 }
 
-pub(crate) fn compare_blocks(a: &Value, b: &Value) -> ClientResult<()> {
+pub(crate) fn compare_blocks(actual: &Value, expected: &Value) -> ClientResult<()> {
     compare_values(
-        a,
-        b,
+        actual,
+        expected,
         JsonPath::new("blocks"),
         &BLOCK_IGNORE_FIELDS,
         &BLOCK_NUMERIC_FIELDS,
     )
 }
 
-pub(crate) fn compare_transactions(a: &Value, b: &Value) -> ClientResult<()> {
+pub(crate) fn compare_transactions(actual: &Value, expected: &Value) -> ClientResult<()> {
     compare_values(
-        a,
-        b,
+        actual,
+        expected,
         JsonPath::new("transactions"),
         &TRANSACTION_IGNORE_FIELDS,
         &TRANSACTION_NUMERIC_FIELDS,
