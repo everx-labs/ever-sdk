@@ -650,6 +650,8 @@ async fn proof_block_data_test() -> Result<()> {
             shard
             seq_no
             gen_utime
+            start_lt
+            end_lt
             signatures {
                 proof
                 catchain_seqno
@@ -708,6 +710,153 @@ async fn proof_block_data_test() -> Result<()> {
             .is_err()
     );
 
+    let decimal_fields = r#"
+        id
+        boc
+        account_blocks {
+            transactions {
+                lt(format:DEC) total_fees(format:DEC) total_fees_other{value(format:DEC)}
+            }
+        }
+        end_lt(format:DEC)
+        gen_software_capabilities(format:DEC)
+        in_msg_descr {
+            fwd_fee(format:DEC)
+            ihr_fee(format:DEC)
+            in_msg {fwd_fee_remaining(format:DEC)}
+            out_msg {fwd_fee_remaining(format:DEC)}
+            transit_fee(format:DEC)}
+        master {
+            config {
+              p14 {basechain_block_fee(format:DEC) masterchain_block_fee(format:DEC)}
+              p17 {max_stake(format:DEC) min_stake(format:DEC) min_total_stake(format:DEC)}
+              p18 {
+                bit_price_ps(format:DEC)
+                cell_price_ps(format:DEC)
+                mc_bit_price_ps(format:DEC)
+                mc_cell_price_ps(format:DEC)
+              }
+              p20 {
+                block_gas_limit(format:DEC)
+                delete_due_limit(format:DEC)
+                flat_gas_limit(format:DEC)
+                flat_gas_price(format:DEC)
+                freeze_due_limit(format:DEC)
+                gas_credit(format:DEC)
+                gas_limit(format:DEC)
+                gas_price(format:DEC)
+                special_gas_limit(format:DEC)
+              }
+              p21 {
+                block_gas_limit(format:DEC)
+                delete_due_limit(format:DEC)
+                flat_gas_limit(format:DEC)
+                flat_gas_price(format:DEC)
+                freeze_due_limit(format:DEC)
+                gas_credit(format:DEC)
+                gas_limit(format:DEC)
+                gas_price(format:DEC)
+                special_gas_limit(format:DEC)
+              }
+              p24 {bit_price(format:DEC) cell_price(format:DEC) lump_price(format:DEC)}
+              p25 {bit_price(format:DEC) cell_price(format:DEC) lump_price(format:DEC)}
+              p32 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p33 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p34 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p35 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p36 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p37 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p8 {capabilities(format:DEC)}
+            }
+            recover_create_msg {
+                fwd_fee(format:DEC)
+                ihr_fee(format:DEC)
+                in_msg {fwd_fee_remaining(format:DEC)}
+                out_msg {fwd_fee_remaining(format:DEC)}
+                transit_fee(format:DEC)
+            }
+            shard_fees {
+                create(format:DEC)
+                create_other {value(format:DEC)} fees(format:DEC) fees_other {value(format:DEC)}
+            }
+            shard_hashes {
+                descr {
+                    end_lt(format:DEC)
+                    fees_collected(format:DEC)
+                    fees_collected_other {value(format:DEC)}
+                    funds_created(format:DEC)
+                    funds_created_other {value(format:DEC)} start_lt(format:DEC)
+                }
+            }
+        }
+        master_ref {end_lt(format:DEC)}
+        out_msg_descr {
+            import_block_lt(format:DEC)
+            imported {
+                fwd_fee(format:DEC)
+                ihr_fee(format:DEC)
+                in_msg {fwd_fee_remaining(format:DEC)}
+                out_msg {fwd_fee_remaining(format:DEC)}
+                transit_fee(format:DEC)
+            }
+            next_addr_pfx(format:DEC)
+            out_msg {fwd_fee_remaining(format:DEC)}
+            reimport {
+                fwd_fee(format:DEC)
+                ihr_fee(format:DEC)
+                in_msg {fwd_fee_remaining(format:DEC)}
+                out_msg {fwd_fee_remaining(format:DEC)}
+                transit_fee(format:DEC)
+            }
+        }
+        prev_alt_ref {end_lt(format:DEC)}
+        prev_ref {end_lt(format:DEC)}
+        prev_vert_alt_ref {end_lt(format:DEC)}
+        prev_vert_ref{end_lt(format:DEC)}
+        start_lt(format:DEC)
+        value_flow {
+            created(format:DEC)
+            created_other {value(format:DEC)}
+            exported exported_other {value(format:DEC)}
+            fees_collected(format:DEC)
+            fees_collected_other {value(format:DEC)}
+            fees_imported(format:DEC)
+            fees_imported_other {value(format:DEC)}
+            from_prev_blk(format:DEC)
+            from_prev_blk_other {value(format:DEC)}
+            imported(format:DEC)
+            imported_other {value(format:DEC)}
+            minted(format:DEC)
+            minted_other {value(format:DEC)}
+            to_next_blk(format:DEC)
+            to_next_blk_other {value(format:DEC)}
+        }
+    "#;
+
+    // Masterchain block
+    let block_json = query_block_data(
+        client.context(),
+        "9eee20c3a93ca93928d7dc4bbbe6570c492d09077f13ebf7b2f68f9e2e176433",
+        decimal_fields,
+    ).await?;
+
+    client.request_async(
+        "proofs.proof_block_data",
+        ParamsOfProofBlockData { block: block_json.clone() },
+    ).await?;
+
+    // Shardchain block
+    let block_json = query_block_data(
+        client.context(),
+        "b38d6bdb4fab0e52a9165fe65aa373520ae8c7e422f93f20c9a2a5c8016d5e7d",
+        decimal_fields,
+    ).await?;
+
+    client.request_async(
+        "proofs.proof_block_data",
+        ParamsOfProofBlockData { block: block_json.clone() },
+    ).await?;
+
     Ok(())
 }
 
@@ -721,7 +870,31 @@ async fn proof_transaction_data_test() -> Result<()> {
         &gen_full_schema_query("Transaction")?,
     ).await?;
 
-    // dbg!(transaction_json);
+    proof_transaction_data(
+        client.context(),
+        ParamsOfProofTransactionData { transaction: transaction_json },
+    ).await?;
+
+    let transaction_json = query_transaction_data(
+        client.context(),
+        "0c7e395e8eb14c173d2dde7189200f28787a05df1fa188b19224f6e19a439dc6",
+        r#"
+            id
+            boc
+            action {total_action_fees(format:DEC) total_fwd_fees(format:DEC)}
+            balance_delta(format:DEC)
+            balance_delta_other {value(format:DEC)}
+            bounce {fwd_fees(format:DEC) msg_fees(format:DEC) req_fwd_fees(format:DEC)}
+            compute {gas_fees(format:DEC) gas_limit(format:DEC) gas_used(format:DEC)}
+            credit {credit(format:DEC) credit_other {value(format:DEC)} due_fees_collected(format:DEC)}
+            ext_in_msg_fee(format:DEC)
+            lt(format:DEC)
+            prev_trans_lt(format:DEC)
+            storage {storage_fees_collected(format:DEC) storage_fees_due(format:DEC)}
+            total_fees(format:DEC)
+            total_fees_other {value(format:DEC)}
+        "#,
+    ).await?;
 
     proof_transaction_data(
         client.context(),
