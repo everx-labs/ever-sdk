@@ -224,9 +224,9 @@ pub async fn proof_transaction_data(
             .map(|str| str.to_owned());
     }
 
-    let block_id = block_id_opt.ok_or_else(|| Error::internal_error("block_id is not found"))?;
+    let block_id = block_id_opt.ok_or_else(|| Error::invalid_data("block_id is not found"))?;
     let block_boc = engine.download_block_boc(&block_id).await
-        .map_err(|err| Error::internal_error(err))?;
+        .map_err(|err| Error::invalid_data(err))?;
 
     let block_cell = deserialize_tree_of_cells(&mut Cursor::new(&block_boc))
         .map_err(|err| Error::invalid_data(err))?;
