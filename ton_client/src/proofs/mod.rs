@@ -6,11 +6,12 @@ use failure::{bail, err_msg};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, HashmapAugType, MerkleProof, ShardIdent, ShardStateUnsplit, Transaction, ValidatorDescr};
-use ton_types::{Cell, deserialize_tree_of_cells, UInt256};
+use ton_types::{Cell, UInt256};
 use ton_types::Result;
 
 pub(crate) use errors::ErrorCode;
 
+use crate::boc::internal::deserialize_object_from_boc_bin;
 use crate::client::NetworkUID;
 use crate::ClientContext;
 use crate::encoding::base64_decode;
@@ -142,11 +143,7 @@ pub async fn proof_block_data(
         return Err(Error::invalid_data("Block's BOC or id are required"));
     };
 
-    let cell = deserialize_tree_of_cells(&mut Cursor::new(&boc))
-        .map_err(|err| Error::invalid_data(err))?;
-    let root_hash = cell.repr_hash();
-    let block = Block::construct_from_cell(cell)
-        .map_err(|err| Error::invalid_data(err))?;
+    let (block, root_hash) = deserialize_object_from_boc_bin(&boc)?;
 
     engine.proof_block_boc(&root_hash, &block, &boc).await?;
 
@@ -173,10 +170,64 @@ pub async fn proof_transaction_data(
     let engine = ProofHelperEngineImpl::new(context).await
         .map_err(|err| Error::proof_check_failed(err))?;
 
-    let id_opt = params.transaction["id"].as_str();
-    let mut block_id_opt = params.transaction["block_id"].as_str()
+    let (root_hash, block_id, boc, transaction) =
+        transaction_get_required_data(&engine, &params.transaction).await?;
+
+    let block_boc = engine.download_block_boc(&block_id).await
+        .map_err(|err| Error::invalid_data(err))?;
+
+    let (block, block_id) = deserialize_object_from_boc_bin(&block_boc)?;
+
+    engine.proof_block_boc(&block_id, &block, &block_boc).await?;
+
+    let block_info = block.read_info()
+        .map_err(|err| Error::invalid_data(err))?;
+    let block_extra = block.read_extra()
+        .map_err(|err| Error::invalid_data(err))?;
+    let account_blocks = block_extra.read_account_blocks()
+        .map_err(|err| Error::invalid_data(err))?;
+
+    let mut transaction_found_in_block = false;
+    account_blocks.iterate_objects(|account_block| {
+        account_block.transaction_iterate_full(|_key, cell, _cc| {
+            if root_hash == cell.repr_hash() {
+                transaction_found_in_block = true;
+                return Ok(false);
+            }
+            Ok(true)
+        })
+    })
+        .map_err(|err| Error::internal_error(err))?;
+
+    if !transaction_found_in_block {
+        return Err(Error::proof_check_failed(
+            format!(
+                "Transaction with `id`: {} not found in block with `id`: {}",
+                root_hash.as_hex_string(),
+                block_id.as_hex_string(),
+            )
+        ));
+    }
+
+    let transaction_json = json::serialize_transaction(
+        root_hash,
+        transaction,
+        block_id,
+        block_info.shard().workchain_id(),
+        boc,
+    ).map_err(|err| Error::invalid_data(err))?;
+
+    json::compare_transactions(&params.transaction, &transaction_json)
+}
+
+async fn transaction_get_required_data(
+    engine: &ProofHelperEngineImpl,
+    transaction_json: &Value,
+) -> ClientResult<(UInt256, String, Vec<u8>, Transaction)> {
+    let id_opt = transaction_json["id"].as_str();
+    let mut block_id_opt = transaction_json["block_id"].as_str()
         .map(|str| str.to_owned());
-    let mut boc_opt = params.transaction["boc"].as_str()
+    let mut boc_opt = transaction_json["boc"].as_str()
         .map(|str| str.to_owned());
 
     if id_opt.is_none() && boc_opt.is_none() {
@@ -210,9 +261,7 @@ pub async fn proof_transaction_data(
         &boc_opt.ok_or_else(|| Error::internal_error("BOC is not found"))?
     )?;
 
-    let cell = deserialize_tree_of_cells(&mut Cursor::new(&boc))
-        .map_err(|err| Error::invalid_data(err))?;
-    let root_hash = cell.repr_hash();
+    let (transaction, root_hash) = deserialize_object_from_boc_bin(&boc)?;
 
     if block_id_opt.is_none() {
         let transaction_json = engine.query_transaction_data(
@@ -225,58 +274,8 @@ pub async fn proof_transaction_data(
     }
 
     let block_id = block_id_opt.ok_or_else(|| Error::invalid_data("block_id is not found"))?;
-    let block_boc = engine.download_block_boc(&block_id).await
-        .map_err(|err| Error::invalid_data(err))?;
 
-    let block_cell = deserialize_tree_of_cells(&mut Cursor::new(&block_boc))
-        .map_err(|err| Error::invalid_data(err))?;
-    let block_id = block_cell.repr_hash();
-    let block = Block::construct_from_cell(block_cell)
-        .map_err(|err| Error::invalid_data(err))?;
-
-    engine.proof_block_boc(&block_id, &block, &block_boc).await?;
-
-    let block_info = block.read_info()
-        .map_err(|err| Error::invalid_data(err))?;
-    let block_extra = block.read_extra()
-        .map_err(|err| Error::invalid_data(err))?;
-    let account_blocks = block_extra.read_account_blocks()
-        .map_err(|err| Error::invalid_data(err))?;
-
-    let mut transaction_found_in_block = false;
-    account_blocks.iterate_objects(|account_block| {
-        account_block.transaction_iterate_full(|_key, cell, _cc| {
-            if root_hash == cell.repr_hash() {
-                transaction_found_in_block = true;
-                return Ok(false);
-            }
-            Ok(true)
-        })
-    })
-        .map_err(|err| Error::internal_error(err))?;
-
-    if !transaction_found_in_block {
-        return Err(Error::proof_check_failed(
-            format!(
-                "Transaction with `id`: {} not found in block with `id`: {}",
-                root_hash.as_hex_string(),
-                block_id.as_hex_string(),
-            )
-        ));
-    }
-
-    let transaction = Transaction::construct_from_cell(cell)
-        .map_err(|err| Error::invalid_data(err))?;
-
-    let transaction_json = json::serialize_transaction(
-        root_hash,
-        transaction,
-        block_id,
-        block_info.shard().workchain_id(),
-        boc,
-    ).map_err(|err| Error::invalid_data(err))?;
-
-    json::compare_transactions(&params.transaction, &transaction_json)
+    Ok((root_hash, block_id, boc, transaction))
 }
 
 lazy_static! {
