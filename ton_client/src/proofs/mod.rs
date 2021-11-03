@@ -162,6 +162,22 @@ pub struct ParamsOfProofTransactionData {
     pub transaction: Value,
 }
 
+/// Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
+///
+/// This function requests corresponding block, checks block proofs, ensures that given transaction
+/// exists in the proven block and compares given data with the proven.
+/// If the given data differs from the proven, the exception will be thrown.
+/// The input param is a single transaction's JSON object, which was queried from TONOS API using
+/// functions such as `net.query`, `net.query_collection` or `net.wait_for_collection`.
+/// If transaction's BOC and/or `block_id` are not provided in the JSON, they will be queried from
+/// TONOS API (in this case it is required to provide at least `id` of transaction).
+///
+/// If `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and
+/// master-chain BOCs are saved into the persistent local storage (e.g. file system for native
+/// environments or browser's IndexedDB for the web); otherwise all the data is cached only in
+/// memory in current client's context and will be lost after destruction of the client.
+///
+/// For more information about proofs checking, see description of `proof_block_data` function.
 #[api_function]
 pub async fn proof_transaction_data(
     context: Arc<ClientContext>,
