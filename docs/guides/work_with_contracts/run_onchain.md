@@ -2,16 +2,16 @@
 
 Learn how to run methods of a contract on-chain
 
-* [About run](run_onchain.md#about-run)
-* [Run on-chain](run_onchain.md#run-on-chain-1)
-  * [Pattern 1. Run in 1 step: `process_message` method](run_onchain.md#pattern-1-run-in-1-step-process_message-method)
-  * [Pattern 2. Run in 3 steps: `encode_message` -> `send_message` -> `wait_for_transaction`](run_onchain.md#pattern-2--run-in-3-steps-encode_message----send_message---wait_for_transaction)
+* [About run](run\_onchain.md#about-run)
+* [Run on-chain](run\_onchain.md#run-on-chain-1)
+  * [Pattern 1. Run in 1 step: `process_message` method](run\_onchain.md#pattern-1-run-in-1-step-process\_message-method)
+  * [Pattern 2. Run in 3 steps: `encode_message` -> `send_message` -> `wait_for_transaction`](run\_onchain.md#pattern-2--run-in-3-steps-encode\_message----send\_message---wait\_for\_transaction)
 
 > [See the API reference](../../reference/types-and-methods/modules.md).
 
-Core api is more flexible than AppKit and you can perform a lot of complex logic using it. But you will need to write more code with it as well :)
+Core api is more flexible than [AppKit](https://github.com/tonlabs/appkit-js) and you can perform a lot of complex logic using it. But you will need to write more code with it as well :)
 
-You need to [define the contract in your node.js](../installation/add_contract_to_your_app.md) application before running its methods.
+You need to [define the contract in your node.js](../installation/add\_contract\_to\_your\_app.md) application before running its methods.
 
 Full sample: [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/hello-wallet](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/hello-wallet)
 
@@ -29,7 +29,7 @@ Run operation consists of few steps:
 
 ### Pattern 1. Run in 1 step: `process_message` method
 
-The [process_message](../../reference/types-and-methods/mod_processing.md#process_message) method runs ABI-compatible contract method on-chain and returns the result transaction along with the external messages bocs, and decoded external messages bodies.
+The [process\_message](../../reference/types-and-methods/mod\_processing.md#process\_message) method runs ABI-compatible contract method on-chain and returns the result transaction along with the external messages bocs, and decoded external messages bodies.
 
 `process_message` performs all the run operation steps inside.
 
@@ -134,6 +134,6 @@ console.log(`Touch transaction: ${JSON.stringify(touch_processing_result.transac
 console.log(`Touch fees: ${JSON.stringify(touch_processing_result.fees,null,2)}`);
 ```
 
-See the full example in sdk samples repository: [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index_pattern2.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index_pattern2.js)
+See the full example in sdk samples repository: [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index\_pattern2.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index\_pattern2.js)
 
-Check out [AppKit documentation](https://github.com/tonlabs/appkit-js/blob/main/docs/guides/run_onchain_with_appkit.md) for this use case.
+Check out [AppKit documentation](https://tonlabs.gitbook.io/appkit-js/guides/run\_onchain) for this use case.

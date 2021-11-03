@@ -1,7 +1,5 @@
 # TON SDK
 
-## TON SDK
-
 Core Client Library built on the TON OS GraphQL API for Free TON DApp development
 
 **Get quick help in our telegram channel:**

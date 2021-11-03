@@ -2,13 +2,13 @@
 
 How to work with contract events
 
-* [About events](work_with_events.md#about-events)
-* [Query/subscribe to events](work_with_events.md#querysubscribe-to-events)
-* [Query/Subscribe with SDK](work_with_events.md#querysubscribe-with-sdk)
-* [Low level syntax](work_with_events.md#low-level-syntax)
-  * [Query](work_with_events.md#query)
-  * [Subscribe](work_with_events.md#subscribe)
-  * [Decode](work_with_events.md#decode)
+* [About events](work\_with\_events.md#about-events)
+* [Query/subscribe to events](work\_with\_events.md#querysubscribe-to-events)
+* [Query/Subscribe with SDK](work\_with\_events.md#querysubscribe-with-sdk)
+* [Low level syntax](work\_with\_events.md#low-level-syntax)
+  * [Query](work\_with\_events.md#query)
+  * [Subscribe](work\_with\_events.md#subscribe)
+  * [Decode](work\_with\_events.md#decode)
 
 ## About events
 
@@ -177,4 +177,4 @@ switch (decoded.body_type) {
                 }
 ```
 
-Check out [AppKit documentation](https://github.com/tonlabs/appkit-js/blob/main/docs/guides/work_with_events_in_appkit.md) for this use case.
+Check out [AppKit documentation](https://tonlabs.gitbook.io/appkit-js/guides/work\_with\_events) for this use case.

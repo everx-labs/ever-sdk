@@ -2,8 +2,8 @@
 
 Run ABI compatible get methods
 
-* [Run get method](run_abi_get_method.md#run-get-method)
-* [Source code](run_abi_get_method.md#source-code)
+* [Run get method](run\_abi\_get\_method.md#run-get-method)
+* [Source code](run\_abi\_get\_method.md#source-code)
 
 ## Run get method
 
@@ -62,4 +62,4 @@ Here is the sample that executes the get method `getTimestamp` on the latest acc
 
 [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js)
 
-Check out [AppKit documentation](https://github.com/tonlabs/appkit-js/blob/main/docs/guides/run_abi_get_method_with_appkit.md) for this use case.
+Check out [AppKit documentation](https://tonlabs.gitbook.io/appkit-js/guides/run\_abi\_get\_method) for this use case.

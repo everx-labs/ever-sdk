@@ -1,6 +1,6 @@
 # Add SDK to your App
 
-[Node.js](add_sdk_to_your_app.md#nodejs) | [Web](add_sdk_to_your_app.md#web)
+[Node.js](add\_sdk\_to\_your\_app.md#nodejs) | [Web](add\_sdk\_to\_your\_app.md#web)
 
 ## Node.js
 
@@ -21,7 +21,7 @@ npm i --save @tonclient/core
 npm i --save @tonclient/lib-node
 ```
 
-If you want to use high-level AppKit package then install this package as well:
+If you want to use high-level [AppKit](https://github.com/tonlabs/appkit-js) package then install this package as well:
 
 ```
 npm i --save @tonclient/appkit
@@ -39,7 +39,7 @@ const {libNode} = require("@tonclient/lib-node");
 TonClient.useBinaryLibrary(libNode)
 ```
 
-That's it! Now you are ready to create and [configure TONClient object](configure_sdk.md)!
+That's it! Now you are ready to create and [configure TONClient object](configure\_sdk.md)!
 
 ## Web
 
@@ -64,7 +64,7 @@ npm i --save @tonclient/lib-web
 
 **Important!** Each time you run `npm install` the new version of the `tonclient.wasm` and `index.js` is downloaded. So you have to always update the `tonclient.wasm` inside your web package before publishing (starting local web server, creating web bundle etc.). If you use Webpack the best way is to use CopyPlugin.
 
-If you want to use high-level AppKit package then install this package as well:
+If you want to use high-level [AppKit](https://github.com/tonlabs/appkit-js) package then install this package as well:
 
 ```
 npm i --save @tonclient/appkit

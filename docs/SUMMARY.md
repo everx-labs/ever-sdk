@@ -65,3 +65,8 @@
 
 * [How to work with Application Objects in binding generators](for-binding-developers/app\_objects.md)
 * [JSON Interface to Ton Client](for-binding-developers/json\_interface.md)
+
+## Links
+
+* [TON SDK repository](https://github.com/tonlabs/TON-SDK)
+* [AppKit JS documentation](https://tonlabs.gitbook.io/appkit-js/)
