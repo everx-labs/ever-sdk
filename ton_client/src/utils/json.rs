@@ -7,6 +7,7 @@ pub trait JsonHelper {
     fn get_i64(&self, field: &str) -> Result<i64>;
     fn get_str(&self, field: &str) -> Result<&str>;
     fn get_array(&self, field: &str) -> Result<&Vec<Value>>;
+    fn take_string(&mut self) -> Option<String>;
 
     fn get_u32(&self, field: &str) -> Result<u32> {
         self.get_u64(field).map(|value| value as u32)
@@ -36,5 +37,12 @@ impl JsonHelper for Value {
     fn get_array(&self, field: &str) -> Result<&Vec<Value>> {
         self[field].as_array()
             .ok_or_else(|| err_msg(format!("`{}` field must be an array", field)))
+    }
+
+    fn take_string(&mut self) -> Option<String> {
+        match self.take() {
+            Value::String(string) => Some(string),
+            _ => None,
+        }
     }
 }

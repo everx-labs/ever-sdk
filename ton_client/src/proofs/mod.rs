@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::Cursor;
 use std::sync::Arc;
@@ -11,7 +12,7 @@ use ton_types::Result;
 
 pub(crate) use errors::ErrorCode;
 
-use crate::boc::internal::deserialize_object_from_boc_bin;
+use crate::boc::internal::{deserialize_object_from_base64, deserialize_object_from_boc_bin};
 use crate::client::NetworkUID;
 use crate::ClientContext;
 use crate::encoding::base64_decode;
@@ -236,23 +237,22 @@ pub async fn proof_transaction_data(
     json::compare_transactions(&params.transaction, &transaction_json)
 }
 
-async fn transaction_get_required_data(
+async fn transaction_get_required_data<'trans>(
     engine: &ProofHelperEngineImpl,
-    transaction_json: &Value,
-) -> ClientResult<(UInt256, String, Vec<u8>, Transaction)> {
-    let id_opt = transaction_json["id"].as_str();
+    transaction_json: &'trans Value,
+) -> ClientResult<(UInt256, Cow<'trans, str>, Vec<u8>, Transaction)> {
+    let id_opt = Cow::Borrowed(&transaction_json["id"]);
     let mut block_id_opt = transaction_json["block_id"].as_str()
-        .map(|str| str.to_owned());
-    let mut boc_opt = transaction_json["boc"].as_str()
-        .map(|str| str.to_owned());
+        .map(|str| Cow::Borrowed(str));
+    let mut boc_opt = Cow::Borrowed(&transaction_json["boc"]);
 
-    if id_opt.is_none() && boc_opt.is_none() {
+    if id_opt.is_null() && boc_opt.is_null() {
         return Err(Error::invalid_data("Transaction's BOC or id are required"));
     }
 
-    if let Some(id) = id_opt {
+    if let Some(id) = id_opt.as_str() {
         let mut fields = Vec::new();
-        if boc_opt.is_none() {
+        if boc_opt.is_null() {
             fields.push("boc");
         }
         if block_id_opt.is_none() {
@@ -260,38 +260,47 @@ async fn transaction_get_required_data(
         }
 
         if fields.len() > 0 {
-            let transaction_json = engine.query_transaction_data(id, &fields.join(" ")).await
+            let mut transaction_json = engine.query_transaction_data(id, &fields.join(" ")).await
                 .map_err(|err| Error::proof_check_failed(err))?;
-            if boc_opt.is_none() {
-                boc_opt = transaction_json["boc"].as_str()
-                    .map(|str| str.to_owned());
+            if boc_opt.is_null() {
+                boc_opt = Cow::Owned(transaction_json["boc"].take());
             }
             if block_id_opt.is_none() {
-                block_id_opt = transaction_json["block_id"].as_str()
-                    .map(|str| str.to_owned());
+                block_id_opt = transaction_json["block_id"].take_string()
+                    .map(|string| Cow::Owned(string));
             }
         }
     }
 
-    let boc = base64_decode(
-        &boc_opt.ok_or_else(|| Error::internal_error("BOC is not found"))?
-    )?;
+    let transaction_stuff = if let Value::String(boc_base64) = boc_opt.as_ref() {
+        deserialize_object_from_base64(boc_base64, "transaction")?
+    } else {
+        return Err(Error::internal_error("BOC is not found"));
+    };
 
-    let (transaction, root_hash) = deserialize_object_from_boc_bin(&boc)?;
+    let root_hash = transaction_stuff.cell.repr_hash();
 
-    if block_id_opt.is_none() {
-        let transaction_json = engine.query_transaction_data(
+    let block_id = if let Some(block_id) = block_id_opt {
+        block_id
+    } else {
+        let mut transaction_json = engine.query_transaction_data(
             &root_hash.as_hex_string(),
             "block_id",
         ).await
             .map_err(|err| Error::proof_check_failed(err))?;
-        block_id_opt = transaction_json["block_id"].as_str()
-            .map(|str| str.to_owned());
-    }
+        if let Some(block_id) = transaction_json["block_id"].take_string() {
+            Cow::Owned(block_id)
+        } else {
+            return Err(Error::invalid_data("block_id is not found"));
+        }
+    };
 
-    let block_id = block_id_opt.ok_or_else(|| Error::invalid_data("block_id is not found"))?;
-
-    Ok((root_hash, block_id, boc, transaction))
+    Ok((
+        root_hash,
+        block_id,
+        transaction_stuff.boc.bytes("transaction")?,
+        transaction_stuff.object,
+    ))
 }
 
 lazy_static! {

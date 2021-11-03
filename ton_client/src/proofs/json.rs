@@ -343,16 +343,16 @@ fn compare_vectors(
 
 fn get_string(value: &Value, is_numeric: bool) -> Cow<str> {
     let result = match value {
-        Value::String(v) => Cow::from(v),
-        _ => Cow::from(value.to_string()),
+        Value::String(string) => Cow::Borrowed(string.as_str()),
+        _ => Cow::Owned(value.to_string()),
     };
 
     if is_numeric {
         if let Ok(value) = i128::from_str(&result) {
             if value < 0 {
-                return Cow::from(format!("-0x{:x}", value.abs()));
+                return Cow::Owned(format!("-0x{:x}", value.abs()));
             }
-            return Cow::from(format!("0x{:x}", value));
+            return Cow::Owned(format!("0x{:x}", value));
         }
     }
 
