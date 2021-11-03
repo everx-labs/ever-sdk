@@ -1,0 +1,3638 @@
+directive @cacheControl(
+  maxAge: Int
+  scope: CacheControlScope
+) on FIELD_DEFINITION | OBJECT | INTERFACE
+
+#  GraphQL Server info
+type Info {
+  #  Server version
+  version: String
+
+  #  Server unix time in ms
+  time: Float
+
+  #  Blocks latency in ms (server time - max of blocks.gen_utime * 1000)
+  blocksLatency: Float
+
+  #  Messages latency in ms (server time - max of messages.created_at * 1000)
+  messagesLatency: Float
+
+  #  Transactions latency in ms (server time - max of transactions.now * 1000)
+  transactionsLatency: Float
+
+  #  Overall latency (maximum value of blocksLatency, messagesLatency and transactionsLatency)
+  latency: Float
+
+  #  Last block time in ms (maximum value of blocks.gen_utime * 1000)
+  lastBlockTime: Float
+
+  #  Alternative endpoints of q-server
+  endpoints: [String]
+
+  # **EXPERIMENTAL**
+  # Reliable upper boundary for pagination by chain_order field. Before this boundary data inserts are almost impossible
+  # (work in progress to make them fully impossible when the feature goes into production).
+  chainOrderBoundary: String
+}
+
+type Query {
+  info: Info
+
+  # This node is experimental
+  blockchain(accessKey: String): BlockchainQuery
+  accounts(
+    filter: AccountFilter
+    orderBy: [QueryOrderBy]
+    limit: Int
+    timeout: Float
+    accessKey: String
+    operationId: String
+  ): [Account]
+  transactions(
+    filter: TransactionFilter
+    orderBy: [QueryOrderBy]
+    limit: Int
+    timeout: Float
+    accessKey: String
+    operationId: String
+  ): [Transaction]
+  messages(
+    filter: MessageFilter
+    orderBy: [QueryOrderBy]
+    limit: Int
+    timeout: Float
+    accessKey: String
+    operationId: String
+  ): [Message]
+  blocks(
+    filter: BlockFilter
+    orderBy: [QueryOrderBy]
+    limit: Int
+    timeout: Float
+    accessKey: String
+    operationId: String
+  ): [Block]
+  blocks_signatures(
+    filter: BlockSignaturesFilter
+    orderBy: [QueryOrderBy]
+    limit: Int
+    timeout: Float
+    accessKey: String
+    operationId: String
+  ): [BlockSignatures]
+  zerostates(
+    filter: ZerostateFilter
+    orderBy: [QueryOrderBy]
+    limit: Int
+    timeout: Float
+    accessKey: String
+    operationId: String
+  ): [Zerostate]
+
+  # Returns account counterparties
+  counterparties(
+    # Account address
+    account: String!
+
+    # Portion size
+    first: Int
+
+    # Starting cursor
+    after: String
+
+    # Specify access key if required
+    accessKey: String
+  ): [Counterparty]
+
+  # Compute aggregated values for specified fields
+  aggregateAccounts(
+    # Specify filter for records to aggregate
+    filter: AccountFilter
+
+    # Specify list of fields to collect aggregated values
+    fields: [FieldAggregation]
+
+    # Specify access key if required
+    accessKey: String
+  ): [String]
+
+  # Compute aggregated values for specified fields
+  aggregateTransactions(
+    # Specify filter for records to aggregate
+    filter: TransactionFilter
+
+    # Specify list of fields to collect aggregated values
+    fields: [FieldAggregation]
+
+    # Specify access key if required
+    accessKey: String
+  ): [String]
+
+  # Compute aggregated values for specified fields
+  aggregateMessages(
+    # Specify filter for records to aggregate
+    filter: MessageFilter
+
+    # Specify list of fields to collect aggregated values
+    fields: [FieldAggregation]
+
+    # Specify access key if required
+    accessKey: String
+  ): [String]
+
+  # Compute aggregated values for specified fields
+  aggregateBlocks(
+    # Specify filter for records to aggregate
+    filter: BlockFilter
+
+    # Specify list of fields to collect aggregated values
+    fields: [FieldAggregation]
+
+    # Specify access key if required
+    accessKey: String
+  ): [String]
+
+  # Compute aggregated values for specified fields
+  aggregateBlockSignatures(
+    # Specify filter for records to aggregate
+    filter: BlockSignaturesFilter
+
+    # Specify list of fields to collect aggregated values
+    fields: [FieldAggregation]
+
+    # Specify access key if required
+    accessKey: String
+  ): [String]
+
+  # Determine if specified accounts query is fast or slow
+  explainQueryAccounts(
+    filter: AccountFilter
+    orderBy: [QueryOrderBy]
+  ): QueryExplanation
+
+  # Determine if specified transactions query is fast or slow
+  explainQueryTransactions(
+    filter: TransactionFilter
+    orderBy: [QueryOrderBy]
+  ): QueryExplanation
+
+  # Determine if specified messages query is fast or slow
+  explainQueryMessages(
+    filter: MessageFilter
+    orderBy: [QueryOrderBy]
+  ): QueryExplanation
+
+  # Determine if specified blocks query is fast or slow
+  explainQueryBlocks(
+    filter: BlockFilter
+    orderBy: [QueryOrderBy]
+  ): QueryExplanation
+
+  # Determine if specified block signatures query is fast or slow
+  explainQueryBlockSignatures(
+    filter: BlockSignaturesFilter
+    orderBy: [QueryOrderBy]
+  ): QueryExplanation
+
+  # Determine if specified zerostates query is fast or slow
+  explainQueryZerostates(
+    filter: ZerostateFilter
+    orderBy: [QueryOrderBy]
+  ): QueryExplanation
+
+  # Returns one time access key for management functions
+  getManagementAccessKey: String
+
+  # Obsolete. Use aggregation queries instead.
+  getAccountsCount(accessKey: String): Float
+
+  # Obsolete. Use aggregation queries instead.
+  getTransactionsCount(accessKey: String): Float
+
+  # Obsolete. Use aggregation queries instead.
+  getAccountsTotalBalance(accessKey: String): String
+}
+
+# This type is experimental
+type BlockchainMasterSeqNoRange {
+  # Minimum inclusive seq_no of corresponding master blocks
+  start: Int
+
+  # Maximum exclusive seq_no of corresponding master blocks
+  end: Int
+}
+
+# This type is experimental
+input BlockchainMasterSeqNoFilter {
+  # Minimum inclusive seq_no of corresponding master blocks
+  start: Int
+
+  # Maximum exclusive seq_no of corresponding master blocks
+  end: Int
+}
+
+# This type is experimental
+type BlockchainTransactionsConnection {
+  edges: [BlockchainTransactionEdge!]!
+  pageInfo: PageInfo!
+}
+
+# This type is experimental
+type BlockchainTransactionEdge {
+  node: BlockchainTransaction!
+  cursor: String!
+}
+
+# This type is experimental
+type BlockchainQuery {
+  # **EXPERIMENTAL**
+  # Returns seq_no range such that:
+  # 1. masterblock(start).chain_order is less or equal to chain_order values of all transactions and blocks with time >= time_start
+  # 2. masterblock(end).chain_order is greater than chain_order values of all transactions and blocks with time <= time_end
+  # If time_start is null, then start is null. If time_end is null, then end is null.
+  # **CAUTION:** resulting seq_no ranges for adjacent time ranges could overlap.
+  master_seq_no_range(
+    time_start: Int
+    time_end: Int
+  ): BlockchainMasterSeqNoRange
+
+  # **EXPERIMENTAL**
+  # This node could be used for a cursor-based pagination of transactions filtered by account addresses.
+  account_transactions(
+    # The transactions could be filtered by seq_no of corresponding masterchain blocks.
+    # See also: blockchain { master_seq_no_range }
+    master_seq_no: BlockchainMasterSeqNoFilter
+
+    # The transactions could be filtered by the list of addresses.
+    account_addresses: [String!]
+
+    # This field is mutually exclusive with 'last'
+    first: Int
+    after: String
+
+    # This field is mutually exclusive with 'first'
+    last: Int
+    before: String
+  ): BlockchainTransactionsConnection
+
+  # **EXPERIMENTAL**
+  # This node could be used for a cursor-based pagination of transactions filtered by workchains.
+  workchain_transactions(
+    # The transactions could be filtered by seq_no of corresponding masterchain blocks.
+    # See also: blockchain { master_seq_no_range }
+    master_seq_no: BlockchainMasterSeqNoFilter
+
+    # The transactions could be filtered by the list of workchains.
+    workchains: [Int!]
+
+    # This field is mutually exclusive with 'last'
+    first: Int
+    after: String
+
+    # This field is mutually exclusive with 'first'
+    last: Int
+    before: String
+  ): BlockchainTransactionsConnection
+}
+
+# This type is experimental
+interface Node {
+  id: ID!
+}
+
+# This type is experimental
+type PageInfo {
+  startCursor: String!
+  endCursor: String!
+  hasNextPage: Boolean!
+  hasPreviousPage: Boolean!
+}
+
+# **EXPERIMENTAL**
+# TON Transaction
+type BlockchainTransaction implements Node {
+  # BlockchainTransaction.id is "transaction/"-prefixed Transaction.id.
+  # For id without prefix see "hash".
+  id: ID!
+  hash: String
+  aborted: Boolean
+  account_addr: String
+  action: TransactionAction
+
+  # Account balance change after transaction
+  balance_delta(format: BigIntFormat): String
+
+  # Account balance change after transaction
+  balance_delta_other: [OtherCurrency]
+  block_id: String
+  boc: String
+  bounce: TransactionBounce
+
+  # Collection-unique field for pagination and sorting. This field is designed to retain logical order.
+  chain_order: String
+  compute: TransactionCompute
+  credit: TransactionCredit
+  credit_first: Boolean
+  destroyed: Boolean
+
+  # The end state of an account after a transaction, 1 is returned to indicate a finalized transaction at an active account
+  # - 0 – uninit
+  # - 1 – active
+  # - 2 – frozen
+  # - 3 – nonExist
+  end_status: Int
+  end_status_name: AccountStatusEnum
+  in_msg: String
+  installed: Boolean
+
+  # Logical time. A component of the TON Blockchain that also plays an important role in message delivery is the logical time, usually denoted by Lt. It is a non-negative 64-bit integer, assigned to certain events. For more details, see [the TON blockchain specification](https://test.ton.org/tblkch.pdf).
+  lt(format: BigIntFormat): String
+
+  # Merkle update field
+  new_hash: String
+  now: Float
+  now_string: String
+
+  # Merkle update field
+  old_hash: String
+
+  # The initial state of account. Note that in this case the query may return 0, if the account was not active before the transaction and 1 if it was already active
+  # - 0 – uninit
+  # - 1 – active
+  # - 2 – frozen
+  # - 3 – nonExist
+  orig_status: Int
+  orig_status_name: AccountStatusEnum
+  out_msgs: [String]
+
+  # The number of generated outbound messages (one of the common transaction parameters defined by the specification)
+  outmsg_cnt: Int
+  prepare_transaction: String
+  prev_trans_hash: String
+  prev_trans_lt(format: BigIntFormat): String
+  proof: String
+  split_info: TransactionSplitInfo
+
+  # Transaction processing status
+  # - 0 – unknown
+  # - 1 – preliminary
+  # - 2 – proposed
+  # - 3 – finalized
+  # - 4 – refused
+  status: Int
+  status_name: TransactionProcessingStatusEnum
+  storage: TransactionStorage
+
+  # Total amount of fees that entails account state change and used in Merkle update
+  total_fees(format: BigIntFormat): String
+
+  # Same as above, but reserved for non gram coins that may appear in the blockchain
+  total_fees_other: [OtherCurrency]
+
+  # Transaction type according to the original blockchain specification, clause 4.2.4.
+  # - 0 – ordinary
+  # - 1 – storage
+  # - 2 – tick
+  # - 3 – tock
+  # - 4 – splitPrepare
+  # - 5 – splitInstall
+  # - 6 – mergePrepare
+  # - 7 – mergeInstall
+  tr_type: Int
+  tr_type_name: TransactionTypeEnum
+  tt: String
+
+  # Workchain id of the account address (account_addr field)
+  workchain_id: Int
+}
+
+# Due to GraphQL limitations big numbers are returned as a string.
+# You can specify format used to string representation for big integers.
+enum BigIntFormat {
+  #  Hexadecimal representation started with 0x (default)
+  HEX
+
+  #  Decimal representation
+  DEC
+}
+
+input StringFilter {
+  eq: String
+  ne: String
+  gt: String
+  lt: String
+  ge: String
+  le: String
+  in: [String]
+  notIn: [String]
+}
+
+input BooleanFilter {
+  eq: Boolean
+  ne: Boolean
+  gt: Boolean
+  lt: Boolean
+  ge: Boolean
+  le: Boolean
+  in: [Boolean]
+  notIn: [Boolean]
+}
+
+input IntFilter {
+  eq: Int
+  ne: Int
+  gt: Int
+  lt: Int
+  ge: Int
+  le: Int
+  in: [Int]
+  notIn: [Int]
+}
+
+input FloatFilter {
+  eq: Float
+  ne: Float
+  gt: Float
+  lt: Float
+  ge: Float
+  le: Float
+  in: [Float]
+  notIn: [Float]
+}
+
+enum InMsgTypeEnum {
+  External
+  Ihr
+  Immediately
+  Final
+  Transit
+  DiscardedFinal
+  DiscardedTransit
+}
+
+enum OutMsgTypeEnum {
+  External
+  Immediately
+  OutMsgNew
+  Transit
+  DequeueImmediately
+  Dequeue
+  TransitRequired
+  DequeueShort
+  None
+}
+
+enum AccountStatusEnum {
+  Uninit
+  Active
+  Frozen
+  NonExist
+}
+
+enum TransactionTypeEnum {
+  Ordinary
+  Storage
+  Tick
+  Tock
+  SplitPrepare
+  SplitInstall
+  MergePrepare
+  MergeInstall
+}
+
+enum TransactionProcessingStatusEnum {
+  Unknown
+  Preliminary
+  Proposed
+  Finalized
+  Refused
+}
+
+enum AccountStatusChangeEnum {
+  Unchanged
+  Frozen
+  Deleted
+}
+
+enum ComputeTypeEnum {
+  Skipped
+  Vm
+}
+
+enum SkipReasonEnum {
+  NoState
+  BadState
+  NoGas
+}
+
+enum BounceTypeEnum {
+  NegFunds
+  NoFunds
+  Ok
+}
+
+enum MessageTypeEnum {
+  Internal
+  ExtIn
+  ExtOut
+}
+
+enum MessageProcessingStatusEnum {
+  Unknown
+  Queued
+  Processing
+  Preliminary
+  Proposed
+  Finalized
+  Refused
+  Transiting
+}
+
+enum BlockProcessingStatusEnum {
+  Unknown
+  Proposed
+  Finalized
+  Refused
+}
+
+enum SplitTypeEnum {
+  None
+  Split
+  Merge
+}
+
+type OtherCurrency {
+  currency: Float
+  value(format: BigIntFormat): String
+}
+
+type ExtBlkRef {
+  end_lt(format: BigIntFormat): String
+  file_hash: String
+  root_hash: String
+  seq_no: Float
+}
+
+type MsgEnvelope {
+  cur_addr: String
+  fwd_fee_remaining(format: BigIntFormat): String
+  msg_id: String
+  next_addr: String
+}
+
+type InMsg {
+  fwd_fee(format: BigIntFormat): String
+  ihr_fee(format: BigIntFormat): String
+  in_msg: MsgEnvelope
+  msg_id: String
+
+  # - 0 – external
+  # - 1 – ihr
+  # - 2 – immediately
+  # - 3 – final
+  # - 4 – transit
+  # - 5 – discardedFinal
+  # - 6 – discardedTransit
+  msg_type: Int
+  msg_type_name: InMsgTypeEnum
+  out_msg: MsgEnvelope
+  proof_created: String
+  proof_delivered: String
+  transaction_id: String
+  transit_fee(format: BigIntFormat): String
+}
+
+type OutMsg {
+  import_block_lt(format: BigIntFormat): String
+  imported: InMsg
+  msg_env_hash: String
+  msg_id: String
+
+  # - 0 – external
+  # - 1 – immediately
+  # - 2 – outMsgNew
+  # - 3 – transit
+  # - 4 – dequeueImmediately
+  # - 5 – dequeue
+  # - 6 – transitRequired
+  # - 7 – dequeueShort
+  # - -1 – none
+  msg_type: Int
+  msg_type_name: OutMsgTypeEnum
+  next_addr_pfx(format: BigIntFormat): String
+  next_workchain: Int
+  out_msg: MsgEnvelope
+  reimport: InMsg
+  transaction_id: String
+}
+
+type GasLimitsPrices {
+  block_gas_limit(format: BigIntFormat): String
+  delete_due_limit(format: BigIntFormat): String
+  flat_gas_limit(format: BigIntFormat): String
+  flat_gas_price(format: BigIntFormat): String
+  freeze_due_limit(format: BigIntFormat): String
+  gas_credit(format: BigIntFormat): String
+  gas_limit(format: BigIntFormat): String
+  gas_price(format: BigIntFormat): String
+  special_gas_limit(format: BigIntFormat): String
+}
+
+type BlockLimitsBytes {
+  hard_limit: Float
+  soft_limit: Float
+  underload: Float
+}
+
+type BlockLimitsGas {
+  hard_limit: Float
+  soft_limit: Float
+  underload: Float
+}
+
+type BlockLimitsLtDelta {
+  hard_limit: Float
+  soft_limit: Float
+  underload: Float
+}
+
+type BlockLimits {
+  bytes: BlockLimitsBytes
+  gas: BlockLimitsGas
+  lt_delta: BlockLimitsLtDelta
+}
+
+type MsgForwardPrices {
+  bit_price(format: BigIntFormat): String
+  cell_price(format: BigIntFormat): String
+  first_frac: Int
+  ihr_price_factor: Float
+  lump_price(format: BigIntFormat): String
+  next_frac: Int
+}
+
+type ValidatorSetList {
+  adnl_addr: String
+  public_key: String
+  weight(format: BigIntFormat): String
+}
+
+type ValidatorSet {
+  list: [ValidatorSetList]
+  main: Int
+  total: Int
+  total_weight(format: BigIntFormat): String
+  utime_since: Float
+  utime_since_string: String
+  utime_until: Float
+  utime_until_string: String
+}
+
+type ConfigProposalSetup {
+  bit_price: Float
+  cell_price: Float
+  max_losses: Int
+  max_store_sec: Float
+  max_tot_rounds: Int
+  min_store_sec: Float
+  min_tot_rounds: Int
+  min_wins: Int
+}
+
+# Configuration parameter 6
+type ConfigP6 {
+  mint_add_price: String
+  mint_new_price: String
+}
+
+type ConfigP7 {
+  currency: Float
+  value: String
+}
+
+# Global version
+type ConfigP8 {
+  capabilities(format: BigIntFormat): String
+  version: Float
+}
+
+# Config voting setup
+type ConfigP11 {
+  critical_params: ConfigProposalSetup
+  normal_params: ConfigProposalSetup
+}
+
+type ConfigP12 {
+  accept_msgs: Boolean
+  active: Boolean
+  actual_min_split: Int
+  addr_len_step: Int
+  basic: Boolean
+  enabled_since: Float
+  flags: Int
+  max_addr_len: Int
+  max_split: Int
+  min_addr_len: Int
+  min_split: Int
+  version: Float
+  vm_mode: String
+  vm_version: Int
+  workchain_id: Int
+  workchain_type_id: Float
+  zerostate_file_hash: String
+  zerostate_root_hash: String
+}
+
+# Block create fees
+type ConfigP14 {
+  basechain_block_fee(format: BigIntFormat): String
+  masterchain_block_fee(format: BigIntFormat): String
+}
+
+# Election parameters
+type ConfigP15 {
+  elections_end_before: Float
+  elections_start_before: Float
+  stake_held_for: Float
+  validators_elected_for: Float
+}
+
+# Validators count
+type ConfigP16 {
+  max_main_validators: Int
+  max_validators: Int
+  min_validators: Int
+}
+
+# Validator stake parameters
+type ConfigP17 {
+  max_stake(format: BigIntFormat): String
+  max_stake_factor: Float
+  min_stake(format: BigIntFormat): String
+  min_total_stake(format: BigIntFormat): String
+}
+
+type ConfigP18 {
+  bit_price_ps(format: BigIntFormat): String
+  cell_price_ps(format: BigIntFormat): String
+  mc_bit_price_ps(format: BigIntFormat): String
+  mc_cell_price_ps(format: BigIntFormat): String
+  utime_since: Float
+  utime_since_string: String
+}
+
+# Catchain config
+type ConfigP28 {
+  mc_catchain_lifetime: Float
+  shard_catchain_lifetime: Float
+  shard_validators_lifetime: Float
+  shard_validators_num: Float
+  shuffle_mc_validators: Boolean
+}
+
+# Consensus config
+type ConfigP29 {
+  attempt_duration: Float
+  catchain_max_deps: Float
+  consensus_timeout_ms: Float
+  fast_attempts: Float
+  max_block_bytes: Float
+  max_collated_bytes: Float
+  new_catchain_ids: Boolean
+  next_candidate_delay_ms: Float
+  round_candidates: Float
+}
+
+type ConfigP39 {
+  adnl_addr: String
+  seqno: Float
+  signature_r: String
+  signature_s: String
+  temp_public_key: String
+  valid_until: Float
+}
+
+type Config {
+  # Address of config smart contract in the masterchain
+  p0: String
+
+  # Address of elector smart contract in the masterchain
+  p1: String
+
+  # Critical params
+  p10: [Float]
+
+  # Config voting setup
+  p11: ConfigP11
+
+  # Array of all workchains descriptions
+  p12: [ConfigP12]
+
+  # Block create fees
+  p14: ConfigP14
+
+  # Election parameters
+  p15: ConfigP15
+
+  # Validators count
+  p16: ConfigP16
+
+  # Validator stake parameters
+  p17: ConfigP17
+
+  # Storage prices
+  p18: [ConfigP18]
+
+  # Address of minter smart contract in the masterchain
+  p2: String
+
+  # Gas limits and prices in the masterchain
+  p20: GasLimitsPrices
+
+  # Gas limits and prices in workchains
+  p21: GasLimitsPrices
+
+  # Block limits in the masterchain
+  p22: BlockLimits
+
+  # Block limits in workchains
+  p23: BlockLimits
+
+  # Message forward prices in the masterchain
+  p24: MsgForwardPrices
+
+  # Message forward prices in workchains
+  p25: MsgForwardPrices
+
+  # Catchain config
+  p28: ConfigP28
+
+  # Consensus config
+  p29: ConfigP29
+
+  # Address of fee collector smart contract in the masterchain
+  p3: String
+
+  # Array of fundamental smart contracts addresses
+  p31: [String]
+
+  # Previous validators set
+  p32: ValidatorSet
+
+  # Previous temporary validators set
+  p33: ValidatorSet
+
+  # Current validators set
+  p34: ValidatorSet
+
+  # Current temporary validators set
+  p35: ValidatorSet
+
+  # Next validators set
+  p36: ValidatorSet
+
+  # Next temporary validators set
+  p37: ValidatorSet
+
+  # Array of validator signed temporary keys
+  p39: [ConfigP39]
+
+  # Address of TON DNS root smart contract in the masterchain
+  p4: String
+
+  # Configuration parameter 6
+  p6: ConfigP6
+
+  # Configuration parameter 7
+  p7: [ConfigP7]
+
+  # Global version
+  p8: ConfigP8
+
+  # Mandatory params
+  p9: [Float]
+}
+
+type TransactionStorage {
+  # This field represents account status change after the transaction is completed.
+  # - 0 – unchanged
+  # - 1 – frozen
+  # - 2 – deleted
+  status_change: Int
+  status_change_name: AccountStatusChangeEnum
+
+  # This field defines the amount of storage fees collected in grams.
+  storage_fees_collected(format: BigIntFormat): String
+
+  # This field represents the amount of due fees in grams, it might be empty.
+  storage_fees_due(format: BigIntFormat): String
+}
+
+type TransactionCredit {
+  credit(format: BigIntFormat): String
+  credit_other: [OtherCurrency]
+
+  # The sum of due_fees_collected and credit must equal the value of the message received, plus its ihr_fee if the message has not been received via Instant Hypercube Routing, IHR (otherwise the ihr_fee is awarded to the validators).
+  due_fees_collected(format: BigIntFormat): String
+}
+
+type TransactionCompute {
+  # The flag reflects whether this has resulted in the activation of a previously frozen, uninitialized or non-existent account.
+  account_activated: Boolean
+
+  # - 0 – skipped
+  # - 1 – vm
+  compute_type: Int
+  compute_type_name: ComputeTypeEnum
+  exit_arg: Int
+
+  # These parameter represents the status values returned by TVM; for a successful transaction, exit_code has to be 0 or 1
+  exit_code: Int
+
+  # This parameter may be non-zero only for external inbound messages. It is the lesser of either the amount of gas that can be paid from the account balance or the maximum gas credit
+  gas_credit: Int
+
+  # This parameter reflects the total gas fees collected by the validators for executing this transaction. It must be equal to the product of gas_used and gas_price from the current block header.
+  gas_fees(format: BigIntFormat): String
+
+  # This parameter reflects the gas limit for this instance of TVM. It equals the lesser of either the Grams credited in the credit phase from the value of the inbound message divided by the current gas price, or the global per-transaction gas limit.
+  gas_limit(format: BigIntFormat): String
+  gas_used(format: BigIntFormat): String
+  mode: Int
+
+  # This parameter reflects whether the state passed in the message has been used. If it is set, the account_activated flag is used (see below)This parameter reflects whether the state passed in the message has been used. If it is set, the account_activated flag is used (see below)
+  msg_state_used: Boolean
+
+  # Reason for skipping the compute phase. According to the specification, the phase can be skipped due to the absence of funds to buy gas, absence of state of an account or a message, failure to provide a valid state in the message
+  # - 0 – noState
+  # - 1 – badState
+  # - 2 – noGas
+  skipped_reason: Int
+  skipped_reason_name: SkipReasonEnum
+
+  # This flag is set if and only if exit_code is either 0 or 1.
+  success: Boolean
+
+  # This parameter is the representation hashes of the resulting state of TVM.
+  vm_final_state_hash: String
+
+  # This parameter is the representation hashes of the original state of TVM.
+  vm_init_state_hash: String
+
+  # the total number of steps performed by TVM (usually equal to two plus the number of instructions executed, including implicit RETs)
+  vm_steps: Float
+}
+
+type TransactionAction {
+  action_list_hash: String
+  msgs_created: Int
+
+  # The flag indicates absence of funds required to create an outbound message
+  no_funds: Boolean
+  result_arg: Int
+  result_code: Int
+  skipped_actions: Int
+  spec_actions: Int
+
+  # - 0 – unchanged
+  # - 1 – frozen
+  # - 2 – deleted
+  status_change: Int
+  status_change_name: AccountStatusChangeEnum
+  success: Boolean
+  tot_actions: Int
+  total_action_fees(format: BigIntFormat): String
+  total_fwd_fees(format: BigIntFormat): String
+  total_msg_size_bits: Float
+  total_msg_size_cells: Float
+  valid: Boolean
+}
+
+type TransactionBounce {
+  # - 0 – negFunds
+  # - 1 – noFunds
+  # - 2 – ok
+  bounce_type: Int
+  bounce_type_name: BounceTypeEnum
+  fwd_fees(format: BigIntFormat): String
+  msg_fees(format: BigIntFormat): String
+  msg_size_bits: Float
+  msg_size_cells: Float
+  req_fwd_fees(format: BigIntFormat): String
+}
+
+type TransactionSplitInfo {
+  acc_split_depth: Int
+
+  # length of the current shard prefix
+  cur_shard_pfx_len: Int
+  sibling_addr: String
+  this_addr: String
+}
+
+type BlockValueFlow {
+  created(format: BigIntFormat): String
+  created_other: [OtherCurrency]
+
+  # Amount of grams exported.
+  exported(format: BigIntFormat): String
+
+  # Amount of non gram cryptocurrencies exported.
+  exported_other: [OtherCurrency]
+  fees_collected(format: BigIntFormat): String
+  fees_collected_other: [OtherCurrency]
+
+  # Amount of import fees in grams
+  fees_imported(format: BigIntFormat): String
+
+  # Amount of import fees in non gram currencies.
+  fees_imported_other: [OtherCurrency]
+
+  # Amount of grams transferred from previous block.
+  from_prev_blk(format: BigIntFormat): String
+
+  # Amount of non gram cryptocurrencies transferred from previous block.
+  from_prev_blk_other: [OtherCurrency]
+
+  # Amount of grams imported.
+  imported(format: BigIntFormat): String
+
+  # Amount of non gram cryptocurrencies imported.
+  imported_other: [OtherCurrency]
+
+  # Amount of grams minted in this block.
+  minted(format: BigIntFormat): String
+  minted_other: [OtherCurrency]
+
+  # Amount of grams amount to the next block.
+  to_next_blk(format: BigIntFormat): String
+
+  # Amount of non gram cryptocurrencies to the next block.
+  to_next_blk_other: [OtherCurrency]
+}
+
+type BlockAccountBlocksTransactions {
+  lt(format: BigIntFormat): String
+  total_fees(format: BigIntFormat): String
+  total_fees_other: [OtherCurrency]
+  transaction_id: String
+}
+
+type BlockAccountBlocks {
+  account_addr: String
+
+  # new version of block hashes
+  new_hash: String
+
+  # old version of block hashes
+  old_hash: String
+  tr_count: Int
+  transactions: [BlockAccountBlocksTransactions]
+}
+
+type BlockStateUpdate {
+  new: String
+  new_depth: Int
+  new_hash: String
+  old: String
+  old_depth: Int
+  old_hash: String
+}
+
+# Shard description
+type BlockMasterShardHashesDescr {
+  before_merge: Boolean
+
+  # TON Blockchain supports dynamic sharding, so the shard configuration may change from block to block because of shard merge and split events. Therefore, we cannot simply say that each shardchain corresponds to a fixed set of account chains.
+  # A shardchain block and its state may each be classified into two distinct parts. The parts with the ISP-dictated form of will be called the split parts of the block and its state, while the remainder will be called the non-split parts.
+  # The masterchain cannot be split or merged.
+  before_split: Boolean
+
+  # Logical time of the shardchain end
+  end_lt(format: BigIntFormat): String
+
+  # Amount of fees collected int his shard in grams.
+  fees_collected(format: BigIntFormat): String
+
+  # Amount of fees collected int his shard in non gram currencies.
+  fees_collected_other: [OtherCurrency]
+
+  # Shard block file hash.
+  file_hash: String
+  flags: Int
+
+  # Amount of funds created in this shard in grams.
+  funds_created(format: BigIntFormat): String
+
+  # Amount of funds created in this shard in non gram currencies.
+  funds_created_other: [OtherCurrency]
+
+  # Generation time in uint32
+  gen_utime: Float
+  gen_utime_string: String
+  min_ref_mc_seqno: Float
+  next_catchain_seqno: Float
+  next_validator_shard: String
+  nx_cc_updated: Boolean
+
+  # Returns last known master block at the time of shard generation.
+  reg_mc_seqno: Float
+
+  # Returns last known master block at the time of shard generation. The shard block configuration is derived from that block.
+  root_hash: String
+
+  # uint32 sequence number
+  seq_no: Float
+  split: Float
+
+  # - 0 – none
+  # - 2 – split
+  # - 3 – merge
+  split_type: Int
+  split_type_name: SplitTypeEnum
+
+  # Logical time of the shardchain start
+  start_lt(format: BigIntFormat): String
+  want_merge: Boolean
+  want_split: Boolean
+}
+
+type BlockMasterShardHashes {
+  # Shard description
+  descr: BlockMasterShardHashesDescr
+
+  # Shard ID
+  shard: String
+
+  # Uint32 workchain ID
+  workchain_id: Int
+}
+
+type BlockMasterShardFees {
+  # Amount of fees created during shard
+  create(format: BigIntFormat): String
+
+  # Amount of non gram fees created in non gram crypto currencies during the block.
+  create_other: [OtherCurrency]
+
+  # Amount of fees in grams
+  fees(format: BigIntFormat): String
+
+  # Array of fees in non gram crypto currencies
+  fees_other: [OtherCurrency]
+  shard: String
+  workchain_id: Int
+}
+
+type BlockMasterPrevBlkSignatures {
+  node_id: String
+  r: String
+  s: String
+}
+
+type BlockMaster {
+  config: Config
+  config_addr: String
+
+  # Max block generation time of shards
+  max_shard_gen_utime: Float
+  max_shard_gen_utime_string: String
+
+  # Min block generation time of shards
+  min_shard_gen_utime: Float
+  min_shard_gen_utime_string: String
+  prev_blk_signatures: [BlockMasterPrevBlkSignatures]
+  recover_create_msg: InMsg
+  shard_fees: [BlockMasterShardFees]
+  shard_hashes: [BlockMasterShardHashes]
+}
+
+type BlockSignaturesSignatures {
+  node_id: String
+
+  # 'R' part of signature
+  r: String
+
+  # 's' part of signature
+  s: String
+}
+
+type ZerostateMaster {
+  config: Config
+  config_addr: String
+
+  # Overall balance of all accounts
+  global_balance(format: BigIntFormat): String
+
+  # Overall balance of all accounts in other currencies
+  global_balance_other: [OtherCurrency]
+  validator_list_hash_short: Float
+}
+
+type ZerostateAccounts {
+  id: String
+
+  # Returns the current status of the account.
+  # ```
+  # {
+  #   accounts(filter: {acc_type:{eq:1}}){
+  #     id
+  #     acc_type
+  #   }
+  # }
+  # ```
+  #
+  # - 0 – uninit
+  # - 1 – active
+  # - 2 – frozen
+  # - 3 – nonExist
+  acc_type: Int
+  acc_type_name: AccountStatusEnum
+
+  # ```
+  # {
+  #   accounts(orderBy:{path:"balance",direction:DESC}){
+  #     balance
+  #   }
+  # }
+  # ```
+  balance(format: BigIntFormat): String
+  balance_other: [OtherCurrency]
+
+  # Contains sum of all the bits used by the cells of the account. Used in storage fee calculation
+  bits(format: BigIntFormat): String
+
+  # Bag of cells with the account struct encoded as base64.
+  boc: String
+
+  # Contains number of the cells of the account. Used in storage fee calculation
+  cells(format: BigIntFormat): String
+
+  # If present, contains smart-contract code encoded with in base64.
+  # ```
+  # {
+  #   accounts (filter:{code:{eq:null}}){
+  #     id
+  #     acc_type
+  #   }
+  # }
+  # ```
+  code: String
+
+  # `code` field root hash.
+  code_hash: String
+
+  # If present, contains smart-contract data encoded with in base64.
+  data: String
+
+  # `data` field root hash.
+  data_hash: String
+
+  # If present, accumulates the storage payments that could not be exacted from the balance of the account, represented by a strictly positive amount of nano tokens; it can be present only for uninitialized or frozen accounts that have a balance of zero Grams (but may have non-zero balances in non gram cryptocurrencies). When due_payment becomes larger than the value of a configurable parameter of the blockchain, the ac- count is destroyed altogether, and its balance, if any, is transferred to the zero account.
+  # ```
+  # {
+  #   accounts(filter: { due_payment: { ne: null } })
+  #     {
+  #       id
+  #     }
+  # }
+  # ```
+  due_payment(format: BigIntFormat): String
+
+  # Contains either the unixtime of the most recent storage payment
+  # collected (usually this is the unixtime of the most recent transaction),
+  # or the unixtime when the account was created (again, by a transaction).
+  # ```
+  # query{
+  #   accounts(filter: {
+  #     last_paid:{ge:1567296000}
+  #   }) {
+  #   id
+  #   last_paid}
+  # }
+  # ```
+  last_paid: Float
+  last_trans_lt(format: BigIntFormat): String
+
+  # If present, contains library code used in smart-contract.
+  library: String
+
+  # `library` field root hash.
+  library_hash: String
+
+  # Merkle proof that account is a part of shard state it cut from as a bag of cells with Merkle proof struct encoded as base64.
+  proof: String
+
+  # Contains the number of public cells of the account. Used in storage fee calculation.
+  public_cells(format: BigIntFormat): String
+
+  # Is present and non-zero only in instances of large smart contracts.
+  split_depth: Int
+
+  # Contains the representation hash of an instance of `StateInit` when an account is frozen.
+  state_hash: String
+
+  # May be present only in the masterchain—and within the masterchain, only in some fundamental smart contracts required for the whole system to function.
+  tick: Boolean
+
+  # May be present only in the masterchain—and within the masterchain, only in some fundamental smart contracts required for the whole system to function.
+  # ```
+  # {
+  #   accounts (filter:{tock:{ne:null}}){
+  #     id
+  #     tock
+  #     tick
+  #   }
+  # }
+  # ```
+  tock: Boolean
+
+  # Workchain id of the account address (id field).
+  workchain_id: Int
+}
+
+type ZerostateLibraries {
+  # Library hash
+  hash: String
+
+  # Serialized bag of cells of this library encoded with base64
+  lib: String
+
+  # List of the accounts which use the library
+  publishers: [String]
+}
+
+# # Account type
+#
+# Recall that a smart contract and an account are the same thing in the context
+# of the TON Blockchain, and that these terms can be used interchangeably, at
+# least as long as only small (or “usual”) smart contracts are considered. A large
+# smart-contract may employ several accounts lying in different shardchains of
+# the same workchain for load balancing purposes.
+#
+# An account is identified by its full address and is completely described by
+# its state. In other words, there is nothing else in an account apart from its
+# address and state.
+type Account {
+  id: String
+
+  # Returns the current status of the account.
+  # ```
+  # {
+  #   accounts(filter: {acc_type:{eq:1}}){
+  #     id
+  #     acc_type
+  #   }
+  # }
+  # ```
+  #
+  # - 0 – uninit
+  # - 1 – active
+  # - 2 – frozen
+  # - 3 – nonExist
+  acc_type: Int
+  acc_type_name: AccountStatusEnum
+
+  # ```
+  # {
+  #   accounts(orderBy:{path:"balance",direction:DESC}){
+  #     balance
+  #   }
+  # }
+  # ```
+  balance(format: BigIntFormat): String
+  balance_other: [OtherCurrency]
+
+  # Contains sum of all the bits used by the cells of the account. Used in storage fee calculation
+  bits(format: BigIntFormat): String
+
+  # Bag of cells with the account struct encoded as base64.
+  boc: String
+
+  # Contains number of the cells of the account. Used in storage fee calculation
+  cells(format: BigIntFormat): String
+
+  # If present, contains smart-contract code encoded with in base64.
+  # ```
+  # {
+  #   accounts (filter:{code:{eq:null}}){
+  #     id
+  #     acc_type
+  #   }
+  # }
+  # ```
+  code: String
+
+  # `code` field root hash.
+  code_hash: String
+
+  # If present, contains smart-contract data encoded with in base64.
+  data: String
+
+  # `data` field root hash.
+  data_hash: String
+
+  # If present, accumulates the storage payments that could not be exacted from the balance of the account, represented by a strictly positive amount of nano tokens; it can be present only for uninitialized or frozen accounts that have a balance of zero Grams (but may have non-zero balances in non gram cryptocurrencies). When due_payment becomes larger than the value of a configurable parameter of the blockchain, the ac- count is destroyed altogether, and its balance, if any, is transferred to the zero account.
+  # ```
+  # {
+  #   accounts(filter: { due_payment: { ne: null } })
+  #     {
+  #       id
+  #     }
+  # }
+  # ```
+  due_payment(format: BigIntFormat): String
+
+  # Contains either the unixtime of the most recent storage payment
+  # collected (usually this is the unixtime of the most recent transaction),
+  # or the unixtime when the account was created (again, by a transaction).
+  # ```
+  # query{
+  #   accounts(filter: {
+  #     last_paid:{ge:1567296000}
+  #   }) {
+  #   id
+  #   last_paid}
+  # }
+  # ```
+  last_paid: Float
+  last_trans_lt(format: BigIntFormat): String
+
+  # If present, contains library code used in smart-contract.
+  library: String
+
+  # `library` field root hash.
+  library_hash: String
+
+  # Merkle proof that account is a part of shard state it cut from as a bag of cells with Merkle proof struct encoded as base64.
+  proof: String
+
+  # Contains the number of public cells of the account. Used in storage fee calculation.
+  public_cells(format: BigIntFormat): String
+
+  # Is present and non-zero only in instances of large smart contracts.
+  split_depth: Int
+
+  # Contains the representation hash of an instance of `StateInit` when an account is frozen.
+  state_hash: String
+
+  # May be present only in the masterchain—and within the masterchain, only in some fundamental smart contracts required for the whole system to function.
+  tick: Boolean
+
+  # May be present only in the masterchain—and within the masterchain, only in some fundamental smart contracts required for the whole system to function.
+  # ```
+  # {
+  #   accounts (filter:{tock:{ne:null}}){
+  #     id
+  #     tock
+  #     tick
+  #   }
+  # }
+  # ```
+  tock: Boolean
+
+  # Workchain id of the account address (id field).
+  workchain_id: Int
+}
+
+# TON Transaction
+type Transaction {
+  id: String
+  aborted: Boolean
+  account(timeout: Int, when: TransactionFilter): Account
+  account_addr: String
+  action: TransactionAction
+
+  # Account balance change after the transaction.
+  # Because fwd_fee is collected by the validators of the receiving shard,
+  # total_fees value does not include Sum(out_msg.fwd_fee[]), but includes in_msg.fwd_fee.
+  #
+  # The formula is:
+  # balance_delta = in_msg.value - total_fees - Sum(out_msg.value[]) - Sum(out_msg.fwd_fee[])
+  balance_delta(format: BigIntFormat): String
+
+  # Account balance change after the transaction.
+  # Because fwd_fee is collected by the validators of the receiving shard,
+  # total_fees value does not include Sum(out_msg.fwd_fee[]), but includes in_msg.fwd_fee.
+  #
+  # The formula is:
+  # balance_delta = in_msg.value - total_fees - Sum(out_msg.value[]) - Sum(out_msg.fwd_fee[])
+  balance_delta_other: [OtherCurrency]
+  block(timeout: Int, when: TransactionFilter): Block
+  block_id: String
+  boc: String
+  bounce: TransactionBounce
+
+  # Collection-unique field for pagination and sorting. This field is designed to retain logical order.
+  chain_order: String
+  compute: TransactionCompute
+  credit: TransactionCredit
+  credit_first: Boolean
+  destroyed: Boolean
+
+  # The end state of an account after a transaction, 1 is returned to indicate a finalized transaction at an active account
+  # - 0 – uninit
+  # - 1 – active
+  # - 2 – frozen
+  # - 3 – nonExist
+  end_status: Int
+  end_status_name: AccountStatusEnum
+
+  # Fee for inbound external message import.
+  ext_in_msg_fee(format: BigIntFormat): String
+  in_message(timeout: Int, when: TransactionFilter): Message
+  in_msg: String
+  installed: Boolean
+
+  # Logical time. A component of the TON Blockchain that also plays an important role in message delivery is the logical time, usually denoted by Lt. It is a non-negative 64-bit integer, assigned to certain events. For more details, see [the TON blockchain specification](https://test.ton.org/tblkch.pdf).
+  lt(format: BigIntFormat): String
+
+  # Merkle update field
+  new_hash: String
+  now: Float
+  now_string: String
+
+  # Merkle update field
+  old_hash: String
+
+  # The initial state of account. Note that in this case the query may return 0, if the account was not active before the transaction and 1 if it was already active
+  # - 0 – uninit
+  # - 1 – active
+  # - 2 – frozen
+  # - 3 – nonExist
+  orig_status: Int
+  orig_status_name: AccountStatusEnum
+  out_messages(timeout: Int, when: TransactionFilter): [Message]
+  out_msgs: [String]
+
+  # The number of generated outbound messages (one of the common transaction parameters defined by the specification)
+  outmsg_cnt: Int
+  prepare_transaction: String
+  prev_trans_hash: String
+  prev_trans_lt(format: BigIntFormat): String
+  proof: String
+  split_info: TransactionSplitInfo
+
+  # Transaction processing status
+  # - 0 – unknown
+  # - 1 – preliminary
+  # - 2 – proposed
+  # - 3 – finalized
+  # - 4 – refused
+  status: Int
+  status_name: TransactionProcessingStatusEnum
+  storage: TransactionStorage
+
+  # Total amount of fees collected by the validators.
+  # Because fwd_fee is collected by the validators of the receiving shard,
+  # total_fees value does not include Sum(out_msg.fwd_fee[]), but includes in_msg.fwd_fee.
+  # The formula is:
+  # total_fees = in_msg.value - balance_delta - Sum(out_msg.value[]) - Sum(out_msg.fwd_fee[])
+  total_fees(format: BigIntFormat): String
+
+  # Same as above, but reserved for non gram coins that may appear in the blockchain
+  total_fees_other: [OtherCurrency]
+
+  # Transaction type according to the original blockchain specification, clause 4.2.4.
+  # - 0 – ordinary
+  # - 1 – storage
+  # - 2 – tick
+  # - 3 – tock
+  # - 4 – splitPrepare
+  # - 5 – splitInstall
+  # - 6 – mergePrepare
+  # - 7 – mergeInstall
+  tr_type: Int
+  tr_type_name: TransactionTypeEnum
+  tt: String
+
+  # Workchain id of the account address (account_addr field)
+  workchain_id: Int
+}
+
+# # Message type
+#
+# Message layout queries.  A message consists of its header followed by its
+# body or payload. The body is essentially arbitrary, to be interpreted by the
+# destination smart contract. It can be queried with the following fields:
+type Message {
+  id: String
+  block(timeout: Int, when: MessageFilter): Block
+
+  # Merkle proof that account is a part of shard state it cut from as a bag of cells with Merkle proof struct encoded as base64.
+  block_id: String
+
+  # A bag of cells with the message structure encoded as base64.
+  boc: String
+
+  # Bag of cells with the message body encoded as base64.
+  body: String
+
+  # `body` field root hash.
+  body_hash: String
+
+  # Bounce flag. If the transaction has been aborted, and the inbound message has its bounce flag set, then it is “bounced” by automatically generating an outbound message (with the bounce flag clear) to its original sender.
+  bounce: Boolean
+
+  # Bounced flag. If the transaction has been aborted, and the inbound message has its bounce flag set, then it is “bounced” by automatically generating an outbound message (with the bounce flag clear) to its original sender.
+  bounced: Boolean
+
+  # Collection-unique field for pagination and sorting. This field is designed to retain logical output order (for logical input order use transaction.in_message).
+  chain_order: String
+
+  # Represents contract code in deploy messages.
+  code: String
+
+  # `code` field root hash.
+  code_hash: String
+
+  # Creation unixtime automatically set by the generating transaction. The creation unixtime equals the creation unixtime of the block containing the generating transaction.
+  created_at: Float
+  created_at_string: String
+
+  # Logical creation time automatically set by the generating transaction.
+  created_lt(format: BigIntFormat): String
+
+  # Represents initial data for a contract in deploy messages
+  data: String
+
+  # `data` field root hash.
+  data_hash: String
+
+  # Returns destination address string
+  dst: String
+  dst_account(timeout: Int, when: MessageFilter): Account
+  dst_transaction(timeout: Int, when: MessageFilter): Transaction
+
+  # Workchain id of the destination address (dst field)
+  dst_workchain_id: Int
+
+  # Original total forwarding fee paid for using the HR mechanism; it is automatically computed from some configuration parameters and the size of the message at the time the message is generated.
+  fwd_fee(format: BigIntFormat): String
+
+  # IHR is disabled for the message.
+  ihr_disabled: Boolean
+
+  # This value is subtracted from the value attached to the message and awarded to the validators of the destination shardchain if they include the message by the IHR mechanism.
+  ihr_fee(format: BigIntFormat): String
+  import_fee(format: BigIntFormat): String
+
+  # Represents contract library in deploy messages
+  library: String
+
+  # `library` field root hash.
+  library_hash: String
+
+  # Returns the type of message.
+  # - 0 – internal
+  # - 1 – extIn
+  # - 2 – extOut
+  msg_type: Int
+  msg_type_name: MessageTypeEnum
+
+  # Merkle proof that message is a part of a block it cut from. It is a bag of cells with Merkle proof struct encoded as base64.
+  proof: String
+
+  # This is only used for special contracts in masterchain to deploy messages.
+  split_depth: Int
+
+  # Returns source address string
+  src: String
+  src_account(timeout: Int, when: MessageFilter): Account
+  src_transaction(timeout: Int, when: MessageFilter): Transaction
+
+  # Workchain id of the source address (src field)
+  src_workchain_id: Int
+
+  # Returns internal processing status according to the numbers shown.
+  # - 0 – unknown
+  # - 1 – queued
+  # - 2 – processing
+  # - 3 – preliminary
+  # - 4 – proposed
+  # - 5 – finalized
+  # - 6 – refused
+  # - 7 – transiting
+  status: Int
+  status_name: MessageProcessingStatusEnum
+
+  # This is only used for special contracts in masterchain to deploy messages.
+  tick: Boolean
+
+  # This is only used for special contracts in masterchain to deploy messages
+  tock: Boolean
+
+  # May or may not be present
+  value(format: BigIntFormat): String
+
+  # May or may not be present.
+  value_other: [OtherCurrency]
+}
+
+# This is Block
+type Block {
+  id: String
+  account_blocks: [BlockAccountBlocks]
+  after_merge: Boolean
+  after_split: Boolean
+  before_split: Boolean
+
+  # Serialized bag of cells of this block encoded with base64
+  boc: String
+
+  # Collection-unique field for pagination and sorting. This field is designed to retain logical order.
+  chain_order: String
+
+  # Public key of the collator who produced this block.
+  created_by: String
+
+  # Logical creation time automatically set by the block formation end.
+  end_lt(format: BigIntFormat): String
+
+  # Block file hash
+  file_hash: String
+  flags: Int
+  gen_catchain_seqno: Float
+  gen_software_capabilities(format: BigIntFormat): String
+  gen_software_version: Float
+
+  # uint 32 generation time stamp
+  gen_utime: Float
+  gen_utime_string: String
+  gen_validator_list_hash_short: Float
+
+  # uint32 global block ID
+  global_id: Int
+  in_msg_descr: [InMsg]
+
+  # true if this block is a key block
+  key_block: Boolean
+  master: BlockMaster
+  master_ref: ExtBlkRef
+
+  # Returns last known master block at the time of shard generation.
+  min_ref_mc_seqno: Float
+  out_msg_descr: [OutMsg]
+
+  # External block reference for previous block in case of shard merge.
+  prev_alt_ref: ExtBlkRef
+
+  # Returns a number of a previous key block.
+  prev_key_block_seqno: Float
+
+  # External block reference for previous block.
+  prev_ref: ExtBlkRef
+  prev_vert_alt_ref: ExtBlkRef
+
+  # External block reference for previous block in case of vertical blocks.
+  prev_vert_ref: ExtBlkRef
+  rand_seed: String
+  seq_no: Float
+  shard: String
+  signatures(timeout: Int, when: BlockFilter): BlockSignatures
+
+  # Logical creation time automatically set by the block formation start.
+  # Logical time is a component of the TON Blockchain that also plays an important role in message delivery is the logical time, usually denoted by Lt. It is a non-negative 64-bit integer, assigned to certain events. For more details, see the TON blockchain specification
+  start_lt(format: BigIntFormat): String
+  state_update: BlockStateUpdate
+
+  # Returns block processing status
+  # - 0 – unknown
+  # - 1 – proposed
+  # - 2 – finalized
+  # - 3 – refused
+  status: Int
+  status_name: BlockProcessingStatusEnum
+  tr_count: Int
+  value_flow: BlockValueFlow
+
+  # uin32 block version identifier
+  version: Float
+  vert_seq_no: Float
+  want_merge: Boolean
+  want_split: Boolean
+
+  # uint32 workchain identifier
+  workchain_id: Int
+}
+
+# Set of validator's signatures for the Block with correspond id
+type BlockSignatures {
+  id: String
+  block(timeout: Int, when: BlockSignaturesFilter): Block
+  catchain_seqno: Float
+
+  # Signed block's gen_utime
+  gen_utime: Float
+  gen_utime_string: String
+
+  # Signed block's merkle proof
+  proof: String
+
+  # Signed block's seq_no
+  seq_no: Float
+
+  # Signed block's shard
+  shard: String
+  sig_weight(format: BigIntFormat): String
+
+  # Array of signatures from block's validators
+  signatures: [BlockSignaturesSignatures]
+  validator_list_hash_short: Float
+
+  # Signed block's workchain_id
+  workchain_id: Int
+}
+
+# The initial state of the workchain before first block was generated
+type Zerostate {
+  id: String
+
+  # Initial accounts state at the workchain start
+  accounts: [ZerostateAccounts]
+
+  # Serialized bag of cells of this zerostate encoded with base64
+  boc: String
+
+  # Zerostate file hash
+  file_hash: String
+
+  # uint32 global network ID
+  global_id: Int
+
+  # Initial libraries at the workchain start
+  libraries: [ZerostateLibraries]
+  master: ZerostateMaster
+
+  # Zerostate root cell representation hash
+  root_hash: String
+
+  # Overall balance of all accounts of the workchain
+  total_balance(format: BigIntFormat): String
+
+  # Overall balance of all accounts of the workchain in other currencies
+  total_balance_other: [OtherCurrency]
+
+  # Zerostate workchain_id
+  workchain_id: Int
+}
+
+input OtherCurrencyFilter {
+  currency: FloatFilter
+  value: StringFilter
+  OR: OtherCurrencyFilter
+}
+
+input ExtBlkRefFilter {
+  end_lt: StringFilter
+  file_hash: StringFilter
+  root_hash: StringFilter
+  seq_no: FloatFilter
+  OR: ExtBlkRefFilter
+}
+
+input MsgEnvelopeFilter {
+  cur_addr: StringFilter
+  fwd_fee_remaining: StringFilter
+  msg_id: StringFilter
+  next_addr: StringFilter
+  OR: MsgEnvelopeFilter
+}
+
+input InMsgTypeEnumFilter {
+  eq: InMsgTypeEnum
+  ne: InMsgTypeEnum
+  gt: InMsgTypeEnum
+  lt: InMsgTypeEnum
+  ge: InMsgTypeEnum
+  le: InMsgTypeEnum
+  in: [InMsgTypeEnum]
+  notIn: [InMsgTypeEnum]
+}
+
+input InMsgFilter {
+  fwd_fee: StringFilter
+  ihr_fee: StringFilter
+  in_msg: MsgEnvelopeFilter
+  msg_id: StringFilter
+
+  # - 0 – external
+  # - 1 – ihr
+  # - 2 – immediately
+  # - 3 – final
+  # - 4 – transit
+  # - 5 – discardedFinal
+  # - 6 – discardedTransit
+  msg_type: IntFilter
+  msg_type_name: InMsgTypeEnumFilter
+  out_msg: MsgEnvelopeFilter
+  proof_created: StringFilter
+  proof_delivered: StringFilter
+  transaction_id: StringFilter
+  transit_fee: StringFilter
+  OR: InMsgFilter
+}
+
+input OutMsgTypeEnumFilter {
+  eq: OutMsgTypeEnum
+  ne: OutMsgTypeEnum
+  gt: OutMsgTypeEnum
+  lt: OutMsgTypeEnum
+  ge: OutMsgTypeEnum
+  le: OutMsgTypeEnum
+  in: [OutMsgTypeEnum]
+  notIn: [OutMsgTypeEnum]
+}
+
+input OutMsgFilter {
+  import_block_lt: StringFilter
+  imported: InMsgFilter
+  msg_env_hash: StringFilter
+  msg_id: StringFilter
+
+  # - 0 – external
+  # - 1 – immediately
+  # - 2 – outMsgNew
+  # - 3 – transit
+  # - 4 – dequeueImmediately
+  # - 5 – dequeue
+  # - 6 – transitRequired
+  # - 7 – dequeueShort
+  # - -1 – none
+  msg_type: IntFilter
+  msg_type_name: OutMsgTypeEnumFilter
+  next_addr_pfx: StringFilter
+  next_workchain: IntFilter
+  out_msg: MsgEnvelopeFilter
+  reimport: InMsgFilter
+  transaction_id: StringFilter
+  OR: OutMsgFilter
+}
+
+input GasLimitsPricesFilter {
+  block_gas_limit: StringFilter
+  delete_due_limit: StringFilter
+  flat_gas_limit: StringFilter
+  flat_gas_price: StringFilter
+  freeze_due_limit: StringFilter
+  gas_credit: StringFilter
+  gas_limit: StringFilter
+  gas_price: StringFilter
+  special_gas_limit: StringFilter
+  OR: GasLimitsPricesFilter
+}
+
+input BlockLimitsBytesFilter {
+  hard_limit: FloatFilter
+  soft_limit: FloatFilter
+  underload: FloatFilter
+  OR: BlockLimitsBytesFilter
+}
+
+input BlockLimitsGasFilter {
+  hard_limit: FloatFilter
+  soft_limit: FloatFilter
+  underload: FloatFilter
+  OR: BlockLimitsGasFilter
+}
+
+input BlockLimitsLtDeltaFilter {
+  hard_limit: FloatFilter
+  soft_limit: FloatFilter
+  underload: FloatFilter
+  OR: BlockLimitsLtDeltaFilter
+}
+
+input BlockLimitsFilter {
+  bytes: BlockLimitsBytesFilter
+  gas: BlockLimitsGasFilter
+  lt_delta: BlockLimitsLtDeltaFilter
+  OR: BlockLimitsFilter
+}
+
+input MsgForwardPricesFilter {
+  bit_price: StringFilter
+  cell_price: StringFilter
+  first_frac: IntFilter
+  ihr_price_factor: FloatFilter
+  lump_price: StringFilter
+  next_frac: IntFilter
+  OR: MsgForwardPricesFilter
+}
+
+input ValidatorSetListFilter {
+  adnl_addr: StringFilter
+  public_key: StringFilter
+  weight: StringFilter
+  OR: ValidatorSetListFilter
+}
+
+input ValidatorSetListArrayFilter {
+  any: ValidatorSetListFilter
+  all: ValidatorSetListFilter
+}
+
+input ValidatorSetFilter {
+  list: ValidatorSetListArrayFilter
+  main: IntFilter
+  total: IntFilter
+  total_weight: StringFilter
+  utime_since: FloatFilter
+  utime_until: FloatFilter
+  OR: ValidatorSetFilter
+}
+
+input ConfigProposalSetupFilter {
+  bit_price: FloatFilter
+  cell_price: FloatFilter
+  max_losses: IntFilter
+  max_store_sec: FloatFilter
+  max_tot_rounds: IntFilter
+  min_store_sec: FloatFilter
+  min_tot_rounds: IntFilter
+  min_wins: IntFilter
+  OR: ConfigProposalSetupFilter
+}
+
+# Configuration parameter 6
+input ConfigP6Filter {
+  mint_add_price: StringFilter
+  mint_new_price: StringFilter
+  OR: ConfigP6Filter
+}
+
+input ConfigP7Filter {
+  currency: FloatFilter
+  value: StringFilter
+  OR: ConfigP7Filter
+}
+
+# Global version
+input ConfigP8Filter {
+  capabilities: StringFilter
+  version: FloatFilter
+  OR: ConfigP8Filter
+}
+
+# Config voting setup
+input ConfigP11Filter {
+  critical_params: ConfigProposalSetupFilter
+  normal_params: ConfigProposalSetupFilter
+  OR: ConfigP11Filter
+}
+
+input ConfigP12Filter {
+  accept_msgs: BooleanFilter
+  active: BooleanFilter
+  actual_min_split: IntFilter
+  addr_len_step: IntFilter
+  basic: BooleanFilter
+  enabled_since: FloatFilter
+  flags: IntFilter
+  max_addr_len: IntFilter
+  max_split: IntFilter
+  min_addr_len: IntFilter
+  min_split: IntFilter
+  version: FloatFilter
+  vm_mode: StringFilter
+  vm_version: IntFilter
+  workchain_id: IntFilter
+  workchain_type_id: FloatFilter
+  zerostate_file_hash: StringFilter
+  zerostate_root_hash: StringFilter
+  OR: ConfigP12Filter
+}
+
+# Block create fees
+input ConfigP14Filter {
+  basechain_block_fee: StringFilter
+  masterchain_block_fee: StringFilter
+  OR: ConfigP14Filter
+}
+
+# Election parameters
+input ConfigP15Filter {
+  elections_end_before: FloatFilter
+  elections_start_before: FloatFilter
+  stake_held_for: FloatFilter
+  validators_elected_for: FloatFilter
+  OR: ConfigP15Filter
+}
+
+# Validators count
+input ConfigP16Filter {
+  max_main_validators: IntFilter
+  max_validators: IntFilter
+  min_validators: IntFilter
+  OR: ConfigP16Filter
+}
+
+# Validator stake parameters
+input ConfigP17Filter {
+  max_stake: StringFilter
+  max_stake_factor: FloatFilter
+  min_stake: StringFilter
+  min_total_stake: StringFilter
+  OR: ConfigP17Filter
+}
+
+input ConfigP18Filter {
+  bit_price_ps: StringFilter
+  cell_price_ps: StringFilter
+  mc_bit_price_ps: StringFilter
+  mc_cell_price_ps: StringFilter
+  utime_since: FloatFilter
+  OR: ConfigP18Filter
+}
+
+# Catchain config
+input ConfigP28Filter {
+  mc_catchain_lifetime: FloatFilter
+  shard_catchain_lifetime: FloatFilter
+  shard_validators_lifetime: FloatFilter
+  shard_validators_num: FloatFilter
+  shuffle_mc_validators: BooleanFilter
+  OR: ConfigP28Filter
+}
+
+# Consensus config
+input ConfigP29Filter {
+  attempt_duration: FloatFilter
+  catchain_max_deps: FloatFilter
+  consensus_timeout_ms: FloatFilter
+  fast_attempts: FloatFilter
+  max_block_bytes: FloatFilter
+  max_collated_bytes: FloatFilter
+  new_catchain_ids: BooleanFilter
+  next_candidate_delay_ms: FloatFilter
+  round_candidates: FloatFilter
+  OR: ConfigP29Filter
+}
+
+input ConfigP39Filter {
+  adnl_addr: StringFilter
+  seqno: FloatFilter
+  signature_r: StringFilter
+  signature_s: StringFilter
+  temp_public_key: StringFilter
+  valid_until: FloatFilter
+  OR: ConfigP39Filter
+}
+
+input FloatArrayFilter {
+  any: FloatFilter
+  all: FloatFilter
+}
+
+input ConfigP12ArrayFilter {
+  any: ConfigP12Filter
+  all: ConfigP12Filter
+}
+
+input ConfigP18ArrayFilter {
+  any: ConfigP18Filter
+  all: ConfigP18Filter
+}
+
+input StringArrayFilter {
+  any: StringFilter
+  all: StringFilter
+}
+
+input ConfigP39ArrayFilter {
+  any: ConfigP39Filter
+  all: ConfigP39Filter
+}
+
+input ConfigP7ArrayFilter {
+  any: ConfigP7Filter
+  all: ConfigP7Filter
+}
+
+input ConfigFilter {
+  # Address of config smart contract in the masterchain
+  p0: StringFilter
+
+  # Address of elector smart contract in the masterchain
+  p1: StringFilter
+
+  # Critical params
+  p10: FloatArrayFilter
+
+  # Config voting setup
+  p11: ConfigP11Filter
+
+  # Array of all workchains descriptions
+  p12: ConfigP12ArrayFilter
+
+  # Block create fees
+  p14: ConfigP14Filter
+
+  # Election parameters
+  p15: ConfigP15Filter
+
+  # Validators count
+  p16: ConfigP16Filter
+
+  # Validator stake parameters
+  p17: ConfigP17Filter
+
+  # Storage prices
+  p18: ConfigP18ArrayFilter
+
+  # Address of minter smart contract in the masterchain
+  p2: StringFilter
+
+  # Gas limits and prices in the masterchain
+  p20: GasLimitsPricesFilter
+
+  # Gas limits and prices in workchains
+  p21: GasLimitsPricesFilter
+
+  # Block limits in the masterchain
+  p22: BlockLimitsFilter
+
+  # Block limits in workchains
+  p23: BlockLimitsFilter
+
+  # Message forward prices in the masterchain
+  p24: MsgForwardPricesFilter
+
+  # Message forward prices in workchains
+  p25: MsgForwardPricesFilter
+
+  # Catchain config
+  p28: ConfigP28Filter
+
+  # Consensus config
+  p29: ConfigP29Filter
+
+  # Address of fee collector smart contract in the masterchain
+  p3: StringFilter
+
+  # Array of fundamental smart contracts addresses
+  p31: StringArrayFilter
+
+  # Previous validators set
+  p32: ValidatorSetFilter
+
+  # Previous temporary validators set
+  p33: ValidatorSetFilter
+
+  # Current validators set
+  p34: ValidatorSetFilter
+
+  # Current temporary validators set
+  p35: ValidatorSetFilter
+
+  # Next validators set
+  p36: ValidatorSetFilter
+
+  # Next temporary validators set
+  p37: ValidatorSetFilter
+
+  # Array of validator signed temporary keys
+  p39: ConfigP39ArrayFilter
+
+  # Address of TON DNS root smart contract in the masterchain
+  p4: StringFilter
+
+  # Configuration parameter 6
+  p6: ConfigP6Filter
+
+  # Configuration parameter 7
+  p7: ConfigP7ArrayFilter
+
+  # Global version
+  p8: ConfigP8Filter
+
+  # Mandatory params
+  p9: FloatArrayFilter
+  OR: ConfigFilter
+}
+
+input AccountStatusChangeEnumFilter {
+  eq: AccountStatusChangeEnum
+  ne: AccountStatusChangeEnum
+  gt: AccountStatusChangeEnum
+  lt: AccountStatusChangeEnum
+  ge: AccountStatusChangeEnum
+  le: AccountStatusChangeEnum
+  in: [AccountStatusChangeEnum]
+  notIn: [AccountStatusChangeEnum]
+}
+
+input TransactionStorageFilter {
+  # This field represents account status change after the transaction is completed.
+  # - 0 – unchanged
+  # - 1 – frozen
+  # - 2 – deleted
+  status_change: IntFilter
+  status_change_name: AccountStatusChangeEnumFilter
+
+  # This field defines the amount of storage fees collected in grams.
+  storage_fees_collected: StringFilter
+
+  # This field represents the amount of due fees in grams, it might be empty.
+  storage_fees_due: StringFilter
+  OR: TransactionStorageFilter
+}
+
+input OtherCurrencyArrayFilter {
+  any: OtherCurrencyFilter
+  all: OtherCurrencyFilter
+}
+
+input TransactionCreditFilter {
+  credit: StringFilter
+  credit_other: OtherCurrencyArrayFilter
+
+  # The sum of due_fees_collected and credit must equal the value of the message received, plus its ihr_fee if the message has not been received via Instant Hypercube Routing, IHR (otherwise the ihr_fee is awarded to the validators).
+  due_fees_collected: StringFilter
+  OR: TransactionCreditFilter
+}
+
+input ComputeTypeEnumFilter {
+  eq: ComputeTypeEnum
+  ne: ComputeTypeEnum
+  gt: ComputeTypeEnum
+  lt: ComputeTypeEnum
+  ge: ComputeTypeEnum
+  le: ComputeTypeEnum
+  in: [ComputeTypeEnum]
+  notIn: [ComputeTypeEnum]
+}
+
+input SkipReasonEnumFilter {
+  eq: SkipReasonEnum
+  ne: SkipReasonEnum
+  gt: SkipReasonEnum
+  lt: SkipReasonEnum
+  ge: SkipReasonEnum
+  le: SkipReasonEnum
+  in: [SkipReasonEnum]
+  notIn: [SkipReasonEnum]
+}
+
+input TransactionComputeFilter {
+  # The flag reflects whether this has resulted in the activation of a previously frozen, uninitialized or non-existent account.
+  account_activated: BooleanFilter
+
+  # - 0 – skipped
+  # - 1 – vm
+  compute_type: IntFilter
+  compute_type_name: ComputeTypeEnumFilter
+  exit_arg: IntFilter
+
+  # These parameter represents the status values returned by TVM; for a successful transaction, exit_code has to be 0 or 1
+  exit_code: IntFilter
+
+  # This parameter may be non-zero only for external inbound messages. It is the lesser of either the amount of gas that can be paid from the account balance or the maximum gas credit
+  gas_credit: IntFilter
+
+  # This parameter reflects the total gas fees collected by the validators for executing this transaction. It must be equal to the product of gas_used and gas_price from the current block header.
+  gas_fees: StringFilter
+
+  # This parameter reflects the gas limit for this instance of TVM. It equals the lesser of either the Grams credited in the credit phase from the value of the inbound message divided by the current gas price, or the global per-transaction gas limit.
+  gas_limit: StringFilter
+  gas_used: StringFilter
+  mode: IntFilter
+
+  # This parameter reflects whether the state passed in the message has been used. If it is set, the account_activated flag is used (see below)This parameter reflects whether the state passed in the message has been used. If it is set, the account_activated flag is used (see below)
+  msg_state_used: BooleanFilter
+
+  # Reason for skipping the compute phase. According to the specification, the phase can be skipped due to the absence of funds to buy gas, absence of state of an account or a message, failure to provide a valid state in the message
+  # - 0 – noState
+  # - 1 – badState
+  # - 2 – noGas
+  skipped_reason: IntFilter
+  skipped_reason_name: SkipReasonEnumFilter
+
+  # This flag is set if and only if exit_code is either 0 or 1.
+  success: BooleanFilter
+
+  # This parameter is the representation hashes of the resulting state of TVM.
+  vm_final_state_hash: StringFilter
+
+  # This parameter is the representation hashes of the original state of TVM.
+  vm_init_state_hash: StringFilter
+
+  # the total number of steps performed by TVM (usually equal to two plus the number of instructions executed, including implicit RETs)
+  vm_steps: FloatFilter
+  OR: TransactionComputeFilter
+}
+
+input TransactionActionFilter {
+  action_list_hash: StringFilter
+  msgs_created: IntFilter
+
+  # The flag indicates absence of funds required to create an outbound message
+  no_funds: BooleanFilter
+  result_arg: IntFilter
+  result_code: IntFilter
+  skipped_actions: IntFilter
+  spec_actions: IntFilter
+
+  # - 0 – unchanged
+  # - 1 – frozen
+  # - 2 – deleted
+  status_change: IntFilter
+  status_change_name: AccountStatusChangeEnumFilter
+  success: BooleanFilter
+  tot_actions: IntFilter
+  total_action_fees: StringFilter
+  total_fwd_fees: StringFilter
+  total_msg_size_bits: FloatFilter
+  total_msg_size_cells: FloatFilter
+  valid: BooleanFilter
+  OR: TransactionActionFilter
+}
+
+input BounceTypeEnumFilter {
+  eq: BounceTypeEnum
+  ne: BounceTypeEnum
+  gt: BounceTypeEnum
+  lt: BounceTypeEnum
+  ge: BounceTypeEnum
+  le: BounceTypeEnum
+  in: [BounceTypeEnum]
+  notIn: [BounceTypeEnum]
+}
+
+input TransactionBounceFilter {
+  # - 0 – negFunds
+  # - 1 – noFunds
+  # - 2 – ok
+  bounce_type: IntFilter
+  bounce_type_name: BounceTypeEnumFilter
+  fwd_fees: StringFilter
+  msg_fees: StringFilter
+  msg_size_bits: FloatFilter
+  msg_size_cells: FloatFilter
+  req_fwd_fees: StringFilter
+  OR: TransactionBounceFilter
+}
+
+input TransactionSplitInfoFilter {
+  acc_split_depth: IntFilter
+
+  # length of the current shard prefix
+  cur_shard_pfx_len: IntFilter
+  sibling_addr: StringFilter
+  this_addr: StringFilter
+  OR: TransactionSplitInfoFilter
+}
+
+input BlockValueFlowFilter {
+  created: StringFilter
+  created_other: OtherCurrencyArrayFilter
+
+  # Amount of grams exported.
+  exported: StringFilter
+
+  # Amount of non gram cryptocurrencies exported.
+  exported_other: OtherCurrencyArrayFilter
+  fees_collected: StringFilter
+  fees_collected_other: OtherCurrencyArrayFilter
+
+  # Amount of import fees in grams
+  fees_imported: StringFilter
+
+  # Amount of import fees in non gram currencies.
+  fees_imported_other: OtherCurrencyArrayFilter
+
+  # Amount of grams transferred from previous block.
+  from_prev_blk: StringFilter
+
+  # Amount of non gram cryptocurrencies transferred from previous block.
+  from_prev_blk_other: OtherCurrencyArrayFilter
+
+  # Amount of grams imported.
+  imported: StringFilter
+
+  # Amount of non gram cryptocurrencies imported.
+  imported_other: OtherCurrencyArrayFilter
+
+  # Amount of grams minted in this block.
+  minted: StringFilter
+  minted_other: OtherCurrencyArrayFilter
+
+  # Amount of grams amount to the next block.
+  to_next_blk: StringFilter
+
+  # Amount of non gram cryptocurrencies to the next block.
+  to_next_blk_other: OtherCurrencyArrayFilter
+  OR: BlockValueFlowFilter
+}
+
+input BlockAccountBlocksTransactionsFilter {
+  lt: StringFilter
+  total_fees: StringFilter
+  total_fees_other: OtherCurrencyArrayFilter
+  transaction_id: StringFilter
+  OR: BlockAccountBlocksTransactionsFilter
+}
+
+input BlockAccountBlocksTransactionsArrayFilter {
+  any: BlockAccountBlocksTransactionsFilter
+  all: BlockAccountBlocksTransactionsFilter
+}
+
+input BlockAccountBlocksFilter {
+  account_addr: StringFilter
+
+  # new version of block hashes
+  new_hash: StringFilter
+
+  # old version of block hashes
+  old_hash: StringFilter
+  tr_count: IntFilter
+  transactions: BlockAccountBlocksTransactionsArrayFilter
+  OR: BlockAccountBlocksFilter
+}
+
+input BlockStateUpdateFilter {
+  new: StringFilter
+  new_depth: IntFilter
+  new_hash: StringFilter
+  old: StringFilter
+  old_depth: IntFilter
+  old_hash: StringFilter
+  OR: BlockStateUpdateFilter
+}
+
+input SplitTypeEnumFilter {
+  eq: SplitTypeEnum
+  ne: SplitTypeEnum
+  gt: SplitTypeEnum
+  lt: SplitTypeEnum
+  ge: SplitTypeEnum
+  le: SplitTypeEnum
+  in: [SplitTypeEnum]
+  notIn: [SplitTypeEnum]
+}
+
+# Shard description
+input BlockMasterShardHashesDescrFilter {
+  before_merge: BooleanFilter
+
+  # TON Blockchain supports dynamic sharding, so the shard configuration may change from block to block because of shard merge and split events. Therefore, we cannot simply say that each shardchain corresponds to a fixed set of account chains.
+  # A shardchain block and its state may each be classified into two distinct parts. The parts with the ISP-dictated form of will be called the split parts of the block and its state, while the remainder will be called the non-split parts.
+  # The masterchain cannot be split or merged.
+  before_split: BooleanFilter
+
+  # Logical time of the shardchain end
+  end_lt: StringFilter
+
+  # Amount of fees collected int his shard in grams.
+  fees_collected: StringFilter
+
+  # Amount of fees collected int his shard in non gram currencies.
+  fees_collected_other: OtherCurrencyArrayFilter
+
+  # Shard block file hash.
+  file_hash: StringFilter
+  flags: IntFilter
+
+  # Amount of funds created in this shard in grams.
+  funds_created: StringFilter
+
+  # Amount of funds created in this shard in non gram currencies.
+  funds_created_other: OtherCurrencyArrayFilter
+
+  # Generation time in uint32
+  gen_utime: FloatFilter
+  min_ref_mc_seqno: FloatFilter
+  next_catchain_seqno: FloatFilter
+  next_validator_shard: StringFilter
+  nx_cc_updated: BooleanFilter
+
+  # Returns last known master block at the time of shard generation.
+  reg_mc_seqno: FloatFilter
+
+  # Returns last known master block at the time of shard generation. The shard block configuration is derived from that block.
+  root_hash: StringFilter
+
+  # uint32 sequence number
+  seq_no: FloatFilter
+  split: FloatFilter
+
+  # - 0 – none
+  # - 2 – split
+  # - 3 – merge
+  split_type: IntFilter
+  split_type_name: SplitTypeEnumFilter
+
+  # Logical time of the shardchain start
+  start_lt: StringFilter
+  want_merge: BooleanFilter
+  want_split: BooleanFilter
+  OR: BlockMasterShardHashesDescrFilter
+}
+
+input BlockMasterShardHashesFilter {
+  # Shard description
+  descr: BlockMasterShardHashesDescrFilter
+
+  # Shard ID
+  shard: StringFilter
+
+  # Uint32 workchain ID
+  workchain_id: IntFilter
+  OR: BlockMasterShardHashesFilter
+}
+
+input BlockMasterShardFeesFilter {
+  # Amount of fees created during shard
+  create: StringFilter
+
+  # Amount of non gram fees created in non gram crypto currencies during the block.
+  create_other: OtherCurrencyArrayFilter
+
+  # Amount of fees in grams
+  fees: StringFilter
+
+  # Array of fees in non gram crypto currencies
+  fees_other: OtherCurrencyArrayFilter
+  shard: StringFilter
+  workchain_id: IntFilter
+  OR: BlockMasterShardFeesFilter
+}
+
+input BlockMasterPrevBlkSignaturesFilter {
+  node_id: StringFilter
+  r: StringFilter
+  s: StringFilter
+  OR: BlockMasterPrevBlkSignaturesFilter
+}
+
+input BlockMasterPrevBlkSignaturesArrayFilter {
+  any: BlockMasterPrevBlkSignaturesFilter
+  all: BlockMasterPrevBlkSignaturesFilter
+}
+
+input BlockMasterShardFeesArrayFilter {
+  any: BlockMasterShardFeesFilter
+  all: BlockMasterShardFeesFilter
+}
+
+input BlockMasterShardHashesArrayFilter {
+  any: BlockMasterShardHashesFilter
+  all: BlockMasterShardHashesFilter
+}
+
+input BlockMasterFilter {
+  config: ConfigFilter
+  config_addr: StringFilter
+
+  # Max block generation time of shards
+  max_shard_gen_utime: FloatFilter
+
+  # Min block generation time of shards
+  min_shard_gen_utime: FloatFilter
+  prev_blk_signatures: BlockMasterPrevBlkSignaturesArrayFilter
+  recover_create_msg: InMsgFilter
+  shard_fees: BlockMasterShardFeesArrayFilter
+  shard_hashes: BlockMasterShardHashesArrayFilter
+  OR: BlockMasterFilter
+}
+
+input BlockSignaturesSignaturesFilter {
+  node_id: StringFilter
+
+  # 'R' part of signature
+  r: StringFilter
+
+  # 's' part of signature
+  s: StringFilter
+  OR: BlockSignaturesSignaturesFilter
+}
+
+input ZerostateMasterFilter {
+  config: ConfigFilter
+  config_addr: StringFilter
+
+  # Overall balance of all accounts
+  global_balance: StringFilter
+
+  # Overall balance of all accounts in other currencies
+  global_balance_other: OtherCurrencyArrayFilter
+  validator_list_hash_short: FloatFilter
+  OR: ZerostateMasterFilter
+}
+
+input AccountStatusEnumFilter {
+  eq: AccountStatusEnum
+  ne: AccountStatusEnum
+  gt: AccountStatusEnum
+  lt: AccountStatusEnum
+  ge: AccountStatusEnum
+  le: AccountStatusEnum
+  in: [AccountStatusEnum]
+  notIn: [AccountStatusEnum]
+}
+
+input ZerostateAccountsFilter {
+  id: StringFilter
+
+  # Returns the current status of the account.
+  # ```
+  # {
+  #   accounts(filter: {acc_type:{eq:1}}){
+  #     id
+  #     acc_type
+  #   }
+  # }
+  # ```
+  #
+  # - 0 – uninit
+  # - 1 – active
+  # - 2 – frozen
+  # - 3 – nonExist
+  acc_type: IntFilter
+  acc_type_name: AccountStatusEnumFilter
+
+  # ```
+  # {
+  #   accounts(orderBy:{path:"balance",direction:DESC}){
+  #     balance
+  #   }
+  # }
+  # ```
+  balance: StringFilter
+  balance_other: OtherCurrencyArrayFilter
+
+  # Contains sum of all the bits used by the cells of the account. Used in storage fee calculation
+  bits: StringFilter
+
+  # Bag of cells with the account struct encoded as base64.
+  boc: StringFilter
+
+  # Contains number of the cells of the account. Used in storage fee calculation
+  cells: StringFilter
+
+  # If present, contains smart-contract code encoded with in base64.
+  # ```
+  # {
+  #   accounts (filter:{code:{eq:null}}){
+  #     id
+  #     acc_type
+  #   }
+  # }
+  # ```
+  code: StringFilter
+
+  # `code` field root hash.
+  code_hash: StringFilter
+
+  # If present, contains smart-contract data encoded with in base64.
+  data: StringFilter
+
+  # `data` field root hash.
+  data_hash: StringFilter
+
+  # If present, accumulates the storage payments that could not be exacted from the balance of the account, represented by a strictly positive amount of nano tokens; it can be present only for uninitialized or frozen accounts that have a balance of zero Grams (but may have non-zero balances in non gram cryptocurrencies). When due_payment becomes larger than the value of a configurable parameter of the blockchain, the ac- count is destroyed altogether, and its balance, if any, is transferred to the zero account.
+  # ```
+  # {
+  #   accounts(filter: { due_payment: { ne: null } })
+  #     {
+  #       id
+  #     }
+  # }
+  # ```
+  due_payment: StringFilter
+
+  # Contains either the unixtime of the most recent storage payment
+  # collected (usually this is the unixtime of the most recent transaction),
+  # or the unixtime when the account was created (again, by a transaction).
+  # ```
+  # query{
+  #   accounts(filter: {
+  #     last_paid:{ge:1567296000}
+  #   }) {
+  #   id
+  #   last_paid}
+  # }
+  # ```
+  last_paid: FloatFilter
+  last_trans_lt: StringFilter
+
+  # If present, contains library code used in smart-contract.
+  library: StringFilter
+
+  # `library` field root hash.
+  library_hash: StringFilter
+
+  # Merkle proof that account is a part of shard state it cut from as a bag of cells with Merkle proof struct encoded as base64.
+  proof: StringFilter
+
+  # Contains the number of public cells of the account. Used in storage fee calculation.
+  public_cells: StringFilter
+
+  # Is present and non-zero only in instances of large smart contracts.
+  split_depth: IntFilter
+
+  # Contains the representation hash of an instance of `StateInit` when an account is frozen.
+  state_hash: StringFilter
+
+  # May be present only in the masterchain—and within the masterchain, only in some fundamental smart contracts required for the whole system to function.
+  tick: BooleanFilter
+
+  # May be present only in the masterchain—and within the masterchain, only in some fundamental smart contracts required for the whole system to function.
+  # ```
+  # {
+  #   accounts (filter:{tock:{ne:null}}){
+  #     id
+  #     tock
+  #     tick
+  #   }
+  # }
+  # ```
+  tock: BooleanFilter
+
+  # Workchain id of the account address (id field).
+  workchain_id: IntFilter
+  OR: ZerostateAccountsFilter
+}
+
+input ZerostateLibrariesFilter {
+  # Library hash
+  hash: StringFilter
+
+  # Serialized bag of cells of this library encoded with base64
+  lib: StringFilter
+
+  # List of the accounts which use the library
+  publishers: StringArrayFilter
+  OR: ZerostateLibrariesFilter
+}
+
+# # Account type
+#
+# Recall that a smart contract and an account are the same thing in the context
+# of the TON Blockchain, and that these terms can be used interchangeably, at
+# least as long as only small (or “usual”) smart contracts are considered. A large
+# smart-contract may employ several accounts lying in different shardchains of
+# the same workchain for load balancing purposes.
+#
+# An account is identified by its full address and is completely described by
+# its state. In other words, there is nothing else in an account apart from its
+# address and state.
+input AccountFilter {
+  id: StringFilter
+
+  # Returns the current status of the account.
+  # ```
+  # {
+  #   accounts(filter: {acc_type:{eq:1}}){
+  #     id
+  #     acc_type
+  #   }
+  # }
+  # ```
+  #
+  # - 0 – uninit
+  # - 1 – active
+  # - 2 – frozen
+  # - 3 – nonExist
+  acc_type: IntFilter
+  acc_type_name: AccountStatusEnumFilter
+
+  # ```
+  # {
+  #   accounts(orderBy:{path:"balance",direction:DESC}){
+  #     balance
+  #   }
+  # }
+  # ```
+  balance: StringFilter
+  balance_other: OtherCurrencyArrayFilter
+
+  # Contains sum of all the bits used by the cells of the account. Used in storage fee calculation
+  bits: StringFilter
+
+  # Bag of cells with the account struct encoded as base64.
+  boc: StringFilter
+
+  # Contains number of the cells of the account. Used in storage fee calculation
+  cells: StringFilter
+
+  # If present, contains smart-contract code encoded with in base64.
+  # ```
+  # {
+  #   accounts (filter:{code:{eq:null}}){
+  #     id
+  #     acc_type
+  #   }
+  # }
+  # ```
+  code: StringFilter
+
+  # `code` field root hash.
+  code_hash: StringFilter
+
+  # If present, contains smart-contract data encoded with in base64.
+  data: StringFilter
+
+  # `data` field root hash.
+  data_hash: StringFilter
+
+  # If present, accumulates the storage payments that could not be exacted from the balance of the account, represented by a strictly positive amount of nano tokens; it can be present only for uninitialized or frozen accounts that have a balance of zero Grams (but may have non-zero balances in non gram cryptocurrencies). When due_payment becomes larger than the value of a configurable parameter of the blockchain, the ac- count is destroyed altogether, and its balance, if any, is transferred to the zero account.
+  # ```
+  # {
+  #   accounts(filter: { due_payment: { ne: null } })
+  #     {
+  #       id
+  #     }
+  # }
+  # ```
+  due_payment: StringFilter
+
+  # Contains either the unixtime of the most recent storage payment
+  # collected (usually this is the unixtime of the most recent transaction),
+  # or the unixtime when the account was created (again, by a transaction).
+  # ```
+  # query{
+  #   accounts(filter: {
+  #     last_paid:{ge:1567296000}
+  #   }) {
+  #   id
+  #   last_paid}
+  # }
+  # ```
+  last_paid: FloatFilter
+  last_trans_lt: StringFilter
+
+  # If present, contains library code used in smart-contract.
+  library: StringFilter
+
+  # `library` field root hash.
+  library_hash: StringFilter
+
+  # Merkle proof that account is a part of shard state it cut from as a bag of cells with Merkle proof struct encoded as base64.
+  proof: StringFilter
+
+  # Contains the number of public cells of the account. Used in storage fee calculation.
+  public_cells: StringFilter
+
+  # Is present and non-zero only in instances of large smart contracts.
+  split_depth: IntFilter
+
+  # Contains the representation hash of an instance of `StateInit` when an account is frozen.
+  state_hash: StringFilter
+
+  # May be present only in the masterchain—and within the masterchain, only in some fundamental smart contracts required for the whole system to function.
+  tick: BooleanFilter
+
+  # May be present only in the masterchain—and within the masterchain, only in some fundamental smart contracts required for the whole system to function.
+  # ```
+  # {
+  #   accounts (filter:{tock:{ne:null}}){
+  #     id
+  #     tock
+  #     tick
+  #   }
+  # }
+  # ```
+  tock: BooleanFilter
+
+  # Workchain id of the account address (id field).
+  workchain_id: IntFilter
+  OR: AccountFilter
+}
+
+input MessageArrayFilter {
+  any: MessageFilter
+  all: MessageFilter
+}
+
+input TransactionProcessingStatusEnumFilter {
+  eq: TransactionProcessingStatusEnum
+  ne: TransactionProcessingStatusEnum
+  gt: TransactionProcessingStatusEnum
+  lt: TransactionProcessingStatusEnum
+  ge: TransactionProcessingStatusEnum
+  le: TransactionProcessingStatusEnum
+  in: [TransactionProcessingStatusEnum]
+  notIn: [TransactionProcessingStatusEnum]
+}
+
+input TransactionTypeEnumFilter {
+  eq: TransactionTypeEnum
+  ne: TransactionTypeEnum
+  gt: TransactionTypeEnum
+  lt: TransactionTypeEnum
+  ge: TransactionTypeEnum
+  le: TransactionTypeEnum
+  in: [TransactionTypeEnum]
+  notIn: [TransactionTypeEnum]
+}
+
+# TON Transaction
+input TransactionFilter {
+  id: StringFilter
+  aborted: BooleanFilter
+  account: AccountFilter
+  account_addr: StringFilter
+  action: TransactionActionFilter
+
+  # Account balance change after the transaction.
+  # Because fwd_fee is collected by the validators of the receiving shard,
+  # total_fees value does not include Sum(out_msg.fwd_fee[]), but includes in_msg.fwd_fee.
+  #
+  # The formula is:
+  # balance_delta = in_msg.value - total_fees - Sum(out_msg.value[]) - Sum(out_msg.fwd_fee[])
+  balance_delta: StringFilter
+
+  # Account balance change after the transaction.
+  # Because fwd_fee is collected by the validators of the receiving shard,
+  # total_fees value does not include Sum(out_msg.fwd_fee[]), but includes in_msg.fwd_fee.
+  #
+  # The formula is:
+  # balance_delta = in_msg.value - total_fees - Sum(out_msg.value[]) - Sum(out_msg.fwd_fee[])
+  balance_delta_other: OtherCurrencyArrayFilter
+  block: BlockFilter
+  block_id: StringFilter
+  boc: StringFilter
+  bounce: TransactionBounceFilter
+
+  # Collection-unique field for pagination and sorting. This field is designed to retain logical order.
+  chain_order: StringFilter
+  compute: TransactionComputeFilter
+  credit: TransactionCreditFilter
+  credit_first: BooleanFilter
+  destroyed: BooleanFilter
+
+  # The end state of an account after a transaction, 1 is returned to indicate a finalized transaction at an active account
+  # - 0 – uninit
+  # - 1 – active
+  # - 2 – frozen
+  # - 3 – nonExist
+  end_status: IntFilter
+  end_status_name: AccountStatusEnumFilter
+
+  # Fee for inbound external message import.
+  ext_in_msg_fee: StringFilter
+  in_message: MessageFilter
+  in_msg: StringFilter
+  installed: BooleanFilter
+
+  # Logical time. A component of the TON Blockchain that also plays an important role in message delivery is the logical time, usually denoted by Lt. It is a non-negative 64-bit integer, assigned to certain events. For more details, see [the TON blockchain specification](https://test.ton.org/tblkch.pdf).
+  lt: StringFilter
+
+  # Merkle update field
+  new_hash: StringFilter
+  now: FloatFilter
+
+  # Merkle update field
+  old_hash: StringFilter
+
+  # The initial state of account. Note that in this case the query may return 0, if the account was not active before the transaction and 1 if it was already active
+  # - 0 – uninit
+  # - 1 – active
+  # - 2 – frozen
+  # - 3 – nonExist
+  orig_status: IntFilter
+  orig_status_name: AccountStatusEnumFilter
+  out_messages: MessageArrayFilter
+  out_msgs: StringArrayFilter
+
+  # The number of generated outbound messages (one of the common transaction parameters defined by the specification)
+  outmsg_cnt: IntFilter
+  prepare_transaction: StringFilter
+  prev_trans_hash: StringFilter
+  prev_trans_lt: StringFilter
+  proof: StringFilter
+  split_info: TransactionSplitInfoFilter
+
+  # Transaction processing status
+  # - 0 – unknown
+  # - 1 – preliminary
+  # - 2 – proposed
+  # - 3 – finalized
+  # - 4 – refused
+  status: IntFilter
+  status_name: TransactionProcessingStatusEnumFilter
+  storage: TransactionStorageFilter
+
+  # Total amount of fees collected by the validators.
+  # Because fwd_fee is collected by the validators of the receiving shard,
+  # total_fees value does not include Sum(out_msg.fwd_fee[]), but includes in_msg.fwd_fee.
+  # The formula is:
+  # total_fees = in_msg.value - balance_delta - Sum(out_msg.value[]) - Sum(out_msg.fwd_fee[])
+  total_fees: StringFilter
+
+  # Same as above, but reserved for non gram coins that may appear in the blockchain
+  total_fees_other: OtherCurrencyArrayFilter
+
+  # Transaction type according to the original blockchain specification, clause 4.2.4.
+  # - 0 – ordinary
+  # - 1 – storage
+  # - 2 – tick
+  # - 3 – tock
+  # - 4 – splitPrepare
+  # - 5 – splitInstall
+  # - 6 – mergePrepare
+  # - 7 – mergeInstall
+  tr_type: IntFilter
+  tr_type_name: TransactionTypeEnumFilter
+  tt: StringFilter
+
+  # Workchain id of the account address (account_addr field)
+  workchain_id: IntFilter
+  OR: TransactionFilter
+}
+
+input MessageTypeEnumFilter {
+  eq: MessageTypeEnum
+  ne: MessageTypeEnum
+  gt: MessageTypeEnum
+  lt: MessageTypeEnum
+  ge: MessageTypeEnum
+  le: MessageTypeEnum
+  in: [MessageTypeEnum]
+  notIn: [MessageTypeEnum]
+}
+
+input MessageProcessingStatusEnumFilter {
+  eq: MessageProcessingStatusEnum
+  ne: MessageProcessingStatusEnum
+  gt: MessageProcessingStatusEnum
+  lt: MessageProcessingStatusEnum
+  ge: MessageProcessingStatusEnum
+  le: MessageProcessingStatusEnum
+  in: [MessageProcessingStatusEnum]
+  notIn: [MessageProcessingStatusEnum]
+}
+
+# # Message type
+#
+# Message layout queries.  A message consists of its header followed by its
+# body or payload. The body is essentially arbitrary, to be interpreted by the
+# destination smart contract. It can be queried with the following fields:
+input MessageFilter {
+  id: StringFilter
+  block: BlockFilter
+
+  # Merkle proof that account is a part of shard state it cut from as a bag of cells with Merkle proof struct encoded as base64.
+  block_id: StringFilter
+
+  # A bag of cells with the message structure encoded as base64.
+  boc: StringFilter
+
+  # Bag of cells with the message body encoded as base64.
+  body: StringFilter
+
+  # `body` field root hash.
+  body_hash: StringFilter
+
+  # Bounce flag. If the transaction has been aborted, and the inbound message has its bounce flag set, then it is “bounced” by automatically generating an outbound message (with the bounce flag clear) to its original sender.
+  bounce: BooleanFilter
+
+  # Bounced flag. If the transaction has been aborted, and the inbound message has its bounce flag set, then it is “bounced” by automatically generating an outbound message (with the bounce flag clear) to its original sender.
+  bounced: BooleanFilter
+
+  # Collection-unique field for pagination and sorting. This field is designed to retain logical output order (for logical input order use transaction.in_message).
+  chain_order: StringFilter
+
+  # Represents contract code in deploy messages.
+  code: StringFilter
+
+  # `code` field root hash.
+  code_hash: StringFilter
+
+  # Creation unixtime automatically set by the generating transaction. The creation unixtime equals the creation unixtime of the block containing the generating transaction.
+  created_at: FloatFilter
+
+  # Logical creation time automatically set by the generating transaction.
+  created_lt: StringFilter
+
+  # Represents initial data for a contract in deploy messages
+  data: StringFilter
+
+  # `data` field root hash.
+  data_hash: StringFilter
+
+  # Returns destination address string
+  dst: StringFilter
+  dst_account: AccountFilter
+  dst_transaction: TransactionFilter
+
+  # Workchain id of the destination address (dst field)
+  dst_workchain_id: IntFilter
+
+  # Original total forwarding fee paid for using the HR mechanism; it is automatically computed from some configuration parameters and the size of the message at the time the message is generated.
+  fwd_fee: StringFilter
+
+  # IHR is disabled for the message.
+  ihr_disabled: BooleanFilter
+
+  # This value is subtracted from the value attached to the message and awarded to the validators of the destination shardchain if they include the message by the IHR mechanism.
+  ihr_fee: StringFilter
+  import_fee: StringFilter
+
+  # Represents contract library in deploy messages
+  library: StringFilter
+
+  # `library` field root hash.
+  library_hash: StringFilter
+
+  # Returns the type of message.
+  # - 0 – internal
+  # - 1 – extIn
+  # - 2 – extOut
+  msg_type: IntFilter
+  msg_type_name: MessageTypeEnumFilter
+
+  # Merkle proof that message is a part of a block it cut from. It is a bag of cells with Merkle proof struct encoded as base64.
+  proof: StringFilter
+
+  # This is only used for special contracts in masterchain to deploy messages.
+  split_depth: IntFilter
+
+  # Returns source address string
+  src: StringFilter
+  src_account: AccountFilter
+  src_transaction: TransactionFilter
+
+  # Workchain id of the source address (src field)
+  src_workchain_id: IntFilter
+
+  # Returns internal processing status according to the numbers shown.
+  # - 0 – unknown
+  # - 1 – queued
+  # - 2 – processing
+  # - 3 – preliminary
+  # - 4 – proposed
+  # - 5 – finalized
+  # - 6 – refused
+  # - 7 – transiting
+  status: IntFilter
+  status_name: MessageProcessingStatusEnumFilter
+
+  # This is only used for special contracts in masterchain to deploy messages.
+  tick: BooleanFilter
+
+  # This is only used for special contracts in masterchain to deploy messages
+  tock: BooleanFilter
+
+  # May or may not be present
+  value: StringFilter
+
+  # May or may not be present.
+  value_other: OtherCurrencyArrayFilter
+  OR: MessageFilter
+}
+
+input BlockAccountBlocksArrayFilter {
+  any: BlockAccountBlocksFilter
+  all: BlockAccountBlocksFilter
+}
+
+input InMsgArrayFilter {
+  any: InMsgFilter
+  all: InMsgFilter
+}
+
+input OutMsgArrayFilter {
+  any: OutMsgFilter
+  all: OutMsgFilter
+}
+
+input BlockProcessingStatusEnumFilter {
+  eq: BlockProcessingStatusEnum
+  ne: BlockProcessingStatusEnum
+  gt: BlockProcessingStatusEnum
+  lt: BlockProcessingStatusEnum
+  ge: BlockProcessingStatusEnum
+  le: BlockProcessingStatusEnum
+  in: [BlockProcessingStatusEnum]
+  notIn: [BlockProcessingStatusEnum]
+}
+
+# This is Block
+input BlockFilter {
+  id: StringFilter
+  account_blocks: BlockAccountBlocksArrayFilter
+  after_merge: BooleanFilter
+  after_split: BooleanFilter
+  before_split: BooleanFilter
+
+  # Serialized bag of cells of this block encoded with base64
+  boc: StringFilter
+
+  # Collection-unique field for pagination and sorting. This field is designed to retain logical order.
+  chain_order: StringFilter
+
+  # Public key of the collator who produced this block.
+  created_by: StringFilter
+
+  # Logical creation time automatically set by the block formation end.
+  end_lt: StringFilter
+
+  # Block file hash
+  file_hash: StringFilter
+  flags: IntFilter
+  gen_catchain_seqno: FloatFilter
+  gen_software_capabilities: StringFilter
+  gen_software_version: FloatFilter
+
+  # uint 32 generation time stamp
+  gen_utime: FloatFilter
+  gen_validator_list_hash_short: FloatFilter
+
+  # uint32 global block ID
+  global_id: IntFilter
+  in_msg_descr: InMsgArrayFilter
+
+  # true if this block is a key block
+  key_block: BooleanFilter
+  master: BlockMasterFilter
+  master_ref: ExtBlkRefFilter
+
+  # Returns last known master block at the time of shard generation.
+  min_ref_mc_seqno: FloatFilter
+  out_msg_descr: OutMsgArrayFilter
+
+  # External block reference for previous block in case of shard merge.
+  prev_alt_ref: ExtBlkRefFilter
+
+  # Returns a number of a previous key block.
+  prev_key_block_seqno: FloatFilter
+
+  # External block reference for previous block.
+  prev_ref: ExtBlkRefFilter
+  prev_vert_alt_ref: ExtBlkRefFilter
+
+  # External block reference for previous block in case of vertical blocks.
+  prev_vert_ref: ExtBlkRefFilter
+  rand_seed: StringFilter
+  seq_no: FloatFilter
+  shard: StringFilter
+  signatures: BlockSignaturesFilter
+
+  # Logical creation time automatically set by the block formation start.
+  # Logical time is a component of the TON Blockchain that also plays an important role in message delivery is the logical time, usually denoted by Lt. It is a non-negative 64-bit integer, assigned to certain events. For more details, see the TON blockchain specification
+  start_lt: StringFilter
+  state_update: BlockStateUpdateFilter
+
+  # Returns block processing status
+  # - 0 – unknown
+  # - 1 – proposed
+  # - 2 – finalized
+  # - 3 – refused
+  status: IntFilter
+  status_name: BlockProcessingStatusEnumFilter
+  tr_count: IntFilter
+  value_flow: BlockValueFlowFilter
+
+  # uin32 block version identifier
+  version: FloatFilter
+  vert_seq_no: FloatFilter
+  want_merge: BooleanFilter
+  want_split: BooleanFilter
+
+  # uint32 workchain identifier
+  workchain_id: IntFilter
+  OR: BlockFilter
+}
+
+input BlockSignaturesSignaturesArrayFilter {
+  any: BlockSignaturesSignaturesFilter
+  all: BlockSignaturesSignaturesFilter
+}
+
+# Set of validator's signatures for the Block with correspond id
+input BlockSignaturesFilter {
+  id: StringFilter
+  block: BlockFilter
+  catchain_seqno: FloatFilter
+
+  # Signed block's gen_utime
+  gen_utime: FloatFilter
+
+  # Signed block's merkle proof
+  proof: StringFilter
+
+  # Signed block's seq_no
+  seq_no: FloatFilter
+
+  # Signed block's shard
+  shard: StringFilter
+  sig_weight: StringFilter
+
+  # Array of signatures from block's validators
+  signatures: BlockSignaturesSignaturesArrayFilter
+  validator_list_hash_short: FloatFilter
+
+  # Signed block's workchain_id
+  workchain_id: IntFilter
+  OR: BlockSignaturesFilter
+}
+
+input ZerostateAccountsArrayFilter {
+  any: ZerostateAccountsFilter
+  all: ZerostateAccountsFilter
+}
+
+input ZerostateLibrariesArrayFilter {
+  any: ZerostateLibrariesFilter
+  all: ZerostateLibrariesFilter
+}
+
+# The initial state of the workchain before first block was generated
+input ZerostateFilter {
+  id: StringFilter
+
+  # Initial accounts state at the workchain start
+  accounts: ZerostateAccountsArrayFilter
+
+  # Serialized bag of cells of this zerostate encoded with base64
+  boc: StringFilter
+
+  # Zerostate file hash
+  file_hash: StringFilter
+
+  # uint32 global network ID
+  global_id: IntFilter
+
+  # Initial libraries at the workchain start
+  libraries: ZerostateLibrariesArrayFilter
+  master: ZerostateMasterFilter
+
+  # Zerostate root cell representation hash
+  root_hash: StringFilter
+
+  # Overall balance of all accounts of the workchain
+  total_balance: StringFilter
+
+  # Overall balance of all accounts of the workchain in other currencies
+  total_balance_other: OtherCurrencyArrayFilter
+
+  # Zerostate workchain_id
+  workchain_id: IntFilter
+  OR: ZerostateFilter
+}
+
+# Specify sort order direction
+enum QueryOrderByDirection {
+  # Documents will be sorted in ascended order (e.g. from A to Z)
+  ASC
+
+  # Documents will be sorted in descendant order (e.g. from Z to A)
+  DESC
+}
+
+# Specify how to sort results.
+# You can sort documents in result set using more than one field.
+input QueryOrderBy {
+  # Path to field which must be used as a sort criteria.
+  # If field resides deep in structure path items must be separated with dot (e.g. "foo.bar.baz").
+  path: String
+
+  # Sort order direction
+  direction: QueryOrderByDirection
+}
+
+type Subscription {
+  accounts(filter: AccountFilter, accessKey: String): Account
+  transactions(filter: TransactionFilter, accessKey: String): Transaction
+  messages(filter: MessageFilter, accessKey: String): Message
+  blocks(filter: BlockFilter, accessKey: String): Block
+  blocks_signatures(
+    filter: BlockSignaturesFilter
+    accessKey: String
+  ): BlockSignatures
+  zerostates(filter: ZerostateFilter, accessKey: String): Zerostate
+  counterparties(filter: CounterpartyFilter, accessKey: String): Counterparty
+}
+
+# Counterparty
+type Counterparty {
+  account: String
+  counterparty: String
+  last_message_at: Float
+  last_message_id: String
+  last_message_is_reverse: Boolean
+  last_message_value(format: BigIntFormat): String
+  cursor: String
+}
+
+input CounterpartyFilter {
+  account: StringFilter
+  counterparty: StringFilter
+  last_message_at: FloatFilter
+  last_message_id: StringFilter
+  last_message_is_reverse: BooleanFilter
+  last_message_value: StringFilter
+}
+
+# Request with external inbound message
+input Request {
+  # 256-bit Hash of message in base64
+  id: String
+
+  # Serialized message in base64
+  body: String
+
+  # Message expiration time (unix time in ms)
+  expireAt: Float
+}
+
+# Aggregation function used to collect aggregated value
+enum AggregationFn {
+  # Returns count of filtered record
+  COUNT
+
+  # Returns the minimal value for a field in filtered records
+  MIN
+
+  # Returns the maximal value for a field in filtered records
+  MAX
+
+  # Returns a sum of values for a field in filtered records
+  SUM
+
+  # Returns an average value for a field in filtered records
+  AVERAGE
+}
+
+# Specify field and aggregation function used to collect aggregated value
+input FieldAggregation {
+  # Dot separated path to field. Can be omitted for COUNT fn.
+  field: String
+
+  # Aggregation function. Default value is COUNT.
+  fn: AggregationFn
+}
+
+type SlowReason {
+  summary: String
+  fields: [String]
+  selectedIndexes: [String]
+  availableIndexes: [String]
+}
+
+type QueryExplanation {
+  isFast: Boolean
+  slowReason: SlowReason
+}
+
+input AccessKey {
+  # User defined access key
+  key: String
+
+  # Additional restrictions to specified accounts.
+  # User will see only subset of a blockchain related to specified accounts.
+  # If omitted or is an empty array then user has no restrictions.
+  restrictToAccounts: [String]
+}
+
+type Mutation {
+  # Post external inbound message to blockchain node.
+  postRequests(
+    # List of message requests
+    requests: [Request]
+
+    # Access key if required
+    accessKey: String
+  ): [String]
+
+  # Register GraphQL services access keys. Returns number of actually registered keys
+  registerAccessKeys(
+    # Account contract address
+    account: String
+
+    # Access keys associated with account
+    keys: [AccessKey]
+
+    # Management access key obtained with getManagementAccessKey and signed using key pair of account contract
+    signedManagementAccessKey: String
+  ): Int
+
+  # Revoke GraphQL services access keys. Returns number of actually revoked keys
+  revokeAccessKeys(
+    # Account contract address
+    account: String
+
+    # Access keys associated with account
+    keys: [String]
+
+    # Management access key obtained with getManagementAccessKey and signed using key pair of account contract
+    signedManagementAccessKey: String
+  ): Int
+
+  # Stop listeners for specified operations
+  finishOperations(
+    # Operation identifiers
+    operationIds: [String]
+  ): Int
+}
+
+enum CacheControlScope {
+  PUBLIC
+  PRIVATE
+}
+
+# The `Upload` scalar type represents a file upload.
+scalar Upload

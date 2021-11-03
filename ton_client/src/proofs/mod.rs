@@ -1,18 +1,18 @@
-use std::array::IntoIter;
-use std::collections::{HashMap, HashSet};
+use std::borrow::Cow;
+use std::collections::HashMap;
 use std::io::Cursor;
 use std::sync::Arc;
 
 use failure::{bail, err_msg};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, MerkleProof, ShardIdent, ShardStateUnsplit, ValidatorDescr};
-use ton_block_json::BlockSerializationSet;
-use ton_types::{Cell, deserialize_tree_of_cells, UInt256};
+use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, HashmapAugType, MerkleProof, ShardIdent, ShardStateUnsplit, Transaction, ValidatorDescr};
+use ton_types::{Cell, UInt256};
 use ton_types::Result;
 
 pub(crate) use errors::ErrorCode;
 
+use crate::boc::internal::{deserialize_object_from_base64, deserialize_object_from_boc_bin};
 use crate::client::NetworkUID;
 use crate::ClientContext;
 use crate::encoding::base64_decode;
@@ -21,7 +21,7 @@ use crate::net::{ParamsOfQueryCollection, query_collection};
 use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::errors::Error;
 use crate::proofs::validators::{calc_subset_for_workchain, check_crypto_signatures};
-use crate::utils::json::{compare_values, CompareValuesResult, JsonHelper};
+use crate::utils::json::JsonHelper;
 
 pub mod errors;
 mod engine;
@@ -29,6 +29,7 @@ mod validators;
 
 #[cfg(test)]
 mod tests;
+mod json;
 
 #[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct ProofsConfig {
@@ -60,12 +61,6 @@ impl Default for ProofsConfig {
             cache_in_local_storage: default_cache_in_local_storage(),
         }
     }
-}
-
-lazy_static::lazy_static! {
-    static ref COMPARE_JSON_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
-        "gen_software_capabilities",
-    ]).collect();
 }
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
@@ -143,63 +138,169 @@ pub async fn proof_block_data(
     let boc = if let Some(boc) = params.block["boc"].as_str() {
         base64_decode(boc)?
     } else if let Some(id) = id_opt {
-        engine.download_boc(id).await
+        engine.download_block_boc(id).await
             .map_err(|err| Error::proof_check_failed(err))?
     } else {
         return Err(Error::invalid_data("Block's BOC or id are required"));
     };
 
-    let cell = deserialize_tree_of_cells(&mut Cursor::new(&boc))
-        .map_err(|err| Error::invalid_data(err))?;
-    let root_hash = cell.repr_hash();
+    let (block, root_hash) = deserialize_object_from_boc_bin(&boc)?;
 
-    // TODO: Manage untrusted and trusted (already proven) blocks separately.
-    //       For trusted blocks we don't need to do proof checking.
-    //       1. `write_block()` change to `write_untrusted_block()`
-    //       2. also add `write_trusted_block()` and `remove_untrusted_block()`
-    //          (or `trust_block()` for moving block from untrusted to trusted storage) functions.
-    engine.write_block(&root_hash.as_hex_string(), &boc).await
+    engine.proof_block_boc(&root_hash, &block, &boc).await?;
+
+    let block_json = json::serialize_block(root_hash, block, boc)
+        .map_err(|err| Error::invalid_data(err))?;
+
+    json::compare_blocks(&params.block, &block_json)
+}
+
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
+pub struct ParamsOfProofTransactionData {
+    /// Single transaction's data as queried from DApp server, without modifications.
+    /// The required fields are `id` and/or top-level `boc`, others are optional.
+    /// In order to reduce network requests count, it is recommended to provide `block_id` and `boc`
+    /// of transaction.
+    pub transaction: Value,
+}
+
+/// Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
+///
+/// This function requests corresponding block, checks block proofs, ensures that given transaction
+/// exists in the proven block and compares given data with the proven.
+/// If the given data differs from the proven, the exception will be thrown.
+/// The input param is a single transaction's JSON object, which was queried from TONOS API using
+/// functions such as `net.query`, `net.query_collection` or `net.wait_for_collection`.
+/// If transaction's BOC and/or `block_id` are not provided in the JSON, they will be queried from
+/// TONOS API (in this case it is required to provide at least `id` of transaction).
+///
+/// If `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and
+/// master-chain BOCs are saved into the persistent local storage (e.g. file system for native
+/// environments or browser's IndexedDB for the web); otherwise all the data is cached only in
+/// memory in current client's context and will be lost after destruction of the client.
+///
+/// For more information about proofs checking, see description of `proof_block_data` function.
+#[api_function]
+pub async fn proof_transaction_data(
+    context: Arc<ClientContext>,
+    params: ParamsOfProofTransactionData,
+) -> ClientResult<()> {
+    let engine = ProofHelperEngineImpl::new(context).await
+        .map_err(|err| Error::proof_check_failed(err))?;
+
+    let (root_hash, block_id, boc, transaction) =
+        transaction_get_required_data(&engine, &params.transaction).await?;
+
+    let block_boc = engine.download_block_boc(&block_id).await
+        .map_err(|err| Error::invalid_data(err))?;
+
+    let (block, block_id) = deserialize_object_from_boc_bin(&block_boc)?;
+
+    engine.proof_block_boc(&block_id, &block, &block_boc).await?;
+
+    let block_info = block.read_info()
+        .map_err(|err| Error::invalid_data(err))?;
+    let block_extra = block.read_extra()
+        .map_err(|err| Error::invalid_data(err))?;
+    let account_blocks = block_extra.read_account_blocks()
+        .map_err(|err| Error::invalid_data(err))?;
+
+    let mut transaction_found_in_block = false;
+    account_blocks.iterate_objects(|account_block| {
+        account_block.transaction_iterate_full(|_key, cell, _cc| {
+            if root_hash == cell.repr_hash() {
+                transaction_found_in_block = true;
+                return Ok(false);
+            }
+            Ok(true)
+        })
+    })
         .map_err(|err| Error::internal_error(err))?;
 
-    let block = Block::construct_from_cell(cell)
-        .map_err(|err| Error::invalid_data(err))?;
-
-    let info = block.read_info()
-        .map_err(|err| Error::invalid_data(err))?;
-    if info.shard().is_masterchain() {
-        engine.check_mc_proof(info.seq_no(), &root_hash).await
-    } else {
-        engine.check_shard_block(&boc).await
-    }.map_err(|err| Error::proof_check_failed(err))?;
-
-    // TODO: Add proof information to the resulting JSON:
-    //       1. Convert crate::proofs::BlockProof into ton_block::BlockProof (not implemented yet);
-    //       2. Get map using ton_block_json::db_serialize_proof();
-    //       3. Merge two maps into a single JSON;
-    //       4. [TBD] Increase required comparison result to CompareValuesResult::Subset.
-    let block_map = ton_block_json::db_serialize_block_ex(
-        "id",
-        &BlockSerializationSet {
-            block,
-            id: root_hash,
-            status: ton_block::BlockProcessingStatus::Finalized,
-            boc
-        },
-        ton_block_json::SerializationMode::QServer,
-    ).map_err(|err| Error::invalid_data(err))?;
-
-    if let CompareValuesResult::Different(message) =
-        compare_values(
-            &params.block,
-            &block_map.into(),
-            "blocks",
-            &COMPARE_JSON_IGNORE_FIELDS,
-        )
-    {
-        return Err(Error::data_differs_from_proven(message));
+    if !transaction_found_in_block {
+        return Err(Error::proof_check_failed(
+            format!(
+                "Transaction with `id`: {} not found in block with `id`: {}",
+                root_hash.as_hex_string(),
+                block_id.as_hex_string(),
+            )
+        ));
     }
 
-    Ok(())
+    let transaction_json = json::serialize_transaction(
+        root_hash,
+        transaction,
+        block_id,
+        block_info.shard().workchain_id(),
+        boc,
+    ).map_err(|err| Error::invalid_data(err))?;
+
+    json::compare_transactions(&params.transaction, &transaction_json)
+}
+
+async fn transaction_get_required_data<'trans>(
+    engine: &ProofHelperEngineImpl,
+    transaction_json: &'trans Value,
+) -> ClientResult<(UInt256, Cow<'trans, str>, Vec<u8>, Transaction)> {
+    let id_opt = Cow::Borrowed(&transaction_json["id"]);
+    let mut block_id_opt = transaction_json["block_id"].as_str()
+        .map(|str| Cow::Borrowed(str));
+    let mut boc_opt = Cow::Borrowed(&transaction_json["boc"]);
+
+    if id_opt.is_null() && boc_opt.is_null() {
+        return Err(Error::invalid_data("Transaction's BOC or id are required"));
+    }
+
+    if let Some(id) = id_opt.as_str() {
+        let mut fields = Vec::new();
+        if boc_opt.is_null() {
+            fields.push("boc");
+        }
+        if block_id_opt.is_none() {
+            fields.push("block_id");
+        }
+
+        if fields.len() > 0 {
+            let mut transaction_json = engine.query_transaction_data(id, &fields.join(" ")).await
+                .map_err(|err| Error::proof_check_failed(err))?;
+            if boc_opt.is_null() {
+                boc_opt = Cow::Owned(transaction_json["boc"].take());
+            }
+            if block_id_opt.is_none() {
+                block_id_opt = transaction_json["block_id"].take_string()
+                    .map(|string| Cow::Owned(string));
+            }
+        }
+    }
+
+    let transaction_stuff = if let Value::String(boc_base64) = boc_opt.as_ref() {
+        deserialize_object_from_base64(boc_base64, "transaction")?
+    } else {
+        return Err(Error::internal_error("BOC is not found"));
+    };
+
+    let root_hash = transaction_stuff.cell.repr_hash();
+
+    let block_id = if let Some(block_id) = block_id_opt {
+        block_id
+    } else {
+        let mut transaction_json = engine.query_transaction_data(
+            &root_hash.as_hex_string(),
+            "block_id",
+        ).await
+            .map_err(|err| Error::proof_check_failed(err))?;
+        if let Some(block_id) = transaction_json["block_id"].take_string() {
+            Cow::Owned(block_id)
+        } else {
+            return Err(Error::invalid_data("block_id is not found"));
+        }
+    };
+
+    Ok((
+        root_hash,
+        block_id,
+        transaction_stuff.boc.bytes("transaction")?,
+        transaction_stuff.object,
+    ))
 }
 
 lazy_static! {

@@ -1,16 +1,21 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
+use failure::bail;
+use graphql_parser::schema::{Definition, ObjectType, Type, TypeDefinition};
 use serde_json::Value;
 use ton_block::{BinTreeType, Block, BlockIdExt, Deserializable, InRefValue, MASTERCHAIN_ID, ShardHashes, ShardIdent, ShardStateUnsplit};
 use ton_types::{Result, UInt256};
 
 use crate::client::storage::InMemoryKeyValueStorage;
-use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, query_current_network_uid, resolve_initial_trusted_key_block, ParamsOfProofBlockData};
+use crate::ClientContext;
+use crate::net::{ParamsOfQueryCollection, query_collection};
+use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, ParamsOfProofBlockData, ParamsOfProofTransactionData, proof_transaction_data, query_current_network_uid, resolve_initial_trusted_key_block};
 use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::validators::{calc_subset_for_workchain, calc_workchain_id, calc_workchain_id_by_adnl_id};
 use crate::tests::TestClient;
-use crate::net::{ParamsOfQueryCollection, query_collection};
-use crate::ClientContext;
+
+const GQL_SCHEMA: &str = include_str!("data/schema.graphql");
 
 #[test]
 fn test_check_master_blocks_proof() -> Result<()> {
@@ -304,7 +309,7 @@ async fn query_file_hash_test() -> Result<()> {
     let file_hash_from_next = UInt256::from_str(
         &engine.query_file_hash_from_next_block(1).await?.unwrap(),
     )?;
-    let file_hash_from_boc = engine.download_boc_and_calc_file_hash(
+    let file_hash_from_boc = engine.download_block_boc_and_calc_file_hash(
         "4bba527c0f5301ac01194020edb6c237158bae872348ba36b0137d523fadd864",
     ).await?;
 
@@ -320,7 +325,7 @@ async fn query_file_hash_test() -> Result<()> {
 #[tokio::test]
 async fn query_mc_proof_test() -> Result<()> {
     let engine = create_engine_mainnet();
-    let proof_json = engine.query_mc_proof(1).await?;
+    let proof_json = engine.query_mc_block_proof(1).await?;
     let proof = BlockProof::from_value(&proof_json)?;
 
     assert_eq!(
@@ -351,7 +356,7 @@ async fn add_file_hashes_test() -> Result<()> {
 
     assert_eq!(proofs.len(), 10);
 
-    engine.add_file_hashes(&mut proofs).await?;
+    engine.add_mc_blocks_file_hashes(&mut proofs).await?;
 
     for (seq_no, proof) in &proofs {
         let file_hash = engine.query_file_hash_from_next_block(*seq_no).await?.unwrap();
@@ -366,7 +371,7 @@ async fn mc_proofs_test() -> Result<()> {
     let engine = create_engine_mainnet();
     let storage: &InMemoryKeyValueStorage = engine.storage().in_memory();
 
-    let proof = BlockProof::from_value(&engine.query_mc_proof(100000).await?)?;
+    let proof = BlockProof::from_value(&engine.query_mc_block_proof(100000).await?)?;
     proof.check_proof(&engine).await?;
 
     storage.dump();
@@ -378,7 +383,7 @@ async fn mc_proofs_test() -> Result<()> {
         engine.context(), 10000000,
     ).await?;
 
-    let proof = BlockProof::from_value(&engine.query_mc_proof(trusted_seq_no + 1000).await?)?;
+    let proof = BlockProof::from_value(&engine.query_mc_block_proof(trusted_seq_no + 1000).await?)?;
     proof.check_proof(&engine).await?;
 
     storage.dump();
@@ -393,7 +398,7 @@ async fn mc_proofs_test() -> Result<()> {
 #[tokio::test]
 async fn extract_top_shard_block_test() -> Result<()> {
     let engine = create_engine_mainnet();
-    let boc = engine.download_boc(
+    let boc = engine.download_block_boc(
         "01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95",
     ).await?;
     let block = Block::construct_from_bytes(&boc)?;
@@ -514,19 +519,19 @@ async fn check_shard_block_test() -> Result<()> {
 async fn check_mc_proof_test() -> Result<()> {
     let engine = create_engine_mainnet();
 
-    engine.check_mc_proof(
+    engine.check_mc_block_proof(
         100,
         &UInt256::from_str("01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95")?,
     ).await?;
 
     // From cache:
-    engine.check_mc_proof(
+    engine.check_mc_block_proof(
         100,
         &UInt256::from_str("01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95")?,
     ).await?;
 
     assert!(
-        engine.check_mc_proof(
+        engine.check_mc_block_proof(
             101,
             &UInt256::from_str("01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95")?,
         ).await.is_err(),
@@ -534,7 +539,7 @@ async fn check_mc_proof_test() -> Result<()> {
 
     // From cache:
     assert!(
-        engine.check_mc_proof(
+        engine.check_mc_block_proof(
             100,
             &UInt256::from_str("1111111111111111111111111111111111111111111111111111111111111111")?,
         ).await.is_err(),
@@ -543,11 +548,16 @@ async fn check_mc_proof_test() -> Result<()> {
     Ok(())
 }
 
-async fn query_block_data(context: Arc<ClientContext>, id: &str, result: &str) -> Result<Value> {
+async fn query_data(
+    context: Arc<ClientContext>,
+    collection: &str,
+    id: &str,
+    result: &str
+) -> Result<Value> {
     Ok(query_collection(
         context,
         ParamsOfQueryCollection {
-            collection: "blocks".to_string(),
+            collection: collection.to_string(),
             result: result.to_string(),
             filter: Some(json!({
                 "id": {
@@ -560,265 +570,81 @@ async fn query_block_data(context: Arc<ClientContext>, id: &str, result: &str) -
     ).await?.result.remove(0))
 }
 
+async fn query_block_data(context: Arc<ClientContext>, id: &str, result: &str) -> Result<Value> {
+    query_data(context, "blocks", id, result).await
+}
+
+async fn query_transaction_data(context: Arc<ClientContext>, id: &str, result: &str) -> Result<Value> {
+    query_data(context, "transactions", id, result).await
+}
+
+fn resolve_type_name(typ: &Type<String>) -> String {
+    match typ {
+        Type::NamedType(ref name) => name.clone(),
+        Type::ListType(typ) => resolve_type_name(typ.as_ref()),
+        Type::NonNullType(typ) => resolve_type_name(typ.as_ref()),
+    }
+}
+
+fn print_object_type(
+    object_type: &ObjectType<String>,
+    known_types: &HashMap<String, &ObjectType<String>>,
+    path: String,
+    output: &mut String,
+) {
+    for i in 0..object_type.fields.len() {
+        let field = &object_type.fields[i];
+        if field.arguments.iter().find(|arg| arg.name == "when").is_some() {
+            continue;
+        }
+        let type_name = resolve_type_name(&field.field_type);
+        let field_ident = format!("{}:{}", field.name, type_name);
+        if path.contains(&format!("/{}/", field_ident)) {
+            continue;
+        }
+        if i != 0 {
+            output.push(' ');
+        }
+        output.push_str(&field.name);
+        if let Some(typ) = known_types.get(&type_name) {
+            output.push('{');
+            print_object_type(typ, known_types, format!("{}{}/", path, field_ident), output);
+            output.push('}');
+        }
+    }
+}
+
+fn gen_full_schema_query(object_type: &str) -> Result<String> {
+    let schema = graphql_parser::parse_schema::<String>(GQL_SCHEMA)?;
+
+    let mut known_types = HashMap::new();
+    for definition in schema.definitions.iter() {
+        if let Definition::TypeDefinition(TypeDefinition::Object(obj_type)) = definition {
+            known_types.insert(obj_type.name.to_string(), obj_type);
+        }
+    }
+
+    for definition in schema.definitions.iter() {
+        if let Definition::TypeDefinition(TypeDefinition::Object(obj_type)) = definition {
+            if obj_type.name == object_type {
+                let mut output = String::new();
+                print_object_type(obj_type, &known_types, format!("/{}", obj_type.name), &mut output);
+                return Ok(output);
+            }
+        }
+    }
+
+    bail!("Object type is not found in the schema: {}", object_type)
+}
+
 #[tokio::test]
 async fn proof_block_data_test() -> Result<()> {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
 
-    let proof_json = query_block_data(
-        client.context(),
-        "5a049e5b761c1cb4bbedf0df8efb202b55a243ad194f8cb03c6e34cac48d448c",
-        r#"
-            id
-            workchain_id
-            shard
-            seq_no
-            gen_utime
-            signatures {
-                proof
-                catchain_seqno
-                validator_list_hash_short
-                sig_weight
-                signatures {
-                    node_id
-                    r
-                    s
-                }
-            }
-        "#
-    ).await?;
-
-    client.request_async(
-        "proofs.proof_block_data",
-        ParamsOfProofBlockData { block: proof_json },
-    ).await?;
-
     let mut block_json = query_block_data(
         client.context(),
         "8bde590a572437332977e68bace66fa00f9cebac6baa57f6bf2d2f1276db2848",
-        r#"
-            id
-            status
-            status_name
-            boc
-            global_id
-            version
-            after_merge
-            before_split
-            after_split
-            want_split
-            want_merge
-            key_block
-            seq_no
-            vert_seq_no
-            gen_utime
-            start_lt
-            end_lt
-            gen_validator_list_hash_short
-            gen_catchain_seqno
-            min_ref_mc_seqno
-            prev_key_block_seqno
-            workchain_id
-            shard
-            gen_software_version
-            gen_software_capabilities
-            prev_ref {
-                end_lt
-                seq_no
-                root_hash
-                file_hash
-            }
-            value_flow {
-                from_prev_blk
-                from_prev_blk_other {
-                    currency
-                    value
-                }
-                to_next_blk
-                to_next_blk_other {
-                    currency
-                    value
-                }
-                imported
-                exported
-                fees_collected
-                fees_imported
-                created
-                minted
-            }
-            state_update {
-                old_hash
-                new_hash
-                old_depth
-                new_depth
-            }
-
-            in_msg_descr {
-                in_msg {
-                    msg_id
-                    cur_addr
-                    next_addr
-                    fwd_fee_remaining
-                }
-                transaction_id
-                fwd_fee
-                msg_type
-                msg_type_name
-            }
-            out_msg_descr {
-                import_block_lt
-                imported {
-                    fwd_fee
-                    ihr_fee
-                    in_msg {
-                        cur_addr
-                        fwd_fee_remaining
-                        msg_id
-                        next_addr
-                        __typename
-                    }
-                    msg_id
-                    msg_type
-                    msg_type_name
-                    out_msg {
-                        cur_addr
-                        fwd_fee_remaining
-                        msg_id
-                        next_addr
-                        __typename
-                    }
-                    proof_created
-                    proof_delivered
-                    transaction_id
-                    transit_fee
-                    __typename
-                }
-                msg_env_hash
-                msg_id
-                msg_type
-                msg_type_name
-                next_addr_pfx
-                next_workchain
-                out_msg {
-                    cur_addr
-                    fwd_fee_remaining
-                    msg_id
-                    next_addr
-                    __typename
-                }
-                reimport {
-                    fwd_fee
-                    ihr_fee
-                    in_msg {
-                        cur_addr
-                        fwd_fee_remaining
-                        msg_id
-                        next_addr
-                        __typename
-                    }
-                    msg_id
-                    msg_type
-                    msg_type_name
-                    out_msg {
-                        cur_addr
-                        fwd_fee_remaining
-                        msg_id
-                        next_addr
-                        __typename
-                    }
-                    proof_created
-                    proof_delivered
-                    transaction_id
-                    transit_fee
-                    __typename
-                }
-                transaction_id
-                __typename
-            }
-            account_blocks {
-                account_addr
-                transactions {
-                    lt
-                    total_fees
-                    total_fees_other {
-                        currency
-                        value
-                        __typename
-                    }
-                    transaction_id
-                    __typename
-                }
-                old_hash
-                new_hash
-                tr_count
-            }
-            tr_count
-            rand_seed
-            created_by
-            master {
-                shard_hashes {
-                    workchain_id
-                    shard
-                    descr {
-                        seq_no
-                        reg_mc_seqno
-                        start_lt
-                        end_lt
-                        root_hash
-                        file_hash
-                        before_split
-                        before_merge
-                        want_split
-                        want_merge
-                        nx_cc_updated
-                        gen_utime
-                        next_catchain_seqno
-                        next_validator_shard
-                        min_ref_mc_seqno
-                        flags
-                        fees_collected
-                        funds_created
-                    }
-                }
-                min_shard_gen_utime
-                max_shard_gen_utime
-                shard_fees {
-                    workchain_id
-                    shard
-                    fees
-                    create
-                }
-                prev_blk_signatures {
-                    node_id
-                    s
-                    r
-                }
-                recover_create_msg {
-                    in_msg {
-                        cur_addr
-                        fwd_fee_remaining
-                        msg_id
-                        next_addr
-                        __typename
-                    }
-                    msg_id
-                    transaction_id
-                    fwd_fee
-                    msg_type
-                    msg_type_name
-                    ihr_fee
-                    out_msg {
-                        cur_addr
-                        fwd_fee_remaining
-                        msg_id
-                        next_addr
-                        __typename
-                    }
-                    proof_created
-                    proof_delivered
-                    transit_fee
-                }
-            }
-		"#,
+        &gen_full_schema_query("Block")?,
     ).await?;
 
     client.request_async(
@@ -853,6 +679,230 @@ async fn proof_block_data_test() -> Result<()> {
         ).await
             .is_err()
     );
+
+    let proof_json = query_block_data(
+        client.context(),
+        "5a049e5b761c1cb4bbedf0df8efb202b55a243ad194f8cb03c6e34cac48d448c",
+        r#"
+            id
+            workchain_id
+            shard
+            seq_no
+            gen_utime
+            start_lt
+            end_lt
+            signatures {
+                proof
+                catchain_seqno
+                validator_list_hash_short
+                sig_weight
+                signatures {
+                    node_id
+                    r
+                    s
+                }
+            }
+        "#
+    ).await?;
+
+    assert!(
+        client.request_async::<_, ()>(
+            "proofs.proof_block_data",
+            ParamsOfProofBlockData { block: proof_json },
+        ).await
+            .is_err()
+    );
+
+    let decimal_fields = r#"
+        id
+        boc
+        account_blocks {
+            transactions {
+                lt(format:DEC) total_fees(format:DEC) total_fees_other{value(format:DEC)}
+            }
+        }
+        end_lt(format:DEC)
+        gen_software_capabilities(format:DEC)
+        in_msg_descr {
+            fwd_fee(format:DEC)
+            ihr_fee(format:DEC)
+            in_msg {fwd_fee_remaining(format:DEC)}
+            out_msg {fwd_fee_remaining(format:DEC)}
+            transit_fee(format:DEC)}
+        master {
+            config {
+              p14 {basechain_block_fee(format:DEC) masterchain_block_fee(format:DEC)}
+              p17 {max_stake(format:DEC) min_stake(format:DEC) min_total_stake(format:DEC)}
+              p18 {
+                bit_price_ps(format:DEC)
+                cell_price_ps(format:DEC)
+                mc_bit_price_ps(format:DEC)
+                mc_cell_price_ps(format:DEC)
+              }
+              p20 {
+                block_gas_limit(format:DEC)
+                delete_due_limit(format:DEC)
+                flat_gas_limit(format:DEC)
+                flat_gas_price(format:DEC)
+                freeze_due_limit(format:DEC)
+                gas_credit(format:DEC)
+                gas_limit(format:DEC)
+                gas_price(format:DEC)
+                special_gas_limit(format:DEC)
+              }
+              p21 {
+                block_gas_limit(format:DEC)
+                delete_due_limit(format:DEC)
+                flat_gas_limit(format:DEC)
+                flat_gas_price(format:DEC)
+                freeze_due_limit(format:DEC)
+                gas_credit(format:DEC)
+                gas_limit(format:DEC)
+                gas_price(format:DEC)
+                special_gas_limit(format:DEC)
+              }
+              p24 {bit_price(format:DEC) cell_price(format:DEC) lump_price(format:DEC)}
+              p25 {bit_price(format:DEC) cell_price(format:DEC) lump_price(format:DEC)}
+              p32 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p33 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p34 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p35 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p36 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p37 {list {weight(format:DEC)} total_weight(format:DEC)}
+              p8 {capabilities(format:DEC)}
+            }
+            recover_create_msg {
+                fwd_fee(format:DEC)
+                ihr_fee(format:DEC)
+                in_msg {fwd_fee_remaining(format:DEC)}
+                out_msg {fwd_fee_remaining(format:DEC)}
+                transit_fee(format:DEC)
+            }
+            shard_fees {
+                create(format:DEC)
+                create_other {value(format:DEC)} fees(format:DEC) fees_other {value(format:DEC)}
+            }
+            shard_hashes {
+                descr {
+                    end_lt(format:DEC)
+                    fees_collected(format:DEC)
+                    fees_collected_other {value(format:DEC)}
+                    funds_created(format:DEC)
+                    funds_created_other {value(format:DEC)} start_lt(format:DEC)
+                }
+            }
+        }
+        master_ref {end_lt(format:DEC)}
+        out_msg_descr {
+            import_block_lt(format:DEC)
+            imported {
+                fwd_fee(format:DEC)
+                ihr_fee(format:DEC)
+                in_msg {fwd_fee_remaining(format:DEC)}
+                out_msg {fwd_fee_remaining(format:DEC)}
+                transit_fee(format:DEC)
+            }
+            next_addr_pfx(format:DEC)
+            out_msg {fwd_fee_remaining(format:DEC)}
+            reimport {
+                fwd_fee(format:DEC)
+                ihr_fee(format:DEC)
+                in_msg {fwd_fee_remaining(format:DEC)}
+                out_msg {fwd_fee_remaining(format:DEC)}
+                transit_fee(format:DEC)
+            }
+        }
+        prev_alt_ref {end_lt(format:DEC)}
+        prev_ref {end_lt(format:DEC)}
+        prev_vert_alt_ref {end_lt(format:DEC)}
+        prev_vert_ref{end_lt(format:DEC)}
+        start_lt(format:DEC)
+        value_flow {
+            created(format:DEC)
+            created_other {value(format:DEC)}
+            exported exported_other {value(format:DEC)}
+            fees_collected(format:DEC)
+            fees_collected_other {value(format:DEC)}
+            fees_imported(format:DEC)
+            fees_imported_other {value(format:DEC)}
+            from_prev_blk(format:DEC)
+            from_prev_blk_other {value(format:DEC)}
+            imported(format:DEC)
+            imported_other {value(format:DEC)}
+            minted(format:DEC)
+            minted_other {value(format:DEC)}
+            to_next_blk(format:DEC)
+            to_next_blk_other {value(format:DEC)}
+        }
+    "#;
+
+    // Masterchain block
+    let block_json = query_block_data(
+        client.context(),
+        "9eee20c3a93ca93928d7dc4bbbe6570c492d09077f13ebf7b2f68f9e2e176433",
+        decimal_fields,
+    ).await?;
+
+    client.request_async(
+        "proofs.proof_block_data",
+        ParamsOfProofBlockData { block: block_json.clone() },
+    ).await?;
+
+    // Shardchain block
+    let block_json = query_block_data(
+        client.context(),
+        "b38d6bdb4fab0e52a9165fe65aa373520ae8c7e422f93f20c9a2a5c8016d5e7d",
+        decimal_fields,
+    ).await?;
+
+    client.request_async(
+        "proofs.proof_block_data",
+        ParamsOfProofBlockData { block: block_json.clone() },
+    ).await?;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn proof_transaction_data_test() -> Result<()> {
+    let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
+
+    let transaction_json = query_transaction_data(
+        client.context(),
+        "0c7e395e8eb14c173d2dde7189200f28787a05df1fa188b19224f6e19a439dc6",
+        &gen_full_schema_query("Transaction")?,
+    ).await?;
+
+    proof_transaction_data(
+        client.context(),
+        ParamsOfProofTransactionData { transaction: transaction_json },
+    ).await?;
+
+    let transaction_json = query_transaction_data(
+        client.context(),
+        "0c7e395e8eb14c173d2dde7189200f28787a05df1fa188b19224f6e19a439dc6",
+        r#"
+            id
+            boc
+            action {total_action_fees(format:DEC) total_fwd_fees(format:DEC)}
+            balance_delta(format:DEC)
+            balance_delta_other {value(format:DEC)}
+            bounce {fwd_fees(format:DEC) msg_fees(format:DEC) req_fwd_fees(format:DEC)}
+            compute {gas_fees(format:DEC) gas_limit(format:DEC) gas_used(format:DEC)}
+            credit {credit(format:DEC) credit_other {value(format:DEC)} due_fees_collected(format:DEC)}
+            ext_in_msg_fee(format:DEC)
+            lt(format:DEC)
+            prev_trans_lt(format:DEC)
+            storage {storage_fees_collected(format:DEC) storage_fees_due(format:DEC)}
+            total_fees(format:DEC)
+            total_fees_other {value(format:DEC)}
+        "#,
+    ).await?;
+
+    proof_transaction_data(
+        client.context(),
+        ParamsOfProofTransactionData { transaction: transaction_json },
+    ).await?;
 
     Ok(())
 }
