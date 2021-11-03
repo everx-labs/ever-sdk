@@ -2,15 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.25.0] – 2021-10-25
+## [1.25.0] – 2021-11-03
 
 ### New
 - New module [`proofs`](./docs/mod_proofs.md) is introduced!  
-- Function [`proofs.proof_block_data`](./docs/mod_proofs.md#proof_block_data)  that proofs block data, retrieved from Graphql API. 
+- Functions [`proofs.proof_block_data`](./docs/mod_proofs.md#proof_block_data) and [`proofs.proof_transaction_data`](./docs/mod_proofs.md#proof_transaction_data) 
+  which prove block data, retrieved from Graphql API. 
   
-  It is the first function from proofs series :) Wait for others(`proof_transaction_data`, `proof_account_data`, `proof_message_data`) in the next releases. 
+  These are the first functions from proofs series :) Wait for others(`proof_account_data`, `proof_message_data`) in the next releases. 
 
-  Read about it more in the [documentation](./docs/mod_proofs.md#proof_block_data). 
+  Read about them more in the [documentation](./docs/mod_proofs.md#proof_block_data). 
 
 - [`abi.decode_boc`](./docs/mod_abi.md#decode_boc) function to decode custom BOC data into JSON parameters.
 - `Ref(<ParamType>)` type was added to ABI.   
