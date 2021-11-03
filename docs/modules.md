@@ -261,7 +261,9 @@ Where:
 
 [remove](mod_debot.md#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 
-## [proofs](mod_proofs.md) – [UNSTABLE](UNSTABLE.md) Module for proving queried data.
+## [proofs](mod_proofs.md) – [UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.
 
-[proof_block_data](mod_proofs.md#proof_block_data) – Proves that given block's data, which is queried from DApp server, can be trusted. This function checks block proofs and compares given data with the proven. If the given data differs from the proven, the exception will be thrown. The input param is a single block's JSON object, which was queried from DApp server using functions such as `net.query`, `net.query_collection` or `net.wait_for_collection`. If block's BOC is not provided in the JSON, it will be queried from DApp server (in this case it is required to provide at least `id` of block).
+[proof_block_data](mod_proofs.md#proof_block_data) – Proves that a given block's data, which is queried from TONOS API, can be trusted.
+
+[proof_transaction_data](mod_proofs.md#proof_transaction_data) – Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
 

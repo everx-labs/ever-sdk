@@ -27,6 +27,8 @@ Provides information about library.
 
 [BocConfig](#BocConfig)
 
+[ProofsConfig](#ProofsConfig)
+
 [BuildInfoDependency](#BuildInfoDependency)
 
 [ParamsOfAppRequest](#ParamsOfAppRequest)
@@ -218,17 +220,16 @@ type ClientConfig = {
     crypto?: CryptoConfig,
     abi?: AbiConfig,
     boc?: BocConfig,
-    local_storage_path?: string,
-    cache_proofs?: boolean
+    proofs?: ProofsConfig,
+    local_storage_path?: string
 }
 ```
 - `network`?: _[NetworkConfig](mod_client.md#NetworkConfig)_
 - `crypto`?: _[CryptoConfig](mod_client.md#CryptoConfig)_
 - `abi`?: _[AbiConfig](mod_client.md#AbiConfig)_
 - `boc`?: _[BocConfig](mod_client.md#BocConfig)_
+- `proofs`?: _[ProofsConfig](mod_client.md#ProofsConfig)_
 - `local_storage_path`?: _string_ – For file based storage is a folder name where SDK will store its data. For browser based is a browser async storage key prefix. Default (recommended) value is "~/.tonclient" for native environments and ".tonclient" for web-browser.
-- `cache_proofs`?: _boolean_ – Cache proofs in the local storage.
-<br>Default is `true`.
 
 
 ## NetworkConfig
@@ -314,6 +315,16 @@ type BocConfig = {
 ```
 - `cache_max_size`?: _number_ – Maximum BOC cache size in kilobytes.
 <br>Default is 10 MB
+
+
+## ProofsConfig
+```ts
+type ProofsConfig = {
+    cache_in_local_storage?: boolean
+}
+```
+- `cache_in_local_storage`?: _boolean_ – Cache proofs in the local storage.
+<br>Default is `true`. If this value is set to `true`, downloaded proofs and master-chain BOCs are saved into the<br>persistent local storage (e.g. file system for native environments or browser's IndexedDB<br>for the web); otherwise all the data is cached only in memory in current client's context<br>and will be lost after destruction of the client.
 
 
 ## BuildInfoDependency
