@@ -28,6 +28,9 @@ functions such as `net.query`, `net.query_collection` or `net.wait_for_collectio
 If block's BOC is not provided in the JSON, it will be queried from DApp server
 (in this case it is required to provide at least `id` of block).
 
+Please note, that joins (like `signatures` in `Block`) are separated entities and not supported,
+so function will throw an exception in a case if JSON being checked has such entities in it.
+
 If `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and
 master-chain BOCs are saved into the persistent local storage (e.g. file system for native
 environments or browser's IndexedDB for the web); otherwise all the data is cached only in
@@ -98,6 +101,10 @@ The input param is a single transaction's JSON object, which was queried from TO
 functions such as `net.query`, `net.query_collection` or `net.wait_for_collection`.
 If transaction's BOC and/or `block_id` are not provided in the JSON, they will be queried from
 TONOS API (in this case it is required to provide at least `id` of transaction).
+
+Please note, that joins (like `account`, `in_message`, `out_messages`, etc. in `Transaction`
+entity) are separated entities and not supported, so function will throw an exception in a case
+if JSON being checked has such entities in it.
 
 If `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and
 master-chain BOCs are saved into the persistent local storage (e.g. file system for native
