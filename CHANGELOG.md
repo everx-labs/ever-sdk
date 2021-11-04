@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.25.0] – 2021-11-03
+## [1.25.0] – 2021-11-08
 
 ### New
 - New module [`proofs`](./docs/mod_proofs.md) is introduced!  
