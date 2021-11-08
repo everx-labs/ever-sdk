@@ -52,7 +52,7 @@ mod env {
         assert!(LocalStorage::is_storage_key_correct("1a"));
         assert!(LocalStorage::is_storage_key_correct("a_"));
         assert!(LocalStorage::is_storage_key_correct("very_long_ident_232352"));
-        assert!(LocalStorage::is_storage_key_correct("directory/filename_123"));
+        assert!(!LocalStorage::is_storage_key_correct("directory/filename_123"));
     }
 }
 
