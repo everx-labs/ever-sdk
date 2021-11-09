@@ -4,6 +4,7 @@ members = [
     "ton_client",
     "toncli",
     "api/test",
+    "tools/update_trusted_blocks",
 ]
 
 exclude = [
