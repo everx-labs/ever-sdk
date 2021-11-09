@@ -135,6 +135,8 @@ Where:
 
 [decode_initial_data](mod_abi.md#decode_initial_data) – Decodes initial values of a contract's static variables and owner's public key from account initial data This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
 
+[decode_boc](mod_abi.md#decode_boc) – Decodes BOC into JSON as a set of provided parameters.
+
 ## [boc](mod_boc.md) – BOC manipulation module.
 
 [parse_message](mod_boc.md#parse_message) – Parses message boc into a JSON
@@ -258,4 +260,10 @@ Where:
 [send](mod_debot.md#send) – [UNSTABLE](UNSTABLE.md) Sends message to Debot.
 
 [remove](mod_debot.md#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
+
+## [proofs](mod_proofs.md) – [UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.
+
+[proof_block_data](mod_proofs.md#proof_block_data) – Proves that a given block's data, which is queried from TONOS API, can be trusted.
+
+[proof_transaction_data](mod_proofs.md#proof_transaction_data) – Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
 

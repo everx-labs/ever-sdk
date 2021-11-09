@@ -1,5 +1,5 @@
 {
-  "version": "1.24.0",
+  "version": "1.25.0",
   "modules": [
     {
       "name": "client",
@@ -247,6 +247,13 @@
               "value": "34",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "LocalStorageError",
+              "type": "Number",
+              "value": "35",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -323,6 +330,25 @@
                 "ref_name": "client.BocConfig"
               },
               "summary": null,
+              "description": null
+            },
+            {
+              "name": "proofs",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "client.ProofsConfig"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "local_storage_path",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "For file based storage is a folder name where SDK will store its data. For browser based is a browser async storage key prefix. Default (recommended) value is \"~/.tonclient\" for native environments and \".tonclient\" for web-browser.",
               "description": null
             }
           ],
@@ -461,7 +487,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data syncronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.",
+              "summary": "Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data synchronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.",
               "description": "Must be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
@@ -582,6 +608,23 @@
               },
               "summary": "Maximum BOC cache size in kilobytes.",
               "description": "Default is 10 MB"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ProofsConfig",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "cache_in_local_storage",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Cache proofs in the local storage.",
+              "description": "Default is `true`. If this value is set to `true`, downloaded proofs and master-chain BOCs are saved into the\npersistent local storage (e.g. file system for native environments or browser's IndexedDB\nfor the web); otherwise all the data is cached only in memory in current client's context\nand will be lost after destruction of the client."
             }
           ],
           "summary": null,
@@ -5732,7 +5775,7 @@
           "description": null
         },
         {
-          "name": "ResultOfDecodeData",
+          "name": "ResultOfDecodeAccountData",
           "type": "Struct",
           "struct_fields": [
             {
@@ -5855,6 +5898,51 @@
               "name": "initial_pubkey",
               "type": "String",
               "summary": "Initial account owner's public key",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfDecodeBoc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "params",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "abi.AbiParam"
+              },
+              "summary": "Parameters to decode from BOC",
+              "description": null
+            },
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": "Data BOC or BOC handle",
+              "description": null
+            },
+            {
+              "name": "allow_partial",
+              "type": "Boolean",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfDecodeBoc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Decoded data as a JSON structure.",
               "description": null
             }
           ],
@@ -6199,7 +6287,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "abi.ResultOfDecodeData"
+                "ref_name": "abi.ResultOfDecodeAccountData"
               }
             ]
           },
@@ -6276,6 +6364,44 @@
               {
                 "type": "Ref",
                 "ref_name": "abi.ResultOfDecodeInitialData"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "decode_boc",
+          "summary": "Decodes BOC into JSON as a set of provided parameters.",
+          "description": "Solidity functions use ABI types for [builder encoding](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#tvmbuilderstore).\nThe simplest way to decode such a BOC is to use ABI decoding.\nABI has it own rules for fields layout in cells so manually encoded\nBOC can not be described in terms of ABI rules.\n\nTo solve this problem we introduce a new ABI type `Ref(<ParamType>)`\nwhich allows to store `ParamType` ABI parameter in cell reference and, thus,\ndecode manually encoded BOCs. This type is available only in `decode_boc` function\nand will not be available in ABI messages encoding until it is included into some ABI revision.\n\nSuch BOC descriptions covers most users needs. If someone wants to decode some BOC which\ncan not be described by these rules (i.e. BOC with TLB containing constructors of flags\ndefining some parsing conditions) then they can decode the fields up to fork condition,\ncheck the parsed data manually, expand the parsing schema and then decode the whole BOC\nwith the full schema.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfDecodeBoc",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "abi.ResultOfDecodeBoc"
               }
             ]
           },
@@ -12326,6 +12452,155 @@
               "name": "params",
               "type": "Ref",
               "ref_name": "debot.ParamsOfRemove",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        }
+      ]
+    },
+    {
+      "name": "proofs",
+      "summary": "[UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.",
+      "description": null,
+      "types": [
+        {
+          "name": "ProofsErrorCode",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "InvalidData",
+              "type": "Number",
+              "value": "901",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ProofCheckFailed",
+              "type": "Number",
+              "value": "902",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InternalError",
+              "type": "Number",
+              "value": "903",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "DataDiffersFromProven",
+              "type": "Number",
+              "value": "904",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfProofBlockData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "block",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Single block's data, retrieved from TONOS API, that needs proof. Required fields are `id` and/or top-level `boc` (for block identification), others are optional.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfProofTransactionData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "transaction",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Single transaction's data as queried from DApp server, without modifications. The required fields are `id` and/or top-level `boc`, others are optional. In order to reduce network requests count, it is recommended to provide `block_id` and `boc` of transaction.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        }
+      ],
+      "functions": [
+        {
+          "name": "proof_block_data",
+          "summary": "Proves that a given block's data, which is queried from TONOS API, can be trusted.",
+          "description": "This function checks block proofs and compares given data with the proven.\nIf the given data differs from the proven, the exception will be thrown.\nThe input param is a single block's JSON object, which was queried from DApp server using\nfunctions such as `net.query`, `net.query_collection` or `net.wait_for_collection`.\nIf block's BOC is not provided in the JSON, it will be queried from DApp server\n(in this case it is required to provide at least `id` of block).\n\nPlease note, that joins (like `signatures` in `Block`) are separated entities and not supported,\nso function will throw an exception in a case if JSON being checked has such entities in it.\n\nIf `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and\nmaster-chain BOCs are saved into the persistent local storage (e.g. file system for native\nenvironments or browser's IndexedDB for the web); otherwise all the data is cached only in\nmemory in current client's context and will be lost after destruction of the client.\n\n**Why Proofs are needed**\n\nProofs are needed to ensure that the data downloaded from a DApp server is real blockchain\ndata. Checking proofs can protect from the malicious DApp server which can potentially provide\nfake data, or also from \"Man in the Middle\" attacks class.\n\n**What Proofs are**\n\nSimply, proof is a list of signatures of validators', which have signed this particular master-\nblock.\n\nThe very first validator set's public keys are included in the zero-state. Whe know a root hash\nof the zero-state, because it is stored in the network configuration file, it is our authority\nroot. For proving zero-state it is enough to calculate and compare its root hash.\n\nIn each new validator cycle the validator set is changed. The new one is stored in a key-block,\nwhich is signed by the validator set, which we already trust, the next validator set will be\nstored to the new key-block and signed by the current validator set, and so on.\n\nIn order to prove any block in the master-chain we need to check, that it has been signed by\na trusted validator set. So we need to check all key-blocks' proofs, started from the zero-state\nand until the block, which we want to prove. But it can take a lot of time and traffic to\ndownload and prove all key-blocks on a client. For solving this, special trusted blocks are used\nin TON-SDK.\n\nThe trusted block is the authority root, as well, as the zero-state. Each trusted block is the\n`id` (e.g. `root_hash`) of the already proven key-block. There can be plenty of trusted\nblocks, so there can be a lot of authority roots. The hashes of trusted blocks for MainNet\nand DevNet are hardcoded in SDK in a separated binary file (trusted_key_blocks.bin) and can\nbe updated for each release.\nIn future SDK releases, one will also be able to provide their hashes of trusted blocks for\nother networks, besides for MainNet and DevNet.\nBy using trusted key-blocks, in order to prove any block, we can prove chain of key-blocks to\nthe closest previous trusted key-block, not only to the zero-state.\n\nBut shard-blocks don't have proofs on DApp server. In this case, in order to prove any shard-\nblock data, we search for a corresponding master-block, which contains the root hash of this\nshard-block, or some shard block which is linked to that block in shard-chain. After proving\nthis master-block, we traverse through each link and calculate and compare hashes with links,\none-by-one. After that we can ensure that this shard-block has also been proven.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "proofs.ParamsOfProofBlockData",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "proof_transaction_data",
+          "summary": "Proves that a given transaction's data, which is queried from TONOS API, can be trusted.",
+          "description": "This function requests the corresponding block, checks block proofs, ensures that given transaction\nexists in the proven block and compares given data with the proven.\nIf the given data differs from the proven, the exception will be thrown.\nThe input parameter is a single transaction's JSON object (see params description),\nwhich was queried from TONOS API using functions such as `net.query`, `net.query_collection`\nor `net.wait_for_collection`.\n\nIf transaction's BOC and/or `block_id` are not provided in the JSON, they will be queried from\nTONOS API (in this case it is required to provide at least `id` of transaction).\n\nPlease note, that joins (like `account`, `in_message`, `out_messages`, etc. in `Transaction`\nentity) are separated entities and not supported, so function will throw an exception in a case\nif JSON being checked has such entities in it.\n\nIf `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and\nmaster-chain BOCs are saved into the persistent local storage (e.g. file system for native\nenvironments or browser's IndexedDB for the web); otherwise all the data is cached only in\nmemory in current client's context and will be lost after destruction of the client.\n\nFor more information about proofs checking, see description of `proof_block_data` function.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "proofs.ParamsOfProofTransactionData",
               "summary": null,
               "description": null
             }

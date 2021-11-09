@@ -8,8 +8,6 @@ use serde_json::Value;
 use std::sync::Arc;
 use ton_abi::token::Detokenizer;
 
-//---------------------------------------------------------------------------------- decode_message
-
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfDecodeAccountData {
     /// Contract ABI
@@ -20,7 +18,7 @@ pub struct ParamsOfDecodeAccountData {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
-pub struct ResultOfDecodeData {
+pub struct ResultOfDecodeAccountData {
     /// Decoded data as a JSON structure.
     pub data: Value,
 }
@@ -32,7 +30,7 @@ pub struct ResultOfDecodeData {
 pub async fn decode_account_data(
     context: Arc<ClientContext>,
     params: ParamsOfDecodeAccountData,
-) -> ClientResult<ResultOfDecodeData> {
+) -> ClientResult<ResultOfDecodeAccountData> {
     let (_, data) = deserialize_cell_from_boc(&context, &params.data, "contract data").await?;
     let abi = params.abi.abi()?;
 
@@ -41,5 +39,5 @@ pub async fn decode_account_data(
 
     let data = Detokenizer::detokenize_to_json_value(&tokens)
         .map_err(|e| Error::invalid_data_for_decode(e))?;
-    Ok(ResultOfDecodeData { data })
+    Ok(ResultOfDecodeAccountData { data })
 }

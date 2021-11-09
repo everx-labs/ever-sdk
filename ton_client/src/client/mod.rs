@@ -14,21 +14,24 @@
 mod client;
 mod client_env;
 pub(crate) mod errors;
+pub(crate) mod storage;
 #[cfg(not(feature = "wasm"))]
 mod std_client_env;
 #[cfg(not(feature = "wasm"))]
-pub(crate) use std_client_env::ClientEnv;
+pub(crate) use std_client_env::{ClientEnv, LocalStorage};
 #[cfg(feature = "wasm")]
 mod wasm_client_env;
 #[cfg(feature = "wasm")]
-pub(crate) use wasm_client_env::ClientEnv;
+pub(crate) use wasm_client_env::{ClientEnv, LocalStorage};
 
+#[cfg(not(feature = "wasm"))]
 #[cfg(test)]
 pub(crate) use crate::client::network_mock::{NetworkMock};
 
 #[cfg(test)]
 mod tests;
 
+#[cfg(not(feature = "wasm"))]
 #[cfg(test)]
 mod network_mock;
 
@@ -36,12 +39,14 @@ pub use client::{ClientConfig, ClientContext};
 pub use errors::{Error, ErrorCode};
 
 pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket};
-pub(crate) use client::AppObject;
+pub(crate) use client::{AppObject, NetworkUID};
 
 use crate::error::ClientResult;
 use crate::json_interface::runtime::Runtime;
 use api_info::API;
 use std::sync::Arc;
+
+pub(crate) const LOCAL_STORAGE_DEFAULT_DIR_NAME: &str = ".tonclient";
 
 pub fn core_version() -> String {
     env!("CARGO_PKG_VERSION").into()
