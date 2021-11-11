@@ -47,73 +47,73 @@ Network access.
 [remove_iterator](#remove_iterator) – Removes an iterator
 
 ## Types
-[NetErrorCode](#NetErrorCode)
+[NetErrorCode](#neterrorcode)
 
-[OrderBy](#OrderBy)
+[OrderBy](#orderby)
 
-[SortDirection](#SortDirection)
+[SortDirection](#sortdirection)
 
-[ParamsOfQueryOperation](#ParamsOfQueryOperation)
+[ParamsOfQueryOperation](#paramsofqueryoperation)
 
-[FieldAggregation](#FieldAggregation)
+[FieldAggregation](#fieldaggregation)
 
-[AggregationFn](#AggregationFn)
+[AggregationFn](#aggregationfn)
 
-[TransactionNode](#TransactionNode)
+[TransactionNode](#transactionnode)
 
-[MessageNode](#MessageNode)
+[MessageNode](#messagenode)
 
-[ParamsOfQuery](#ParamsOfQuery)
+[ParamsOfQuery](#paramsofquery)
 
-[ResultOfQuery](#ResultOfQuery)
+[ResultOfQuery](#resultofquery)
 
-[ParamsOfBatchQuery](#ParamsOfBatchQuery)
+[ParamsOfBatchQuery](#paramsofbatchquery)
 
-[ResultOfBatchQuery](#ResultOfBatchQuery)
+[ResultOfBatchQuery](#resultofbatchquery)
 
-[ParamsOfQueryCollection](#ParamsOfQueryCollection)
+[ParamsOfQueryCollection](#paramsofquerycollection)
 
-[ResultOfQueryCollection](#ResultOfQueryCollection)
+[ResultOfQueryCollection](#resultofquerycollection)
 
-[ParamsOfAggregateCollection](#ParamsOfAggregateCollection)
+[ParamsOfAggregateCollection](#paramsofaggregatecollection)
 
-[ResultOfAggregateCollection](#ResultOfAggregateCollection)
+[ResultOfAggregateCollection](#resultofaggregatecollection)
 
-[ParamsOfWaitForCollection](#ParamsOfWaitForCollection)
+[ParamsOfWaitForCollection](#paramsofwaitforcollection)
 
-[ResultOfWaitForCollection](#ResultOfWaitForCollection)
+[ResultOfWaitForCollection](#resultofwaitforcollection)
 
-[ResultOfSubscribeCollection](#ResultOfSubscribeCollection)
+[ResultOfSubscribeCollection](#resultofsubscribecollection)
 
-[ParamsOfSubscribeCollection](#ParamsOfSubscribeCollection)
+[ParamsOfSubscribeCollection](#paramsofsubscribecollection)
 
-[ParamsOfFindLastShardBlock](#ParamsOfFindLastShardBlock)
+[ParamsOfFindLastShardBlock](#paramsoffindlastshardblock)
 
-[ResultOfFindLastShardBlock](#ResultOfFindLastShardBlock)
+[ResultOfFindLastShardBlock](#resultoffindlastshardblock)
 
-[EndpointsSet](#EndpointsSet)
+[EndpointsSet](#endpointsset)
 
-[ResultOfGetEndpoints](#ResultOfGetEndpoints)
+[ResultOfGetEndpoints](#resultofgetendpoints)
 
-[ParamsOfQueryCounterparties](#ParamsOfQueryCounterparties)
+[ParamsOfQueryCounterparties](#paramsofquerycounterparties)
 
-[ParamsOfQueryTransactionTree](#ParamsOfQueryTransactionTree)
+[ParamsOfQueryTransactionTree](#paramsofquerytransactiontree)
 
-[ResultOfQueryTransactionTree](#ResultOfQueryTransactionTree)
+[ResultOfQueryTransactionTree](#resultofquerytransactiontree)
 
-[ParamsOfCreateBlockIterator](#ParamsOfCreateBlockIterator)
+[ParamsOfCreateBlockIterator](#paramsofcreateblockiterator)
 
-[RegisteredIterator](#RegisteredIterator)
+[RegisteredIterator](#registerediterator)
 
-[ParamsOfResumeBlockIterator](#ParamsOfResumeBlockIterator)
+[ParamsOfResumeBlockIterator](#paramsofresumeblockiterator)
 
-[ParamsOfCreateTransactionIterator](#ParamsOfCreateTransactionIterator)
+[ParamsOfCreateTransactionIterator](#paramsofcreatetransactioniterator)
 
-[ParamsOfResumeTransactionIterator](#ParamsOfResumeTransactionIterator)
+[ParamsOfResumeTransactionIterator](#paramsofresumetransactioniterator)
 
-[ParamsOfIteratorNext](#ParamsOfIteratorNext)
+[ParamsOfIteratorNext](#paramsofiteratornext)
 
-[ResultOfIteratorNext](#ResultOfIteratorNext)
+[ResultOfIteratorNext](#resultofiteratornext)
 
 
 # Functions
@@ -164,7 +164,7 @@ function batch_query(
 ): Promise<ResultOfBatchQuery>;
 ```
 ### Parameters
-- `operations`: _[ParamsOfQueryOperation](mod_net.md#ParamsOfQueryOperation)[]_ – List of query operations that must be performed per single fetch.
+- `operations`: _[ParamsOfQueryOperation](mod_net.md#paramsofqueryoperation)[]_ – List of query operations that must be performed per single fetch.
 
 
 ### Result
@@ -202,7 +202,7 @@ function query_collection(
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
-- `order`?: _[OrderBy](mod_net.md#OrderBy)[]_ – Sorting order
+- `order`?: _[OrderBy](mod_net.md#orderby)[]_ – Sorting order
 - `limit`?: _number_ – Number of documents to return
 
 
@@ -236,7 +236,7 @@ function aggregate_collection(
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
-- `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
+- `fields`?: _[FieldAggregation](mod_net.md#fieldaggregation)[]_ – Projection (result) string
 
 
 ### Result
@@ -369,7 +369,7 @@ function subscribe_collection(
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
-- `responseHandler`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.
+- `responseHandler`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.
 
 ### Result
 
@@ -566,15 +566,15 @@ function query_transaction_tree(
 ```
 ### Parameters
 - `in_msg`: _string_ – Input message id.
-- `abi_registry`?: _[Abi](mod_abi.md#Abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
+- `abi_registry`?: _[Abi](mod_abi.md#abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
 - `timeout`?: _number_ – Timeout used to limit waiting time for the missing messages and transaction.
 <br>If some of the following messages and transactions are missing yet<br>The maximum waiting time is regulated by this option.<br><br>Default value is 60000 (1 min).
 
 
 ### Result
 
-- `messages`: _[MessageNode](mod_net.md#MessageNode)[]_ – Messages.
-- `transactions`: _[TransactionNode](mod_net.md#TransactionNode)[]_ – Transactions.
+- `messages`: _[MessageNode](mod_net.md#messagenode)[]_ – Messages.
+- `transactions`: _[TransactionNode](mod_net.md#transactionnode)[]_ – Transactions.
 
 
 ## create_block_iterator
@@ -939,7 +939,7 @@ type OrderBy = {
 }
 ```
 - `path`: _string_
-- `direction`: _[SortDirection](mod_net.md#SortDirection)_
+- `direction`: _[SortDirection](mod_net.md#sortdirection)_
 
 
 ## SortDirection
@@ -974,7 +974,7 @@ When _type_ is _'QueryCollection'_
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
-- `order`?: _[OrderBy](mod_net.md#OrderBy)[]_ – Sorting order
+- `order`?: _[OrderBy](mod_net.md#orderby)[]_ – Sorting order
 - `limit`?: _number_ – Number of documents to return
 
 When _type_ is _'WaitForCollection'_
@@ -988,7 +988,7 @@ When _type_ is _'AggregateCollection'_
 
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
-- `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
+- `fields`?: _[FieldAggregation](mod_net.md#fieldaggregation)[]_ – Projection (result) string
 
 When _type_ is _'QueryCounterparties'_
 
@@ -1015,7 +1015,7 @@ type FieldAggregation = {
 }
 ```
 - `field`: _string_ – Dot separated path to the field
-- `fn`: _[AggregationFn](mod_net.md#AggregationFn)_ – Aggregation function that must be applied to field values
+- `fn`: _[AggregationFn](mod_net.md#aggregationfn)_ – Aggregation function that must be applied to field values
 
 
 ## AggregationFn
@@ -1080,7 +1080,7 @@ type MessageNode = {
 - `dst`?: _string_ – Destination address.
 - `value`?: _string_ – Transferred tokens value.
 - `bounce`: _boolean_ – Bounce flag.
-- `decoded_body`?: _[DecodedMessageBody](mod_abi.md#DecodedMessageBody)_ – Decoded body.
+- `decoded_body`?: _[DecodedMessageBody](mod_abi.md#decodedmessagebody)_ – Decoded body.
 <br>Library tries to decode message body using provided `params.abi_registry`.<br>This field will be missing if none of the provided abi can be used to decode.
 
 
@@ -1111,7 +1111,7 @@ type ParamsOfBatchQuery = {
     operations: ParamsOfQueryOperation[]
 }
 ```
-- `operations`: _[ParamsOfQueryOperation](mod_net.md#ParamsOfQueryOperation)[]_ – List of query operations that must be performed per single fetch.
+- `operations`: _[ParamsOfQueryOperation](mod_net.md#paramsofqueryoperation)[]_ – List of query operations that must be performed per single fetch.
 
 
 ## ResultOfBatchQuery
@@ -1137,7 +1137,7 @@ type ParamsOfQueryCollection = {
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
-- `order`?: _[OrderBy](mod_net.md#OrderBy)[]_ – Sorting order
+- `order`?: _[OrderBy](mod_net.md#orderby)[]_ – Sorting order
 - `limit`?: _number_ – Number of documents to return
 
 
@@ -1160,7 +1160,7 @@ type ParamsOfAggregateCollection = {
 ```
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
-- `fields`?: _[FieldAggregation](mod_net.md#FieldAggregation)[]_ – Projection (result) string
+- `fields`?: _[FieldAggregation](mod_net.md#fieldaggregation)[]_ – Projection (result) string
 
 
 ## ResultOfAggregateCollection
@@ -1282,7 +1282,7 @@ type ParamsOfQueryTransactionTree = {
 }
 ```
 - `in_msg`: _string_ – Input message id.
-- `abi_registry`?: _[Abi](mod_abi.md#Abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
+- `abi_registry`?: _[Abi](mod_abi.md#abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
 - `timeout`?: _number_ – Timeout used to limit waiting time for the missing messages and transaction.
 <br>If some of the following messages and transactions are missing yet<br>The maximum waiting time is regulated by this option.<br><br>Default value is 60000 (1 min).
 
@@ -1294,8 +1294,8 @@ type ResultOfQueryTransactionTree = {
     transactions: TransactionNode[]
 }
 ```
-- `messages`: _[MessageNode](mod_net.md#MessageNode)[]_ – Messages.
-- `transactions`: _[TransactionNode](mod_net.md#TransactionNode)[]_ – Transactions.
+- `messages`: _[MessageNode](mod_net.md#messagenode)[]_ – Messages.
+- `transactions`: _[TransactionNode](mod_net.md#transactionnode)[]_ – Transactions.
 
 
 ## ParamsOfCreateBlockIterator

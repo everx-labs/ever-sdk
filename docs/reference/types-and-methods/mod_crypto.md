@@ -93,167 +93,167 @@ Crypto functions.
 [create_encryption_box](#create_encryption_box) – Creates encryption box with specified algorithm
 
 ## Types
-[CryptoErrorCode](#CryptoErrorCode)
+[CryptoErrorCode](#cryptoerrorcode)
 
-[SigningBoxHandle](#SigningBoxHandle)
+[SigningBoxHandle](#signingboxhandle)
 
-[EncryptionBoxHandle](#EncryptionBoxHandle)
+[EncryptionBoxHandle](#encryptionboxhandle)
 
-[EncryptionBoxInfo](#EncryptionBoxInfo) – Encryption box information
+[EncryptionBoxInfo](#encryptionboxinfo) – Encryption box information
 
-[EncryptionAlgorithm](#EncryptionAlgorithm)
+[EncryptionAlgorithm](#encryptionalgorithm)
 
-[CipherMode](#CipherMode)
+[CipherMode](#ciphermode)
 
-[AesParams](#AesParams)
+[AesParams](#aesparams)
 
-[AesInfo](#AesInfo)
+[AesInfo](#aesinfo)
 
-[ParamsOfFactorize](#ParamsOfFactorize)
+[ParamsOfFactorize](#paramsoffactorize)
 
-[ResultOfFactorize](#ResultOfFactorize)
+[ResultOfFactorize](#resultoffactorize)
 
-[ParamsOfModularPower](#ParamsOfModularPower)
+[ParamsOfModularPower](#paramsofmodularpower)
 
-[ResultOfModularPower](#ResultOfModularPower)
+[ResultOfModularPower](#resultofmodularpower)
 
-[ParamsOfTonCrc16](#ParamsOfTonCrc16)
+[ParamsOfTonCrc16](#paramsoftoncrc16)
 
-[ResultOfTonCrc16](#ResultOfTonCrc16)
+[ResultOfTonCrc16](#resultoftoncrc16)
 
-[ParamsOfGenerateRandomBytes](#ParamsOfGenerateRandomBytes)
+[ParamsOfGenerateRandomBytes](#paramsofgeneraterandombytes)
 
-[ResultOfGenerateRandomBytes](#ResultOfGenerateRandomBytes)
+[ResultOfGenerateRandomBytes](#resultofgeneraterandombytes)
 
-[ParamsOfConvertPublicKeyToTonSafeFormat](#ParamsOfConvertPublicKeyToTonSafeFormat)
+[ParamsOfConvertPublicKeyToTonSafeFormat](#paramsofconvertpublickeytotonsafeformat)
 
-[ResultOfConvertPublicKeyToTonSafeFormat](#ResultOfConvertPublicKeyToTonSafeFormat)
+[ResultOfConvertPublicKeyToTonSafeFormat](#resultofconvertpublickeytotonsafeformat)
 
-[KeyPair](#KeyPair)
+[KeyPair](#keypair)
 
-[ParamsOfSign](#ParamsOfSign)
+[ParamsOfSign](#paramsofsign)
 
-[ResultOfSign](#ResultOfSign)
+[ResultOfSign](#resultofsign)
 
-[ParamsOfVerifySignature](#ParamsOfVerifySignature)
+[ParamsOfVerifySignature](#paramsofverifysignature)
 
-[ResultOfVerifySignature](#ResultOfVerifySignature)
+[ResultOfVerifySignature](#resultofverifysignature)
 
-[ParamsOfHash](#ParamsOfHash)
+[ParamsOfHash](#paramsofhash)
 
-[ResultOfHash](#ResultOfHash)
+[ResultOfHash](#resultofhash)
 
-[ParamsOfScrypt](#ParamsOfScrypt)
+[ParamsOfScrypt](#paramsofscrypt)
 
-[ResultOfScrypt](#ResultOfScrypt)
+[ResultOfScrypt](#resultofscrypt)
 
-[ParamsOfNaclSignKeyPairFromSecret](#ParamsOfNaclSignKeyPairFromSecret)
+[ParamsOfNaclSignKeyPairFromSecret](#paramsofnaclsignkeypairfromsecret)
 
-[ParamsOfNaclSign](#ParamsOfNaclSign)
+[ParamsOfNaclSign](#paramsofnaclsign)
 
-[ResultOfNaclSign](#ResultOfNaclSign)
+[ResultOfNaclSign](#resultofnaclsign)
 
-[ParamsOfNaclSignOpen](#ParamsOfNaclSignOpen)
+[ParamsOfNaclSignOpen](#paramsofnaclsignopen)
 
-[ResultOfNaclSignOpen](#ResultOfNaclSignOpen)
+[ResultOfNaclSignOpen](#resultofnaclsignopen)
 
-[ResultOfNaclSignDetached](#ResultOfNaclSignDetached)
+[ResultOfNaclSignDetached](#resultofnaclsigndetached)
 
-[ParamsOfNaclSignDetachedVerify](#ParamsOfNaclSignDetachedVerify)
+[ParamsOfNaclSignDetachedVerify](#paramsofnaclsigndetachedverify)
 
-[ResultOfNaclSignDetachedVerify](#ResultOfNaclSignDetachedVerify)
+[ResultOfNaclSignDetachedVerify](#resultofnaclsigndetachedverify)
 
-[ParamsOfNaclBoxKeyPairFromSecret](#ParamsOfNaclBoxKeyPairFromSecret)
+[ParamsOfNaclBoxKeyPairFromSecret](#paramsofnaclboxkeypairfromsecret)
 
-[ParamsOfNaclBox](#ParamsOfNaclBox)
+[ParamsOfNaclBox](#paramsofnaclbox)
 
-[ResultOfNaclBox](#ResultOfNaclBox)
+[ResultOfNaclBox](#resultofnaclbox)
 
-[ParamsOfNaclBoxOpen](#ParamsOfNaclBoxOpen)
+[ParamsOfNaclBoxOpen](#paramsofnaclboxopen)
 
-[ResultOfNaclBoxOpen](#ResultOfNaclBoxOpen)
+[ResultOfNaclBoxOpen](#resultofnaclboxopen)
 
-[ParamsOfNaclSecretBox](#ParamsOfNaclSecretBox)
+[ParamsOfNaclSecretBox](#paramsofnaclsecretbox)
 
-[ParamsOfNaclSecretBoxOpen](#ParamsOfNaclSecretBoxOpen)
+[ParamsOfNaclSecretBoxOpen](#paramsofnaclsecretboxopen)
 
-[ParamsOfMnemonicWords](#ParamsOfMnemonicWords)
+[ParamsOfMnemonicWords](#paramsofmnemonicwords)
 
-[ResultOfMnemonicWords](#ResultOfMnemonicWords)
+[ResultOfMnemonicWords](#resultofmnemonicwords)
 
-[ParamsOfMnemonicFromRandom](#ParamsOfMnemonicFromRandom)
+[ParamsOfMnemonicFromRandom](#paramsofmnemonicfromrandom)
 
-[ResultOfMnemonicFromRandom](#ResultOfMnemonicFromRandom)
+[ResultOfMnemonicFromRandom](#resultofmnemonicfromrandom)
 
-[ParamsOfMnemonicFromEntropy](#ParamsOfMnemonicFromEntropy)
+[ParamsOfMnemonicFromEntropy](#paramsofmnemonicfromentropy)
 
-[ResultOfMnemonicFromEntropy](#ResultOfMnemonicFromEntropy)
+[ResultOfMnemonicFromEntropy](#resultofmnemonicfromentropy)
 
-[ParamsOfMnemonicVerify](#ParamsOfMnemonicVerify)
+[ParamsOfMnemonicVerify](#paramsofmnemonicverify)
 
-[ResultOfMnemonicVerify](#ResultOfMnemonicVerify)
+[ResultOfMnemonicVerify](#resultofmnemonicverify)
 
-[ParamsOfMnemonicDeriveSignKeys](#ParamsOfMnemonicDeriveSignKeys)
+[ParamsOfMnemonicDeriveSignKeys](#paramsofmnemonicderivesignkeys)
 
-[ParamsOfHDKeyXPrvFromMnemonic](#ParamsOfHDKeyXPrvFromMnemonic)
+[ParamsOfHDKeyXPrvFromMnemonic](#paramsofhdkeyxprvfrommnemonic)
 
-[ResultOfHDKeyXPrvFromMnemonic](#ResultOfHDKeyXPrvFromMnemonic)
+[ResultOfHDKeyXPrvFromMnemonic](#resultofhdkeyxprvfrommnemonic)
 
-[ParamsOfHDKeyDeriveFromXPrv](#ParamsOfHDKeyDeriveFromXPrv)
+[ParamsOfHDKeyDeriveFromXPrv](#paramsofhdkeyderivefromxprv)
 
-[ResultOfHDKeyDeriveFromXPrv](#ResultOfHDKeyDeriveFromXPrv)
+[ResultOfHDKeyDeriveFromXPrv](#resultofhdkeyderivefromxprv)
 
-[ParamsOfHDKeyDeriveFromXPrvPath](#ParamsOfHDKeyDeriveFromXPrvPath)
+[ParamsOfHDKeyDeriveFromXPrvPath](#paramsofhdkeyderivefromxprvpath)
 
-[ResultOfHDKeyDeriveFromXPrvPath](#ResultOfHDKeyDeriveFromXPrvPath)
+[ResultOfHDKeyDeriveFromXPrvPath](#resultofhdkeyderivefromxprvpath)
 
-[ParamsOfHDKeySecretFromXPrv](#ParamsOfHDKeySecretFromXPrv)
+[ParamsOfHDKeySecretFromXPrv](#paramsofhdkeysecretfromxprv)
 
-[ResultOfHDKeySecretFromXPrv](#ResultOfHDKeySecretFromXPrv)
+[ResultOfHDKeySecretFromXPrv](#resultofhdkeysecretfromxprv)
 
-[ParamsOfHDKeyPublicFromXPrv](#ParamsOfHDKeyPublicFromXPrv)
+[ParamsOfHDKeyPublicFromXPrv](#paramsofhdkeypublicfromxprv)
 
-[ResultOfHDKeyPublicFromXPrv](#ResultOfHDKeyPublicFromXPrv)
+[ResultOfHDKeyPublicFromXPrv](#resultofhdkeypublicfromxprv)
 
-[ParamsOfChaCha20](#ParamsOfChaCha20)
+[ParamsOfChaCha20](#paramsofchacha20)
 
-[ResultOfChaCha20](#ResultOfChaCha20)
+[ResultOfChaCha20](#resultofchacha20)
 
-[RegisteredSigningBox](#RegisteredSigningBox)
+[RegisteredSigningBox](#registeredsigningbox)
 
-[ParamsOfAppSigningBox](#ParamsOfAppSigningBox) – Signing box callbacks.
+[ParamsOfAppSigningBox](#paramsofappsigningbox) – Signing box callbacks.
 
-[ResultOfAppSigningBox](#ResultOfAppSigningBox) – Returning values from signing box callbacks.
+[ResultOfAppSigningBox](#resultofappsigningbox) – Returning values from signing box callbacks.
 
-[ResultOfSigningBoxGetPublicKey](#ResultOfSigningBoxGetPublicKey)
+[ResultOfSigningBoxGetPublicKey](#resultofsigningboxgetpublickey)
 
-[ParamsOfSigningBoxSign](#ParamsOfSigningBoxSign)
+[ParamsOfSigningBoxSign](#paramsofsigningboxsign)
 
-[ResultOfSigningBoxSign](#ResultOfSigningBoxSign)
+[ResultOfSigningBoxSign](#resultofsigningboxsign)
 
-[RegisteredEncryptionBox](#RegisteredEncryptionBox)
+[RegisteredEncryptionBox](#registeredencryptionbox)
 
-[ParamsOfAppEncryptionBox](#ParamsOfAppEncryptionBox) – Encryption box callbacks.
+[ParamsOfAppEncryptionBox](#paramsofappencryptionbox) – Encryption box callbacks.
 
-[ResultOfAppEncryptionBox](#ResultOfAppEncryptionBox) – Returning values from signing box callbacks.
+[ResultOfAppEncryptionBox](#resultofappencryptionbox) – Returning values from signing box callbacks.
 
-[ParamsOfEncryptionBoxGetInfo](#ParamsOfEncryptionBoxGetInfo)
+[ParamsOfEncryptionBoxGetInfo](#paramsofencryptionboxgetinfo)
 
-[ResultOfEncryptionBoxGetInfo](#ResultOfEncryptionBoxGetInfo)
+[ResultOfEncryptionBoxGetInfo](#resultofencryptionboxgetinfo)
 
-[ParamsOfEncryptionBoxEncrypt](#ParamsOfEncryptionBoxEncrypt)
+[ParamsOfEncryptionBoxEncrypt](#paramsofencryptionboxencrypt)
 
-[ResultOfEncryptionBoxEncrypt](#ResultOfEncryptionBoxEncrypt)
+[ResultOfEncryptionBoxEncrypt](#resultofencryptionboxencrypt)
 
-[ParamsOfEncryptionBoxDecrypt](#ParamsOfEncryptionBoxDecrypt)
+[ParamsOfEncryptionBoxDecrypt](#paramsofencryptionboxdecrypt)
 
-[ResultOfEncryptionBoxDecrypt](#ResultOfEncryptionBoxDecrypt)
+[ResultOfEncryptionBoxDecrypt](#resultofencryptionboxdecrypt)
 
-[ParamsOfCreateEncryptionBox](#ParamsOfCreateEncryptionBox)
+[ParamsOfCreateEncryptionBox](#paramsofcreateencryptionbox)
 
-[AppSigningBox](#AppSigningBox)
+[AppSigningBox](#appsigningbox)
 
-[AppEncryptionBox](#AppEncryptionBox)
+[AppEncryptionBox](#appencryptionbox)
 
 
 # Functions
@@ -440,7 +440,7 @@ function sign(
 ```
 ### Parameters
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-- `keys`: _[KeyPair](mod_crypto.md#KeyPair)_ – Sign keys.
+- `keys`: _[KeyPair](mod_crypto.md#keypair)_ – Sign keys.
 
 
 ### Result
@@ -1269,7 +1269,7 @@ function register_signing_box(
 
 ### Result
 
-- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ## get_signing_box
@@ -1297,7 +1297,7 @@ function get_signing_box(
 
 ### Result
 
-- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ## signing_box_get_public_key
@@ -1318,7 +1318,7 @@ function signing_box_get_public_key(
 ): Promise<ResultOfSigningBoxGetPublicKey>;
 ```
 ### Parameters
-- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ### Result
@@ -1346,7 +1346,7 @@ function signing_box_sign(
 ): Promise<ResultOfSigningBoxSign>;
 ```
 ### Parameters
-- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Signing Box handle.
 - `unsigned`: _string_ – Unsigned user data.
 <br>Must be encoded with `base64`.
 
@@ -1371,7 +1371,7 @@ function remove_signing_box(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ## register_encryption_box
@@ -1391,7 +1391,7 @@ function register_encryption_box(
 
 ### Result
 
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box
 
 
 ## remove_encryption_box
@@ -1408,7 +1408,7 @@ function remove_encryption_box(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box
 
 
 ## encryption_box_get_info
@@ -1429,12 +1429,12 @@ function encryption_box_get_info(
 ): Promise<ResultOfEncryptionBoxGetInfo>;
 ```
 ### Parameters
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
 
 
 ### Result
 
-- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_ – Encryption box information
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#encryptionboxinfo)_ – Encryption box information
 
 
 ## encryption_box_encrypt
@@ -1459,7 +1459,7 @@ function encryption_box_encrypt(
 ): Promise<ResultOfEncryptionBoxEncrypt>;
 ```
 ### Parameters
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
 - `data`: _string_ – Data to be encrypted, encoded in Base64
 
 
@@ -1491,7 +1491,7 @@ function encryption_box_decrypt(
 ): Promise<ResultOfEncryptionBoxDecrypt>;
 ```
 ### Parameters
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
 - `data`: _string_ – Data to be decrypted, encoded in Base64
 
 
@@ -1518,12 +1518,12 @@ function create_encryption_box(
 ): Promise<RegisteredEncryptionBox>;
 ```
 ### Parameters
-- `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#EncryptionAlgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
+- `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#encryptionalgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
 
 
 ### Result
 
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box
 
 
 # Types
@@ -1629,7 +1629,7 @@ Depends on value of the  `type` field.
 
 When _type_ is _'AES'_
 
-- `mode`: _[CipherMode](mod_crypto.md#CipherMode)_
+- `mode`: _[CipherMode](mod_crypto.md#ciphermode)_
 - `key`: _string_
 - `iv`?: _string_
 
@@ -1667,7 +1667,7 @@ type AesParams = {
     iv?: string
 }
 ```
-- `mode`: _[CipherMode](mod_crypto.md#CipherMode)_
+- `mode`: _[CipherMode](mod_crypto.md#ciphermode)_
 - `key`: _string_
 - `iv`?: _string_
 
@@ -1679,7 +1679,7 @@ type AesInfo = {
     iv?: string
 }
 ```
-- `mode`: _[CipherMode](mod_crypto.md#CipherMode)_
+- `mode`: _[CipherMode](mod_crypto.md#ciphermode)_
 - `iv`?: _string_
 
 
@@ -1797,7 +1797,7 @@ type ParamsOfSign = {
 }
 ```
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-- `keys`: _[KeyPair](mod_crypto.md#KeyPair)_ – Sign keys.
+- `keys`: _[KeyPair](mod_crypto.md#keypair)_ – Sign keys.
 
 
 ## ResultOfSign
@@ -2279,7 +2279,7 @@ type RegisteredSigningBox = {
     handle: SigningBoxHandle
 }
 ```
-- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ## ParamsOfAppSigningBox
@@ -2368,7 +2368,7 @@ type ParamsOfSigningBoxSign = {
     unsigned: string
 }
 ```
-- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing Box handle.
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Signing Box handle.
 - `unsigned`: _string_ – Unsigned user data.
 <br>Must be encoded with `base64`.
 
@@ -2389,7 +2389,7 @@ type RegisteredEncryptionBox = {
     handle: EncryptionBoxHandle
 }
 ```
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Handle of the encryption box
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box
 
 
 ## ParamsOfAppEncryptionBox
@@ -2458,7 +2458,7 @@ When _type_ is _'GetInfo'_
 Result of getting encryption box info
 
 
-- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#encryptionboxinfo)_
 
 When _type_ is _'Encrypt'_
 
@@ -2489,7 +2489,7 @@ type ParamsOfEncryptionBoxGetInfo = {
     encryption_box: EncryptionBoxHandle
 }
 ```
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
 
 
 ## ResultOfEncryptionBoxGetInfo
@@ -2498,7 +2498,7 @@ type ResultOfEncryptionBoxGetInfo = {
     info: EncryptionBoxInfo
 }
 ```
-- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_ – Encryption box information
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#encryptionboxinfo)_ – Encryption box information
 
 
 ## ParamsOfEncryptionBoxEncrypt
@@ -2508,7 +2508,7 @@ type ParamsOfEncryptionBoxEncrypt = {
     data: string
 }
 ```
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
 - `data`: _string_ – Data to be encrypted, encoded in Base64
 
 
@@ -2529,7 +2529,7 @@ type ParamsOfEncryptionBoxDecrypt = {
     data: string
 }
 ```
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#EncryptionBoxHandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
 - `data`: _string_ – Data to be decrypted, encoded in Base64
 
 
@@ -2548,7 +2548,7 @@ type ParamsOfCreateEncryptionBox = {
     algorithm: EncryptionAlgorithm
 }
 ```
-- `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#EncryptionAlgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
+- `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#encryptionalgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
 
 
 ## AppSigningBox
@@ -2663,7 +2663,7 @@ function get_info(): Promise<ResultOfAppEncryptionBoxGetInfo>;
 
 ### Result
 
-- `info`: _[EncryptionBoxInfo](mod_crypto.md#EncryptionBoxInfo)_
+- `info`: _[EncryptionBoxInfo](mod_crypto.md#encryptionboxinfo)_
 
 
 ## encrypt
