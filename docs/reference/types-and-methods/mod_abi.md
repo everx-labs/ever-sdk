@@ -29,83 +29,83 @@ Provides message encoding and decoding according to the ABI specification.
 [decode_boc](#decode_boc) – Decodes BOC into JSON as a set of provided parameters.
 
 ## Types
-[AbiErrorCode](#AbiErrorCode)
+[AbiErrorCode](#abierrorcode)
 
-[Abi](#Abi)
+[Abi](#abi)
 
-[AbiHandle](#AbiHandle)
+[AbiHandle](#abihandle)
 
-[FunctionHeader](#FunctionHeader) – The ABI function header.
+[FunctionHeader](#functionheader) – The ABI function header.
 
-[CallSet](#CallSet)
+[CallSet](#callset)
 
-[DeploySet](#DeploySet)
+[DeploySet](#deployset)
 
-[Signer](#Signer)
+[Signer](#signer)
 
-[MessageBodyType](#MessageBodyType)
+[MessageBodyType](#messagebodytype)
 
-[StateInitSource](#StateInitSource)
+[StateInitSource](#stateinitsource)
 
-[StateInitParams](#StateInitParams)
+[StateInitParams](#stateinitparams)
 
-[MessageSource](#MessageSource)
+[MessageSource](#messagesource)
 
-[AbiParam](#AbiParam)
+[AbiParam](#abiparam)
 
-[AbiEvent](#AbiEvent)
+[AbiEvent](#abievent)
 
-[AbiData](#AbiData)
+[AbiData](#abidata)
 
-[AbiFunction](#AbiFunction)
+[AbiFunction](#abifunction)
 
-[AbiContract](#AbiContract)
+[AbiContract](#abicontract)
 
-[ParamsOfEncodeMessageBody](#ParamsOfEncodeMessageBody)
+[ParamsOfEncodeMessageBody](#paramsofencodemessagebody)
 
-[ResultOfEncodeMessageBody](#ResultOfEncodeMessageBody)
+[ResultOfEncodeMessageBody](#resultofencodemessagebody)
 
-[ParamsOfAttachSignatureToMessageBody](#ParamsOfAttachSignatureToMessageBody)
+[ParamsOfAttachSignatureToMessageBody](#paramsofattachsignaturetomessagebody)
 
-[ResultOfAttachSignatureToMessageBody](#ResultOfAttachSignatureToMessageBody)
+[ResultOfAttachSignatureToMessageBody](#resultofattachsignaturetomessagebody)
 
-[ParamsOfEncodeMessage](#ParamsOfEncodeMessage)
+[ParamsOfEncodeMessage](#paramsofencodemessage)
 
-[ResultOfEncodeMessage](#ResultOfEncodeMessage)
+[ResultOfEncodeMessage](#resultofencodemessage)
 
-[ParamsOfEncodeInternalMessage](#ParamsOfEncodeInternalMessage)
+[ParamsOfEncodeInternalMessage](#paramsofencodeinternalmessage)
 
-[ResultOfEncodeInternalMessage](#ResultOfEncodeInternalMessage)
+[ResultOfEncodeInternalMessage](#resultofencodeinternalmessage)
 
-[ParamsOfAttachSignature](#ParamsOfAttachSignature)
+[ParamsOfAttachSignature](#paramsofattachsignature)
 
-[ResultOfAttachSignature](#ResultOfAttachSignature)
+[ResultOfAttachSignature](#resultofattachsignature)
 
-[ParamsOfDecodeMessage](#ParamsOfDecodeMessage)
+[ParamsOfDecodeMessage](#paramsofdecodemessage)
 
-[DecodedMessageBody](#DecodedMessageBody)
+[DecodedMessageBody](#decodedmessagebody)
 
-[ParamsOfDecodeMessageBody](#ParamsOfDecodeMessageBody)
+[ParamsOfDecodeMessageBody](#paramsofdecodemessagebody)
 
-[ParamsOfEncodeAccount](#ParamsOfEncodeAccount)
+[ParamsOfEncodeAccount](#paramsofencodeaccount)
 
-[ResultOfEncodeAccount](#ResultOfEncodeAccount)
+[ResultOfEncodeAccount](#resultofencodeaccount)
 
-[ParamsOfDecodeAccountData](#ParamsOfDecodeAccountData)
+[ParamsOfDecodeAccountData](#paramsofdecodeaccountdata)
 
-[ResultOfDecodeAccountData](#ResultOfDecodeAccountData)
+[ResultOfDecodeAccountData](#resultofdecodeaccountdata)
 
-[ParamsOfUpdateInitialData](#ParamsOfUpdateInitialData)
+[ParamsOfUpdateInitialData](#paramsofupdateinitialdata)
 
-[ResultOfUpdateInitialData](#ResultOfUpdateInitialData)
+[ResultOfUpdateInitialData](#resultofupdateinitialdata)
 
-[ParamsOfDecodeInitialData](#ParamsOfDecodeInitialData)
+[ParamsOfDecodeInitialData](#paramsofdecodeinitialdata)
 
-[ResultOfDecodeInitialData](#ResultOfDecodeInitialData)
+[ResultOfDecodeInitialData](#resultofdecodeinitialdata)
 
-[ParamsOfDecodeBoc](#ParamsOfDecodeBoc)
+[ParamsOfDecodeBoc](#paramsofdecodeboc)
 
-[ResultOfDecodeBoc](#ResultOfDecodeBoc)
+[ResultOfDecodeBoc](#resultofdecodeboc)
 
 
 # Functions
@@ -132,11 +132,11 @@ function encode_message_body(
 ): Promise<ResultOfEncodeMessageBody>;
 ```
 ### Parameters
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
-- `call_set`: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI.
+- `call_set`: _[CallSet](mod_abi.md#callset)_ – Function call parameters.
 <br>Must be specified in non deploy message.<br><br>In case of deploy message contains parameters of constructor.
 - `is_internal`: _boolean_ – True if internal message body must be encoded.
-- `signer`: _[Signer](mod_abi.md#Signer)_ – Signing parameters.
+- `signer`: _[Signer](mod_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries.<br><br>Encoder uses the provided try index to calculate message<br>expiration time.<br><br>Expiration timeouts will grow with every retry.<br><br>Default value is 0.
 
@@ -167,7 +167,7 @@ function attach_signature_to_message_body(
 ): Promise<ResultOfAttachSignatureToMessageBody>;
 ```
 ### Parameters
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI
 - `public_key`: _string_ – Public key.
 <br>Must be encoded with `hex`.
 - `message`: _string_ – Unsigned message body BOC.
@@ -238,14 +238,14 @@ function encode_message(
 ): Promise<ResultOfEncodeMessage>;
 ```
 ### Parameters
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI.
 - `address`?: _string_ – Target address the message will be sent to.
 <br>Must be specified in case of non-deploy message.
-- `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
+- `deploy_set`?: _[DeploySet](mod_abi.md#deployset)_ – Deploy parameters.
 <br>Must be specified in case of deploy message.
-- `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
+- `call_set`?: _[CallSet](mod_abi.md#callset)_ – Function call parameters.
 <br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
-- `signer`: _[Signer](mod_abi.md#Signer)_ – Signing parameters.
+- `signer`: _[Signer](mod_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
 
@@ -301,14 +301,14 @@ function encode_internal_message(
 ): Promise<ResultOfEncodeInternalMessage>;
 ```
 ### Parameters
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI.
 <br>Can be None if both deploy_set and call_set are None.
 - `address`?: _string_ – Target address the message will be sent to.
 <br>Must be specified in case of non-deploy message.
 - `src_address`?: _string_ – Source address of the message.
-- `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
+- `deploy_set`?: _[DeploySet](mod_abi.md#deployset)_ – Deploy parameters.
 <br>Must be specified in case of deploy message.
-- `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
+- `call_set`?: _[CallSet](mod_abi.md#callset)_ – Function call parameters.
 <br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
 - `value`: _string_ – Value in nanotokens to be sent with message.
 - `bounce`?: _boolean_ – Flag of bounceable message.
@@ -346,7 +346,7 @@ function attach_signature(
 ): Promise<ResultOfAttachSignature>;
 ```
 ### Parameters
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI
 - `public_key`: _string_ – Public key encoded in `hex`.
 - `message`: _string_ – Unsigned message BOC encoded in `base64`.
 - `signature`: _string_ – Signature encoded in `hex`.
@@ -380,16 +380,16 @@ function decode_message(
 ): Promise<DecodedMessageBody>;
 ```
 ### Parameters
-- `abi`: _[Abi](mod_abi.md#Abi)_ – contract ABI
+- `abi`: _[Abi](mod_abi.md#abi)_ – contract ABI
 - `message`: _string_ – Message BOC
 
 
 ### Result
 
-- `body_type`: _[MessageBodyType](mod_abi.md#MessageBodyType)_ – Type of the message body content.
+- `body_type`: _[MessageBodyType](mod_abi.md#messagebodytype)_ – Type of the message body content.
 - `name`: _string_ – Function or event name.
 - `value`?: _any_ – Parameters or result value.
-- `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ – Function header.
+- `header`?: _[FunctionHeader](mod_abi.md#functionheader)_ – Function header.
 
 
 ## decode_message_body
@@ -415,17 +415,17 @@ function decode_message_body(
 ): Promise<DecodedMessageBody>;
 ```
 ### Parameters
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI used to decode.
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI used to decode.
 - `body`: _string_ – Message body BOC encoded in `base64`.
 - `is_internal`: _boolean_ – True if the body belongs to the internal message.
 
 
 ### Result
 
-- `body_type`: _[MessageBodyType](mod_abi.md#MessageBodyType)_ – Type of the message body content.
+- `body_type`: _[MessageBodyType](mod_abi.md#messagebodytype)_ – Type of the message body content.
 - `name`: _string_ – Function or event name.
 - `value`?: _any_ – Parameters or result value.
-- `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ – Function header.
+- `header`?: _[FunctionHeader](mod_abi.md#functionheader)_ – Function header.
 
 
 ## encode_account
@@ -455,11 +455,11 @@ function encode_account(
 ): Promise<ResultOfEncodeAccount>;
 ```
 ### Parameters
-- `state_init`: _[StateInitSource](mod_abi.md#StateInitSource)_ – Source of the account state init.
+- `state_init`: _[StateInitSource](mod_abi.md#stateinitsource)_ – Source of the account state init.
 - `balance`?: _bigint_ – Initial balance.
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result.
 <br>The BOC itself returned if no cache type provided
 
 
@@ -490,7 +490,7 @@ function decode_account_data(
 ): Promise<ResultOfDecodeAccountData>;
 ```
 ### Parameters
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
 
 
@@ -521,12 +521,12 @@ function update_initial_data(
 ): Promise<ResultOfUpdateInitialData>;
 ```
 ### Parameters
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
 - `initial_data`?: _any_ – List of initial values for contract's static variables.
 <br>`abi` parameter should be provided to set initial data
 - `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ### Result
@@ -554,7 +554,7 @@ function decode_initial_data(
 ): Promise<ResultOfDecodeInitialData>;
 ```
 ### Parameters
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI.
 <br>Initial data is decoded if this parameter is provided
 - `data`: _string_ – Data BOC or BOC handle
 
@@ -602,7 +602,7 @@ function decode_boc(
 ): Promise<ResultOfDecodeBoc>;
 ```
 ### Parameters
-- `params`: _[AbiParam](mod_abi.md#AbiParam)[]_ – Parameters to decode from BOC
+- `params`: _[AbiParam](mod_abi.md#abiparam)[]_ – Parameters to decode from BOC
 - `boc`: _string_ – Data BOC or BOC handle
 - `allow_partial`: _boolean_
 
@@ -671,7 +671,7 @@ Depends on value of the  `type` field.
 When _type_ is _'Contract'_
 
 
-- `value`: _[AbiContract](mod_abi.md#AbiContract)_
+- `value`: _[AbiContract](mod_abi.md#abicontract)_
 
 When _type_ is _'Json'_
 
@@ -681,12 +681,12 @@ When _type_ is _'Json'_
 When _type_ is _'Handle'_
 
 
-- `value`: _[AbiHandle](mod_abi.md#AbiHandle)_
+- `value`: _[AbiHandle](mod_abi.md#abihandle)_
 
 When _type_ is _'Serialized'_
 
 
-- `value`: _[AbiContract](mod_abi.md#AbiContract)_
+- `value`: _[AbiContract](mod_abi.md#abicontract)_
 
 
 Variant constructors:
@@ -736,7 +736,7 @@ type CallSet = {
 }
 ```
 - `function_name`: _string_ – Function name that is being called. Or function id encoded as string in hex (starting with 0x).
-- `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ – Function header.
+- `header`?: _[FunctionHeader](mod_abi.md#functionheader)_ – Function header.
 <br>If an application omits some header parameters required by the<br>contract's ABI, the library will set the default values for<br>them.
 - `input`?: _any_ – Function input parameters according to ABI.
 
@@ -794,14 +794,14 @@ When _type_ is _'Keys'_
 Key pair is provided for signing
 
 
-- `keys`: _[KeyPair](mod_crypto.md#KeyPair)_
+- `keys`: _[KeyPair](mod_crypto.md#keypair)_
 
 When _type_ is _'SigningBox'_
 
 Signing Box interface is provided for signing, allows Dapps to sign messages using external APIs, such as HSM, cold wallet, etc.
 
 
-- `handle`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_
+- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_
 
 
 Variant constructors:
@@ -855,7 +855,7 @@ When _type_ is _'Message'_
 Deploy message.
 
 
-- `source`: _[MessageSource](mod_abi.md#MessageSource)_
+- `source`: _[MessageSource](mod_abi.md#messagesource)_
 
 When _type_ is _'StateInit'_
 
@@ -878,7 +878,7 @@ Encoded in `base64`.
 
 - `tvc`: _string_
 - `public_key`?: _string_
-- `init_params`?: _[StateInitParams](mod_abi.md#StateInitParams)_
+- `init_params`?: _[StateInitParams](mod_abi.md#stateinitparams)_
 
 
 Variant constructors:
@@ -896,7 +896,7 @@ type StateInitParams = {
     value: any
 }
 ```
-- `abi`: _[Abi](mod_abi.md#Abi)_
+- `abi`: _[Abi](mod_abi.md#abi)_
 - `value`: _any_
 
 
@@ -916,18 +916,18 @@ When _type_ is _'Encoded'_
 
 
 - `message`: _string_
-- `abi`?: _[Abi](mod_abi.md#Abi)_
+- `abi`?: _[Abi](mod_abi.md#abi)_
 
 When _type_ is _'EncodingParams'_
 
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI.
 - `address`?: _string_ – Target address the message will be sent to.
 <br>Must be specified in case of non-deploy message.
-- `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
+- `deploy_set`?: _[DeploySet](mod_abi.md#deployset)_ – Deploy parameters.
 <br>Must be specified in case of deploy message.
-- `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
+- `call_set`?: _[CallSet](mod_abi.md#callset)_ – Function call parameters.
 <br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
-- `signer`: _[Signer](mod_abi.md#Signer)_ – Signing parameters.
+- `signer`: _[Signer](mod_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
 
@@ -949,7 +949,7 @@ type AbiParam = {
 ```
 - `name`: _string_
 - `type`: _string_
-- `components`?: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `components`?: _[AbiParam](mod_abi.md#abiparam)[]_
 
 
 ## AbiEvent
@@ -961,7 +961,7 @@ type AbiEvent = {
 }
 ```
 - `name`: _string_
-- `inputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `inputs`: _[AbiParam](mod_abi.md#abiparam)[]_
 - `id`?: _string?_
 
 
@@ -977,7 +977,7 @@ type AbiData = {
 - `key`: _number_
 - `name`: _string_
 - `type`: _string_
-- `components`?: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `components`?: _[AbiParam](mod_abi.md#abiparam)[]_
 
 
 ## AbiFunction
@@ -990,8 +990,8 @@ type AbiFunction = {
 }
 ```
 - `name`: _string_
-- `inputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
-- `outputs`: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `inputs`: _[AbiParam](mod_abi.md#abiparam)[]_
+- `outputs`: _[AbiParam](mod_abi.md#abiparam)[]_
 - `id`?: _string?_
 
 
@@ -1012,10 +1012,10 @@ type AbiContract = {
 - `abi_version`?: _number_
 - `version`?: _string?_
 - `header`?: _string[]_
-- `functions`?: _[AbiFunction](mod_abi.md#AbiFunction)[]_
-- `events`?: _[AbiEvent](mod_abi.md#AbiEvent)[]_
-- `data`?: _[AbiData](mod_abi.md#AbiData)[]_
-- `fields`?: _[AbiParam](mod_abi.md#AbiParam)[]_
+- `functions`?: _[AbiFunction](mod_abi.md#abifunction)[]_
+- `events`?: _[AbiEvent](mod_abi.md#abievent)[]_
+- `data`?: _[AbiData](mod_abi.md#abidata)[]_
+- `fields`?: _[AbiParam](mod_abi.md#abiparam)[]_
 
 
 ## ParamsOfEncodeMessageBody
@@ -1028,11 +1028,11 @@ type ParamsOfEncodeMessageBody = {
     processing_try_index?: number
 }
 ```
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
-- `call_set`: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI.
+- `call_set`: _[CallSet](mod_abi.md#callset)_ – Function call parameters.
 <br>Must be specified in non deploy message.<br><br>In case of deploy message contains parameters of constructor.
 - `is_internal`: _boolean_ – True if internal message body must be encoded.
-- `signer`: _[Signer](mod_abi.md#Signer)_ – Signing parameters.
+- `signer`: _[Signer](mod_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries.<br><br>Encoder uses the provided try index to calculate message<br>expiration time.<br><br>Expiration timeouts will grow with every retry.<br><br>Default value is 0.
 
@@ -1058,7 +1058,7 @@ type ParamsOfAttachSignatureToMessageBody = {
     signature: string
 }
 ```
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI
 - `public_key`: _string_ – Public key.
 <br>Must be encoded with `hex`.
 - `message`: _string_ – Unsigned message body BOC.
@@ -1087,14 +1087,14 @@ type ParamsOfEncodeMessage = {
     processing_try_index?: number
 }
 ```
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI.
 - `address`?: _string_ – Target address the message will be sent to.
 <br>Must be specified in case of non-deploy message.
-- `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
+- `deploy_set`?: _[DeploySet](mod_abi.md#deployset)_ – Deploy parameters.
 <br>Must be specified in case of deploy message.
-- `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
+- `call_set`?: _[CallSet](mod_abi.md#callset)_ – Function call parameters.
 <br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
-- `signer`: _[Signer](mod_abi.md#Signer)_ – Signing parameters.
+- `signer`: _[Signer](mod_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
 
@@ -1128,14 +1128,14 @@ type ParamsOfEncodeInternalMessage = {
     enable_ihr?: boolean
 }
 ```
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI.
 <br>Can be None if both deploy_set and call_set are None.
 - `address`?: _string_ – Target address the message will be sent to.
 <br>Must be specified in case of non-deploy message.
 - `src_address`?: _string_ – Source address of the message.
-- `deploy_set`?: _[DeploySet](mod_abi.md#DeploySet)_ – Deploy parameters.
+- `deploy_set`?: _[DeploySet](mod_abi.md#deployset)_ – Deploy parameters.
 <br>Must be specified in case of deploy message.
-- `call_set`?: _[CallSet](mod_abi.md#CallSet)_ – Function call parameters.
+- `call_set`?: _[CallSet](mod_abi.md#callset)_ – Function call parameters.
 <br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
 - `value`: _string_ – Value in nanotokens to be sent with message.
 - `bounce`?: _boolean_ – Flag of bounceable message.
@@ -1166,7 +1166,7 @@ type ParamsOfAttachSignature = {
     signature: string
 }
 ```
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI
 - `public_key`: _string_ – Public key encoded in `hex`.
 - `message`: _string_ – Unsigned message BOC encoded in `base64`.
 - `signature`: _string_ – Signature encoded in `hex`.
@@ -1190,7 +1190,7 @@ type ParamsOfDecodeMessage = {
     message: string
 }
 ```
-- `abi`: _[Abi](mod_abi.md#Abi)_ – contract ABI
+- `abi`: _[Abi](mod_abi.md#abi)_ – contract ABI
 - `message`: _string_ – Message BOC
 
 
@@ -1203,10 +1203,10 @@ type DecodedMessageBody = {
     header?: FunctionHeader
 }
 ```
-- `body_type`: _[MessageBodyType](mod_abi.md#MessageBodyType)_ – Type of the message body content.
+- `body_type`: _[MessageBodyType](mod_abi.md#messagebodytype)_ – Type of the message body content.
 - `name`: _string_ – Function or event name.
 - `value`?: _any_ – Parameters or result value.
-- `header`?: _[FunctionHeader](mod_abi.md#FunctionHeader)_ – Function header.
+- `header`?: _[FunctionHeader](mod_abi.md#functionheader)_ – Function header.
 
 
 ## ParamsOfDecodeMessageBody
@@ -1217,7 +1217,7 @@ type ParamsOfDecodeMessageBody = {
     is_internal: boolean
 }
 ```
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI used to decode.
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI used to decode.
 - `body`: _string_ – Message body BOC encoded in `base64`.
 - `is_internal`: _boolean_ – True if the body belongs to the internal message.
 
@@ -1232,11 +1232,11 @@ type ParamsOfEncodeAccount = {
     boc_cache?: BocCacheType
 }
 ```
-- `state_init`: _[StateInitSource](mod_abi.md#StateInitSource)_ – Source of the account state init.
+- `state_init`: _[StateInitSource](mod_abi.md#stateinitsource)_ – Source of the account state init.
 - `balance`?: _bigint_ – Initial balance.
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result.
 <br>The BOC itself returned if no cache type provided
 
 
@@ -1258,7 +1258,7 @@ type ParamsOfDecodeAccountData = {
     data: string
 }
 ```
-- `abi`: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `abi`: _[Abi](mod_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
 
 
@@ -1281,12 +1281,12 @@ type ParamsOfUpdateInitialData = {
     boc_cache?: BocCacheType
 }
 ```
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
 - `initial_data`?: _any_ – List of initial values for contract's static variables.
 <br>`abi` parameter should be provided to set initial data
 - `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ## ResultOfUpdateInitialData
@@ -1305,7 +1305,7 @@ type ParamsOfDecodeInitialData = {
     data: string
 }
 ```
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI.
 <br>Initial data is decoded if this parameter is provided
 - `data`: _string_ – Data BOC or BOC handle
 
@@ -1330,7 +1330,7 @@ type ParamsOfDecodeBoc = {
     allow_partial: boolean
 }
 ```
-- `params`: _[AbiParam](mod_abi.md#AbiParam)[]_ – Parameters to decode from BOC
+- `params`: _[AbiParam](mod_abi.md#abiparam)[]_ – Parameters to decode from BOC
 - `boc`: _string_ – Data BOC or BOC handle
 - `allow_partial`: _boolean_
 

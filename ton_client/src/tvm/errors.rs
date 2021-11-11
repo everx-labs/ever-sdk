@@ -124,9 +124,8 @@ impl Error {
 
                 40 => Some(
                     "Check that:\n\
-                    1. your private key suits your public key;\n\
-                    2. you specified a key, but the contract doesn't expect it;\n\
-                    3. you specified the correct ABI."
+                    1. you specified 'Pragma AbiHeader pubkey' in the contract code;\n\
+                    2. your private key suits your public key."
                 ),
 
                 52 => Some(

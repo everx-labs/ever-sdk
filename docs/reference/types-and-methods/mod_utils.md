@@ -15,29 +15,29 @@ Misc utility Functions.
 [decompress_zstd](#decompress_zstd) – Decompresses data using Zstandard algorithm
 
 ## Types
-[AddressStringFormat](#AddressStringFormat)
+[AddressStringFormat](#addressstringformat)
 
-[AccountAddressType](#AccountAddressType)
+[AccountAddressType](#accountaddresstype)
 
-[ParamsOfConvertAddress](#ParamsOfConvertAddress)
+[ParamsOfConvertAddress](#paramsofconvertaddress)
 
-[ResultOfConvertAddress](#ResultOfConvertAddress)
+[ResultOfConvertAddress](#resultofconvertaddress)
 
-[ParamsOfGetAddressType](#ParamsOfGetAddressType)
+[ParamsOfGetAddressType](#paramsofgetaddresstype)
 
-[ResultOfGetAddressType](#ResultOfGetAddressType)
+[ResultOfGetAddressType](#resultofgetaddresstype)
 
-[ParamsOfCalcStorageFee](#ParamsOfCalcStorageFee)
+[ParamsOfCalcStorageFee](#paramsofcalcstoragefee)
 
-[ResultOfCalcStorageFee](#ResultOfCalcStorageFee)
+[ResultOfCalcStorageFee](#resultofcalcstoragefee)
 
-[ParamsOfCompressZstd](#ParamsOfCompressZstd)
+[ParamsOfCompressZstd](#paramsofcompresszstd)
 
-[ResultOfCompressZstd](#ResultOfCompressZstd)
+[ResultOfCompressZstd](#resultofcompresszstd)
 
-[ParamsOfDecompressZstd](#ParamsOfDecompressZstd)
+[ParamsOfDecompressZstd](#paramsofdecompresszstd)
 
-[ResultOfDecompressZstd](#ResultOfDecompressZstd)
+[ResultOfDecompressZstd](#resultofdecompresszstd)
 
 
 # Functions
@@ -61,7 +61,7 @@ function convert_address(
 ```
 ### Parameters
 - `address`: _string_ – Account address in any TON format.
-- `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ – Specify the format to convert to.
+- `output_format`: _[AddressStringFormat](mod_utils.md#addressstringformat)_ – Specify the format to convert to.
 
 
 ### Result
@@ -101,7 +101,7 @@ function get_address_type(
 
 ### Result
 
-- `address_type`: _[AccountAddressType](mod_utils.md#AccountAddressType)_ – Account address type.
+- `address_type`: _[AccountAddressType](mod_utils.md#accountaddresstype)_ – Account address type.
 
 
 ## calc_storage_fee
@@ -251,7 +251,7 @@ type ParamsOfConvertAddress = {
 }
 ```
 - `address`: _string_ – Account address in any TON format.
-- `output_format`: _[AddressStringFormat](mod_utils.md#AddressStringFormat)_ – Specify the format to convert to.
+- `output_format`: _[AddressStringFormat](mod_utils.md#addressstringformat)_ – Specify the format to convert to.
 
 
 ## ResultOfConvertAddress
@@ -278,7 +278,7 @@ type ResultOfGetAddressType = {
     address_type: AccountAddressType
 }
 ```
-- `address_type`: _[AccountAddressType](mod_utils.md#AccountAddressType)_ – Account address type.
+- `address_type`: _[AccountAddressType](mod_utils.md#accountaddresstype)_ – Account address type.
 
 
 ## ParamsOfCalcStorageFee

@@ -41,67 +41,67 @@ BOC manipulation module.
 [get_compiler_version](#get_compiler_version) – Returns the compiler version used to compile the code.
 
 ## Types
-[BocCacheType](#BocCacheType)
+[BocCacheType](#boccachetype)
 
-[BocErrorCode](#BocErrorCode)
+[BocErrorCode](#bocerrorcode)
 
-[ParamsOfParse](#ParamsOfParse)
+[ParamsOfParse](#paramsofparse)
 
-[ResultOfParse](#ResultOfParse)
+[ResultOfParse](#resultofparse)
 
-[ParamsOfParseShardstate](#ParamsOfParseShardstate)
+[ParamsOfParseShardstate](#paramsofparseshardstate)
 
-[ParamsOfGetBlockchainConfig](#ParamsOfGetBlockchainConfig)
+[ParamsOfGetBlockchainConfig](#paramsofgetblockchainconfig)
 
-[ResultOfGetBlockchainConfig](#ResultOfGetBlockchainConfig)
+[ResultOfGetBlockchainConfig](#resultofgetblockchainconfig)
 
-[ParamsOfGetBocHash](#ParamsOfGetBocHash)
+[ParamsOfGetBocHash](#paramsofgetbochash)
 
-[ResultOfGetBocHash](#ResultOfGetBocHash)
+[ResultOfGetBocHash](#resultofgetbochash)
 
-[ParamsOfGetBocDepth](#ParamsOfGetBocDepth)
+[ParamsOfGetBocDepth](#paramsofgetbocdepth)
 
-[ResultOfGetBocDepth](#ResultOfGetBocDepth)
+[ResultOfGetBocDepth](#resultofgetbocdepth)
 
-[ParamsOfGetCodeFromTvc](#ParamsOfGetCodeFromTvc)
+[ParamsOfGetCodeFromTvc](#paramsofgetcodefromtvc)
 
-[ResultOfGetCodeFromTvc](#ResultOfGetCodeFromTvc)
+[ResultOfGetCodeFromTvc](#resultofgetcodefromtvc)
 
-[ParamsOfBocCacheGet](#ParamsOfBocCacheGet)
+[ParamsOfBocCacheGet](#paramsofboccacheget)
 
-[ResultOfBocCacheGet](#ResultOfBocCacheGet)
+[ResultOfBocCacheGet](#resultofboccacheget)
 
-[ParamsOfBocCacheSet](#ParamsOfBocCacheSet)
+[ParamsOfBocCacheSet](#paramsofboccacheset)
 
-[ResultOfBocCacheSet](#ResultOfBocCacheSet)
+[ResultOfBocCacheSet](#resultofboccacheset)
 
-[ParamsOfBocCacheUnpin](#ParamsOfBocCacheUnpin)
+[ParamsOfBocCacheUnpin](#paramsofboccacheunpin)
 
-[BuilderOp](#BuilderOp) – Cell builder operation.
+[BuilderOp](#builderop) – Cell builder operation.
 
-[ParamsOfEncodeBoc](#ParamsOfEncodeBoc)
+[ParamsOfEncodeBoc](#paramsofencodeboc)
 
-[ResultOfEncodeBoc](#ResultOfEncodeBoc)
+[ResultOfEncodeBoc](#resultofencodeboc)
 
-[ParamsOfGetCodeSalt](#ParamsOfGetCodeSalt)
+[ParamsOfGetCodeSalt](#paramsofgetcodesalt)
 
-[ResultOfGetCodeSalt](#ResultOfGetCodeSalt)
+[ResultOfGetCodeSalt](#resultofgetcodesalt)
 
-[ParamsOfSetCodeSalt](#ParamsOfSetCodeSalt)
+[ParamsOfSetCodeSalt](#paramsofsetcodesalt)
 
-[ResultOfSetCodeSalt](#ResultOfSetCodeSalt)
+[ResultOfSetCodeSalt](#resultofsetcodesalt)
 
-[ParamsOfDecodeTvc](#ParamsOfDecodeTvc)
+[ParamsOfDecodeTvc](#paramsofdecodetvc)
 
-[ResultOfDecodeTvc](#ResultOfDecodeTvc)
+[ResultOfDecodeTvc](#resultofdecodetvc)
 
-[ParamsOfEncodeTvc](#ParamsOfEncodeTvc)
+[ParamsOfEncodeTvc](#paramsofencodetvc)
 
-[ResultOfEncodeTvc](#ResultOfEncodeTvc)
+[ResultOfEncodeTvc](#resultofencodetvc)
 
-[ParamsOfGetCompilerVersion](#ParamsOfGetCompilerVersion)
+[ParamsOfGetCompilerVersion](#paramsofgetcompilerversion)
 
-[ResultOfGetCompilerVersion](#ResultOfGetCompilerVersion)
+[ResultOfGetCompilerVersion](#resultofgetcompilerversion)
 
 
 # Functions
@@ -399,7 +399,7 @@ function cache_set(
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64 or BOC reference
-- `cache_type`: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type
+- `cache_type`: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type
 
 
 ### Result
@@ -448,8 +448,8 @@ function encode_boc(
 ): Promise<ResultOfEncodeBoc>;
 ```
 ### Parameters
-- `builder`: _[BuilderOp](mod_boc.md#BuilderOp)[]_ – Cell builder operations.
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `builder`: _[BuilderOp](mod_boc.md#builderop)[]_ – Cell builder operations.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ### Result
@@ -477,7 +477,7 @@ function get_code_salt(
 ```
 ### Parameters
 - `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ### Result
@@ -511,7 +511,7 @@ function set_code_salt(
 - `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
 - `salt`: _string_ – Code salt to set.
 <br>BOC encoded as base64 or BOC handle
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ### Result
@@ -550,7 +550,7 @@ function decode_tvc(
 ```
 ### Parameters
 - `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ### Result
@@ -602,7 +602,7 @@ function encode_tvc(
 - `tock`?: _boolean_ – `special.tock` field.
 <br>Specifies the contract ability to handle tock transactions
 - `split_depth`?: _number_ – Is present and non-zero only in instances of large smart contracts
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ### Result
@@ -822,7 +822,7 @@ type ParamsOfBocCacheSet = {
 }
 ```
 - `boc`: _string_ – BOC encoded as base64 or BOC reference
-- `cache_type`: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type
+- `cache_type`: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type
 
 
 ## ResultOfBocCacheSet
@@ -889,7 +889,7 @@ When _type_ is _'Cell'_
 Append ref to nested cells
 
 
-- `builder`: _[BuilderOp](mod_boc.md#BuilderOp)[]_ – Nested cell builder
+- `builder`: _[BuilderOp](mod_boc.md#builderop)[]_ – Nested cell builder
 
 When _type_ is _'CellBoc'_
 
@@ -915,8 +915,8 @@ type ParamsOfEncodeBoc = {
     boc_cache?: BocCacheType
 }
 ```
-- `builder`: _[BuilderOp](mod_boc.md#BuilderOp)[]_ – Cell builder operations.
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `builder`: _[BuilderOp](mod_boc.md#builderop)[]_ – Cell builder operations.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ## ResultOfEncodeBoc
@@ -936,7 +936,7 @@ type ParamsOfGetCodeSalt = {
 }
 ```
 - `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ## ResultOfGetCodeSalt
@@ -960,7 +960,7 @@ type ParamsOfSetCodeSalt = {
 - `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
 - `salt`: _string_ – Code salt to set.
 <br>BOC encoded as base64 or BOC handle
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ## ResultOfSetCodeSalt
@@ -981,7 +981,7 @@ type ParamsOfDecodeTvc = {
 }
 ```
 - `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ## ResultOfDecodeTvc
@@ -1035,7 +1035,7 @@ type ParamsOfEncodeTvc = {
 - `tock`?: _boolean_ – `special.tock` field.
 <br>Specifies the contract ability to handle tock transactions
 - `split_depth`?: _number_ – Is present and non-zero only in instances of large smart contracts
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
 ## ResultOfEncodeTvc

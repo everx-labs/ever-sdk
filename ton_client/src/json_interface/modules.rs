@@ -30,6 +30,7 @@ fn register_client(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::crypto::CryptoConfig>();
     module.register_type::<crate::abi::AbiConfig>();
     module.register_type::<crate::boc::BocConfig>();
+    module.register_type::<crate::proofs::ProofsConfig>();
     module.register_type::<crate::client::BuildInfoDependency>();
     module.register_type::<crate::client::ParamsOfAppRequest>();
     module.register_type::<crate::client::AppRequestResult>();
@@ -323,6 +324,10 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::decode_initial_data,
         crate::abi::init_data::decode_initial_data_api,
     );
+    module.register_async_fn(
+        crate::abi::decode_boc,
+        crate::abi::decode_boc::decode_boc_api,
+    );
     module.register();
 }
 
@@ -566,6 +571,23 @@ fn register_debot(handlers: &mut RuntimeHandlers) {
     module.register();
 }
 
+/// [UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.
+#[derive(ApiModule)]
+#[api_module(name = "proofs")]
+pub struct ProofsModule;
+
+fn register_proofs(handlers: &mut RuntimeHandlers) {
+    let mut module = ModuleReg::new::<ProofsModule>(handlers);
+    module.register_error_code::<crate::proofs::ErrorCode>();
+
+    module.register_type::<crate::proofs::ParamsOfProofBlockData>();
+    module.register_type::<crate::proofs::ParamsOfProofTransactionData>();
+
+    module.register_async_fn(crate::proofs::proof_block_data, crate::proofs::proof_block_data_api);
+    module.register_async_fn(crate::proofs::proof_transaction_data, crate::proofs::proof_transaction_data_api);
+    module.register();
+}
+
 pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_client(handlers);
     register_crypto(handlers);
@@ -576,4 +598,5 @@ pub(crate) fn register_modules(handlers: &mut RuntimeHandlers) {
     register_tvm(handlers);
     register_net(handlers);
     register_debot(handlers);
+    register_proofs(handlers);
 }

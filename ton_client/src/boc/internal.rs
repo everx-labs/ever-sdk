@@ -14,6 +14,7 @@
 use crate::ClientContext;
 use crate::boc::{BocCacheType, Error};
 use crate::error::ClientResult;
+use std::io::Cursor;
 #[allow(unused_imports)]
 use std::str::FromStr;
 use ton_block::{Deserializable, Serializable};
@@ -156,6 +157,18 @@ pub(crate) async fn deserialize_object_from_boc<S: Deserializable>(
         cell,
         object,
     })
+}
+
+pub(crate) fn deserialize_object_from_boc_bin<S: Deserializable>(
+    boc: &[u8],
+) -> ClientResult<(S, UInt256)> {
+    let cell = deserialize_tree_of_cells(&mut Cursor::new(boc))
+        .map_err(|err| Error::invalid_boc(err))?;
+    let root_hash = cell.repr_hash();
+    let object = S::construct_from_cell(cell)
+        .map_err(|err| Error::invalid_boc(err))?;
+
+    Ok((object, root_hash))
 }
 
 pub(crate) async fn serialize_cell_to_boc(

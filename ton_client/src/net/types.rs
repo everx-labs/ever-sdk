@@ -128,6 +128,15 @@ fn deserialize_query_timeout<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_query_timeout()))
 }
 
+#[derive(Debug, Clone, PartialEq, ApiType)]
+pub struct TrustedMcBlockId {
+    /// Trusted key-block sequence number
+    pub seq_no: u32,
+
+    /// Trusted key-block root hash, encoded as HEX
+    pub root_hash: String,
+}
+
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
 pub struct NetworkConfig {
     /// DApp Server public address.
@@ -227,7 +236,7 @@ pub struct NetworkConfig {
 
     /// Maximum value for the endpoint's blockchain data syncronization latency (time-lag).
     /// Library periodically checks the current endpoint for blockchain
-    /// data syncronization latency.
+    /// data synchronization latency.
     /// If the latency (time-lag) is less then `NetworkConfig.max_latency`
     /// then library selects another endpoint.
     ///

@@ -12,14 +12,22 @@
 */
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
+use crate::client::LOCAL_STORAGE_DEFAULT_DIR_NAME;
+use crate::client::storage::KeyValueStorage;
 use crate::error::ClientResult;
 use futures::{Future, FutureExt, SinkExt, StreamExt};
+use indexed_db_futures::{IdbDatabase, IdbQuerySource, IdbVersionChangeEvent};
+use indexed_db_futures::request::IdbOpenDbRequestLike;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 use wasm_bindgen::JsCast;
 use wasm_bindgen_futures::JsFuture;
-use web_sys::{Event, MessageEvent, Request, RequestInit, Response, Window};
+use web_sys::{Event, MessageEvent, Request, RequestInit, Response, Window, IdbTransactionMode};
 use js_sys::JSON;
+
+#[cfg(test)]
+#[path = "client_env_tests.rs"]
+mod client_env_tests;
 
 fn js_error_to_string(js_value: JsValue) -> String {
     if let Ok(txt) = js_value.clone().dyn_into::<js_sys::Error>() {
@@ -28,6 +36,16 @@ fn js_error_to_string(js_value: JsValue) -> String {
         JSON::stringify(&js_value)
             .map(|val| String::from(val))
             .unwrap_or("Unserializable value".to_owned())
+    }
+}
+
+fn js_value_to_string(js_value: &JsValue) -> ClientResult<String> {
+    if let Ok(txt) = js_value.clone().dyn_into::<js_sys::JsString>() {
+        Ok(String::from(txt))
+    } else {
+        JSON::stringify(js_value)
+            .map(|val| String::from(val))
+            .map_err(|_err| Error::internal_error("Cannot serialize JsValue"))
     }
 }
 
@@ -367,3 +385,186 @@ impl ClientEnv {
         .await?
     }
 }
+
+pub(crate) struct LocalStorage {
+    local_storage_path: Option<String>,
+    storage_name: String,
+}
+
+impl LocalStorage {
+    pub async fn new(
+        local_storage_path: Option<String>,
+        storage_name: String,
+    ) -> ClientResult<Self> {
+        Ok(Self {
+            local_storage_path,
+            storage_name,
+        })
+    }
+
+    async fn open_db(
+        local_storage_path: &Option<String>,
+        storage_name: &str,
+    ) -> ClientResult<IdbDatabase> {
+        let db_name = local_storage_path
+            .as_deref()
+            .unwrap_or(LOCAL_STORAGE_DEFAULT_DIR_NAME);
+
+        let mut db_request = IdbDatabase::open(db_name)
+            .map_err(|err| Error::local_storage_error(err.message()))?;
+
+        let storage_name = storage_name.to_owned();
+        db_request.set_on_upgrade_needed(Some(move |event: &IdbVersionChangeEvent| -> Result<(), JsValue> {
+            if event.db().object_store_names().find(|name| *name == storage_name).is_none() {
+                event.db().create_object_store(&storage_name)?;
+            }
+            Ok(())
+        }));
+
+        db_request.into_future().await
+            .map_err(|err| Error::local_storage_error(err.message()))
+    }
+
+    async fn read_bin(
+        local_storage_path: &Option<String>,
+        storage_name: &str,
+        key: &str,
+    ) -> ClientResult<Option<Vec<u8>>> {
+        Ok(Self::read_str(local_storage_path, storage_name, key).await?
+            .map(|content_base64| base64::decode(&content_base64))
+            .transpose()
+            .map_err(|err| Error::local_storage_error(err))?)
+    }
+
+    async fn write_bin(
+        local_storage_path: &Option<String>,
+        storage_name: &str,
+        key: &str,
+        value: &[u8],
+    ) -> ClientResult<()> {
+        Self::write_str(local_storage_path, storage_name, key, &base64::encode(value)).await
+    }
+
+    async fn read_str(
+        local_storage_path: &Option<String>,
+        storage_name: &str,
+        key: &str,
+    ) -> ClientResult<Option<String>> {
+        let db = Self::open_db(local_storage_path, storage_name).await?;
+
+        let tx = db.transaction_on_one_with_mode(storage_name, IdbTransactionMode::Readonly)
+            .map_err(|err| Error::local_storage_error(err.message()))?;
+
+        let store = tx.object_store(storage_name)
+            .map_err(|err| Error::local_storage_error(err.message()))?;
+
+        store.get(&JsValue::from_str(key))
+            .map_err(|err| Error::local_storage_error(err.message()))?
+            .await
+            .map_err(|err| Error::local_storage_error(err.message()))?
+            .map(|js_value| js_value_to_string(&js_value))
+            .transpose()
+    }
+
+    async fn write_str(
+        local_storage_path: &Option<String>,
+        storage_name: &str,
+        key: &str,
+        value: &str,
+    ) -> ClientResult<()> {
+        let db = Self::open_db(local_storage_path, storage_name).await?;
+
+        let tx = db.transaction_on_one_with_mode(storage_name, IdbTransactionMode::Readwrite)
+            .map_err(|err| Error::local_storage_error(err.message()))?;
+
+        let store = tx.object_store(storage_name)
+            .map_err(|err| Error::local_storage_error(err.message()))?;
+
+        store.put_key_val(&JsValue::from_str(key), &JsValue::from_str(value))
+            .map_err(|err| Error::local_storage_error(err.message()))?
+            .into_future()
+            .await
+            .map_err(|err| Error::local_storage_error(err.message()))
+    }
+
+    async fn remove_internal(
+        local_storage_path: &Option<String>,
+        storage_name: &str,
+        key: &str,
+    ) -> ClientResult<()> {
+        let db = Self::open_db(local_storage_path, storage_name).await?;
+
+        let tx = db.transaction_on_one_with_mode(storage_name, IdbTransactionMode::Readwrite)
+            .map_err(|err| Error::local_storage_error(err.message()))?;
+
+        let store = tx.object_store(storage_name)
+            .map_err(|err| Error::local_storage_error(err.message()))?;
+
+        store.delete(&JsValue::from_str(key))
+            .map_err(|err| Error::local_storage_error(err.message()))?
+            .into_future()
+            .await
+            .map_err(|err| Error::local_storage_error(err.message()))
+    }
+}
+
+#[async_trait::async_trait]
+impl KeyValueStorage for LocalStorage {
+    async fn get_bin(&self, key: &str) -> ClientResult<Option<Vec<u8>>> {
+        let local_storage_path = self.local_storage_path.clone();
+        let storage_name = self.storage_name.clone();
+        let key = key.to_owned();
+        execute_spawned(
+            move || async move {
+                Self::read_bin(&local_storage_path, &storage_name, &key).await
+            }
+        ).await?
+    }
+
+    async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()> {
+        let local_storage_path = self.local_storage_path.clone();
+        let storage_name = self.storage_name.clone();
+        let key = key.to_owned();
+        let value = value.to_owned();
+        execute_spawned(
+            move || async move {
+                Self::write_bin(&local_storage_path, &storage_name, &key, &value).await
+            }
+        ).await?
+    }
+
+    async fn get_str(&self, key: &str) -> ClientResult<Option<String>> {
+        let local_storage_path = self.local_storage_path.clone();
+        let storage_name = self.storage_name.clone();
+        let key = key.to_owned();
+        execute_spawned(
+            move || async move {
+                Self::read_str(&local_storage_path, &storage_name, &key).await
+            }
+        ).await?
+    }
+
+    async fn put_str(&self, key: &str, value: &str) -> ClientResult<()> {
+        let local_storage_path = self.local_storage_path.clone();
+        let storage_name = self.storage_name.clone();
+        let key = key.to_owned();
+        let value = value.to_owned();
+        execute_spawned(
+            move || async move {
+                Self::write_str(&local_storage_path, &storage_name, &key, &value).await
+            }
+        ).await?
+    }
+
+    async fn remove(&self, key: &str) -> ClientResult<()> {
+        let local_storage_path = self.local_storage_path.clone();
+        let storage_name = self.storage_name.clone();
+        let key = key.to_owned();
+        execute_spawned(
+            move || async move {
+                Self::remove_internal(&local_storage_path, &storage_name, &key).await
+            }
+        ).await?
+    }
+}
+
