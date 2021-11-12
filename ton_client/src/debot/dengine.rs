@@ -840,7 +840,7 @@ impl DEngine {
                         self.addr.clone(),
                         true,
                     ).await?;
-                    let answer_msg = callobj.execute().await?;
+                    let answer_msg = callobj.execute(true).await?;
                     output.append(self.send_to_debot(answer_msg).await?);
                 },
                 DebotCallType::External{msg, dest} => {
@@ -856,7 +856,7 @@ impl DEngine {
                         self.addr.clone(),
                         false,
                     ).await?;
-                    let answer_msg = callobj.execute().await?;
+                    let answer_msg = callobj.execute(true).await?;
                     output.append(self.send_to_debot(answer_msg).await?);
                 },
                 DebotCallType::Invoke{msg} => {

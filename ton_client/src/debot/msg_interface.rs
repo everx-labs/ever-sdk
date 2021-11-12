@@ -1,5 +1,5 @@
 use super::calltype::{ContractCall};
-use super::dinterface::{get_arg, DebotInterface, InterfaceResult};
+use super::dinterface::{decode_answer_id, get_arg, DebotInterface, InterfaceResult};
 use crate::abi::{decode_message, Abi, ParamsOfDecodeMessage};
 use crate::crypto::{get_signing_box, KeyPair};
 use crate::debot::BrowserCallbacks;
@@ -27,6 +27,16 @@ const ABI: &str = r#"
 			],
 			"outputs": [
             ]
+		},
+		{
+			"name": "sendAsync",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"message","type":"cell"}
+			],
+			"outputs": [
+				{"name":"id","type":"uint256"}
+			]
 		}
 	],
 	"data": [
@@ -88,10 +98,10 @@ impl MsgInterface {
             self.debot_addr.clone(),
             false,
         ).await.map_err(|e| format!("{}", e))?;
-        let answer_msg = callobj.execute()
+        let answer_msg = callobj.execute(true)
             .await
             .map_err(|e| format!("{}", e))?;
-        
+
         let result = decode_message(
             self.ton.clone(),
             ParamsOfDecodeMessage {
@@ -109,6 +119,33 @@ impl MsgInterface {
             .get_input_id();
         Ok((answer_id, result.value.unwrap_or_default()))
     }
+
+    async fn send_async(&self, args: &Value) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let message = get_arg(args, "message")?;
+        let parsed_msg = parse_message(self.ton.clone(), ParamsOfParse { boc: message.clone() })
+            .await
+            .map_err(|e| format!("{}", e))?
+            .parsed;
+        let dest = parsed_msg["dst"].as_str().ok_or(format!("failed to parse dst address"))?.to_owned();
+        let target_state = DEngine::load_state(self.ton.clone(), dest)
+            .await
+            .map_err(|e| format!("{}", e))?;
+        let callobj = ContractCall::new(
+            self.browser.clone(),
+            self.ton.clone(),
+            message,
+            Signer::None,
+            target_state,
+            self.debot_addr.clone(),
+            false,
+        ).await.map_err(|e| format!("{}", e))?;
+        let answer_msg = callobj.execute(false)
+            .await
+            .map_err(|e| format!("{}", e))?;
+
+        Ok((answer_id, json!({ "id": format!("0x{}", answer_msg)})))
+    }
 }
 
 #[async_trait::async_trait]
@@ -124,7 +161,9 @@ impl DebotInterface for MsgInterface {
     async fn call(&self, func: &str, args: &Value) -> InterfaceResult {
         match func {
             "sendWithKeypair" => self.send_with_keypair(args).await,
+            "sendAsync" => self.send_async(args).await,
             _ => Err(format!("function \"{}\" is not implemented", func)),
+
         }
     }
 }
