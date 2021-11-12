@@ -11,7 +11,7 @@ Learn how to run methods of a contract on-chain
 
 Core api is more flexible than [AppKit](https://github.com/tonlabs/appkit-js) and you can perform a lot of complex logic using it. But you will need to write more code with it as well :)
 
-You need to [define the contract in your node.js](../installation/add\_contract\_to\_your\_app.md) application before running its methods.
+You need to [define the contract in your node.js](add\_contract\_to\_your\_app.md) application before running its methods.
 
 Full sample: [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/hello-wallet](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/hello-wallet)
 

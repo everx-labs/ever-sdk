@@ -1,6 +1,7 @@
 # Table of contents
 
 * [TON SDK](../README.md)
+* [Quick start (JavaScript)](quick\_start.md)
 
 ## Reference
 
@@ -34,12 +35,11 @@
 
 ## guides
 
-* [Quick start (JavaScript)](guides/quick\_start.md)
 * [Installation](guides/installation/README.md)
   * [Add SDK to your App](guides/installation/add\_sdk\_to\_your\_app.md)
   * [Configure SDK](guides/installation/configure\_sdk.md)
-  * [Add Contract to your App](guides/installation/add\_contract\_to\_your\_app.md)
 * [Work with contracts](guides/work\_with\_contracts/README.md)
+  * [Add Contract to your App](guides/work\_with\_contracts/add\_contract\_to\_your\_app.md)
   * [Deploy](guides/work\_with\_contracts/deploy.md)
   * [Run on-chain](guides/work\_with\_contracts/run\_onchain.md)
   * [Run ABI Get Method](guides/work\_with\_contracts/run\_abi\_get\_method.md)

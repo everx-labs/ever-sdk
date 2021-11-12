@@ -22,7 +22,7 @@ Core api is more flexible than [AppKit](https://github.com/tonlabs/appkit-js/), 
 
 You need to define the contract in your node.js application before deploy.
 
-See the "[Add Contract to your App](../installation/add\_contract\_to\_your\_app.md)" guide to find out how to do it.
+See the "[Add Contract to your App](add\_contract\_to\_your\_app.md)" guide to find out how to do it.
 
 ## About deploy
 
@@ -49,7 +49,7 @@ Let's take a look at every step.
 
 Here is the structure, that is used to prepare initial contract state for deploy. It will define the future contract address.
 
-`tvc` - As we discussed at the [previous step](../installation/add\_contract\_to\_your\_app.md), contract compilation artifact, converted into base64.
+`tvc` - As we discussed at the [previous step](add\_contract\_to\_your\_app.md), contract compilation artifact, converted into base64.
 
 `workchain_is` - Target workchain where the contract will be deployed. By default is 0.
 

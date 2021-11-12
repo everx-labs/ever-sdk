@@ -2,12 +2,12 @@
 
 Define a contract in your application to start working with it
 
-* [About contract artifacts](add_contract_to_your_app.md#about-contract-artifacts)
-* [Create contract wrapper](add_contract_to_your_app.md#create-contract-wrapper)
+* [About contract artifacts](add\_contract\_to\_your\_app.md#about-contract-artifacts)
+* [Create contract wrapper](add\_contract\_to\_your\_app.md#create-contract-wrapper)
 
 ## About contract artifacts
 
-Make sure your [added SDK to your app](add_sdk_to_your_app.md) and [configured your Client](configure_sdk.md) before proceeding.
+Make sure your [added SDK to your app](../installation/add\_sdk\_to\_your\_app.md) and [configured your Client](../installation/configure\_sdk.md) before proceeding.
 
 If you need to work with a previously deployed contract, you will need only its ABI and address. Get it in public repositories or ask the contract developer for it.
 
@@ -89,4 +89,4 @@ HelloContract: {
 
 **You're all done!**
 
-Find out how to [deploy](../work_with_contracts/deploy.md) and [run](../work_with_contracts/run_onchain.md) your contract in the next sections.
+Find out how to [deploy](deploy.md) and [run](run\_onchain.md) your contract in the next sections.

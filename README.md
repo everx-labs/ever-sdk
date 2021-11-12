@@ -23,7 +23,7 @@ Core Client Library built on the TON OS GraphQL API for Free TON DApp developmen
 
 ## Useful links
 
-[Quick Start (Javascript)](docs/guides/quick\_start.md)
+[Quick Start (Javascript)](docs/quick\_start.md)
 
 [Error descriptions](docs/reference/error\_codes.md)
 
