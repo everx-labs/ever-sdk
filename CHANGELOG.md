@@ -2,10 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-- **Debot module**:
-    - Аdded `allow_no_signature` parameter to `decode_and_fix_ext_msg()`.
-    - Added `onerror_id` return value to `prepare_ext_in_message()`.
+## [1.26.0] – 2021-11-15
 
+### New
+- **Debot module**:
+    - Аdded `allow_no_signature` parameter to `decode_and_fix_ext_msg()` and 
+      `onerror_id` return value to `prepare_ext_in_message()` inner functions used in TS4.
 
 ## [1.25.0] – 2021-11-08
 
