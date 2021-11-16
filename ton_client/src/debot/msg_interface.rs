@@ -1,5 +1,5 @@
 use super::calltype::{ContractCall};
-use super::dinterface::{decode_answer_id, get_arg, DebotInterface, InterfaceResult};
+use super::dinterface::{get_arg, DebotInterface, InterfaceResult};
 use crate::abi::{decode_message, Abi, ParamsOfDecodeMessage};
 use crate::crypto::{get_signing_box, KeyPair};
 use crate::debot::BrowserCallbacks;
@@ -31,7 +31,6 @@ const ABI: &str = r#"
 		{
 			"name": "sendAsync",
 			"inputs": [
-				{"name":"answerId","type":"uint32"},
 				{"name":"message","type":"cell"}
 			],
 			"outputs": [
@@ -121,7 +120,6 @@ impl MsgInterface {
     }
 
     async fn send_async(&self, args: &Value) -> InterfaceResult {
-        let answer_id = decode_answer_id(args)?;
         let message = get_arg(args, "message")?;
         let parsed_msg = parse_message(self.ton.clone(), ParamsOfParse { boc: message.clone() })
             .await
@@ -144,7 +142,22 @@ impl MsgInterface {
             .await
             .map_err(|e| format!("{}", e))?;
 
-        Ok((answer_id, json!({ "id": format!("0x{}", answer_msg)})))
+        let result = decode_message(
+            self.ton.clone(),
+            ParamsOfDecodeMessage {
+                abi: self.debot_abi.clone(),
+                message: answer_msg,
+            },
+        )
+        .await
+        .map_err(|e| format!("failed to decode message: {}", e))?;
+        let abi_str = self.debot_abi.json_string().unwrap();
+        let contract = Contract::load(abi_str.as_bytes()).map_err(|e| format!("{}", e))?;
+        let answer_id = contract
+            .function(&result.name)
+            .map_err(|e| format!("{}", e))?
+            .get_input_id();
+        Ok((answer_id, result.value.unwrap_or_default()))
     }
 }
 

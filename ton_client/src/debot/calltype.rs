@@ -395,7 +395,12 @@ impl ContractCall {
             }
         } else {
             let msg_id = get_boc_hash(self.ton.clone(), ParamsOfGetBocHash { boc: fixed_msg }).await?.hash;
-            return Ok(msg_id);
+            let mut new_body = BuilderData::new();
+            new_body
+                .append_u32(self.meta.answer_id)
+                .and_then(|b| b.append_raw(&hex::decode(msg_id).unwrap(), 256))
+                .map_err(msg_err)?;
+            build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into_cell().map_err(msg_err)?.into())
         }
     }
 
