@@ -89,7 +89,7 @@ pub fn prepare_ext_in_message(
     msg: &Message,
     now_ms: u64,
     keypair: Option<KeyPair>,
-) -> Result<(u32, u32, MsgAddressInt, Message), String> {
+) -> Result<(u32, u32, u32, MsgAddressInt, Message), String> {
     let config = crate::ClientConfig::default();
     let ton_client = Arc::new(crate::ClientContext::new(config).unwrap());
 
@@ -107,19 +107,21 @@ pub fn prepare_ext_in_message(
     let dst_addr: MsgAddressInt = hdr.dst.clone();
     let meta = Metadata::try_from(hdr.src.clone()).unwrap();
 
-    let future =
-        decode_and_fix_ext_msg(msg, now_ms, &signer, &meta, &ton_client);
+    let future = 
+        decode_and_fix_ext_msg(msg, now_ms, &signer, true, &meta, &ton_client);
 
-    let (func_id, msg) = ton_client.env.block_on(future)
-            .map_err(|e| format!("prepare_ext_in_message: {:?}", e))?;
+    let result = ton_client.env.block_on(future);
 
-    Ok((func_id, meta.answer_id, dst_addr, msg))
+    let (func_id, msg) = result.map_err(|e| format!("prepare_ext_in_message: {:?}", e))?;
+    
+    Ok((func_id, meta.answer_id, meta.onerror_id, dst_addr, msg))
 }
 
 async fn decode_and_fix_ext_msg(
     msg: &Message,
     now_ms: u64,
     signer: &Signer,
+    allow_no_signature: bool,
     meta: &Metadata,
     ton: &TonClient
 ) -> ClientResult<(u32, Message)> {
@@ -129,10 +131,13 @@ async fn decode_and_fix_ext_msg(
     // skip signature bit and signature if present
     let sign_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
     if let Signer::SigningBox { handle: _ } = signer {
-        if !sign_bit {
-            return Err(msg_err("signature bit is zero"));
+        if sign_bit {
+            in_body_slice.get_next_bits(512).map_err(msg_err)?;
+        } else {
+            if !allow_no_signature {
+                return Err(msg_err("signature bit is zero"));
+            }
         }
-        in_body_slice.get_next_bits(512).map_err(msg_err)?;
     }
     if meta.is_pubkey {
         let pubkey_bit = in_body_slice.get_next_bit().map_err(msg_err)?;
@@ -405,7 +410,7 @@ impl ContractCall {
 
     async fn decode_and_fix_ext_msg(&self) -> ClientResult<(u32, String)> {
         let now_ms = self.ton.env.now_ms();
-        let result: (u32, Message) = decode_and_fix_ext_msg(&self.msg, now_ms, &self.signer, &self.meta, &self.ton).await?;
+        let result: (u32, Message) = decode_and_fix_ext_msg(&self.msg, now_ms, &self.signer, false, &self.meta, &self.ton).await?;
         let (func_id, message) = result;
         let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
         Ok((func_id, msg))
