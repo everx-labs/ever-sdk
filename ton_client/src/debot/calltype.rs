@@ -341,13 +341,14 @@ impl ContractCall {
         )
         .await
         .map(|e| { error!("{:?}", e); e })?;
+        let msg_id = get_boc_hash(self.ton.clone(), ParamsOfGetBocHash { boc: fixed_msg.clone() }).await?.hash;
 
         if wait_tx {
             let result = wait_for_transaction(
                 self.ton.clone(),
                 ParamsOfWaitForTransaction {
                     abi: None,
-                    message: fixed_msg.clone(),
+                    message: fixed_msg,
                     shard_block_id: result.shard_block_id,
                     send_events: true,
                     sending_endpoints: Some(result.sending_endpoints),
@@ -357,7 +358,6 @@ impl ContractCall {
             .await;
             match result {
                 Ok(res) => {
-                    let msg_id = get_boc_hash(self.ton.clone(), ParamsOfGetBocHash { boc: fixed_msg }).await?.hash;
                     let result = query_transaction_tree(
                         self.ton.clone(),
                         ParamsOfQueryTransactionTree {
@@ -393,11 +393,11 @@ impl ContractCall {
                 }
             }
         } else {
-            let msg_id = get_boc_hash(self.ton.clone(), ParamsOfGetBocHash { boc: fixed_msg }).await?.hash;
+            let msg_id = hex::decode(msg_id).map_err(msg_err)?;
             let mut new_body = BuilderData::new();
             new_body
                 .append_u32(self.meta.answer_id)
-                .and_then(|b| b.append_raw(&hex::decode(msg_id).unwrap(), 256))
+                .and_then(|b| b.append_raw(&msg_id, 256))
                 .map_err(msg_err)?;
             build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into_cell().map_err(msg_err)?.into())
         }
