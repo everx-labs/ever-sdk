@@ -323,7 +323,6 @@ impl ContractCall {
                         message_id: _,
                         message: _,
                     } => {
-                        //browser.log(format!("Sending message {}", message_id)).await;
                         browser.log("Sending message..".to_owned()).await;
                     }
                     _ => (),
