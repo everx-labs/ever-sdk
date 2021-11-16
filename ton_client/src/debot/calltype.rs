@@ -96,7 +96,7 @@ pub fn prepare_ext_in_message(
     let signer = if let Some(keypair) = keypair {
         let future = get_signing_box(ton_client.clone(), keypair);
         let signing_box = ton_client.env.block_on(future).unwrap();
-        Signer::SigningBox { 
+        Signer::SigningBox {
             handle: signing_box.handle.clone(),
         }
     } else {
@@ -236,8 +236,8 @@ impl ContractCall {
         let meta = get_meta(&mut msg)?;
         let signer = resolve_signer(
             !local_run,
-            signer, 
-            meta.signing_box_handle.clone(), 
+            signer,
+            meta.signing_box_handle.clone(),
             browser.clone()
         ).await?;
         let dest_addr = msg
@@ -248,7 +248,7 @@ impl ContractCall {
         Ok(Self { browser, ton, msg, signer, target_state, debot_addr, dest_addr, local_run, meta })
     }
 
-    pub async fn execute(&self) -> ClientResult<String> {
+    pub async fn execute(&self, wait_tx: bool) -> ClientResult<String> {
         let result = self.decode_and_fix_ext_msg()
             .await
             .map_err(|e| Error::external_call_failed(e));
@@ -262,7 +262,7 @@ impl ContractCall {
         if self.local_run {
             self.run_get_method(func_id, fixed_msg).await
         } else {
-            self.send_ext_msg(func_id, fixed_msg).await
+            self.send_ext_msg(func_id, fixed_msg, wait_tx).await
         }
     }
 
@@ -285,7 +285,7 @@ impl ContractCall {
             let error_body = build_onerror_body(self.meta.onerror_id, e)?;
             return build_internal_message(&self.dest_addr, &self.debot_addr, error_body);
         }
-        
+
         let mut messages = result.unwrap().out_messages;
 
         if messages.len() != 1 {
@@ -297,8 +297,8 @@ impl ContractCall {
         build_answer_msg(&out_msg, self.meta.answer_id, func_id, &self.dest_addr, &self.debot_addr)
             .ok_or(Error::get_method_failed("failed to build answer message"))
     }
-    
-    async fn send_ext_msg(&self, func_id: u32, fixed_msg: String) -> ClientResult<String> {
+
+    async fn send_ext_msg(&self, func_id: u32, fixed_msg: String, wait_tx: bool) -> ClientResult<String> {
         let activity = emulate_transaction(
             self.ton.clone(),
             self.dest_addr.clone(),
@@ -316,7 +316,7 @@ impl ContractCall {
                 return self.build_error_answer_msg(e);
             },
         }
-        
+
         let browser = self.browser.clone();
         let callback = move |event| {
             debug!("{:?}", event);
@@ -325,10 +325,10 @@ impl ContractCall {
                 match event {
                     ProcessingEvent::WillSend {
                         shard_block_id: _,
-                        message_id,
+                        message_id: _,
                         message: _,
                     } => {
-                        browser.log(format!("Sending message {}", message_id)).await;
+                        browser.log("Sending message..".to_owned()).await;
                     }
                     _ => (),
                 };
@@ -346,55 +346,65 @@ impl ContractCall {
         )
         .await
         .map(|e| { error!("{:?}", e); e })?;
+        let msg_id = get_boc_hash(self.ton.clone(), ParamsOfGetBocHash { boc: fixed_msg.clone() }).await?.hash;
 
-        let result = wait_for_transaction(
-            self.ton.clone(),
-            ParamsOfWaitForTransaction {
-                abi: None,
-                message: fixed_msg.clone(),
-                shard_block_id: result.shard_block_id,
-                send_events: true,
-                sending_endpoints: Some(result.sending_endpoints),
-            },
-            callback,
-        )
-        .await;
-        match result {
-            Ok(res) => {
-                let msg_id = get_boc_hash(self.ton.clone(), ParamsOfGetBocHash { boc: fixed_msg }).await?.hash;
-                let result = query_transaction_tree(
-                    self.ton.clone(),
-                    ParamsOfQueryTransactionTree {
-                        in_msg: msg_id,
-                        ..Default::default()
-                    },
-                ).await;
-                if let Err(e) = result {
-                    return self.build_error_answer_msg(e);
-                }
-                for out_msg in &res.out_messages {
-                    let res = build_answer_msg(
-                        out_msg,
-                        self.meta.answer_id,
-                        func_id,
-                        &self.dest_addr,
-                        &self.debot_addr
-                    );
-                    if let Some(answer_msg) = res {
-                        return Ok(answer_msg);
+        if wait_tx {
+            let result = wait_for_transaction(
+                self.ton.clone(),
+                ParamsOfWaitForTransaction {
+                    abi: None,
+                    message: fixed_msg,
+                    shard_block_id: result.shard_block_id,
+                    send_events: true,
+                    sending_endpoints: Some(result.sending_endpoints),
+                },
+                callback,
+            )
+            .await;
+            match result {
+                Ok(res) => {
+                    let result = query_transaction_tree(
+                        self.ton.clone(),
+                        ParamsOfQueryTransactionTree {
+                            in_msg: msg_id,
+                            ..Default::default()
+                        },
+                    ).await;
+                    if let Err(e) = result {
+                        return self.build_error_answer_msg(e);
                     }
-                    debug!("Skip outbound message");
+                    for out_msg in &res.out_messages {
+                        let res = build_answer_msg(
+                            out_msg,
+                            self.meta.answer_id,
+                            func_id,
+                            &self.dest_addr,
+                            &self.debot_addr
+                        );
+                        if let Some(answer_msg) = res {
+                            return Ok(answer_msg);
+                        }
+                        debug!("Skip outbound message");
+                    }
+                    debug!("Build empty body");
+                    // answer message not found, build empty answer.
+                    let mut new_body = BuilderData::new();
+                    new_body.append_u32(self.meta.answer_id).map_err(msg_err)?;
+                    build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into_cell().map_err(msg_err)?.into())
                 }
-                debug!("Build empty body");
-                // answer message not found, build empty answer.
-                let mut new_body = BuilderData::new();
-                new_body.append_u32(self.meta.answer_id).map_err(msg_err)?;
-                build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into_cell().map_err(msg_err)?.into())
+                Err(e) => {
+                    debug!("Transaction failed: {:?}", e);
+                    self.build_error_answer_msg(e)
+                }
             }
-            Err(e) => {
-                debug!("Transaction failed: {:?}", e);
-                self.build_error_answer_msg(e)
-            }
+        } else {
+            let msg_id = hex::decode(msg_id).map_err(msg_err)?;
+            let mut new_body = BuilderData::new();
+            new_body
+                .append_u32(self.meta.answer_id)
+                .and_then(|b| b.append_raw(&msg_id, 256))
+                .map_err(msg_err)?;
+            build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into_cell().map_err(msg_err)?.into())
         }
     }
 
@@ -535,7 +545,7 @@ async fn emulate_transaction(
         out,
         fee: result.fees.total_account_fees,
         setcode: false,
-        signkey, 
+        signkey,
         signing_box_handle,
     })
 }

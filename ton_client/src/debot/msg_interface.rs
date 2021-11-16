@@ -27,6 +27,15 @@ const ABI: &str = r#"
 			],
 			"outputs": [
             ]
+		},
+		{
+			"name": "sendAsync",
+			"inputs": [
+				{"name":"message","type":"cell"}
+			],
+			"outputs": [
+				{"name":"id","type":"uint256"}
+			]
 		}
 	],
 	"data": [
@@ -88,10 +97,51 @@ impl MsgInterface {
             self.debot_addr.clone(),
             false,
         ).await.map_err(|e| format!("{}", e))?;
-        let answer_msg = callobj.execute()
+        let answer_msg = callobj.execute(true)
             .await
             .map_err(|e| format!("{}", e))?;
-        
+
+        let result = decode_message(
+            self.ton.clone(),
+            ParamsOfDecodeMessage {
+                abi: self.debot_abi.clone(),
+                message: answer_msg,
+            },
+        )
+        .await
+        .map_err(|e| format!("failed to decode message: {}", e))?;
+        let abi_str = self.debot_abi.json_string().unwrap();
+        let contract = Contract::load(abi_str.as_bytes()).map_err(|e| format!("{}", e))?;
+        let answer_id = contract
+            .function(&result.name)
+            .map_err(|e| format!("{}", e))?
+            .get_input_id();
+        Ok((answer_id, result.value.unwrap_or_default()))
+    }
+
+    async fn send_async(&self, args: &Value) -> InterfaceResult {
+        let message = get_arg(args, "message")?;
+        let parsed_msg = parse_message(self.ton.clone(), ParamsOfParse { boc: message.clone() })
+            .await
+            .map_err(|e| format!("{}", e))?
+            .parsed;
+        let dest = parsed_msg["dst"].as_str().ok_or(format!("failed to parse dst address"))?.to_owned();
+        let target_state = DEngine::load_state(self.ton.clone(), dest)
+            .await
+            .map_err(|e| format!("{}", e))?;
+        let callobj = ContractCall::new(
+            self.browser.clone(),
+            self.ton.clone(),
+            message,
+            Signer::None,
+            target_state,
+            self.debot_addr.clone(),
+            false,
+        ).await.map_err(|e| format!("{}", e))?;
+        let answer_msg = callobj.execute(false)
+            .await
+            .map_err(|e| format!("{}", e))?;
+
         let result = decode_message(
             self.ton.clone(),
             ParamsOfDecodeMessage {
@@ -124,7 +174,9 @@ impl DebotInterface for MsgInterface {
     async fn call(&self, func: &str, args: &Value) -> InterfaceResult {
         match func {
             "sendWithKeypair" => self.send_with_keypair(args).await,
+            "sendAsync" => self.send_async(args).await,
             _ => Err(format!("function \"{}\" is not implemented", func)),
+
         }
     }
 }
