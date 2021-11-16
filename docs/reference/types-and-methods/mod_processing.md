@@ -14,21 +14,21 @@ processing scenarios.
 [process_message](#process_message) – Creates message, sends it to the network and monitors its processing.
 
 ## Types
-[ProcessingErrorCode](#ProcessingErrorCode)
+[ProcessingErrorCode](#processingerrorcode)
 
-[ProcessingEvent](#ProcessingEvent)
+[ProcessingEvent](#processingevent)
 
-[ResultOfProcessMessage](#ResultOfProcessMessage)
+[ResultOfProcessMessage](#resultofprocessmessage)
 
-[DecodedOutput](#DecodedOutput)
+[DecodedOutput](#decodedoutput)
 
-[ParamsOfSendMessage](#ParamsOfSendMessage)
+[ParamsOfSendMessage](#paramsofsendmessage)
 
-[ResultOfSendMessage](#ResultOfSendMessage)
+[ResultOfSendMessage](#resultofsendmessage)
 
-[ParamsOfWaitForTransaction](#ParamsOfWaitForTransaction)
+[ParamsOfWaitForTransaction](#paramsofwaitfortransaction)
 
-[ParamsOfProcessMessage](#ParamsOfProcessMessage)
+[ParamsOfProcessMessage](#paramsofprocessmessage)
 
 
 # Functions
@@ -58,10 +58,10 @@ function send_message(
 ```
 ### Parameters
 - `message`: _string_ – Message BOC.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional message ABI.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Optional message ABI.
 <br>If this parameter is specified and the message has the<br>`expire` header then expiration time will be checked against<br>the current time to prevent unnecessary sending of already expired message.<br><br>The `message already expired` error will be returned in this<br>case.<br><br>Note, that specifying `abi` for ABI compliant contracts is<br>strongly recommended, so that proper processing strategy can be<br>chosen.
 - `send_events`: _boolean_ – Flag for requesting events sending
-- `responseHandler`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.
+- `responseHandler`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.
 
 ### Result
 
@@ -122,7 +122,7 @@ function wait_for_transaction(
 ): Promise<ResultOfProcessMessage>;
 ```
 ### Parameters
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional ABI for decoding the transaction result.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Optional ABI for decoding the transaction result.
 <br>If it is specified, then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
 - `message`: _string_ – Message BOC.
 <br>Encoded with `base64`.
@@ -131,7 +131,7 @@ function wait_for_transaction(
 - `send_events`: _boolean_ – Flag that enables/disables intermediate events
 - `sending_endpoints`?: _string[]_ – The list of endpoints to which the message was sent.
 <br>Use this field to get more informative errors.<br>Provide the same value as the `send_message` has returned.<br>If the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending.
-- `responseHandler`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.
+- `responseHandler`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.
 
 ### Result
 
@@ -139,8 +139,8 @@ function wait_for_transaction(
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
 - `out_messages`: _string[]_ – List of output messages' BOCs.
 <br>Encoded as `base64`
-- `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
-- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
+- `decoded`?: _[DecodedOutput](mod_processing.md#decodedoutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
+- `fees`: _[TransactionFees](mod_tvm.md#transactionfees)_ – Transaction fees
 
 
 ## process_message
@@ -183,9 +183,9 @@ function process_message(
 ): Promise<ResultOfProcessMessage>;
 ```
 ### Parameters
-- `message_encode_params`: _[ParamsOfEncodeMessage](mod_abi.md#ParamsOfEncodeMessage)_ – Message encode parameters.
+- `message_encode_params`: _[ParamsOfEncodeMessage](mod_abi.md#paramsofencodemessage)_ – Message encode parameters.
 - `send_events`: _boolean_ – Flag for requesting events sending
-- `responseHandler`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.
+- `responseHandler`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.
 
 ### Result
 
@@ -193,8 +193,8 @@ function process_message(
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
 - `out_messages`: _string[]_ – List of output messages' BOCs.
 <br>Encoded as `base64`
-- `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
-- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
+- `decoded`?: _[DecodedOutput](mod_processing.md#decodedoutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
+- `fees`: _[TransactionFees](mod_tvm.md#transactionfees)_ – Transaction fees
 
 
 # Types
@@ -292,7 +292,7 @@ message was not sent, and Developer can try to run `process_message` again,
 in the hope that the connection is restored.
 
 
-- `error`: _[ClientError](mod_client.md#ClientError)_
+- `error`: _[ClientError](mod_client.md#clienterror)_
 
 When _type_ is _'WillSend'_
 
@@ -330,7 +330,7 @@ as well, it is crucial for proccessing. See `processing.wait_for_transaction` do
 - `shard_block_id`: _string_
 - `message_id`: _string_
 - `message`: _string_
-- `error`: _[ClientError](mod_client.md#ClientError)_
+- `error`: _[ClientError](mod_client.md#clienterror)_
 
 When _type_ is _'WillFetchNextBlock'_
 
@@ -363,7 +363,7 @@ Another way to tune this is to specify long timeout in `NetworkConfig.wait_for_t
 - `shard_block_id`: _string_
 - `message_id`: _string_
 - `message`: _string_
-- `error`: _[ClientError](mod_client.md#ClientError)_
+- `error`: _[ClientError](mod_client.md#clienterror)_
 
 When _type_ is _'MessageExpired'_
 
@@ -379,7 +379,7 @@ events will be repeated.
 
 - `message_id`: _string_
 - `message`: _string_
-- `error`: _[ClientError](mod_client.md#ClientError)_
+- `error`: _[ClientError](mod_client.md#clienterror)_
 
 
 Variant constructors:
@@ -408,8 +408,8 @@ type ResultOfProcessMessage = {
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
 - `out_messages`: _string[]_ – List of output messages' BOCs.
 <br>Encoded as `base64`
-- `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
-- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
+- `decoded`?: _[DecodedOutput](mod_processing.md#decodedoutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
+- `fees`: _[TransactionFees](mod_tvm.md#transactionfees)_ – Transaction fees
 
 
 ## DecodedOutput
@@ -419,7 +419,7 @@ type DecodedOutput = {
     output?: any
 }
 ```
-- `out_messages`: _[DecodedMessageBody](mod_abi.md#DecodedMessageBody)?[]_ – Decoded bodies of the out messages.
+- `out_messages`: _[DecodedMessageBody](mod_abi.md#decodedmessagebody)?[]_ – Decoded bodies of the out messages.
 <br>If the message can't be decoded, then `None` will be stored in<br>the appropriate position.
 - `output`?: _any_ – Decoded body of the function output message.
 
@@ -433,7 +433,7 @@ type ParamsOfSendMessage = {
 }
 ```
 - `message`: _string_ – Message BOC.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional message ABI.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Optional message ABI.
 <br>If this parameter is specified and the message has the<br>`expire` header then expiration time will be checked against<br>the current time to prevent unnecessary sending of already expired message.<br><br>The `message already expired` error will be returned in this<br>case.<br><br>Note, that specifying `abi` for ABI compliant contracts is<br>strongly recommended, so that proper processing strategy can be<br>chosen.
 - `send_events`: _boolean_ – Flag for requesting events sending
 
@@ -461,7 +461,7 @@ type ParamsOfWaitForTransaction = {
     sending_endpoints?: string[]
 }
 ```
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Optional ABI for decoding the transaction result.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Optional ABI for decoding the transaction result.
 <br>If it is specified, then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
 - `message`: _string_ – Message BOC.
 <br>Encoded with `base64`.
@@ -479,7 +479,7 @@ type ParamsOfProcessMessage = {
     send_events: boolean
 }
 ```
-- `message_encode_params`: _[ParamsOfEncodeMessage](mod_abi.md#ParamsOfEncodeMessage)_ – Message encode parameters.
+- `message_encode_params`: _[ParamsOfEncodeMessage](mod_abi.md#paramsofencodemessage)_ – Message encode parameters.
 - `send_events`: _boolean_ – Flag for requesting events sending
 
 

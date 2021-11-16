@@ -38,15 +38,15 @@ function moduleFile(module: ApiModule): string {
 }
 
 function funcRef(func: ApiFunction, module?: ApiModule): string {
-    return `[${func.name}](${module ? moduleFile(module) : ""}#${func.name})`;
+    return `[${func.name}](${module ? moduleFile(module) : ""}#${func.name.toLowerCase()})`;
 }
 
 function typeRef(t: ApiField, module?: ApiModule): string {
-    return `[${t.name}](${module ? moduleFile(module) : ""}#${t.name})`;
+    return `[${t.name}](${module ? moduleFile(module) : ""}#${t.name.toLowerCase()})`;
 }
 
 function appObjectTypeRef(t: ApiModule, module?: ApiModule): string {
-    return `[${t.name}](${module ? moduleFile(module) : ""}#${t.name})`;
+    return `[${t.name}](${module ? moduleFile(module) : ""}#${t.name.toLowerCase()})`;
 }
 
 export class Docs extends Code {
@@ -166,7 +166,7 @@ export class Docs extends Code {
                 }
                 const parts = type.ref_name.split(".");
                 return parts.length === 2
-                    ? `[${parts[1]}](mod_${parts[0]}.md#${parts[1]})`
+                    ? `[${parts[1]}](mod_${parts[0]}.md#${parts[1].toLowerCase()})`
                     : type.ref_name;
             case ApiTypeIs.Optional:
                 return `${this.fieldType(type.optional_inner)}?`;
@@ -253,7 +253,7 @@ export class Docs extends Code {
                 md += this.type(params, "");
             }
             if (funcInfo.hasResponseHandler) {
-                md += `- \`responseHandler\`?: _[ResponseHandler](modules.md#ResponseHandler)_ – additional responses handler.`;
+                md += `- \`responseHandler\`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.`;
             }
         }
         if (result) {

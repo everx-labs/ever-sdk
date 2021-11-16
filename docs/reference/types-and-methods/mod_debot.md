@@ -17,39 +17,39 @@
 [remove](#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
 
 ## Types
-[DebotErrorCode](#DebotErrorCode)
+[DebotErrorCode](#deboterrorcode)
 
-[DebotHandle](#DebotHandle) – [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
+[DebotHandle](#debothandle) – [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
 
-[DebotAction](#DebotAction) – [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
+[DebotAction](#debotaction) – [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
 
-[DebotInfo](#DebotInfo) – [UNSTABLE](UNSTABLE.md) Describes DeBot metadata.
+[DebotInfo](#debotinfo) – [UNSTABLE](UNSTABLE.md) Describes DeBot metadata.
 
-[DebotActivity](#DebotActivity) – [UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
+[DebotActivity](#debotactivity) – [UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
 
-[Spending](#Spending) – [UNSTABLE](UNSTABLE.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.
+[Spending](#spending) – [UNSTABLE](UNSTABLE.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.
 
-[ParamsOfInit](#ParamsOfInit) – [UNSTABLE](UNSTABLE.md) Parameters to init DeBot.
+[ParamsOfInit](#paramsofinit) – [UNSTABLE](UNSTABLE.md) Parameters to init DeBot.
 
-[RegisteredDebot](#RegisteredDebot) – [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.
+[RegisteredDebot](#registereddebot) – [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.
 
-[ParamsOfAppDebotBrowser](#ParamsOfAppDebotBrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
+[ParamsOfAppDebotBrowser](#paramsofappdebotbrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
 
-[ResultOfAppDebotBrowser](#ResultOfAppDebotBrowser) – [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
+[ResultOfAppDebotBrowser](#resultofappdebotbrowser) – [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
 
-[ParamsOfStart](#ParamsOfStart) – [UNSTABLE](UNSTABLE.md) Parameters to start DeBot. DeBot must be already initialized with init() function.
+[ParamsOfStart](#paramsofstart) – [UNSTABLE](UNSTABLE.md) Parameters to start DeBot. DeBot must be already initialized with init() function.
 
-[ParamsOfFetch](#ParamsOfFetch) – [UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.
+[ParamsOfFetch](#paramsoffetch) – [UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.
 
-[ResultOfFetch](#ResultOfFetch) – [UNSTABLE](UNSTABLE.md)
+[ResultOfFetch](#resultoffetch) – [UNSTABLE](UNSTABLE.md)
 
-[ParamsOfExecute](#ParamsOfExecute) – [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
+[ParamsOfExecute](#paramsofexecute) – [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
 
-[ParamsOfSend](#ParamsOfSend) – [UNSTABLE](UNSTABLE.md) Parameters of `send` function.
+[ParamsOfSend](#paramsofsend) – [UNSTABLE](UNSTABLE.md) Parameters of `send` function.
 
-[ParamsOfRemove](#ParamsOfRemove) – [UNSTABLE](UNSTABLE.md)
+[ParamsOfRemove](#paramsofremove) – [UNSTABLE](UNSTABLE.md)
 
-[AppDebotBrowser](#AppDebotBrowser)
+[AppDebotBrowser](#appdebotbrowser)
 
 
 # Functions
@@ -85,9 +85,9 @@ function init(
 
 ### Result
 
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 - `debot_abi`: _string_ – Debot abi as json string.
-- `info`: _[DebotInfo](mod_debot.md#DebotInfo)_ – Debot metadata.
+- `info`: _[DebotInfo](mod_debot.md#debotinfo)_ – Debot metadata.
 
 
 ## start
@@ -115,7 +115,7 @@ function start(
 ): Promise<void>;
 ```
 ### Parameters
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 
 
 ## fetch
@@ -143,7 +143,7 @@ function fetch(
 
 ### Result
 
-- `info`: _[DebotInfo](mod_debot.md#DebotInfo)_ – Debot metadata.
+- `info`: _[DebotInfo](mod_debot.md#debotinfo)_ – Debot metadata.
 
 
 ## execute
@@ -167,8 +167,8 @@ function execute(
 ): Promise<void>;
 ```
 ### Parameters
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
-- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot Action that must be executed.
+- `debot_handle`: _[DebotHandle](mod_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
+- `action`: _[DebotAction](mod_debot.md#debotaction)_ – Debot Action that must be executed.
 
 
 ## send
@@ -188,7 +188,7 @@ function send(
 ): Promise<void>;
 ```
 ### Parameters
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 - `message`: _string_ – BOC of internal message to debot encoded in base64 format.
 
 
@@ -208,7 +208,7 @@ function remove(
 ): Promise<void>;
 ```
 ### Parameters
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 
 
 # Types
@@ -333,7 +333,7 @@ DeBot wants to create new transaction in blockchain.
 
 - `msg`: _string_ – External inbound message BOC.
 - `dst`: _string_ – Target smart contract address.
-- `out`: _[Spending](mod_debot.md#Spending)[]_ – List of spendings as a result of transaction.
+- `out`: _[Spending](mod_debot.md#spending)[]_ – List of spendings as a result of transaction.
 - `fee`: _bigint_ – Transaction total fee.
 - `setcode`: _boolean_ – Indicates if target smart contract updates its code.
 - `signkey`: _string_ – Public key from keypair that was used to sign external message.
@@ -380,9 +380,9 @@ type RegisteredDebot = {
     info: DebotInfo
 }
 ```
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 - `debot_abi`: _string_ – Debot abi as json string.
-- `info`: _[DebotInfo](mod_debot.md#DebotInfo)_ – Debot metadata.
+- `info`: _[DebotInfo](mod_debot.md#debotinfo)_ – Debot metadata.
 
 
 ## ParamsOfAppDebotBrowser
@@ -445,7 +445,7 @@ When _type_ is _'ShowAction'_
 Show action to the user. Called after `switch` for each action in context.
 
 
-- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
+- `action`: _[DebotAction](mod_debot.md#debotaction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
 
 When _type_ is _'Input'_
 
@@ -467,7 +467,7 @@ Execute action of another debot.
 
 
 - `debot_addr`: _string_ – Address of debot in blockchain.
-- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot action to execute.
+- `action`: _[DebotAction](mod_debot.md#debotaction)_ – Debot action to execute.
 
 When _type_ is _'Send'_
 
@@ -482,7 +482,7 @@ When _type_ is _'Approve'_
 Requests permission from DeBot Browser to execute DeBot operation.
 
 
-- `activity`: _[DebotActivity](mod_debot.md#DebotActivity)_ – DeBot activity details.
+- `activity`: _[DebotActivity](mod_debot.md#debotactivity)_ – DeBot activity details.
 
 
 Variant constructors:
@@ -530,7 +530,7 @@ When _type_ is _'GetSigningBox'_
 Result of getting signing box.
 
 
-- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing box for signing data requested by debot engine.
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Signing box for signing data requested by debot engine.
 <br>Signing box is owned and disposed by debot engine
 
 When _type_ is _'InvokeDebot'_
@@ -563,7 +563,7 @@ type ParamsOfStart = {
     debot_handle: DebotHandle
 }
 ```
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 
 
 ## ParamsOfFetch
@@ -585,7 +585,7 @@ type ResultOfFetch = {
     info: DebotInfo
 }
 ```
-- `info`: _[DebotInfo](mod_debot.md#DebotInfo)_ – Debot metadata.
+- `info`: _[DebotInfo](mod_debot.md#debotinfo)_ – Debot metadata.
 
 
 ## ParamsOfExecute
@@ -597,8 +597,8 @@ type ParamsOfExecute = {
     action: DebotAction
 }
 ```
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
-- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot Action that must be executed.
+- `debot_handle`: _[DebotHandle](mod_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
+- `action`: _[DebotAction](mod_debot.md#debotaction)_ – Debot Action that must be executed.
 
 
 ## ParamsOfSend
@@ -610,7 +610,7 @@ type ParamsOfSend = {
     message: string
 }
 ```
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 - `message`: _string_ – BOC of internal message to debot encoded in base64 format.
 
 
@@ -622,7 +622,7 @@ type ParamsOfRemove = {
     debot_handle: DebotHandle
 }
 ```
-- `debot_handle`: _[DebotHandle](mod_debot.md#DebotHandle)_ – Debot handle which references an instance of debot engine.
+- `debot_handle`: _[DebotHandle](mod_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 
 
 ## AppDebotBrowser
@@ -740,7 +740,7 @@ function show_action(
 ): Promise<>;
 ```
 ### Parameters
-- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
+- `action`: _[DebotAction](mod_debot.md#debotaction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
 
 
 ## input
@@ -786,7 +786,7 @@ function get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBox>;
 
 ### Result
 
-- `signing_box`: _[SigningBoxHandle](mod_crypto.md#SigningBoxHandle)_ – Signing box for signing data requested by debot engine.
+- `signing_box`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Signing box for signing data requested by debot engine.
 <br>Signing box is owned and disposed by debot engine
 
 
@@ -806,7 +806,7 @@ function invoke_debot(
 ```
 ### Parameters
 - `debot_addr`: _string_ – Address of debot in blockchain.
-- `action`: _[DebotAction](mod_debot.md#DebotAction)_ – Debot action to execute.
+- `action`: _[DebotAction](mod_debot.md#debotaction)_ – Debot action to execute.
 
 
 ## send
@@ -845,7 +845,7 @@ function approve(
 ): Promise<ResultOfAppDebotBrowserApprove>;
 ```
 ### Parameters
-- `activity`: _[DebotActivity](mod_debot.md#DebotActivity)_ – DeBot activity details.
+- `activity`: _[DebotActivity](mod_debot.md#debotactivity)_ – DeBot activity details.
 
 
 ### Result
