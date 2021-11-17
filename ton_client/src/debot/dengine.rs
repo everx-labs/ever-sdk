@@ -20,7 +20,7 @@ use super::context::{
 use super::calltype::{ContractCall, DebotCallType};
 use super::dinterface::{BuiltinInterfaces, DebotInterfaceExecutor};
 use super::json_interface::JsonInterface;
-use super::{JsonValue, TonClient, DInfo, info::fetch_target_abi_version};
+use super::{JsonValue, TonClient, DInfo, info::{fetch_target_abi_version, parse_debot_info}};
 use super::{errors::Error, routines, DEBOT_WC, debot_abi::DEBOT_ABI};
 use super::helpers::build_internal_message;
 use super::msg_interface::MsgInterface;
@@ -131,6 +131,9 @@ impl DEngine {
     }
 
     async fn fetch_info(ton: TonClient, addr: String, state: String) -> Result<DInfo, String> {
+        let target_abi = fetch_target_abi_version(ton.clone(), state.clone())
+            .await
+            .map_err(|e| e.to_string())?;
         let abi = load_abi(DEBOT_ABI).unwrap();
         let result = Self::run(
             ton.clone(),
@@ -150,6 +153,7 @@ impl DEngine {
             },
             Err(_) => vec![],
         };
+
         let result = Self::run(
             ton.clone(),
             state.clone(),
@@ -159,18 +163,12 @@ impl DEngine {
             None
         ).await;
         let mut info: DInfo = match result {
-            Ok(r) => {
-                let output = r.return_value.unwrap_or(json!({}));
-                serde_json::from_value(output)
-                    .map_err(|e| format!("failed to parse \"getDebotInfo\": {}", e) )?
-            },
+            Ok(r) => parse_debot_info(r.return_value, &target_abi)?,
             Err(_) => Default::default(),
         };
 
         info.interfaces = interfaces;
-        info.target_abi = fetch_target_abi_version(ton.clone(), state.clone())
-            .await
-            .map_err(|e| e.to_string())?;
+        info.target_abi = target_abi;
 
         // TODO DEPRECATED 
         // For compatibility with previous debots that returns abi in

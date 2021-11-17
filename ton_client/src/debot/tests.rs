@@ -1420,6 +1420,25 @@ async fn test_debot_json_parse() {
     .await;
 }
 
+#[tokio::test(core_threads = 2)]
+async fn test_debot_target_abi() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData {debot_addr, target_addr: _, keys, abi} = 
+        init_simple_debot(client.clone(), "testDebot16").await;
+    let mut info = build_info(abi, 16, vec![]);
+    info.target_abi = format!("2.2");
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        vec![],
+        vec![],
+        info,
+        vec![],
+    )
+    .await;
+}
+
 fn build_info(abi: String, n: u32, interfaces: Vec<String>) -> DebotInfo {
     let name = format!("TestDeBot{}", n);
     DebotInfo {

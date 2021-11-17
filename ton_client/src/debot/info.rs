@@ -1,4 +1,4 @@
-use super::{context::str_hex_to_utf8, TonClient, Error};
+use super::{context::str_hex_to_utf8, Error, JsonValue, TonClient};
 use crate::boc::{get_compiler_version, parse_account, ParamsOfGetCompilerVersion, ParamsOfParse};
 use crate::encoding::account_decode;
 use crate::error::ClientResult;
@@ -7,25 +7,16 @@ use serde::{Deserialize, Deserializer};
 #[derive(Deserialize, Default, Debug, Clone)]
 #[serde(default)]
 pub struct DInfo {
-    #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub name: Option<String>,
-    #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub version: Option<String>,
-    #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub publisher: Option<String>,
-    #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub caption: Option<String>,
-    #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub author: Option<String>,
     #[serde(deserialize_with = "validate_ton_address")]
     pub support: Option<String>,
-    #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub hello: Option<String>,
-    #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub language: Option<String>,
-    #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub dabi: Option<String>,
-    #[serde(deserialize_with = "from_opt_hex_to_str")]
     pub icon: Option<String>,
     pub interfaces: Vec<String>,
     pub target_abi: String,
@@ -50,19 +41,43 @@ where
     }
 }
 
-fn from_opt_hex_to_str<'de, D>(des: D) -> Result<Option<String>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let s: Option<String> = Deserialize::deserialize(des)?;
-    if let Some(s) = s {
-        let utf8_str = str_hex_to_utf8(&s)
-            .ok_or(format!("failed to convert bytes to utf8 string"))
-            .unwrap();
-        Ok(Some(utf8_str))
-    } else {
-        Ok(None)
+fn convert_to_utf8(hex_str: &mut Option<String>) -> Result<(), String> {
+    if let Some(hex) = hex_str {
+        *hex_str =
+            Some(str_hex_to_utf8(&hex).ok_or(format!("failed to convert bytes to utf8 string"))?);
     }
+    Ok(())
+}
+
+pub(crate) fn parse_debot_info(
+    value: Option<JsonValue>,
+    target_abi: &str,
+) -> Result<DInfo, String> {
+    println!("TARGET ABI = {}", target_abi);
+    println!("DEBOT INFO = {}", value.as_ref().unwrap());
+    let value = value.unwrap_or(json!({}));
+    let mut info: DInfo = serde_json::from_value(value)
+        .map_err(|e| format!("failed to parse \"DebotInfo\": {}", e))?;
+    // Ignore error because debot ABI can be loaded in 2 ways: as string or as bytes.
+    let _ = convert_to_utf8(&mut info.dabi);
+    /*
+    if target_abi == "2.0" {
+        let fields: [&mut Option<String>; 8] = [
+            &mut info.name,
+            &mut info.version,
+            &mut info.publisher,
+            &mut info.caption,
+            &mut info.author,
+            &mut info.hello,
+            &mut info.language,
+            &mut info.icon,
+        ];
+        for field in fields {
+            convert_to_utf8(field)?;
+        }
+    }
+    */
+    Ok(info)
 }
 
 pub(crate) async fn fetch_target_abi_version(
@@ -72,7 +87,8 @@ pub(crate) async fn fetch_target_abi_version(
     let json_value = parse_account(ton.clone(), ParamsOfParse { boc: account_boc })
         .await?
         .parsed;
-    let code = json_value["code"].as_str()
+    let code = json_value["code"]
+        .as_str()
         .ok_or(Error::debot_has_no_code())?
         .to_owned();
     let result = get_compiler_version(ton.clone(), ParamsOfGetCompilerVersion { code }).await;
