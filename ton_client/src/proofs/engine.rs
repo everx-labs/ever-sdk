@@ -863,6 +863,29 @@ impl ProofHelperEngineImpl {
         Ok(transactions.remove(0))
     }
 
+    pub(crate) async fn query_message_data(&self, id: &str, fields: &str) -> Result<Value> {
+        let mut messages = query_collection(
+            Arc::clone(&self.context),
+            ParamsOfQueryCollection {
+                collection: "messages".to_string(),
+                result: fields.to_string(),
+                filter: Some(json!({
+                    "id": {
+                        "eq": id,
+                    },
+                })),
+                limit: Some(1),
+                ..Default::default()
+            }
+        ).await?.result;
+
+        if messages.is_empty() {
+            bail!("Unable to download message data from DApp server");
+        }
+
+        Ok(messages.remove(0))
+    }
+
     pub(crate) async fn proof_block_boc(
         &self,
         root_hash: &UInt256,

@@ -10,7 +10,7 @@ use ton_types::{Result, UInt256};
 use crate::client::storage::InMemoryKeyValueStorage;
 use crate::ClientContext;
 use crate::net::{ParamsOfQueryCollection, query_collection};
-use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, ParamsOfProofBlockData, ParamsOfProofTransactionData, proof_transaction_data, query_current_network_uid, resolve_initial_trusted_key_block};
+use crate::proofs::{BlockProof, get_current_network_uid, INITIAL_TRUSTED_KEY_BLOCKS, is_transaction_refers_to_message, message_get_required_data, ParamsOfProofBlockData, ParamsOfProofMessageData, ParamsOfProofTransactionData, proof_message_data, proof_transaction_data, query_current_network_uid, resolve_initial_trusted_key_block, transaction_get_required_data};
 use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::validators::{calc_subset_for_workchain, calc_workchain_id, calc_workchain_id_by_adnl_id};
 use crate::tests::TestClient;
@@ -292,7 +292,7 @@ async fn test_special_metadata_storage() -> Result<()> {
 }
 
 #[tokio::test]
-async fn query_zerostate_boc_test() -> Result<()> {
+async fn test_query_zerostate_boc() -> Result<()> {
     let engine = create_engine_mainnet();
     let zs_boc = engine.query_zerostate_boc().await?;
 
@@ -303,7 +303,7 @@ async fn query_zerostate_boc_test() -> Result<()> {
 }
 
 #[tokio::test]
-async fn query_file_hash_test() -> Result<()> {
+async fn test_query_file_hash() -> Result<()> {
     let engine = create_engine_mainnet();
 
     let file_hash_from_next = UInt256::from_str(
@@ -323,7 +323,7 @@ async fn query_file_hash_test() -> Result<()> {
 }
 
 #[tokio::test]
-async fn query_mc_proof_test() -> Result<()> {
+async fn test_query_mc_proof() -> Result<()> {
     let engine = create_engine_mainnet();
     let proof_json = engine.query_mc_block_proof(1).await?;
     let proof = BlockProof::from_value(&proof_json)?;
@@ -339,7 +339,7 @@ async fn query_mc_proof_test() -> Result<()> {
 }
 
 #[tokio::test]
-async fn query_key_blocks_proofs_test() -> Result<()> {
+async fn test_query_key_blocks_proofs() -> Result<()> {
     let engine = create_engine_mainnet();
 
     let proofs = engine.query_key_blocks_proofs(0..1000000).await?;
@@ -350,7 +350,7 @@ async fn query_key_blocks_proofs_test() -> Result<()> {
 }
 
 #[tokio::test]
-async fn add_file_hashes_test() -> Result<()> {
+async fn test_add_file_hashes() -> Result<()> {
     let engine = create_engine_mainnet();
     let mut proofs = engine.query_key_blocks_proofs(0..100000).await?;
 
@@ -367,7 +367,7 @@ async fn add_file_hashes_test() -> Result<()> {
 }
 
 #[tokio::test]
-async fn mc_proofs_test() -> Result<()> {
+async fn test_mc_proofs() -> Result<()> {
     let engine = create_engine_mainnet();
     let storage: &InMemoryKeyValueStorage = engine.storage().in_memory();
 
@@ -396,7 +396,7 @@ async fn mc_proofs_test() -> Result<()> {
 }
 
 #[tokio::test]
-async fn extract_top_shard_block_test() -> Result<()> {
+async fn test_extract_top_shard_block() -> Result<()> {
     let engine = create_engine_mainnet();
     let boc = engine.download_block_boc(
         "01872c85facaa85405518a759dfac2625bc94b9e85b965cf3875d2331db9ad95",
@@ -433,7 +433,7 @@ async fn extract_top_shard_block_test() -> Result<()> {
 }
 
 #[tokio::test]
-async fn query_closest_mc_block_for_shard_block_test() -> Result<()> {
+async fn test_query_closest_mc_block_for_shard_block() -> Result<()> {
     let engine = create_engine_mainnet();
 
     let shard = ShardIdent::with_tagged_prefix(0, 0xa000000000000000)?;
@@ -488,7 +488,7 @@ const SHARD_BLOCK_0_A000000000000000_101_BOC: &str =
     ////////////////////////wAADACAAAQLlB2As";
 
 #[tokio::test]
-async fn query_shard_block_bocs_test() -> Result<()> {
+async fn test_query_shard_block_bocs() -> Result<()> {
     let engine = create_engine_mainnet();
 
     let shard = ShardIdent::with_tagged_prefix(0, 0xa000000000000000)?;
@@ -503,7 +503,7 @@ async fn query_shard_block_bocs_test() -> Result<()> {
 }
 
 #[tokio::test]
-async fn check_shard_block_test() -> Result<()> {
+async fn test_check_shard_block() -> Result<()> {
     let engine = create_engine_mainnet();
 
     let boc_99 = base64::decode(SHARD_BLOCK_0_A000000000000000_99_BOC)?;
@@ -516,7 +516,7 @@ async fn check_shard_block_test() -> Result<()> {
 }
 
 #[tokio::test]
-async fn check_mc_proof_test() -> Result<()> {
+async fn test_check_mc_proof() -> Result<()> {
     let engine = create_engine_mainnet();
 
     engine.check_mc_block_proof(
@@ -576,6 +576,10 @@ async fn query_block_data(context: Arc<ClientContext>, id: &str, result: &str) -
 
 async fn query_transaction_data(context: Arc<ClientContext>, id: &str, result: &str) -> Result<Value> {
     query_data(context, "transactions", id, result).await
+}
+
+async fn query_message_data(context: Arc<ClientContext>, id: &str, result: &str) -> Result<Value> {
+    query_data(context, "messages", id, result).await
 }
 
 fn resolve_type_name(typ: &Type<String>) -> String {
@@ -638,7 +642,7 @@ fn gen_full_schema_query(object_type: &str) -> Result<String> {
 }
 
 #[tokio::test]
-async fn proof_block_data_test() -> Result<()> {
+async fn test_proof_block_data() -> Result<()> {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
 
     let mut block_json = query_block_data(
@@ -864,7 +868,53 @@ async fn proof_block_data_test() -> Result<()> {
 }
 
 #[tokio::test]
-async fn proof_transaction_data_test() -> Result<()> {
+async fn test_transaction_get_required_data() -> Result<()> {
+    const ID: &'static str = "5b532e2ec17ac84b4efa92703192368dd4ed8a2729f2be2b0ee4e0665368f7c0";
+    const BOC: &'static str = "\
+            te6ccgECBgEAATMAA69wT2TGr7/z3RDYumcHeQrJZw1UDzepRIsDN7qmpakqysAAAR0tIeN4FanEM9ilnr+FQpc\
+            mlTEG3AXJ47njjdUvtmEBGza8vWswAAEdLSDvVDYWPE5wABQIBQQBAgUgMDQDAgBpYAAAAJYAAAAEAAYAAAAAAA\
+            UZroTxe4+LIgJql1/1Xxqxn95KdodE0heN+mO7Uz4QekCQJrwAoEJmUBfXhAAAAAAAAAAAADAAAAAAAAAAAAAAA\
+            AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAIJyi1oFnzCrRTpl\
+            ZW9pdoaxTsmbuXQ36fewBok3KaF+nc49AloFgjqbOapl+vKCOKiovtM8HJflgF0zlY3Eah3ZxAABIA==";
+
+    async fn test(engine: &ProofHelperEngineImpl, transaction_json: Value) -> Result<()> {
+        let (id, block_id, boc, transaction) = transaction_get_required_data(
+            &engine,
+            &transaction_json,
+        ).await?;
+
+        assert_eq!(
+            id.as_hex_string(),
+            ID,
+        );
+        assert_eq!(block_id, "eb7c28f1d301dff2d6ec899fb5ee18d9478f397b10c16a6f6aabb6535686266e");
+        assert_eq!(boc, base64::decode(BOC)?);
+        assert_eq!(transaction.logical_time(), 0x11d2d21e3781);
+
+        Ok(())
+    }
+
+    let engine = create_engine_mainnet();
+
+    test(
+        &engine,
+        json!({
+            "id": ID,
+        }),
+    ).await?;
+
+    test(
+        &engine,
+        json!({
+            "boc": BOC,
+        }),
+    ).await?;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_proof_transaction_data() -> Result<()> {
     let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
 
     let transaction_json = query_transaction_data(
@@ -902,6 +952,158 @@ async fn proof_transaction_data_test() -> Result<()> {
     proof_transaction_data(
         client.context(),
         ParamsOfProofTransactionData { transaction: transaction_json },
+    ).await?;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_message_get_required_data() -> Result<()> {
+    async fn test(
+        engine: &ProofHelperEngineImpl,
+        message_json: Value,
+        message_id: &str,
+        message_boc: &str,
+        message_trans_id: &str,
+        dst_account_address: Option<&str>,
+    ) -> Result<()> {
+        let (id, trans_id, boc, message) = message_get_required_data(
+            &engine,
+            &message_json,
+        ).await?;
+
+        assert_eq!(
+            id.as_hex_string(),
+            message_id,
+        );
+        assert_eq!(trans_id, message_trans_id);
+        assert_eq!(boc, base64::decode(message_boc)?);
+        assert_eq!(
+            message.dst_ref()
+                .map(|addr| addr.to_string()),
+            dst_account_address
+                .map(|str| str.to_string()),
+        );
+
+        Ok(())
+    }
+
+    async fn tests(
+        engine: &ProofHelperEngineImpl,
+        message_id: &str,
+        message_boc: &str,
+        trans_id: &str,
+        dst_account_address: Option<&str>,
+    ) -> Result<()> {
+        test(
+            &engine,
+            json!({
+                "id": message_id,
+            }),
+            message_id,
+            message_boc,
+            trans_id,
+            dst_account_address,
+        ).await?;
+
+        test(
+            &engine,
+            json!({
+                "boc": message_boc,
+            }),
+            message_id,
+            message_boc,
+            trans_id,
+            dst_account_address,
+        ).await
+    }
+
+    let engine = create_engine_mainnet();
+
+    tests(
+        &engine,
+        "228a430e2df4c7ec46f493a0add954cb54dc387ab140a779576988fc603ac699",
+        "\
+            te6ccgEBAQEAWAAAq2n+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE/zMzMzMzMzMzMzMzMzMzMzMz\
+            MzMzMzMzMzMzMzMzMzMzSH9xlJAAAACOlpFrzgMLHidRA",
+        "2658e6c5371f73468b6d4afaaf2f681f8f39e256dc2f5b66362a9a8a002177a9",
+        Some("-1:3333333333333333333333333333333333333333333333333333333333333333"),
+    ).await?;
+
+    tests(
+        &engine,
+        "420cefa19e4daf01ebe5db21c1ece04eee8bb457ca76680385c70b652596887f",
+        "\
+            te6ccgEBAQEAPQAAdeAG+RbNyA4dMePcEfXbfAecY743sLt3ixyG2hZOh4AloJAAACOlpDxvCMLHidBJjsFmgAA\
+            AAAAAAABA",
+        "0c7e395e8eb14c173d2dde7189200f28787a05df1fa188b19224f6e19a439dc6",
+        None,
+    ).await?;
+
+    Ok(())
+}
+
+#[test]
+fn test_is_transaction_refers_to_message() {
+    let id = Value::String("5b532e2ec17ac84b4efa92703192368dd4ed8a2729f2be2b0ee4e0665368f7c0".to_owned());
+    let json = json!({});
+    assert!(!is_transaction_refers_to_message(&json, &id));
+
+    let json = json!({
+        "in_msg": "aaa",
+        "out_msgs": ["bbb", "ccc"],
+    });
+
+    assert!(!is_transaction_refers_to_message(&json, &id));
+
+    let json = json!({
+        "in_msg": id,
+        "out_msgs": [],
+    });
+
+    assert!(is_transaction_refers_to_message(&json, &id));
+
+    let json = json!({
+        "in_msg": "aaa",
+        "out_msgs": ["aaa", "bbb", id, "ddd"],
+    });
+
+    assert!(is_transaction_refers_to_message(&json, &id));
+}
+
+#[tokio::test]
+async fn test_proof_message_data() -> Result<()> {
+    let client = TestClient::new_with_config(MAINNET_CONFIG.clone());
+
+    let message_json = query_message_data(
+        client.context(),
+        "4a9389e2fa34a83db0c814674bc4c7569fd3e92042289e2b2d4802231ecabec9",
+        &gen_full_schema_query("Message")?,
+    ).await?;
+
+    proof_message_data(
+        client.context(),
+        ParamsOfProofMessageData { message: message_json },
+    ).await?;
+
+    let message_json = query_message_data(
+        client.context(),
+        "4a9389e2fa34a83db0c814674bc4c7569fd3e92042289e2b2d4802231ecabec9",
+        r#"
+            id
+            boc
+            created_lt(format:DEC)
+            fwd_fee(format:DEC)
+            ihr_fee(format:DEC)
+            import_fee(format:DEC)
+            value(format:DEC)
+            value_other{value(format:DEC)}
+        "#,
+    ).await?;
+
+    proof_message_data(
+        client.context(),
+        ParamsOfProofMessageData { message: message_json },
     ).await?;
 
     Ok(())
