@@ -1,7 +1,5 @@
-use super::{context::str_hex_to_utf8, TonClient};
-use crate::boc::{
-    get_compiler_version, parse_account, ParamsOfParse, ParamsOfGetCompilerVersion,
-};
+use super::{context::str_hex_to_utf8, TonClient, Error};
+use crate::boc::{get_compiler_version, parse_account, ParamsOfGetCompilerVersion, ParamsOfParse};
 use crate::encoding::account_decode;
 use crate::error::ClientResult;
 use serde::{Deserialize, Deserializer};
@@ -67,15 +65,23 @@ where
     }
 }
 
-pub(crate) async fn fetch_target_abi_version(ton: TonClient, account_boc: String) -> ClientResult<String> {
-    let json_value = parse_account(ton.clone(), ParamsOfParse { boc: account_boc }).await.unwrap().parsed;
-    let code = json_value["code"].as_str().unwrap().to_owned();
-    let result = get_compiler_version(ton.clone(), ParamsOfGetCompilerVersion { code })
-        .await;
+pub(crate) async fn fetch_target_abi_version(
+    ton: TonClient,
+    account_boc: String,
+) -> ClientResult<String> {
+    let json_value = parse_account(ton.clone(), ParamsOfParse { boc: account_boc })
+        .await?
+        .parsed;
+    let code = json_value["code"].as_str()
+        .ok_or(Error::debot_has_no_code())?
+        .to_owned();
+    let result = get_compiler_version(ton.clone(), ParamsOfGetCompilerVersion { code }).await;
 
     // If If DeBot's code does not contain version or SDK failed to read version,
     // then set empty string.
-    let version = result.map(|r| r.version.unwrap_or_default()).unwrap_or_default();
+    let version = result
+        .map(|r| r.version.unwrap_or_default())
+        .unwrap_or_default();
     let mut iter = version.split(' ');
     let target_abi = if let Some("sol") = iter.next() {
         // if DeBot's code contains version and it's a solidity DeBot
@@ -84,8 +90,8 @@ pub(crate) async fn fetch_target_abi_version(ton: TonClient, account_boc: String
             _ => "2.2",
         }
     } else {
-        // If DeBot's code does not contain version, 
-        // then assume that it is very old DeBot built with the compiler 
+        // If DeBot's code does not contain version,
+        // then assume that it is very old DeBot built with the compiler
         // older than solc 0.45.0, so let's use abi 2.0 as a target.
         "2.0"
     };

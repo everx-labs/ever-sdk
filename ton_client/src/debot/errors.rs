@@ -28,6 +28,7 @@ pub enum ErrorCode {
     DebotExternalCallFailed = 810,
     DebotBrowserCallbackFailed = 811,
     DebotOperationRejected = 812,
+    DebotNoCode = 813,
 }
 pub struct Error;
 
@@ -117,6 +118,13 @@ impl Error {
         error(
             ErrorCode::DebotBrowserCallbackFailed,
             format!("Debot browser callback failed: {}", err),
+        )
+    }
+
+    pub fn debot_has_no_code() -> ClientError {
+        error(
+            ErrorCode::DebotNoCode,
+            format!("Debot has no code"),
         )
     }
 }
