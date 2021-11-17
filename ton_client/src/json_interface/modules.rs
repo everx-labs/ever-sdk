@@ -586,7 +586,7 @@ fn register_proofs(handlers: &mut RuntimeHandlers) {
 
     module.register_async_fn(crate::proofs::proof_block_data, crate::proofs::proof_block_data_api);
     module.register_async_fn(crate::proofs::proof_transaction_data, crate::proofs::proof_transaction_data_api);
-    module.register_async_fn(crate::proofs::proof_message_data, crate::proofs::proof_transaction_data_api);
+    module.register_async_fn(crate::proofs::proof_message_data, crate::proofs::proof_message_data_api);
     module.register();
 }
 
