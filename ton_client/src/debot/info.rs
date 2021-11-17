@@ -60,23 +60,6 @@ pub(crate) fn parse_debot_info(
         .map_err(|e| format!("failed to parse \"DebotInfo\": {}", e))?;
     // Ignore error because debot ABI can be loaded in 2 ways: as string or as bytes.
     let _ = convert_to_utf8(&mut info.dabi);
-    /*
-    if target_abi == "2.0" {
-        let fields: [&mut Option<String>; 8] = [
-            &mut info.name,
-            &mut info.version,
-            &mut info.publisher,
-            &mut info.caption,
-            &mut info.author,
-            &mut info.hello,
-            &mut info.language,
-            &mut info.icon,
-        ];
-        for field in fields {
-            convert_to_utf8(field)?;
-        }
-    }
-    */
     Ok(info)
 }
 
