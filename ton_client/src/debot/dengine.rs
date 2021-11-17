@@ -163,7 +163,7 @@ impl DEngine {
             None
         ).await;
         let mut info: DInfo = match result {
-            Ok(r) => parse_debot_info(r.return_value, &target_abi)?,
+            Ok(r) => parse_debot_info(r.return_value)?,
             Err(_) => Default::default(),
         };
 
@@ -821,7 +821,7 @@ impl DEngine {
             match call {
                 DebotCallType::Interface{msg, id} => {
                     debug!("Interface call");
-                    match self.builtin_interfaces.try_execute(&msg, &id).await {
+                    match self.builtin_interfaces.try_execute(&msg, &id, &self.info.target_abi).await {
                         None => self.browser.send(msg).await,
                         Some(result) => {
                             let (fname, args) = result.map_err(|e| Error::execute_failed(e))?;

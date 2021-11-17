@@ -11,6 +11,22 @@
 			]
 		},
 		{
+			"name": "decode",
+			"inputs": [
+				{"name":"base64","type":"string"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "validate",
+			"inputs": [
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "getDebotInfo",
 			"id": "0xDEB",
 			"inputs": [

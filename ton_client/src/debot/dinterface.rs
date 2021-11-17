@@ -3,6 +3,7 @@ use super::hex_interface::HexInterface;
 use super::sdk_interface::SdkInterface;
 use super::network_interface::NetworkInterface;
 use super::query_interface::QueryInterface;
+use super::JsonValue;
 use crate::abi::{decode_message_body, Abi, ParamsOfDecodeMessageBody};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
@@ -37,6 +38,20 @@ async fn decode_msg(
 pub trait DebotInterface {
     fn get_id(&self) -> String;
     fn get_abi(&self) -> Abi;
+    fn get_target_abi(&self, abi_version: &str) -> Abi {
+        let mut abi = self.get_abi();
+        if let Abi::Json(ref json) = abi {
+            if abi_version == "2.2" {
+                let mut val: JsonValue = serde_json::from_str(json).unwrap_or(json!({}));
+                let funcs = val["functions"].as_array_mut().unwrap();
+                for func in funcs {
+                    func.as_object_mut().unwrap().remove("id");
+                }
+                abi = Abi::Json(serde_json::to_string(&val).unwrap());
+            }
+        }
+        abi
+    }
     async fn call(&self, func: &str, args: &Value) -> InterfaceResult;
 }
 
@@ -45,8 +60,8 @@ pub trait DebotInterfaceExecutor {
     fn get_interfaces<'a>(&'a self) -> &'a HashMap<String, Arc<dyn DebotInterface + Send + Sync>>;
     fn get_client(&self) -> TonClient;
 
-    async fn try_execute(&self, msg: &String, interface_id: &String) -> Option<InterfaceResult> {
-        let res = Self::execute(self.get_client(), msg, interface_id, self.get_interfaces()).await;
+    async fn try_execute(&self, msg: &String, interface_id: &String, abi_version: &str) -> Option<InterfaceResult> {
+        let res = Self::execute(self.get_client(), msg, interface_id, self.get_interfaces(), abi_version).await;
         match res.as_ref() {
             Err(_) => Some(res),
             Ok(val) => {
@@ -64,6 +79,7 @@ pub trait DebotInterfaceExecutor {
         msg: &String,
         interface_id: &String,
         interfaces: &HashMap<String, Arc<dyn DebotInterface + Send + Sync>>,
+        abi_version: &str,
     ) -> InterfaceResult {
         let parsed = parse_message(client.clone(), ParamsOfParse { boc: msg.clone() })
             .await
@@ -73,10 +89,10 @@ pub trait DebotInterfaceExecutor {
             .as_str()
             .ok_or(format!("parsed message has no body"))?
             .to_owned();
-        debug!("interface {} call", interface_id);
+        println!("interface {} call", interface_id);
         match interfaces.get(interface_id) {
             Some(object) => {
-                let abi = object.get_abi();
+                let abi = object.get_target_abi(abi_version);
                 let (func, args) = decode_msg(client.clone(), body, abi).await?;
                 object.call(&func, &args)
                     .await

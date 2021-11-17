@@ -49,12 +49,7 @@ fn convert_to_utf8(hex_str: &mut Option<String>) -> Result<(), String> {
     Ok(())
 }
 
-pub(crate) fn parse_debot_info(
-    value: Option<JsonValue>,
-    target_abi: &str,
-) -> Result<DInfo, String> {
-    println!("TARGET ABI = {}", target_abi);
-    println!("DEBOT INFO = {}", value.as_ref().unwrap());
+pub(crate) fn parse_debot_info(value: Option<JsonValue>) -> Result<DInfo, String> {
     let value = value.unwrap_or(json!({}));
     let mut info: DInfo = serde_json::from_value(value)
         .map_err(|e| format!("failed to parse \"DebotInfo\": {}", e))?;
