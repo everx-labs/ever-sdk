@@ -206,6 +206,7 @@ impl TestBrowser {
     ) {
         let mut info = DebotInfo::default();
         info.dabi = Some(abi);
+        info.target_abi = format!("2.0");
         let state = Arc::new(BrowserData {
             current: Mutex::new(Default::default()),
             next: Mutex::new(steps),
@@ -996,7 +997,11 @@ async fn test_debot_inner_interfaces() {
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot3(client.clone()).await;
 
     let steps = serde_json::from_value(json!([])).unwrap();
-
+    let mut info = build_info(abi, 0, vec![format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3")]);
+    info.name = Some(format!("TestSdk"));
+    info.version = Some(format!("0.4.0"));
+    info.caption = Some(format!("Test for SDK interface"));
+    info.hello = Some(format!("Hello, I'm a test."));
     TestBrowser::execute_with_details(
         client.clone(),
         debot_addr.clone(),
@@ -1019,21 +1024,7 @@ async fn test_debot_inner_interfaces() {
             format!("test hex decode passed"),
             format!("test base64 decode passed"),
         ],
-        DebotInfo {
-            name: Some("TestSdk".to_owned()),
-            version: Some("0.4.0".to_owned()),
-            publisher: Some("TON Labs".to_owned()),
-            caption: Some("Test for SDK interface".to_owned()),
-            author: Some("TON Labs".to_owned()),
-            support: Some("0:0000000000000000000000000000000000000000000000000000000000000000".to_owned()),
-            hello: Some("Hello, I'm a test.".to_owned()),
-            language: Some("en".to_owned()),
-            dabi: Some(abi),
-            icon: Some(format!("")),
-            interfaces: vec![
-                "0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned(),
-            ],
-        },
+        info,
         vec![],
     ).await;
 }
@@ -1199,6 +1190,7 @@ async fn test_debot_getinfo() {
             dabi: Some(abi),
             icon: Some(icon),
             interfaces: vec!["0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned()],
+            target_abi: format!("2.0"),
         },
         vec![],
     ).await;
@@ -1208,22 +1200,13 @@ async fn test_debot_getinfo() {
 async fn test_debot_approve() {
     let client = std::sync::Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot6").await;
-    let info = DebotInfo {
-        name: Some("testDebot6".to_owned()),
-        version: Some("0.1.0".to_owned()),
-        publisher: Some("TON Labs".to_owned()),
-        caption: Some("Test for approve callback and signing handle".to_owned()),
-        author: Some("TON Labs".to_owned()),
-        support: Some("0:0000000000000000000000000000000000000000000000000000000000000000".to_owned()),
-        hello: Some("testDebot6".to_owned()),
-        language: Some("en".to_owned()),
-        dabi: Some(abi),
-        icon: Some(format!("")),
-        interfaces: vec![
-            "0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned(),
-            "0xc13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a".to_owned(),
-        ],
-    };
+    let mut info = build_info(abi, 6, vec![
+        "0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned(),
+        "0xc13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a".to_owned(),
+    ]);
+    info.caption = Some(format!("Test for approve callback and signing handle"));
+    info.name = Some(format!("testDebot6"));
+    info.hello = Some(format!("testDebot6"));
     let steps = serde_json::from_value(json!([])).unwrap();
     TestBrowser::execute_with_details(
         client.clone(),
@@ -1292,6 +1275,7 @@ async fn test_debot_json_interface() {
                 "0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned(),
                 "0x442288826041d564ccedc579674f17c1b0a3452df799656a9167a41ab270ec19".to_owned(),
             ],
+            target_abi: format!("2.0"),
         },
         vec![],
     ).await;
@@ -1450,6 +1434,7 @@ fn build_info(abi: String, n: u32, interfaces: Vec<String>) -> DebotInfo {
         dabi: Some(abi),
         icon: Some(format!("")),
         interfaces,
+        target_abi: format!("2.0"),
     }
 }
 
