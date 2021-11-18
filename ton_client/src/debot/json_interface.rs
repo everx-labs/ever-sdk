@@ -1,4 +1,4 @@
-use super::dinterface::{decode_answer_id, get_string_arg, DebotInterface, InterfaceResult};
+use super::dinterface::{decode_answer_id, get_arg, DebotInterface, InterfaceResult};
 use crate::abi::Abi;
 use crate::debot::json_lib_utils::pack;
 use serde_json::Value as JsonValue;
@@ -7,13 +7,15 @@ use ton_abi::{Contract, Param, ParamType};
 const ABI: &str = r#"
 {
 	"ABI version": 2,
+	"version": "2.2",
 	"header": ["time"],
 	"functions": [
 		{
 			"name": "deserialize",
+			"id": "0x30ab6275",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"json","type":"bytes"}
+				{"name":"json","type":"string"}
 			],
 			"outputs": [
 				{"name":"result","type":"bool"}
@@ -21,20 +23,17 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "parse",
+			"id": "0x100885a3",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"json","type":"bytes"}
+				{"name":"json","type":"string"}
 			],
 			"outputs": [
 				{"name":"result","type":"bool"},
 				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"cell"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"obj","type":"tuple"}
 			]
 		}
-	],
-	"data": [
-	],
-	"events": [
-	]
+    ]
 }
 "#;
 
@@ -53,7 +52,7 @@ impl JsonInterface {
 
     fn deserialize(&self, args: &JsonValue) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let json_str = get_string_arg(args, "json")?;
+        let json_str = get_arg(args, "json")?;
         let mut json_obj: JsonValue = serde_json::from_str(&json_str)
             .map_err(|e| format!("argument \"json\" is not a valid json: {}", e))?;
         let _ = self.deserialize_json(&mut json_obj, answer_id)?;
@@ -68,7 +67,7 @@ impl JsonInterface {
 
     fn parse(&self, args: &JsonValue) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let json_str = get_string_arg(args, "json")?;
+        let json_str = get_arg(args, "json")?;
         let json_obj: JsonValue = serde_json::from_str(&json_str)
             .map_err(|e| format!("argument \"json\" is not a valid json: {}", e))?;
         let result = pack(json_obj);
@@ -227,7 +226,7 @@ mod tests {
         ],
         "events": [
         ]
-    }    
+    }
     "#;
 
     #[test]
