@@ -40,14 +40,23 @@ pub trait DebotInterface {
     fn get_abi(&self) -> Abi;
     fn get_target_abi(&self, abi_version: &str) -> Abi {
         let mut abi = self.get_abi();
+        if abi_version == "2.0" {
+            return abi;
+        }
+
         if let Abi::Json(ref json) = abi {
-            if abi_version == "2.2" {
-                let mut val: JsonValue = serde_json::from_str(json).unwrap_or(json!({}));
-                let funcs = val["functions"].as_array_mut().unwrap();
-                for func in funcs {
-                    func.as_object_mut().unwrap().remove("id");
+            let mut val: JsonValue = serde_json::from_str(json).unwrap_or(json!({}));
+            if let Some(functions) = val.get_mut("functions") {
+                if let Some(functions) = functions.as_array_mut() {
+                    for func in functions {
+                        if let Some(mut_func) = func.as_object_mut() {
+                            mut_func.remove("id");
+                        }
+                    }
+                    if let Ok(v) = serde_json::to_string(&val) {
+                        abi = Abi::Json(v);
+                    }
                 }
-                abi = Abi::Json(serde_json::to_string(&val).unwrap());
             }
         }
         abi
