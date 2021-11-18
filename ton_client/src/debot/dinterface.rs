@@ -89,7 +89,7 @@ pub trait DebotInterfaceExecutor {
             .as_str()
             .ok_or(format!("parsed message has no body"))?
             .to_owned();
-        println!("interface {} call", interface_id);
+        debug!("interface {} call", interface_id);
         match interfaces.get(interface_id) {
             Some(object) => {
                 let abi = object.get_target_abi(abi_version);
