@@ -93,10 +93,16 @@ pub trait DebotInterfaceExecutor {
         match interfaces.get(interface_id) {
             Some(object) => {
                 let abi = object.get_target_abi(abi_version);
-                let (func, args) = decode_msg(client.clone(), body, abi).await?;
-                object.call(&func, &args)
+                let (func, args) = decode_msg(client.clone(), body, abi.clone()).await?;
+                let (answer_id, mut ret_args) = object.call(&func, &args)
                     .await
-                    .map_err(|e| format!("interface {}.{} failed: {}", interface_id, func, e))
+                    .map_err(|e| format!("interface {}.{} failed: {}", interface_id, func, e))?;
+                if abi_version == "2.0" {
+                    if let Abi::Json(json_str) = abi {
+                        let _ = convert_return_args(json_str.as_str(), &func, &mut ret_args);
+                    }
+                }
+                Ok((answer_id, ret_args))
             }
             None => {
                 debug!("interface {} not implemented", interface_id);
@@ -104,6 +110,26 @@ pub trait DebotInterfaceExecutor {
             },
         }
     }
+}
+
+fn convert_return_args(abi: &str, fname: &str, ret_args: &mut Value) -> Option<()> {
+    let json: Value = serde_json::from_str(abi).unwrap_or(json!({}));
+    let funcs = json["functions"].as_array()?;
+    for func in funcs {
+        let next_fname = func["name"].as_str()?;
+        if next_fname == fname {
+            let outputs = func["outputs"].as_array()?;
+            for out in outputs {
+                let typ = out["type"].as_str()?;
+                if typ == "string" {
+                    let arg_name = out["name"].as_str()?;
+                    let val = ret_args[arg_name].as_str()?;
+                    ret_args[arg_name] = json!(hex::encode(val.as_bytes()));
+                }
+            }
+        }
+    }
+    Some(())
 }
 
 pub struct BuiltinInterfaces {
