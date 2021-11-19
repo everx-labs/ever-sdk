@@ -3,8 +3,9 @@ use super::hex_interface::HexInterface;
 use super::sdk_interface::SdkInterface;
 use super::network_interface::NetworkInterface;
 use super::query_interface::QueryInterface;
+use super::json_lib_utils::bypass_json;
 use super::JsonValue;
-use crate::abi::{Abi};
+use crate::{abi::{Abi, Error}, error::ClientResult};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
 use crate::encoding::decode_abi_number;
@@ -13,7 +14,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 pub type InterfaceResult = Result<(u32, Value), String>;
-use ton_abi::{Contract, Param, ParamType};
+use ton_abi::{Contract, ParamType};
 use ton_types::SliceData;
 
 use crate::boc::internal::deserialize_cell_from_boc;
@@ -24,13 +25,15 @@ async fn decode_msg(
     client: TonClient,
     msg_body: String,
     abi: Abi,
-) -> Result<(String, Value), String> {
-    let abi = abi.json_string().map_err(|e| format!("invalid json: {}", e))?;
-    let abi = AbiContract::load(abi.as_bytes()).map_err(|e| format!("invalid json: {}", e))?;
-    let (_, body) = deserialize_cell_from_boc(&client, &msg_body, "message body").await.unwrap();
+) -> ClientResult<(String, Value)> {
+    let abi = abi.json_string()?;
+    let abi = AbiContract::load(abi.as_bytes()).map_err(|e| Error::invalid_json(e))?;
+    let (_, body) = deserialize_cell_from_boc(&client, &msg_body, "message body").await?;
     let body: SliceData = body.into();
-    let input = abi.decode_input(body.clone(), true).map_err(|e| format!("can't decode input: {}", e))?;
-    let value = Detokenizer::detokenize_to_json_value(&input.tokens).map_err(|e| format!("detokenize error: {}", e))?;
+    let input = abi.decode_input(body, true)
+        .map_err(|e| Error::invalid_message_for_decode(e))?;
+    let value = Detokenizer::detokenize_to_json_value(&input.tokens)
+        .map_err(|e| Error::invalid_message_for_decode(e))?;
     Ok((input.function_name, value))
 }
 
@@ -102,7 +105,9 @@ pub trait DebotInterfaceExecutor {
         match interfaces.get(interface_id) {
             Some(object) => {
                 let abi = object.get_target_abi(abi_version);
-                let (func, args) = decode_msg(client.clone(), body, abi.clone()).await?;
+                let (func, args) = decode_msg(client.clone(), body, abi.clone())
+                    .await
+                    .map_err(|e| e.to_string())?;
                 let (answer_id, mut ret_args) = object.call(&func, &args)
                     .await
                     .map_err(|e| format!("interface {}.{} failed: {}", interface_id, func, e))?;
@@ -131,62 +136,8 @@ fn convert_return_args(abi: &str, fname: &str, ret_args: &mut Value) -> Result<(
         .iter();
     for val in output {
         let pointer = "";
-        bypass_return_args(pointer, ret_args, val.clone())?;
+        bypass_json(pointer, ret_args, val.clone(), ParamType::String)?;
     }
-    Ok(())
-}
-
-fn bypass_return_args(top_pointer: &str, obj: &mut Value, p: Param) -> Result<(), String> {
-    let pointer = format!("{}/{}", top_pointer, p.name);
-    match p.kind {
-        ParamType::String => {
-            string_to_hex(obj, &pointer).map_err(|e| format!("{}: \"{}\"", e, p.name))?;
-        }
-        ParamType::Tuple(params) => {
-            for p in params {
-                bypass_return_args(&pointer, obj, p)?;
-            }
-        }
-        ParamType::Array(ref elem_type) => {
-            let elem_count = obj
-                .pointer(&pointer)
-                .ok_or_else(|| format!("\"{}\" not found", pointer))?
-                .as_array()
-                .ok_or_else(|| String::from("Failed to retrieve an array"))?
-                .len();
-            for i in 0..elem_count {
-                bypass_return_args(
-                    &pointer,
-                    obj,
-                    Param::new(&i.to_string(), (**elem_type).clone()),
-                )?;
-            }
-        }
-        ParamType::Map(_, ref value) => {
-            let keys: Vec<String> = obj
-                .pointer(&pointer)
-                .ok_or_else(|| format!("\"{}\" not found", pointer))?
-                .as_object()
-                .ok_or_else(|| String::from("Failed to retrieve an object"))?
-                .keys()
-                .map(|k| k.clone())
-                .collect();
-            for key in keys {
-                bypass_return_args(&pointer, obj, Param::new(key.as_str(), (**value).clone()))?;
-            }
-        }
-        _ => (),
-    }
-    Ok(())
-}
-
-fn string_to_hex(obj: &mut Value, pointer: &str) -> Result<(), String> {
-    let val_str = obj
-        .pointer(pointer)
-        .ok_or_else(|| format!("argument not found"))?
-        .as_str()
-        .ok_or_else(|| format!("argument not a string"))?;
-    *obj.pointer_mut(pointer).unwrap() = json!(hex::encode(val_str));
     Ok(())
 }
 
