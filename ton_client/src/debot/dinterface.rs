@@ -4,7 +4,7 @@ use super::sdk_interface::SdkInterface;
 use super::network_interface::NetworkInterface;
 use super::query_interface::QueryInterface;
 use super::JsonValue;
-use crate::abi::{decode_message_body, Abi, ParamsOfDecodeMessageBody};
+use crate::abi::{Abi};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
 use crate::encoding::decode_abi_number;
@@ -14,25 +14,24 @@ use std::collections::HashMap;
 use std::sync::Arc;
 pub type InterfaceResult = Result<(u32, Value), String>;
 use ton_abi::{Contract, Param, ParamType};
+use ton_types::SliceData;
+
+use crate::boc::internal::deserialize_cell_from_boc;
+use ton_sdk::AbiContract;
+use ton_abi::token::Detokenizer;
 
 async fn decode_msg(
     client: TonClient,
     msg_body: String,
     abi: Abi,
 ) -> Result<(String, Value), String> {
-    let decoded = decode_message_body(
-        client.clone(),
-        ParamsOfDecodeMessageBody {
-            abi,
-            body: msg_body,
-            is_internal: true,
-        },
-    )
-    .await
-    .map_err(|e| format!("invalid message body: {}", e))?;
-    let (func, args) = (decoded.name, decoded.value.unwrap_or(json!({})));
-    debug!("{} ({})", func, args);
-    Ok((func, args))
+    let abi = abi.json_string().map_err(|e| format!("invalid json: {}", e))?;
+    let abi = AbiContract::load(abi.as_bytes()).map_err(|e| format!("invalid json: {}", e))?;
+    let (_, body) = deserialize_cell_from_boc(&client, &msg_body, "message body").await.unwrap();
+    let body: SliceData = body.into();
+    let input = abi.decode_input(body.clone(), true).map_err(|e| format!("can't decode input: {}", e))?;
+    let value = Detokenizer::detokenize_to_json_value(&input.tokens).map_err(|e| format!("detokenize error: {}", e))?;
+    Ok((input.function_name, value))
 }
 
 #[async_trait::async_trait]
@@ -102,6 +101,7 @@ pub trait DebotInterfaceExecutor {
         debug!("interface {} call", interface_id);
         match interfaces.get(interface_id) {
             Some(object) => {
+                println!("body {}", body);
                 let abi = object.get_target_abi(abi_version);
                 let (func, args) = decode_msg(client.clone(), body, abi.clone()).await?;
                 let (answer_id, mut ret_args) = object.call(&func, &args)
@@ -248,16 +248,6 @@ pub fn get_arg(args: &Value, name: &str) -> Result<String, String> {
         .as_str()
         .ok_or(format!("\"{}\" not found", name))
         .map(|v| v.to_string())
-}
-
-pub fn get_string_arg(args: &Value, name: &str) -> Result<String, String> {
-    let hex_str = args[name]
-        .as_str()
-        .ok_or(format!("\"{}\" not found", name))?;
-    let bytes = hex::decode(hex_str).map_err(|e| format!("{}", e))?;
-    std::str::from_utf8(&bytes)
-        .map_err(|e| format!("{}", e))
-        .map(|x| x.to_string())
 }
 
 pub fn get_num_arg<T>(args: &Value, name: &str) -> Result<T, String>
