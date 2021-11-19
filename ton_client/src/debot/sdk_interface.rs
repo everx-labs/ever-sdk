@@ -341,15 +341,15 @@ use std::convert::From;
 impl From<EncryptionBoxInfo> for EncryptionBoxInfoResult {
     fn from(info: EncryptionBoxInfo) -> Self {
         Self {
-            algorithm: info.algorithm.map(|v| hex::encode(v)).unwrap_or_default(),
-            hdpath: info.hdpath.map(|v| hex::encode(v)).unwrap_or_default(),
+            algorithm: info.algorithm.unwrap_or_default(),
+            hdpath: info.hdpath.unwrap_or_default(),
             options: info
                 .options
-                .map(|v| hex::encode(v.to_string()))
+                .map(|v| v.to_string())
                 .unwrap_or_default(),
             public_info: info
                 .public
-                .map(|v| hex::encode(v.to_string()))
+                .map(|v| v.to_string())
                 .unwrap_or_default(),
         }
     }
