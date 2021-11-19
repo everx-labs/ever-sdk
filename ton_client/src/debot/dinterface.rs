@@ -101,7 +101,6 @@ pub trait DebotInterfaceExecutor {
         debug!("interface {} call", interface_id);
         match interfaces.get(interface_id) {
             Some(object) => {
-                println!("body {}", body);
                 let abi = object.get_target_abi(abi_version);
                 let (func, args) = decode_msg(client.clone(), body, abi.clone()).await?;
                 let (answer_id, mut ret_args) = object.call(&func, &args)
