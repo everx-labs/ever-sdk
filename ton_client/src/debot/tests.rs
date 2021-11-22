@@ -1423,7 +1423,7 @@ async fn test_debot_json_parse() {
 #[tokio::test(core_threads = 2)]
 async fn test_debot_target_abi() {
     let client = std::sync::Arc::new(TestClient::new());
-    let DebotData {debot_addr, target_addr: _, keys, abi} = 
+    let DebotData {debot_addr, target_addr: _, keys, abi} =
         init_simple_debot(client.clone(), "testDebot16").await;
     let mut info = build_info(abi, 16, vec![]);
     info.target_abi = format!("2.2");
@@ -1437,6 +1437,25 @@ async fn test_debot_target_abi() {
         vec![],
     )
     .await;
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_debot_msg_sendasync_and_waitforcollection() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot17").await;
+    let steps = vec![];
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![],
+        build_info(abi, 17, vec![
+            "0x475a5d1729acee4601c2a8cb67240e4da5316cc90a116e1b181d905e79401c51".to_owned(),
+            "0x5c6fd81616cdfb963632109c42144a3a885c8d0f2e8deb5d8e15872fb92f2811".to_owned(),
+        ]),
+        vec![],
+    ).await;
 }
 
 fn build_info(abi: String, n: u32, interfaces: Vec<String>) -> DebotInfo {
