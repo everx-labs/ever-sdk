@@ -28,8 +28,8 @@ function root_path(...items) {
 
 const ton_client_toml = fs.readFileSync(path.join(__dirname, '..', 'ton_client', 'Cargo.toml'))
     .toString();
-const toml_version = /^\s*version\s*=\s*['"]([0-9.]+)['"]\s*$/gm.exec(ton_client_toml)[1] || '';
-const version = toml_version.split('.').join('_');
+const tomlVersion = /^\s*version\s*=\s*['"]([0-9.]+)['"]\s*$/gm.exec(ton_client_toml)[1] || '';
+const version = tomlVersion.split('.').join('_');
 
 
 function spawnProcess(name, args, options) {
@@ -198,7 +198,7 @@ module.exports = {
     main,
     postBuild,
     gz,
-    toml_version,
+    tomlVersion,
     version,
     root_path,
     devOut,
