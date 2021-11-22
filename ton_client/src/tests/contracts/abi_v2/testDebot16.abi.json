@@ -1,0 +1,95 @@
+{
+	"ABI version": 2,
+	"version": "2.2",
+	"header": ["pubkey", "time", "expire"],
+	"functions": [
+		{
+			"name": "start",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "decode",
+			"inputs": [
+				{"name":"base64","type":"string"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "validate",
+			"inputs": [
+				{"name":"data","type":"bytes"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "getDebotInfo",
+			"id": "0xDEB",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"name","type":"string"},
+				{"name":"version","type":"string"},
+				{"name":"publisher","type":"string"},
+				{"name":"caption","type":"string"},
+				{"name":"author","type":"string"},
+				{"name":"support","type":"address"},
+				{"name":"hello","type":"string"},
+				{"name":"language","type":"string"},
+				{"name":"dabi","type":"string"},
+				{"name":"icon","type":"bytes"}
+			]
+		},
+		{
+			"name": "getRequiredInterfaces",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"interfaces","type":"uint256[]"}
+			]
+		},
+		{
+			"name": "getDebotOptions",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"options","type":"uint8"},
+				{"name":"debotAbi","type":"string"},
+				{"name":"targetAbi","type":"string"},
+				{"name":"targetAddr","type":"address"}
+			]
+		},
+		{
+			"name": "setABI",
+			"inputs": [
+				{"name":"dabi","type":"string"}
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	],
+	"fields": [
+		{"name":"_pubkey","type":"uint256"},
+		{"name":"_timestamp","type":"uint64"},
+		{"name":"_constructorFlag","type":"bool"},
+		{"name":"m_options","type":"uint8"},
+		{"name":"m_debotAbi","type":"optional(string)"},
+		{"name":"m_targetAbi","type":"optional(string)"},
+		{"name":"m_target","type":"optional(address)"}
+	]
+}

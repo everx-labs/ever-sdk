@@ -1,5 +1,5 @@
 use super::dinterface::{
-    decode_answer_id, get_arg, get_string_arg, DebotInterface, InterfaceResult,
+    decode_answer_id, get_arg, DebotInterface, InterfaceResult,
 };
 use crate::abi::Abi;
 use serde_json::Value;
@@ -7,39 +7,31 @@ use serde_json::Value;
 const ABI: &str = r#"
 {
 	"ABI version": 2,
+	"version": "2.2",
 	"header": ["time"],
 	"functions": [
 		{
 			"name": "encode",
+			"id": "0x31d9f12c",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"data","type":"bytes"}
 			],
 			"outputs": [
-				{"name":"hexstr","type":"bytes"}
+				{"name":"hexstr","type":"string"}
 			]
 		},
 		{
 			"name": "decode",
+			"id": "0x5992a05b",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"hexstr","type":"bytes"}
+				{"name":"hexstr","type":"string"}
 			],
 			"outputs": [
 				{"name":"data","type":"bytes"}
 			]
-		},
-		{
-			"name": "constructor",
-			"inputs": [
-			],
-			"outputs": [
-			]
 		}
-	],
-	"data": [
-	],
-	"events": [
 	]
 }
 "#;
@@ -58,13 +50,13 @@ impl HexInterface {
 		let encoded = get_arg(args, "data")?;
         Ok((
             answer_id,
-            json!({ "hexstr": hex::encode(encoded.as_bytes()) }),
+            json!({ "hexstr": encoded }),
         ))
     }
 
     fn decode(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let str_to_decode = get_string_arg(args, "hexstr")?;
+        let str_to_decode = get_arg(args, "hexstr")?;
         let decoded =
             hex::decode(&str_to_decode).map_err(|e| format!("invalid hex: {}", e))?;
         Ok((answer_id, json!({ "data": hex::encode(&decoded) })))

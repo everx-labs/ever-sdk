@@ -1,5 +1,5 @@
 use super::dinterface::{
-    decode_answer_id, get_arg, get_bool_arg, get_num_arg, get_string_arg, DebotInterface,
+    decode_answer_id, get_arg, get_bool_arg, get_num_arg, DebotInterface,
     InterfaceResult,
 };
 use super::routines;
@@ -25,10 +25,12 @@ use serde_json::Value;
 const ABI: &str = r#"
 {
 	"ABI version": 2,
+	"version": "2.2",
 	"header": ["time"],
 	"functions": [
 		{
 			"name": "getBalance",
+			"id": "0x0036b4f3",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"addr","type":"address"}
@@ -39,6 +41,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "getAccountType",
+			"id": "0x2b885111",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"addr","type":"address"}
@@ -49,6 +52,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "getAccountCodeHash",
+			"id": "0x38b68a99",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"addr","type":"address"}
@@ -59,6 +63,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "getAccountsDataByHash",
+			"id": "0x2ff074fa",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"codeHash","type":"uint256"},
@@ -70,6 +75,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "encrypt",
+			"id": "0x1edf9b42",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"boxHandle","type":"uint32"},
@@ -82,6 +88,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "decrypt",
+			"id": "0x6d1ab339",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"boxHandle","type":"uint32"},
@@ -94,17 +101,19 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "getEncryptionBoxInfo",
+			"id": "0x6ce70176",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"boxHandle","type":"uint32"}
 			],
 			"outputs": [
 				{"name":"result","type":"uint32"},
-				{"components":[{"name":"hdpath","type":"bytes"},{"name":"algorithm","type":"bytes"},{"name":"options","type":"bytes"},{"name":"publicInfo","type":"bytes"}],"name":"info","type":"tuple"}
+				{"components":[{"name":"hdpath","type":"string"},{"name":"algorithm","type":"string"},{"name":"options","type":"string"},{"name":"publicInfo","type":"string"}],"name":"info","type":"tuple"}
 			]
 		},
 		{
 			"name": "signHash",
+			"id": "0x422d1a4a",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"boxHandle","type":"uint32"},
@@ -116,6 +125,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "getSigningBoxInfo",
+			"id": "0x5e836915",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"boxHandle","type":"uint32"}
@@ -127,6 +137,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "genRandom",
+			"id": "0x05c672c3",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"length","type":"uint32"}
@@ -137,32 +148,35 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "substring",
+			"id": "0x56c2d6d7",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"str","type":"bytes"},
+				{"name":"str","type":"string"},
 				{"name":"start","type":"uint32"},
 				{"name":"count","type":"uint32"}
 			],
 			"outputs": [
-				{"name":"substr","type":"bytes"}
+				{"name":"substr","type":"string"}
 			]
 		},
 		{
 			"name": "mnemonicFromRandom",
+			"id": "0x2f22913c",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"dict","type":"uint32"},
 				{"name":"wordCount","type":"uint32"}
 			],
 			"outputs": [
-				{"name":"phrase","type":"bytes"}
+				{"name":"phrase","type":"string"}
 			]
 		},
 		{
 			"name": "mnemonicVerify",
+			"id": "0x11ae5ae1",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"phrase","type":"bytes"}
+				{"name":"phrase","type":"string"}
 			],
 			"outputs": [
 				{"name":"valid","type":"bool"}
@@ -170,10 +184,11 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "mnemonicDeriveSignKeys",
+			"id": "0x14f12d13",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"phrase","type":"bytes"},
-				{"name":"path","type":"bytes"}
+				{"name":"phrase","type":"string"},
+				{"name":"path","type":"string"}
 			],
 			"outputs": [
 				{"name":"pub","type":"uint256"},
@@ -182,42 +197,46 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "hdkeyXprvFromMnemonic",
+			"id": "0x3141b013",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"phrase","type":"bytes"}
+				{"name":"phrase","type":"string"}
 			],
 			"outputs": [
-				{"name":"xprv","type":"bytes"}
+				{"name":"xprv","type":"string"}
 			]
 		},
 		{
 			"name": "hdkeyDeriveFromXprv",
+			"id": "0x3df91936",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"inXprv","type":"bytes"},
+				{"name":"inXprv","type":"string"},
 				{"name":"childIndex","type":"uint32"},
 				{"name":"hardened","type":"bool"}
 			],
 			"outputs": [
-				{"name":"xprv","type":"bytes"}
+				{"name":"xprv","type":"string"}
 			]
 		},
 		{
 			"name": "hdkeyDeriveFromXprvPath",
+			"id": "0x612b1f35",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"inXprv","type":"bytes"},
-				{"name":"path","type":"bytes"}
+				{"name":"inXprv","type":"string"},
+				{"name":"path","type":"string"}
 			],
 			"outputs": [
-				{"name":"xprv","type":"bytes"}
+				{"name":"xprv","type":"string"}
 			]
 		},
 		{
 			"name": "hdkeySecretFromXprv",
+			"id": "0x24b30dc5",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"xprv","type":"bytes"}
+				{"name":"xprv","type":"string"}
 			],
 			"outputs": [
 				{"name":"sec","type":"uint256"}
@@ -225,9 +244,10 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "hdkeyPublicFromXprv",
+			"id": "0x0c991027",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"xprv","type":"bytes"}
+				{"name":"xprv","type":"string"}
 			],
 			"outputs": [
 				{"name":"pub","type":"uint256"}
@@ -235,6 +255,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "naclSignKeypairFromSecretKey",
+			"id": "0x5340824d",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"secret","type":"uint256"}
@@ -246,6 +267,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "naclBox",
+			"id": "0x7f9ee6c7",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"decrypted","type":"bytes"},
@@ -259,6 +281,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "naclBoxOpen",
+			"id": "0x4151b21f",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"encrypted","type":"bytes"},
@@ -272,6 +295,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "naclKeypairFromSecret",
+			"id": "0x21159daf",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"secret","type":"uint256"}
@@ -283,6 +307,7 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "chacha20",
+			"id": "0x34499e29",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"data","type":"bytes"},
@@ -293,10 +318,6 @@ const ABI: &str = r#"
 				{"name":"output","type":"bytes"}
 			]
 		}
-	],
-	"data": [
-	],
-	"events": [
 	]
 }
 "#;
@@ -320,15 +341,15 @@ use std::convert::From;
 impl From<EncryptionBoxInfo> for EncryptionBoxInfoResult {
     fn from(info: EncryptionBoxInfo) -> Self {
         Self {
-            algorithm: info.algorithm.map(|v| hex::encode(v)).unwrap_or_default(),
-            hdpath: info.hdpath.map(|v| hex::encode(v)).unwrap_or_default(),
+            algorithm: info.algorithm.unwrap_or_default(),
+            hdpath: info.hdpath.unwrap_or_default(),
             options: info
                 .options
-                .map(|v| hex::encode(v.to_string()))
+                .map(|v| v.to_string())
                 .unwrap_or_default(),
             public_info: info
                 .public
-                .map(|v| hex::encode(v.to_string()))
+                .map(|v| v.to_string())
                 .unwrap_or_default(),
         }
     }
@@ -402,14 +423,14 @@ impl SdkInterface {
         .map_err(|e| format!("{}", e))?;
         Ok((
             answer_id,
-            json!({ "phrase": hex::encode(result.phrase.as_bytes()) }),
+            json!({ "phrase": result.phrase }),
         ))
     }
 
     fn mnemonic_derive_sign_keys(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let phrase = get_string_arg(args, "phrase")?;
-        let path = get_string_arg(args, "path")?;
+        let phrase = get_arg(args, "phrase")?;
+        let path = get_arg(args, "path")?;
         let keypair = mnemonic_derive_sign_keys(
             self.ton.clone(),
             ParamsOfMnemonicDeriveSignKeys {
@@ -432,7 +453,7 @@ impl SdkInterface {
 
     fn mnemonic_verify(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let phrase = get_string_arg(args, "phrase")?;
+        let phrase = get_arg(args, "phrase")?;
         let result = mnemonic_verify(
             self.ton.clone(),
             ParamsOfMnemonicVerify {
@@ -447,7 +468,7 @@ impl SdkInterface {
 
     fn hdkey_xprv_from_mnemonic(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let phrase = get_string_arg(args, "phrase")?;
+        let phrase = get_arg(args, "phrase")?;
         let result = hdkey_xprv_from_mnemonic(
             self.ton.clone(),
             ParamsOfHDKeyXPrvFromMnemonic {
@@ -459,13 +480,13 @@ impl SdkInterface {
         .map_err(|e| format!("{}", e))?;
         Ok((
             answer_id,
-            json!({ "xprv": hex::encode(result.xprv.as_bytes()) }),
+            json!({ "xprv": result.xprv }),
         ))
     }
 
     fn hdkey_public_from_xprv(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let xprv = get_string_arg(args, "xprv")?;
+        let xprv = get_arg(args, "xprv")?;
         let result = hdkey_public_from_xprv(self.ton.clone(), ParamsOfHDKeyPublicFromXPrv { xprv })
             .map_err(|e| format!("{}", e))?;
         Ok((answer_id, json!({ "pub": format!("0x{}", result.public) })))
@@ -473,7 +494,7 @@ impl SdkInterface {
 
     fn hdkey_derive_from_xprv(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let xprv = get_string_arg(args, "inXprv")?;
+        let xprv = get_arg(args, "inXprv")?;
         let child_index = get_num_arg::<u32>(args, "childIndex")?;
         let hardened = get_bool_arg(args, "hardened")?;
         let result = hdkey_derive_from_xprv(
@@ -487,14 +508,14 @@ impl SdkInterface {
         .map_err(|e| format!("{}", e))?;
         Ok((
             answer_id,
-            json!({ "xprv": hex::encode(result.xprv.as_bytes()) }),
+            json!({ "xprv": result.xprv }),
         ))
     }
 
     fn hdkey_derive_from_xprv_path(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let xprv = get_string_arg(args, "inXprv")?;
-        let path = get_string_arg(args, "path")?;
+        let xprv = get_arg(args, "inXprv")?;
+        let path = get_arg(args, "path")?;
         let result = hdkey_derive_from_xprv_path(
             self.ton.clone(),
             ParamsOfHDKeyDeriveFromXPrvPath { xprv, path },
@@ -502,13 +523,13 @@ impl SdkInterface {
         .map_err(|e| format!("{}", e))?;
         Ok((
             answer_id,
-            json!({ "xprv": hex::encode(result.xprv.as_bytes()) }),
+            json!({ "xprv": result.xprv }),
         ))
     }
 
     fn hdkey_secret_from_xprv(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let xprv = get_string_arg(args, "xprv")?;
+        let xprv = get_arg(args, "xprv")?;
         let result = hdkey_secret_from_xprv(self.ton.clone(), ParamsOfHDKeySecretFromXPrv { xprv })
             .map_err(|e| format!("{}", e))?;
         Ok((answer_id, json!({ "sec": format!("0x{}", result.secret) })))
@@ -535,7 +556,7 @@ impl SdkInterface {
 
     fn substring(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let src_str = get_string_arg(args, "str")?;
+        let src_str = get_arg(args, "str")?;
         let start = get_num_arg::<u32>(args, "start")? as usize;
         let count = get_num_arg::<u32>(args, "count")? as usize;
         if start >= src_str.len() {
@@ -551,7 +572,7 @@ impl SdkInterface {
         let sub_str = src_str.get(start..end).ok_or(format!("substring failed"))?;
         Ok((
             answer_id,
-            json!({ "substr": hex::encode(sub_str.as_bytes()) }),
+            json!({ "substr": sub_str }),
         ))
     }
 

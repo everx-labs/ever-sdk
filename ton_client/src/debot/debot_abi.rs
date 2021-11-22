@@ -1,5 +1,6 @@
 pub const DEBOT_ABI: &'static str = r#"{
 	"ABI version": 2,
+    "version": "2.2",
 	"header": ["pubkey", "time", "expire"],
 	"functions": [
 		{
@@ -59,16 +60,16 @@ pub const DEBOT_ABI: &'static str = r#"{
 			"inputs": [
 			],
 			"outputs": [
-				{"name":"name","type":"bytes"},
-				{"name":"version","type":"bytes"},
-				{"name":"publisher","type":"bytes"},
-				{"name":"caption","type":"bytes"},
-				{"name":"author","type":"bytes"},
+				{"name":"name","type":"string"},
+				{"name":"version","type":"string"},
+				{"name":"publisher","type":"string"},
+				{"name":"caption","type":"string"},
+				{"name":"author","type":"string"},
 				{"name":"support","type":"address"},
-				{"name":"hello","type":"bytes"},
-				{"name":"language","type":"bytes"},
-				{"name":"dabi","type":"bytes"},
-				{"name":"icon","type":"bytes"}
+				{"name":"hello","type":"string"},
+				{"name":"language","type":"string"},
+				{"name":"dabi","type":"string"},
+				{"name":"icon","type":"string"}
 
 			]
 		},

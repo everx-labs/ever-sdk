@@ -15,10 +15,12 @@ use crate::debot::DEngine;
 const ABI: &str = r#"
 {
 	"ABI version": 2,
+	"version": "2.2",
 	"header": ["time"],
 	"functions": [
 		{
 			"name": "sendWithKeypair",
+			"id": "0x1304817a",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
 				{"name":"message","type":"cell"},
@@ -26,10 +28,11 @@ const ABI: &str = r#"
 				{"name":"sec","type":"uint256"}
 			],
 			"outputs": [
-            ]
+			]
 		},
 		{
 			"name": "sendAsync",
+			"id": "0x283a1ebd",
 			"inputs": [
 				{"name":"message","type":"cell"}
 			],
@@ -37,10 +40,6 @@ const ABI: &str = r#"
 				{"name":"id","type":"uint256"}
 			]
 		}
-	],
-	"data": [
-	],
-	"events": [
 	]
 }
 "#;

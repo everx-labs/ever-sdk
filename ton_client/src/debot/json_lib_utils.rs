@@ -138,3 +138,90 @@ pub fn pack(json_obj: JsonValue) -> Option<Value> {
         JsonValue::Array(array) => Value::new_array(array),
     }
 }
+
+fn try_replace_hyphens(
+    obj: &mut JsonValue,
+    pointer: &str,
+    name: &str,
+) -> Result<(), String> {
+    if name.contains('_') {
+        match obj.pointer_mut(pointer) {
+            Some(subobj) => {
+                let map = subobj.as_object_mut().unwrap();
+                if let Some(value) = map.remove(&name.replace('_', "-")) {
+                    map.insert(name.to_owned(), value);
+                }
+            }
+            None => Err(format!("key not found: \"{}\"", name))?,
+        }
+    }
+    Ok(())
+}
+
+fn string_to_hex(obj: &mut JsonValue, pointer: &str) -> Result<(), String> {
+    let val_str = obj
+        .pointer(pointer)
+        .ok_or_else(|| format!("argument not found"))?
+        .as_str()
+        .ok_or_else(|| format!("argument not a string"))?;
+    *obj.pointer_mut(pointer).unwrap() = json!(hex::encode(val_str));
+    Ok(())
+}
+
+pub(crate) fn bypass_json(
+    top_pointer: &str,
+    obj: &mut JsonValue,
+    p: Param, 
+    string_or_bytes: ParamType,
+) -> Result<(), String> {
+    let pointer = format!("{}/{}", top_pointer, p.name);
+    if let None = obj.pointer(&pointer) {
+        try_replace_hyphens(obj, top_pointer, &p.name)?;
+    }
+    match p.kind {
+        ParamType::Bytes | ParamType::String => if p.kind == string_or_bytes {
+            string_to_hex(obj, &pointer).map_err(|e| format!("{}: \"{}\"", e, p.name))?;
+        }
+        ParamType::Tuple(params) => {
+            for p in params {
+                bypass_json(&pointer, obj, p, string_or_bytes.clone())?;
+            }
+        }
+        ParamType::Array(ref elem_type) => {
+            let elem_count = obj
+                .pointer(&pointer)
+                .ok_or_else(|| format!("\"{}\" not found", pointer))?
+                .as_array()
+                .ok_or_else(|| String::from("Failed to retrieve an array"))?
+                .len();
+            for i in 0..elem_count {
+                bypass_json(
+                    &pointer,
+                    obj,
+                    Param::new(&i.to_string(), (**elem_type).clone()),
+                    string_or_bytes.clone(),
+                )?;
+            }
+        }
+        ParamType::Map(_, ref value) => {
+            let keys: Vec<String> = obj
+                .pointer(&pointer)
+                .ok_or_else(|| format!("\"{}\" not found", pointer))?
+                .as_object()
+                .ok_or_else(|| String::from("Failed to retrieve an object"))?
+                .keys()
+                .map(|k| k.clone())
+                .collect();
+            for key in keys {
+                bypass_json(
+                    &pointer, 
+                    obj, 
+                    Param::new(key.as_str(), (**value).clone()), 
+                    string_or_bytes.clone(),
+                )?;
+            }
+        }
+        _ => (),
+    }
+    Ok(())
+}
