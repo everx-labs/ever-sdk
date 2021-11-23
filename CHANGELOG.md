@@ -9,7 +9,6 @@ All notable changes to this project will be documented in this file.
     - Аdded `allow_no_signature` parameter to `decode_and_fix_ext_msg()` and 
       `onerror_id` return value to `prepare_ext_in_message()` inner functions used in TS4.
     - Added support for async external calls.
-    - Added `Msg.sendAsync` interface function for DeBots to make async external calls.
     - `Query` interface extended with `waitForCollection` and `query` methods. `waitForCollection` allows to wait
      for completion of async external calls.
     - Added support for DeBots with ABI 2.2.
