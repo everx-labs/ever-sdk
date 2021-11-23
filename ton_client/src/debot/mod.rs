@@ -134,8 +134,8 @@ pub struct DebotInfo {
     /// Vector with IDs of DInterfaces used by DeBot.
     pub interfaces: Vec<String>,
     /// ABI version ("x.y") supported by DeBot
-    #[serde(rename = "targetABI")]
-    pub target_abi: String,
+    #[serde(rename = "dabiVersion")]
+    pub dabi_version: String,
 }
 
 impl From<DInfo> for DebotInfo {
@@ -152,7 +152,7 @@ impl From<DInfo> for DebotInfo {
             dabi: info.dabi,
             icon : info.icon,
             interfaces: info.interfaces,
-            target_abi: info.target_abi,
+            dabi_version: info.dabi_version,
         }
     }
 }

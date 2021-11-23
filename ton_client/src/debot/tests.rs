@@ -206,7 +206,7 @@ impl TestBrowser {
     ) {
         let mut info = DebotInfo::default();
         info.dabi = Some(abi);
-        info.target_abi = format!("2.0");
+        info.dabi_version = format!("2.0");
         let state = Arc::new(BrowserData {
             current: Mutex::new(Default::default()),
             next: Mutex::new(steps),
@@ -1190,7 +1190,7 @@ async fn test_debot_getinfo() {
             dabi: Some(abi),
             icon: Some(icon),
             interfaces: vec!["0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned()],
-            target_abi: format!("2.0"),
+            dabi_version: format!("2.0"),
         },
         vec![],
     ).await;
@@ -1275,7 +1275,7 @@ async fn test_debot_json_interface() {
                 "0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3".to_owned(),
                 "0x442288826041d564ccedc579674f17c1b0a3452df799656a9167a41ab270ec19".to_owned(),
             ],
-            target_abi: format!("2.0"),
+            dabi_version: format!("2.0"),
         },
         vec![],
     ).await;
@@ -1426,7 +1426,7 @@ async fn test_debot_target_abi() {
     let DebotData {debot_addr, target_addr: _, keys, abi} =
         init_simple_debot(client.clone(), "testDebot16").await;
     let mut info = build_info(abi, 16, vec![]);
-    info.target_abi = format!("2.2");
+    info.dabi_version = format!("2.2");
     TestBrowser::execute_with_details(
         client.clone(),
         debot_addr.clone(),
@@ -1472,7 +1472,7 @@ fn build_info(abi: String, n: u32, interfaces: Vec<String>) -> DebotInfo {
         dabi: Some(abi),
         icon: Some(format!("")),
         interfaces,
-        target_abi: format!("2.0"),
+        dabi_version: format!("2.0"),
     }
 }
 
