@@ -19,7 +19,7 @@ pub struct DInfo {
     pub dabi: Option<String>,
     pub icon: Option<String>,
     pub interfaces: Vec<String>,
-    pub target_abi: String,
+    pub dabi_version: String,
 }
 
 impl DInfo {
@@ -77,7 +77,7 @@ pub(crate) async fn fetch_target_abi_version(
         .map(|r| r.version.unwrap_or_default())
         .unwrap_or_default();
     let mut iter = version.split(' ');
-    let target_abi = if let Some("sol") = iter.next() {
+    let dabi_version = if let Some("sol") = iter.next() {
         // if DeBot's code contains version and it's a solidity DeBot
         match iter.next() {
             Some(compiler_ver) if compiler_ver <= "0.47.0" => "2.0",
@@ -90,5 +90,5 @@ pub(crate) async fn fetch_target_abi_version(
         "2.0"
     };
 
-    Ok(target_abi.to_owned())
+    Ok(dabi_version.to_owned())
 }

@@ -131,7 +131,7 @@ impl DEngine {
     }
 
     async fn fetch_info(ton: TonClient, addr: String, state: String) -> Result<DInfo, String> {
-        let target_abi = fetch_target_abi_version(ton.clone(), state.clone())
+        let dabi_version = fetch_target_abi_version(ton.clone(), state.clone())
             .await
             .map_err(|e| e.to_string())?;
         let abi = load_abi(DEBOT_ABI).unwrap();
@@ -168,7 +168,7 @@ impl DEngine {
         };
 
         info.interfaces = interfaces;
-        info.target_abi = target_abi;
+        info.dabi_version = dabi_version;
 
         // TODO DEPRECATED 
         // For compatibility with previous debots that returns abi in
@@ -821,7 +821,7 @@ impl DEngine {
             match call {
                 DebotCallType::Interface{msg, id} => {
                     debug!("Interface call");
-                    match self.builtin_interfaces.try_execute(&msg, &id, &self.info.target_abi).await {
+                    match self.builtin_interfaces.try_execute(&msg, &id, &self.info.dabi_version).await {
                         None => self.browser.send(msg).await,
                         Some(result) => {
                             let (fname, args) = result.map_err(|e| Error::execute_failed(e))?;
