@@ -1458,6 +1458,24 @@ async fn test_debot_msg_sendasync_and_waitforcollection() {
     ).await;
 }
 
+#[tokio::test(core_threads = 2)]
+async fn test_debot_query_query() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot18").await;
+    let steps = vec![];
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![],
+        build_info(abi, 18, vec![
+            "0x5c6fd81616cdfb963632109c42144a3a885c8d0f2e8deb5d8e15872fb92f2811".to_owned(),
+        ]),
+        vec![],
+    ).await;
+}
+
 fn build_info(abi: String, n: u32, interfaces: Vec<String>) -> DebotInfo {
     let name = format!("TestDeBot{}", n);
     DebotInfo {
