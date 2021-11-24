@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
     - `Query` interface extended with `waitForCollection` and `query` methods. `waitForCollection` allows to wait
      for completion of async external calls.
     - Added support for DeBots with ABI 2.2.
-- Function [`proofs.proof_message_data`](./docs/mod_proofs.md#proof_message_data) which prove message data, retrieved 
+- Function [`proofs.proof_message_data`](./docs/reference/types-and-methods/mod_proofs.md#proof_message_data) which proves message data, retrieved 
   from Graphql API.
 
 ## [1.25.0] – 2021-11-08
