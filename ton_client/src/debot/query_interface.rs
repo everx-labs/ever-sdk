@@ -4,7 +4,7 @@ use super::dinterface::{
 use super::TonClient;
 use crate::abi::Abi;
 use crate::debot::json_lib_utils::{pack, Value};
-use crate::net::{wait_for_collection, query_collection, OrderBy, ParamsOfQueryCollection, ParamsOfWaitForCollection, SortDirection};
+use crate::net::{wait_for_collection, query_collection, query, OrderBy, ParamsOfQueryCollection, ParamsOfWaitForCollection, SortDirection, ParamsOfQuery};
 use serde_json::Value as JsonValue;
 
 const ABI: &str = r#"
@@ -43,6 +43,19 @@ const ABI: &str = r#"
 				{"name":"status","type":"uint8"},
 				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"cell"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"object","type":"tuple"}
 			]
+		},
+        {
+			"name": "query",
+            "id": "0x784c89f6",
+			"inputs": [
+				{"name":"answerId","type":"uint32"},
+				{"name":"query","type":"string"},
+				{"name":"variables","type":"string"}
+			],
+			"outputs": [
+				{"name":"status","type":"uint8"},
+				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"cell"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"object","type":"tuple"}
+			]
 		}
 	]
 }
@@ -57,6 +70,7 @@ enum QueryStatus {
     FilterError = 1,
     NetworkError = 2,
     PackingError = 3,
+    VariablesError = 4,
 }
 
 pub struct QueryInterface {
@@ -91,7 +105,7 @@ impl QueryInterface {
         .to_owned();
 
         let result = self
-            .query(
+            .collection_query(
                 collection_name,
                 query_filter,
                 return_filter,
@@ -116,7 +130,7 @@ impl QueryInterface {
         ))
     }
 
-    async fn query(
+    async fn collection_query(
         &self,
         collection: String,
         filter: String,
@@ -213,7 +227,58 @@ impl QueryInterface {
             }),
         ))
     }
+
+    async fn run_query(
+        &self,
+        query_str: String,
+        variables: String,
+    ) -> Result<JsonValue, QueryStatus> {
+        let variables: Option<JsonValue> =
+            Some(serde_json::from_str(&variables).map_err(|_| QueryStatus::VariablesError)?);
+        let result = query(
+            self.ton.clone(),
+            ParamsOfQuery {
+                query: query_str,
+                variables,
+            },
+        )
+        .await
+        .map_err(|_| QueryStatus::NetworkError)?;
+
+        Ok(result.result)
+    }
+
+    async fn query(&self, args: &JsonValue) -> InterfaceResult {
+        let answer_id = decode_answer_id(args)?;
+        let query_str = get_arg(args, "query")?;
+        let variables_str = get_arg(args, "variables")?;
+
+        let result = self
+            .run_query(
+                query_str,
+                variables_str
+            )
+            .await;
+
+        let (status, object) = match result {
+            Ok(json_object) => match pack(json_object) {
+                Some(object) => (QueryStatus::Success, object),
+                None => (QueryStatus::PackingError, pack(json!({})).unwrap()),
+            },
+            Err(status) => (status, pack(json!({})).unwrap()),
+        };
+
+        Ok((
+            answer_id,
+            json!({
+                "status": status as u8,
+                "object": object,
+            }),
+        ))
+    }
 }
+
+
 
 #[async_trait::async_trait]
 impl DebotInterface for QueryInterface {
@@ -229,6 +294,7 @@ impl DebotInterface for QueryInterface {
         match func {
             "collection" => self.collection(args).await,
             "waitForCollection" => self.wait_for_collection(args).await,
+            "query" => self.query(args).await,
             _ => Err(format!("function \"{}\" is not implemented", func)),
         }
     }
