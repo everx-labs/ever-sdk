@@ -9,25 +9,25 @@
 [run_get](#run_get) – Executes a get-method of FIFT contract
 
 ## Types
-[TvmErrorCode](#TvmErrorCode)
+[TvmErrorCode](#tvmerrorcode)
 
-[ExecutionOptions](#ExecutionOptions)
+[ExecutionOptions](#executionoptions)
 
-[AccountForExecutor](#AccountForExecutor)
+[AccountForExecutor](#accountforexecutor)
 
-[TransactionFees](#TransactionFees)
+[TransactionFees](#transactionfees)
 
-[ParamsOfRunExecutor](#ParamsOfRunExecutor)
+[ParamsOfRunExecutor](#paramsofrunexecutor)
 
-[ResultOfRunExecutor](#ResultOfRunExecutor)
+[ResultOfRunExecutor](#resultofrunexecutor)
 
-[ParamsOfRunTvm](#ParamsOfRunTvm)
+[ParamsOfRunTvm](#paramsofruntvm)
 
-[ResultOfRunTvm](#ResultOfRunTvm)
+[ResultOfRunTvm](#resultofruntvm)
 
-[ParamsOfRunGet](#ParamsOfRunGet)
+[ParamsOfRunGet](#paramsofrunget)
 
-[ResultOfRunGet](#ResultOfRunGet)
+[ResultOfRunGet](#resultofrunget)
 
 
 # Functions
@@ -93,11 +93,11 @@ function run_executor(
 ### Parameters
 - `message`: _string_ – Input message BOC.
 <br>Must be encoded as base64.
-- `account`: _[AccountForExecutor](mod_tvm.md#AccountForExecutor)_ – Account to run on executor
-- `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
+- `account`: _[AccountForExecutor](mod_tvm.md#accountforexecutor)_ – Account to run on executor
+- `execution_options`?: _[ExecutionOptions](mod_tvm.md#executionoptions)_ – Execution options.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI for decoding output messages
 - `skip_transaction_check`?: _boolean_ – Skip transaction check flag
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result.
 <br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
@@ -109,10 +109,10 @@ function run_executor(
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
 - `out_messages`: _string[]_ – List of output messages' BOCs.
 <br>Encoded as `base64`
-- `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
+- `decoded`?: _[DecodedOutput](mod_processing.md#decodedoutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `account`: _string_ – Updated account state BOC.
 <br>Encoded as `base64`
-- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
+- `fees`: _[TransactionFees](mod_tvm.md#transactionfees)_ – Transaction fees
 
 
 ## run_tvm
@@ -157,9 +157,9 @@ function run_tvm(
 <br>Must be encoded as base64.
 - `account`: _string_ – Account BOC.
 <br>Must be encoded as base64.
-- `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+- `execution_options`?: _[ExecutionOptions](mod_tvm.md#executionoptions)_ – Execution options.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI for decoding output messages
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result.
 <br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
@@ -169,7 +169,7 @@ function run_tvm(
 
 - `out_messages`: _string[]_ – List of output messages' BOCs.
 <br>Encoded as `base64`
-- `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
+- `decoded`?: _[DecodedOutput](mod_processing.md#decodedoutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `account`: _string_ – Updated account state BOC.
 <br>Encoded as `base64`. Attention! Only `account_state.storage.state.data` part of the BOC is updated.
 
@@ -202,7 +202,7 @@ function run_get(
 - `account`: _string_ – Account BOC in `base64`
 - `function_name`: _string_ – Function name
 - `input`?: _any_ – Input parameters
-- `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options
+- `execution_options`?: _[ExecutionOptions](mod_tvm.md#executionoptions)_ – Execution options
 - `tuple_list_as_array`?: _boolean_ – Convert lists based on nested tuples in the **result** into plain arrays.
 <br>Default is `false`. Input parameters may use any of lists representations<br>If you receive this error on Web: "Runtime error. Unreachable code should not be executed...",<br>set this flag to true.<br>This may happen, for example, when elector contract contains too many participants
 
@@ -341,11 +341,11 @@ type ParamsOfRunExecutor = {
 ```
 - `message`: _string_ – Input message BOC.
 <br>Must be encoded as base64.
-- `account`: _[AccountForExecutor](mod_tvm.md#AccountForExecutor)_ – Account to run on executor
-- `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
+- `account`: _[AccountForExecutor](mod_tvm.md#accountforexecutor)_ – Account to run on executor
+- `execution_options`?: _[ExecutionOptions](mod_tvm.md#executionoptions)_ – Execution options.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI for decoding output messages
 - `skip_transaction_check`?: _boolean_ – Skip transaction check flag
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result.
 <br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
@@ -365,10 +365,10 @@ type ResultOfRunExecutor = {
 <br>In addition to the regular transaction fields there is a<br>`boc` field encoded with `base64` which contains source<br>transaction BOC.
 - `out_messages`: _string[]_ – List of output messages' BOCs.
 <br>Encoded as `base64`
-- `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
+- `decoded`?: _[DecodedOutput](mod_processing.md#decodedoutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `account`: _string_ – Updated account state BOC.
 <br>Encoded as `base64`
-- `fees`: _[TransactionFees](mod_tvm.md#TransactionFees)_ – Transaction fees
+- `fees`: _[TransactionFees](mod_tvm.md#transactionfees)_ – Transaction fees
 
 
 ## ParamsOfRunTvm
@@ -386,9 +386,9 @@ type ParamsOfRunTvm = {
 <br>Must be encoded as base64.
 - `account`: _string_ – Account BOC.
 <br>Must be encoded as base64.
-- `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options.
-- `abi`?: _[Abi](mod_abi.md#Abi)_ – Contract ABI for decoding output messages
-- `boc_cache`?: _[BocCacheType](mod_boc.md#BocCacheType)_ – Cache type to put the result.
+- `execution_options`?: _[ExecutionOptions](mod_tvm.md#executionoptions)_ – Execution options.
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI for decoding output messages
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result.
 <br>The BOC itself returned if no cache type provided
 - `return_updated_account`?: _boolean_ – Return updated account flag.
 <br>Empty string is returned if the flag is `false`
@@ -404,7 +404,7 @@ type ResultOfRunTvm = {
 ```
 - `out_messages`: _string[]_ – List of output messages' BOCs.
 <br>Encoded as `base64`
-- `decoded`?: _[DecodedOutput](mod_processing.md#DecodedOutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
+- `decoded`?: _[DecodedOutput](mod_processing.md#decodedoutput)_ – Optional decoded message bodies according to the optional `abi` parameter.
 - `account`: _string_ – Updated account state BOC.
 <br>Encoded as `base64`. Attention! Only `account_state.storage.state.data` part of the BOC is updated.
 
@@ -422,7 +422,7 @@ type ParamsOfRunGet = {
 - `account`: _string_ – Account BOC in `base64`
 - `function_name`: _string_ – Function name
 - `input`?: _any_ – Input parameters
-- `execution_options`?: _[ExecutionOptions](mod_tvm.md#ExecutionOptions)_ – Execution options
+- `execution_options`?: _[ExecutionOptions](mod_tvm.md#executionoptions)_ – Execution options
 - `tuple_list_as_array`?: _boolean_ – Convert lists based on nested tuples in the **result** into plain arrays.
 <br>Default is `false`. Input parameters may use any of lists representations<br>If you receive this error on Web: "Runtime error. Unreachable code should not be executed...",<br>set this flag to true.<br>This may happen, for example, when elector contract contains too many participants
 

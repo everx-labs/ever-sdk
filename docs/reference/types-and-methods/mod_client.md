@@ -13,35 +13,35 @@ Provides information about library.
 [resolve_app_request](#resolve_app_request) – Resolves application request processing result
 
 ## Types
-[ClientErrorCode](#ClientErrorCode)
+[ClientErrorCode](#clienterrorcode)
 
-[ClientError](#ClientError)
+[ClientError](#clienterror)
 
-[ClientConfig](#ClientConfig)
+[ClientConfig](#clientconfig)
 
-[NetworkConfig](#NetworkConfig)
+[NetworkConfig](#networkconfig)
 
-[CryptoConfig](#CryptoConfig) – Crypto config.
+[CryptoConfig](#cryptoconfig) – Crypto config.
 
-[AbiConfig](#AbiConfig)
+[AbiConfig](#abiconfig)
 
-[BocConfig](#BocConfig)
+[BocConfig](#bocconfig)
 
-[ProofsConfig](#ProofsConfig)
+[ProofsConfig](#proofsconfig)
 
-[BuildInfoDependency](#BuildInfoDependency)
+[BuildInfoDependency](#buildinfodependency)
 
-[ParamsOfAppRequest](#ParamsOfAppRequest)
+[ParamsOfAppRequest](#paramsofapprequest)
 
-[AppRequestResult](#AppRequestResult)
+[AppRequestResult](#apprequestresult)
 
-[ResultOfGetApiReference](#ResultOfGetApiReference)
+[ResultOfGetApiReference](#resultofgetapireference)
 
-[ResultOfVersion](#ResultOfVersion)
+[ResultOfVersion](#resultofversion)
 
-[ResultOfBuildInfo](#ResultOfBuildInfo)
+[ResultOfBuildInfo](#resultofbuildinfo)
 
-[ParamsOfResolveAppRequest](#ParamsOfResolveAppRequest)
+[ParamsOfResolveAppRequest](#paramsofresolveapprequest)
 
 
 # Functions
@@ -98,7 +98,7 @@ function build_info(): Promise<ResultOfBuildInfo>;
 ### Result
 
 - `build_number`: _number_ – Build number assigned to this build by the CI.
-- `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_ – Fingerprint of the most important dependencies.
+- `dependencies`: _[BuildInfoDependency](mod_client.md#buildinfodependency)[]_ – Fingerprint of the most important dependencies.
 
 
 ## resolve_app_request
@@ -117,7 +117,7 @@ function resolve_app_request(
 ```
 ### Parameters
 - `app_request_id`: _number_ – Request ID received from SDK
-- `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_ – Result of request processing
+- `result`: _[AppRequestResult](mod_client.md#apprequestresult)_ – Result of request processing
 
 
 # Types
@@ -224,11 +224,11 @@ type ClientConfig = {
     local_storage_path?: string
 }
 ```
-- `network`?: _[NetworkConfig](mod_client.md#NetworkConfig)_
-- `crypto`?: _[CryptoConfig](mod_client.md#CryptoConfig)_
-- `abi`?: _[AbiConfig](mod_client.md#AbiConfig)_
-- `boc`?: _[BocConfig](mod_client.md#BocConfig)_
-- `proofs`?: _[ProofsConfig](mod_client.md#ProofsConfig)_
+- `network`?: _[NetworkConfig](mod_client.md#networkconfig)_
+- `crypto`?: _[CryptoConfig](mod_client.md#cryptoconfig)_
+- `abi`?: _[AbiConfig](mod_client.md#abiconfig)_
+- `boc`?: _[BocConfig](mod_client.md#bocconfig)_
+- `proofs`?: _[ProofsConfig](mod_client.md#proofsconfig)_
 - `local_storage_path`?: _string_ – For file based storage is a folder name where SDK will store its data. For browser based is a browser async storage key prefix. Default (recommended) value is "~/.tonclient" for native environments and ".tonclient" for web-browser.
 
 
@@ -411,7 +411,7 @@ type ResultOfBuildInfo = {
 }
 ```
 - `build_number`: _number_ – Build number assigned to this build by the CI.
-- `dependencies`: _[BuildInfoDependency](mod_client.md#BuildInfoDependency)[]_ – Fingerprint of the most important dependencies.
+- `dependencies`: _[BuildInfoDependency](mod_client.md#buildinfodependency)[]_ – Fingerprint of the most important dependencies.
 
 
 ## ParamsOfResolveAppRequest
@@ -422,6 +422,6 @@ type ParamsOfResolveAppRequest = {
 }
 ```
 - `app_request_id`: _number_ – Request ID received from SDK
-- `result`: _[AppRequestResult](mod_client.md#AppRequestResult)_ – Result of request processing
+- `result`: _[AppRequestResult](mod_client.md#apprequestresult)_ – Result of request processing
 
 

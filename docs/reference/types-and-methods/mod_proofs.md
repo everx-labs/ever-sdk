@@ -9,11 +9,11 @@
 [proof_transaction_data](#proof_transaction_data) – Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
 
 ## Types
-[ProofsErrorCode](#ProofsErrorCode)
+[ProofsErrorCode](#proofserrorcode)
 
-[ParamsOfProofBlockData](#ParamsOfProofBlockData)
+[ParamsOfProofBlockData](#paramsofproofblockdata)
 
-[ParamsOfProofTransactionData](#ParamsOfProofTransactionData)
+[ParamsOfProofTransactionData](#paramsofprooftransactiondata)
 
 
 # Functions
