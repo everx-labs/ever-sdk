@@ -23,6 +23,7 @@ use crate::boc::{
     BocCacheType,
     internal::{deserialize_object_from_base64, serialize_cell_to_base64},
 };
+use crate::error::ClientResult;
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
@@ -717,74 +718,122 @@ async fn test_tvm_error_message() {
 
     let account_boc = accounts.first().unwrap()["boc"].as_str().unwrap();
 
-    let message_encode_params = ParamsOfEncodeMessage {
-        abi: abi.clone(),
-        address: Some(address.clone()),
-        call_set: CallSet::some_with_function("fail"),
-        signer: Signer::None,
-        ..Default::default()
-    };
+    test_method_error(&client, &address, &abi, account_boc, "fail").await;
+    // TODO: Uncomment after changing behavior of the executor (it should return `raw_exit_arg`
+    //       in other cases, not only on `NoAcceptError`):
+    // test_method_error(&client, &address, &abi, account_boc, "failAfterAccept").await;
+}
 
-    let message = client
-        .request_async::<_, ResultOfEncodeMessage>(
-            "abi.encode_message",
-            message_encode_params.clone(),
-        )
-        .await
-        .unwrap()
-        .message;
+async fn test_method_error(
+    client: &Arc<TestClient>,
+    address: &str,
+    abi: &Abi,
+    account_boc: &str,
+    method: &str,
+) {
+    fn get_run_method_msg_params(abi: &Abi, address: &str, method: &str) -> ParamsOfEncodeMessage {
+        ParamsOfEncodeMessage {
+            abi: abi.clone(),
+            address: Some(address.to_owned()),
+            call_set: CallSet::some_with_function(method),
+            signer: Signer::None,
+            ..Default::default()
+        }
+    }
 
-    let error = client
-        .request_async::<_, ResultOfRunTvm>(
-            "tvm.run_tvm",
-            ParamsOfRunTvm {
-                message: message.clone(),
-                account: account_boc.to_string(),
-                abi: Some(abi.clone()),
-                ..Default::default()
-            },
-        )
-        .await
-        .unwrap_err();
+    async fn encode_message(client: &Arc<TestClient>, params: &ParamsOfEncodeMessage) -> String {
+        client
+            .request_async::<_, ResultOfEncodeMessage>(
+                "abi.encode_message",
+                params.clone(),
+            )
+            .await
+            .unwrap()
+            .message
+    }
 
-    const EXPECTED_ERROR: &str = "This is long error message (just for testing purposes). \
-        If you see this error, you can be sure that this contract works as expected.";
-
-    assert_eq!(error.data["contract_error"].as_str().unwrap(), EXPECTED_ERROR);
-
-    let error = client
-        .request_async::<_, ResultOfRunExecutor>(
-            "tvm.run_executor",
-            ParamsOfRunExecutor {
-                message,
-                account: AccountForExecutor::Account {
-                    boc: account_boc.to_string(),
-                    unlimited_balance: None,
+    async fn process_message(
+        client: &Arc<TestClient>,
+        params: &ParamsOfEncodeMessage,
+    ) -> ClientResult<ResultOfProcessMessage> {
+        client
+            .request_async(
+                "processing.process_message",
+                ParamsOfProcessMessage {
+                    message_encode_params: params.clone(),
+                    ..Default::default()
                 },
-                abi: Some(abi.clone()),
-                ..Default::default()
-            },
-        )
+            )
+            .await
+    }
+
+    async fn run_tvm(
+        client: &Arc<TestClient>,
+        account_boc: &str,
+        abi: &Abi,
+        message: &str,
+    ) -> ClientResult<ResultOfRunTvm> {
+        client
+            .request_async(
+                "tvm.run_tvm",
+                ParamsOfRunTvm {
+                    message: message.to_owned(),
+                    account: account_boc.to_owned(),
+                    abi: Some(abi.clone()),
+                    ..Default::default()
+                },
+            )
+            .await
+    }
+
+    async fn run_executor(
+        client: &Arc<TestClient>,
+        account_boc: &str,
+        abi: &Abi,
+        message: &str,
+    ) -> ClientResult<ResultOfRunExecutor> {
+        client
+            .request_async(
+                "tvm.run_executor",
+                ParamsOfRunExecutor {
+                    message: message.to_owned(),
+                    account: AccountForExecutor::Account {
+                        boc: account_boc.to_owned(),
+                        unlimited_balance: None,
+                    },
+                    abi: Some(abi.clone()),
+                    ..Default::default()
+                },
+            )
+            .await
+    }
+
+    let fail_msg_params = get_run_method_msg_params(abi, address, method);
+    let fail_message = encode_message(client, &fail_msg_params).await;
+
+    const EXPECTED_ERROR: Option<&str> = Some("This is long error message (just for testing \
+            purposes). If you see this error, you can be sure that this contract works as expected.");
+
+    let error = run_tvm(client, account_boc, abi, &fail_message)
         .await
         .unwrap_err();
 
-    assert_eq!(error.data["contract_error"].as_str().unwrap(), EXPECTED_ERROR);
+    assert_eq!(error.data["contract_error"].as_str(), EXPECTED_ERROR);
 
-    let error = client
-        .request_async::<_, ResultOfProcessMessage>(
-            "processing.process_message",
-            ParamsOfProcessMessage {
-                message_encode_params,
-                ..Default::default()
-            },
-        )
+    let error = run_executor(client, account_boc, abi, &fail_message)
+        .await
+        .unwrap_err();
+
+    assert_eq!(error.data["contract_error"].as_str(), EXPECTED_ERROR);
+
+    let error = process_message(client, &fail_msg_params)
         .await
         .unwrap_err();
 
     if TestClient::node_se() {
-        assert_eq!(error.data["contract_error"].as_str().unwrap(), EXPECTED_ERROR);
+        assert_eq!(error.data["contract_error"].as_str(), EXPECTED_ERROR);
     } else {
-        assert_eq!(error.data["local_error"]["data"]["contract_error"].as_str().unwrap(), EXPECTED_ERROR);
+        assert_eq!(error.data["local_error"]["data"]["contract_error"].as_str(), EXPECTED_ERROR);
     }
 }
 

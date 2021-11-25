@@ -226,7 +226,8 @@ enum DebotErrorCode {
     DebotInvalidMsg = 809,
     DebotExternalCallFailed = 810,
     DebotBrowserCallbackFailed = 811,
-    DebotOperationRejected = 812
+    DebotOperationRejected = 812,
+    DebotNoCode = 813
 }
 ```
 One of the following value:
@@ -243,6 +244,7 @@ One of the following value:
 - `DebotExternalCallFailed = 810`
 - `DebotBrowserCallbackFailed = 811`
 - `DebotOperationRejected = 812`
+- `DebotNoCode = 813`
 
 
 ## DebotHandle
@@ -293,7 +295,8 @@ type DebotInfo = {
     language?: string,
     dabi?: string,
     icon?: string,
-    interfaces: string[]
+    interfaces: string[],
+    dabiVersion: string
 }
 ```
 - `name`?: _string_ – DeBot short name.
@@ -307,6 +310,7 @@ type DebotInfo = {
 - `dabi`?: _string_ – String with DeBot ABI.
 - `icon`?: _string_ – DeBot icon.
 - `interfaces`: _string[]_ – Vector with IDs of DInterfaces used by DeBot.
+- `dabiVersion`: _string_ – ABI version ("x.y") supported by DeBot
 
 
 ## DebotActivity

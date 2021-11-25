@@ -6,7 +6,7 @@ use std::sync::Arc;
 use failure::{bail, err_msg};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, HashmapAugType, MerkleProof, ShardIdent, ShardStateUnsplit, Transaction, ValidatorDescr};
+use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, HashmapAugType, MerkleProof, Message, ShardIdent, ShardStateUnsplit, Transaction, ValidatorDescr};
 use ton_types::{Cell, UInt256};
 use ton_types::Result;
 
@@ -168,24 +168,19 @@ pub struct ParamsOfProofTransactionData {
 
 /// Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
 ///
-/// This function requests the corresponding block, checks block proofs, ensures that given transaction
-/// exists in the proven block and compares given data with the proven.
+/// This function requests the corresponding block, checks block proofs, ensures that given
+/// transaction exists in the proven block and compares given data with the proven.
 /// If the given data differs from the proven, the exception will be thrown.
 /// The input parameter is a single transaction's JSON object (see params description), 
 /// which was queried from TONOS API using functions such as `net.query`, `net.query_collection` 
 /// or `net.wait_for_collection`.
 /// 
 /// If transaction's BOC and/or `block_id` are not provided in the JSON, they will be queried from
-/// TONOS API (in this case it is required to provide at least `id` of transaction).
+/// TONOS API.
 ///
 /// Please note, that joins (like `account`, `in_message`, `out_messages`, etc. in `Transaction`
 /// entity) are separated entities and not supported, so function will throw an exception in a case
 /// if JSON being checked has such entities in it.
-///
-/// If `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and
-/// master-chain BOCs are saved into the persistent local storage (e.g. file system for native
-/// environments or browser's IndexedDB for the web); otherwise all the data is cached only in
-/// memory in current client's context and will be lost after destruction of the client.
 ///
 /// For more information about proofs checking, see description of `proof_block_data` function.
 #[api_function]
@@ -246,7 +241,73 @@ pub async fn proof_transaction_data(
     json::compare_transactions(&params.transaction, &transaction_json)
 }
 
-async fn transaction_get_required_data<'trans>(
+#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
+pub struct ParamsOfProofMessageData {
+    /// Single message's data as queried from DApp server, without modifications.
+    /// The required fields are `id` and/or top-level `boc`, others are optional.
+    /// In order to reduce network requests count, it is recommended to provide at least
+    /// `boc` of message and non-null `src_transaction.id` or `dst_transaction.id`.
+    pub message: Value,
+}
+
+/// Proves that a given message's data, which is queried from TONOS API, can be trusted.
+///
+/// This function first proves the corresponding transaction, ensures that the proven transaction
+/// refers to the given message and compares given data with the proven.
+/// If the given data differs from the proven, the exception will be thrown.
+/// The input parameter is a single message's JSON object (see params description),
+/// which was queried from TONOS API using functions such as `net.query`, `net.query_collection`
+/// or `net.wait_for_collection`.
+///
+/// If message's BOC and/or non-null `src_transaction.id` or `dst_transaction.id` are not provided
+/// in the JSON, they will be queried from TONOS API.
+///
+/// Please note, that joins (like `block`, `dst_account`, `dst_transaction`, `src_account`,
+/// `src_transaction`, etc. in `Message` entity) are separated entities and not supported,
+/// so function will throw an exception in a case if JSON being checked has such entities in it.
+///
+/// For more information about proofs checking, see description of `proof_block_data` function.
+#[api_function]
+pub async fn proof_message_data(
+    context: Arc<ClientContext>,
+    params: ParamsOfProofMessageData,
+) -> ClientResult<()> {
+    let engine = ProofHelperEngineImpl::new(Arc::clone(&context)).await
+        .map_err(|err| Error::proof_check_failed(err))?;
+
+    let (root_hash, transaction_id, boc, message) =
+        message_get_required_data(&engine, &params.message).await?;
+
+    let transaction_json = engine.query_transaction_data(
+        &transaction_id, "id boc in_msg out_msgs"
+    ).await
+        .map_err(|err| Error::proof_check_failed(err))?;
+
+    if !is_transaction_refers_to_message(&transaction_json, &Value::String(root_hash.as_hex_string())) {
+        return Err(Error::proof_check_failed(format!(
+            "Message with `id` = {} not found in transaction with `id` = {}",
+            root_hash,
+            transaction_id,
+        )));
+    }
+
+    proof_transaction_data(
+        context,
+        ParamsOfProofTransactionData {
+            transaction: transaction_json,
+        }
+    ).await?;
+
+    let message_json = json::serialize_message(
+        root_hash,
+        message,
+        boc,
+    ).map_err(|err| Error::invalid_data(err))?;
+
+    json::compare_messages(&params.message, &message_json)
+}
+
+pub(crate) async fn transaction_get_required_data<'trans>(
     engine: &ProofHelperEngineImpl,
     transaction_json: &'trans Value,
 ) -> ClientResult<(UInt256, Cow<'trans, str>, Vec<u8>, Transaction)> {
@@ -256,29 +317,11 @@ async fn transaction_get_required_data<'trans>(
     let mut boc_opt = Cow::Borrowed(&transaction_json["boc"]);
 
     if id_opt.is_null() && boc_opt.is_null() {
-        return Err(Error::invalid_data("Transaction's BOC or id are required"));
+        return Err(Error::invalid_data("Transaction's `boc` or id are required"));
     }
 
     if let Some(id) = id_opt.as_str() {
-        let mut fields = Vec::new();
-        if boc_opt.is_null() {
-            fields.push("boc");
-        }
-        if block_id_opt.is_none() {
-            fields.push("block_id");
-        }
-
-        if fields.len() > 0 {
-            let mut transaction_json = engine.query_transaction_data(id, &fields.join(" ")).await
-                .map_err(|err| Error::proof_check_failed(err))?;
-            if boc_opt.is_null() {
-                boc_opt = Cow::Owned(transaction_json["boc"].take());
-            }
-            if block_id_opt.is_none() {
-                block_id_opt = transaction_json["block_id"].take_string()
-                    .map(|string| Cow::Owned(string));
-            }
-        }
+        transaction_query_required_fields(engine, id, &mut boc_opt, &mut block_id_opt).await?;
     }
 
     let transaction_stuff = if let Value::String(boc_base64) = boc_opt.as_ref() {
@@ -289,27 +332,141 @@ async fn transaction_get_required_data<'trans>(
 
     let root_hash = transaction_stuff.cell.repr_hash();
 
-    let block_id = if let Some(block_id) = block_id_opt {
-        block_id
-    } else {
-        let mut transaction_json = engine.query_transaction_data(
-            &root_hash.as_hex_string(),
-            "block_id",
-        ).await
-            .map_err(|err| Error::proof_check_failed(err))?;
-        if let Some(block_id) = transaction_json["block_id"].take_string() {
-            Cow::Owned(block_id)
-        } else {
-            return Err(Error::invalid_data("block_id is not found"));
-        }
-    };
+    transaction_query_required_fields(
+        engine,
+        &root_hash.as_hex_string(),
+        &mut boc_opt,
+        &mut block_id_opt,
+    ).await?;
 
     Ok((
         root_hash,
-        block_id,
+        block_id_opt.unwrap(),
         transaction_stuff.boc.bytes("transaction")?,
         transaction_stuff.object,
     ))
+}
+
+async fn transaction_query_required_fields<'trans>(
+    engine: &ProofHelperEngineImpl,
+    id: &str,
+    boc_opt: &mut Cow<'trans, Value>,
+    block_id_opt: &mut Option<Cow<'trans, str>>,
+) -> ClientResult<()> {
+    let mut fields = Vec::new();
+    if boc_opt.is_null() {
+        fields.push("boc");
+    }
+    if block_id_opt.is_none() {
+        fields.push("block_id");
+    }
+
+    if fields.len() > 0 {
+        let mut transaction_json = engine.query_transaction_data(id, &fields.join(" ")).await
+            .map_err(|err| Error::proof_check_failed(err))?;
+        if boc_opt.is_null() {
+            *boc_opt = Cow::Owned(transaction_json["boc"].take());
+        }
+        if block_id_opt.is_none() {
+            *block_id_opt = transaction_json["block_id"].take_string()
+                .map(|string| Cow::Owned(string));
+        }
+    }
+
+    Ok(())
+}
+
+async fn message_get_required_data<'msg>(
+    engine: &ProofHelperEngineImpl,
+    message_json: &'msg Value,
+) -> ClientResult<(UInt256, Cow<'msg, str>, Vec<u8>, Message)> {
+    let id_opt = Cow::Borrowed(&message_json["id"]);
+    let mut trans_id_opt = if let Some(dst_id_str) = message_json["dst_transaction"]["id"].as_str() {
+        Some(Cow::Borrowed(dst_id_str))
+    } else if let Some(src_id_str) = message_json["src_transaction"]["id"].as_str() {
+        Some(Cow::Borrowed(src_id_str))
+    } else {
+        None
+    };
+    let mut boc_opt = Cow::Borrowed(&message_json["boc"]);
+
+    if id_opt.is_null() && boc_opt.is_null() {
+        return Err(Error::invalid_data("Message's `boc` or `id` are required"));
+    }
+
+    if let Some(id) = id_opt.as_str() {
+        message_query_required_fields(engine, id, &mut boc_opt, &mut trans_id_opt).await?;
+    }
+
+    let message_stuff = if let Value::String(boc_base64) = boc_opt.as_ref() {
+        deserialize_object_from_base64(boc_base64, "message")?
+    } else {
+        return Err(Error::internal_error("BOC is not found"));
+    };
+
+    let root_hash = message_stuff.cell.repr_hash();
+
+    message_query_required_fields(engine, &root_hash.as_hex_string(), &mut boc_opt, &mut trans_id_opt).await?;
+
+    Ok((
+        root_hash,
+        trans_id_opt.unwrap(),
+        message_stuff.boc.bytes("transaction")?,
+        message_stuff.object,
+    ))
+}
+
+async fn message_query_required_fields<'msg>(
+    engine: &ProofHelperEngineImpl,
+    id: &str,
+    boc_opt: &mut Cow<'msg, Value>,
+    trans_id_opt: &mut Option<Cow<'msg, str>>,
+) -> ClientResult<()> {
+    let mut fields = Vec::new();
+    if boc_opt.is_null() {
+        fields.push("boc");
+    }
+    if trans_id_opt.is_none() {
+        fields.push("src_transaction(timeout: 0){id}");
+        fields.push("dst_transaction(timeout: 0){id}");
+    }
+
+    if fields.len() > 0 {
+        let mut message_json = engine.query_message_data(id, &fields.join(" ")).await
+            .map_err(|err| Error::proof_check_failed(err))?;
+        if boc_opt.is_null() {
+            *boc_opt = Cow::Owned(message_json["boc"].take());
+        }
+        if trans_id_opt.is_none() {
+            *trans_id_opt = if let Some(dst_id_str) = message_json["dst_transaction"]["id"].take_string() {
+                Some(Cow::Owned(dst_id_str))
+            } else if let Some(src_id_str) = message_json["src_transaction"]["id"].take_string() {
+                Some(Cow::Owned(src_id_str))
+            } else {
+                return Err(Error::proof_check_failed(
+                    "Unable to get `src_transaction.id` or `dst_transaction.id` from DApp server"
+                ));
+            };
+        }
+    };
+
+    Ok(())
+}
+
+pub(crate) fn is_transaction_refers_to_message(transaction_json: &Value, message_id: &Value) -> bool {
+    if transaction_json["in_msg"] == *message_id {
+        return true;
+    }
+
+    if let Value::Array(ref msgs) = transaction_json["out_msgs"] {
+        for id in msgs {
+            if id == message_id {
+                return true;
+            }
+        }
+    }
+
+    false
 }
 
 lazy_static! {

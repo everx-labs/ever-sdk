@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.26.0] – 2021-11-25
+
+### New
+- **Debot module**:
+    - Аdded `allow_no_signature` parameter to `decode_and_fix_ext_msg()` and 
+      `onerror_id` return value to `prepare_ext_in_message()` inner functions used in TS4.
+    - Added support for async external calls.
+    - `Query` interface extended with `waitForCollection` and `query` methods. `waitForCollection` allows to wait
+     for completion of async external calls.
+    - Added support for DeBots with ABI 2.2.
+- Function [`proofs.proof_message_data`](./docs/reference/types-and-methods/mod_proofs.md#proof_message_data) which proves message data, retrieved 
+  from Graphql API.
+
 ## [1.25.0] – 2021-11-08
 
 ### New

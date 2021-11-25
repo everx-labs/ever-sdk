@@ -267,3 +267,5 @@ Where:
 
 [proof_transaction_data](mod_proofs.md#proof_transaction_data) – Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
 
+[proof_message_data](mod_proofs.md#proof_message_data) – Proves that a given message's data, which is queried from TONOS API, can be trusted.
+

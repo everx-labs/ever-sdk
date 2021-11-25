@@ -1,5 +1,5 @@
 {
-  "version": "1.25.0",
+  "version": "1.26.0",
   "modules": [
     {
       "name": "client",
@@ -11635,6 +11635,13 @@
               "value": "812",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "DebotNoCode",
+              "type": "Number",
+              "value": "813",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -11797,6 +11804,12 @@
                 "type": "String"
               },
               "summary": "Vector with IDs of DInterfaces used by DeBot.",
+              "description": null
+            },
+            {
+              "name": "dabiVersion",
+              "type": "String",
+              "summary": "ABI version (\"x.y\") supported by DeBot",
               "description": null
             }
           ],
@@ -12539,6 +12552,21 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfProofMessageData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Single message's data as queried from DApp server, without modifications. The required fields are `id` and/or top-level `boc`, others are optional. In order to reduce network requests count, it is recommended to provide at least `boc` of message and non-null `src_transaction.id` or `dst_transaction.id`.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -12582,7 +12610,7 @@
         {
           "name": "proof_transaction_data",
           "summary": "Proves that a given transaction's data, which is queried from TONOS API, can be trusted.",
-          "description": "This function requests the corresponding block, checks block proofs, ensures that given transaction\nexists in the proven block and compares given data with the proven.\nIf the given data differs from the proven, the exception will be thrown.\nThe input parameter is a single transaction's JSON object (see params description),\nwhich was queried from TONOS API using functions such as `net.query`, `net.query_collection`\nor `net.wait_for_collection`.\n\nIf transaction's BOC and/or `block_id` are not provided in the JSON, they will be queried from\nTONOS API (in this case it is required to provide at least `id` of transaction).\n\nPlease note, that joins (like `account`, `in_message`, `out_messages`, etc. in `Transaction`\nentity) are separated entities and not supported, so function will throw an exception in a case\nif JSON being checked has such entities in it.\n\nIf `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and\nmaster-chain BOCs are saved into the persistent local storage (e.g. file system for native\nenvironments or browser's IndexedDB for the web); otherwise all the data is cached only in\nmemory in current client's context and will be lost after destruction of the client.\n\nFor more information about proofs checking, see description of `proof_block_data` function.",
+          "description": "This function requests the corresponding block, checks block proofs, ensures that given\ntransaction exists in the proven block and compares given data with the proven.\nIf the given data differs from the proven, the exception will be thrown.\nThe input parameter is a single transaction's JSON object (see params description),\nwhich was queried from TONOS API using functions such as `net.query`, `net.query_collection`\nor `net.wait_for_collection`.\n\nIf transaction's BOC and/or `block_id` are not provided in the JSON, they will be queried from\nTONOS API.\n\nPlease note, that joins (like `account`, `in_message`, `out_messages`, etc. in `Transaction`\nentity) are separated entities and not supported, so function will throw an exception in a case\nif JSON being checked has such entities in it.\n\nFor more information about proofs checking, see description of `proof_block_data` function.",
           "params": [
             {
               "name": "context",
@@ -12601,6 +12629,43 @@
               "name": "params",
               "type": "Ref",
               "ref_name": "proofs.ParamsOfProofTransactionData",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "proof_message_data",
+          "summary": "Proves that a given message's data, which is queried from TONOS API, can be trusted.",
+          "description": "This function first proves the corresponding transaction, ensures that the proven transaction\nrefers to the given message and compares given data with the proven.\nIf the given data differs from the proven, the exception will be thrown.\nThe input parameter is a single message's JSON object (see params description),\nwhich was queried from TONOS API using functions such as `net.query`, `net.query_collection`\nor `net.wait_for_collection`.\n\nIf message's BOC and/or non-null `src_transaction.id` or `dst_transaction.id` are not provided\nin the JSON, they will be queried from TONOS API.\n\nPlease note, that joins (like `block`, `dst_account`, `dst_transaction`, `src_account`,\n`src_transaction`, etc. in `Message` entity) are separated entities and not supported,\nso function will throw an exception in a case if JSON being checked has such entities in it.\n\nFor more information about proofs checking, see description of `proof_block_data` function.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "proofs.ParamsOfProofMessageData",
               "summary": null,
               "description": null
             }

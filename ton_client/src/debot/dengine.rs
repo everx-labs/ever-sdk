@@ -1,14 +1,3 @@
-use super::action::{AcType, DAction};
-use super::browser::BrowserCallbacks;
-use super::context::{
-    str_hex_to_utf8, DContext, STATE_CURRENT, STATE_EXIT, STATE_PREV, STATE_ZERO,
-};
-use super::debot_abi::DEBOT_ABI;
-use super::errors::Error;
-use super::calltype::{ContractCall, DebotCallType};
-use super::routines;
-use super::run_output::RunOutput;
-use super::{JsonValue, TonClient, DInfo};
 use crate::abi::{
     decode_message_body, encode_message, encode_message_body, Abi, CallSet, DeploySet,
     ErrorCode, ParamsOfDecodeMessageBody, ParamsOfEncodeMessage, ParamsOfEncodeMessageBody, Signer,
@@ -23,12 +12,20 @@ use crate::tvm::{run_tvm, ParamsOfRunTvm};
 use crate::{ClientConfig, ClientContext};
 use std::collections::VecDeque;
 use std::sync::Arc;
-use ton_abi::Contract;
+use super::action::{AcType, DAction};
+use super::browser::BrowserCallbacks;
+use super::context::{
+    str_hex_to_utf8, DContext, STATE_CURRENT, STATE_EXIT, STATE_PREV, STATE_ZERO,
+};
+use super::calltype::{ContractCall, DebotCallType};
 use super::dinterface::{BuiltinInterfaces, DebotInterfaceExecutor};
-use super::DEBOT_WC;
+use super::json_interface::JsonInterface;
+use super::{JsonValue, TonClient, DInfo, info::{fetch_target_abi_version, parse_debot_info}};
+use super::{errors::Error, routines, DEBOT_WC, debot_abi::DEBOT_ABI};
 use super::helpers::build_internal_message;
 use super::msg_interface::MsgInterface;
-use super::json_interface::JsonInterface;
+use super::run_output::RunOutput;
+use ton_abi::Contract;
 
 const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
 
@@ -134,6 +131,9 @@ impl DEngine {
     }
 
     async fn fetch_info(ton: TonClient, addr: String, state: String) -> Result<DInfo, String> {
+        let dabi_version = fetch_target_abi_version(ton.clone(), state.clone())
+            .await
+            .map_err(|e| e.to_string())?;
         let abi = load_abi(DEBOT_ABI).unwrap();
         let result = Self::run(
             ton.clone(),
@@ -153,18 +153,25 @@ impl DEngine {
             },
             Err(_) => vec![],
         };
-        let result = Self::run(ton.clone(), state.clone(), addr.clone(), abi.clone(), "getDebotInfo", None).await;
+
+        let result = Self::run(
+            ton.clone(),
+            state.clone(),
+            addr.clone(),
+            abi.clone(),
+            "getDebotInfo", 
+            None
+        ).await;
         let mut info: DInfo = match result {
-            Ok(r) => {
-                let output = r.return_value.unwrap_or(json!({}));
-                serde_json::from_value(output)
-                    .map_err(|e| format!("failed to parse \"getDebotInfo\": {}", e) )?
-            },
+            Ok(r) => parse_debot_info(r.return_value)?,
             Err(_) => Default::default(),
         };
-        info.interfaces = interfaces;
 
-        // TODO: for compatibility with previous debots that returns abi in
+        info.interfaces = interfaces;
+        info.dabi_version = dabi_version;
+
+        // TODO DEPRECATED 
+        // For compatibility with previous debots that returns abi in
         // getDebotOptions. Remove later.
         if info.dabi.is_none() {
             let params = Self::run(ton, state, addr, abi, "getDebotOptions", None).await;
@@ -814,7 +821,7 @@ impl DEngine {
             match call {
                 DebotCallType::Interface{msg, id} => {
                     debug!("Interface call");
-                    match self.builtin_interfaces.try_execute(&msg, &id).await {
+                    match self.builtin_interfaces.try_execute(&msg, &id, &self.info.dabi_version).await {
                         None => self.browser.send(msg).await,
                         Some(result) => {
                             let (fname, args) = result.map_err(|e| Error::execute_failed(e))?;
@@ -840,7 +847,7 @@ impl DEngine {
                         self.addr.clone(),
                         true,
                     ).await?;
-                    let answer_msg = callobj.execute().await?;
+                    let answer_msg = callobj.execute(true).await?;
                     output.append(self.send_to_debot(answer_msg).await?);
                 },
                 DebotCallType::External{msg, dest} => {
@@ -856,7 +863,7 @@ impl DEngine {
                         self.addr.clone(),
                         false,
                     ).await?;
-                    let answer_msg = callobj.execute().await?;
+                    let answer_msg = callobj.execute(true).await?;
                     output.append(self.send_to_debot(answer_msg).await?);
                 },
                 DebotCallType::Invoke{msg} => {

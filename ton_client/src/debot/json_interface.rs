@@ -1,19 +1,22 @@
-use super::dinterface::{decode_answer_id, get_string_arg, DebotInterface, InterfaceResult};
+use super::dinterface::{decode_answer_id, get_arg, DebotInterface, InterfaceResult};
+use super::json_lib_utils::bypass_json;
 use crate::abi::Abi;
 use crate::debot::json_lib_utils::pack;
 use serde_json::Value as JsonValue;
-use ton_abi::{Contract, Param, ParamType};
+use ton_abi::{Contract, ParamType};
 
 const ABI: &str = r#"
 {
 	"ABI version": 2,
+	"version": "2.2",
 	"header": ["time"],
 	"functions": [
 		{
 			"name": "deserialize",
+			"id": "0x30ab6275",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"json","type":"bytes"}
+				{"name":"json","type":"string"}
 			],
 			"outputs": [
 				{"name":"result","type":"bool"}
@@ -21,20 +24,17 @@ const ABI: &str = r#"
 		},
 		{
 			"name": "parse",
+			"id": "0x100885a3",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"json","type":"bytes"}
+				{"name":"json","type":"string"}
 			],
 			"outputs": [
 				{"name":"result","type":"bool"},
 				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"cell"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"obj","type":"tuple"}
 			]
 		}
-	],
-	"data": [
-	],
-	"events": [
-	]
+    ]
 }
 "#;
 
@@ -53,7 +53,7 @@ impl JsonInterface {
 
     fn deserialize(&self, args: &JsonValue) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let json_str = get_string_arg(args, "json")?;
+        let json_str = get_arg(args, "json")?;
         let mut json_obj: JsonValue = serde_json::from_str(&json_str)
             .map_err(|e| format!("argument \"json\" is not a valid json: {}", e))?;
         let _ = self.deserialize_json(&mut json_obj, answer_id)?;
@@ -68,7 +68,7 @@ impl JsonInterface {
 
     fn parse(&self, args: &JsonValue) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let json_str = get_string_arg(args, "json")?;
+        let json_str = get_arg(args, "json")?;
         let json_obj: JsonValue = serde_json::from_str(&json_str)
             .map_err(|e| format!("argument \"json\" is not a valid json: {}", e))?;
         let result = pack(json_obj);
@@ -94,84 +94,7 @@ impl JsonInterface {
         if let ParamType::Tuple(params) = &obj.kind {
             for p in params {
                 let pointer = "";
-                self.bypass_json(pointer, json_obj, p.clone())?;
-            }
-        }
-        Ok(())
-    }
-
-    fn bypass_json(&self, top_pointer: &str, obj: &mut JsonValue, p: Param) -> Result<(), String> {
-        let pointer = format!("{}/{}", top_pointer, p.name);
-        if let None = obj.pointer(&pointer) {
-            self.try_replace_hyphens(obj, top_pointer, &p.name)?;
-        }
-        match p.kind {
-            ParamType::Bytes => {
-                Self::string_to_hex(obj, &pointer).map_err(|e| format!("{}: \"{}\"", e, p.name))?;
-            }
-            ParamType::Tuple(params) => {
-                for p in params {
-                    self.bypass_json(&pointer, obj, p)?;
-                }
-            }
-            ParamType::Array(ref elem_type) => {
-                let elem_count = obj
-                    .pointer(&pointer)
-                    .ok_or_else(|| format!("\"{}\" not found", pointer))?
-                    .as_array()
-                    .ok_or_else(|| String::from("Failed to retrieve an array"))?
-                    .len();
-                for i in 0..elem_count {
-                    self.bypass_json(
-                        &pointer,
-                        obj,
-                        Param::new(&i.to_string(), (**elem_type).clone()),
-                    )?;
-                }
-            }
-            ParamType::Map(_, ref value) => {
-                let keys: Vec<String> = obj
-                    .pointer(&pointer)
-                    .ok_or_else(|| format!("\"{}\" not found", pointer))?
-                    .as_object()
-                    .ok_or_else(|| String::from("Failed to retrieve an object"))?
-                    .keys()
-                    .map(|k| k.clone())
-                    .collect();
-                for key in keys {
-                    self.bypass_json(&pointer, obj, Param::new(key.as_str(), (**value).clone()))?;
-                }
-            }
-            _ => (),
-        }
-        Ok(())
-    }
-
-    fn string_to_hex(obj: &mut JsonValue, pointer: &str) -> Result<(), String> {
-        let val_str = obj
-            .pointer(pointer)
-            .ok_or_else(|| format!("argument not found"))?
-            .as_str()
-            .ok_or_else(|| format!("argument not a string"))?;
-        *obj.pointer_mut(pointer).unwrap() = json!(hex::encode(val_str));
-        Ok(())
-    }
-
-    fn try_replace_hyphens(
-        &self,
-        obj: &mut JsonValue,
-        pointer: &str,
-        name: &str,
-    ) -> Result<(), String> {
-        if name.contains('_') {
-            match obj.pointer_mut(pointer) {
-                Some(subobj) => {
-                    let map = subobj.as_object_mut().unwrap();
-                    if let Some(value) = map.remove(&name.replace('_', "-")) {
-                        map.insert(name.to_owned(), value);
-                    }
-                }
-                None => Err(format!("key not found: \"{}\"", name))?,
+                bypass_json(pointer, json_obj, p.clone(), ParamType::Bytes)?;
             }
         }
         Ok(())
@@ -227,7 +150,7 @@ mod tests {
         ],
         "events": [
         ]
-    }    
+    }
     "#;
 
     #[test]

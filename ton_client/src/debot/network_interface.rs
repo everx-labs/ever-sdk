@@ -1,5 +1,5 @@
 use super::dinterface::{
-    decode_answer_id, get_array_strings, get_string_arg, DebotInterface, InterfaceResult,
+    decode_answer_id, get_array_strings, get_arg, DebotInterface, InterfaceResult,
 };
 use super::TonClient;
 use crate::abi::Abi;
@@ -10,39 +10,38 @@ use std::collections::HashMap;
 const ABI: &str = r#"
 {
 	"ABI version": 2,
+	"version": "2.2",
 	"header": ["time"],
 	"functions": [
 		{
 			"name": "get",
+            "id": "0x74dd3fc1",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"url","type":"bytes"},
-				{"name":"headers","type":"bytes[]"}
+				{"name":"url","type":"string"},
+				{"name":"headers","type":"string[]"}
 			],
 			"outputs": [
 				{"name":"statusCode","type":"int32"},
-				{"name":"retHeaders","type":"bytes[]"},
-				{"name":"content","type":"bytes"}
+				{"name":"retHeaders","type":"string[]"},
+				{"name":"content","type":"string"}
 			]
 		},
 		{
 			"name": "post",
+            "id": "0x766d8212",
 			"inputs": [
 				{"name":"answerId","type":"uint32"},
-				{"name":"url","type":"bytes"},
-				{"name":"headers","type":"bytes[]"},
-				{"name":"body","type":"bytes"}
+				{"name":"url","type":"string"},
+				{"name":"headers","type":"string[]"},
+				{"name":"body","type":"string"}
 			],
 			"outputs": [
 				{"name":"statusCode","type":"int32"},
-				{"name":"retHeaders","type":"bytes[]"},
-				{"name":"content","type":"bytes"}
+				{"name":"retHeaders","type":"string[]"},
+				{"name":"content","type":"string"}
 			]
 		}
-	],
-	"data": [
-	],
-	"events": [
 	]
 }
 "#;
@@ -60,16 +59,16 @@ impl NetworkInterface {
 
     async fn post(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let url = get_string_arg(args, "url")?;
+        let url = get_arg(args, "url")?;
         let headers = get_array_strings(args, "headers")?;
-        let body = get_string_arg(args, "body")?;
+        let body = get_arg(args, "body")?;
         let answer = self.send(url, headers, Some(body)).await?;
         Ok((answer_id, answer))
     }
 
     async fn get(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let url = get_string_arg(args, "url")?;
+        let url = get_arg(args, "url")?;
         let headers = get_array_strings(args, "headers")?;
         let answer = self.send(url, headers, None).await?;
         Ok((answer_id, answer))
@@ -116,14 +115,14 @@ impl NetworkInterface {
 
         let mut ret_headers: Vec<String> = vec![];
         for (k, v) in response.headers.iter() {
-            ret_headers.push(hex::encode(format!("{}: {:?}", k, v)));
+            ret_headers.push(format!("{}: {:?}", k, v));
         }
         let status = response.status;
         let content = response.body;
         Ok(json!({
             "statusCode": status,
             "retHeaders": ret_headers,
-            "content": hex::encode(content),
+            "content": content,
         }))
     }
 }

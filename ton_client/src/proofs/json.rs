@@ -7,8 +7,8 @@ use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use serde_json::{Map, Value};
-use ton_block::{Block, Transaction};
-use ton_block_json::{BlockSerializationSet, TransactionSerializationSet};
+use ton_block::{Block, Message, Transaction};
+use ton_block_json::{BlockSerializationSet, MessageSerializationSet, TransactionSerializationSet};
 use ton_types::{Result, UInt256};
 
 use crate::error::ClientResult;
@@ -21,6 +21,10 @@ lazy_static! {
     ]).collect();
 
     static ref TRANSACTION_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
+        "chain_order",
+    ]).collect();
+
+    static ref MESSAGE_IGNORE_FIELDS: HashSet<&'static str> = IntoIter::new([
         "chain_order",
     ]).collect();
 
@@ -155,6 +159,15 @@ lazy_static! {
         "total_fees",
         "total_fees_other.value",
     ]).collect();
+
+    static ref MESSAGE_NUMERIC_FIELDS: HashSet<&'static str> = IntoIter::new([
+        "created_lt",
+        "fwd_fee",
+        "ihr_fee",
+        "import_fee",
+        "value",
+        "value_other.value",
+    ]).collect();
     
     static ref BLOCKS_UNIX_TIME_FIELDS: HashSet<&'static str> = IntoIter::new([
         "gen_utime",
@@ -178,6 +191,10 @@ lazy_static! {
 
     static ref TRANSACTIONS_UNIX_TIME_FIELDS: HashSet<&'static str> = IntoIter::new([
         "now",
+    ]).collect();
+
+    static ref MESSAGES_UNIX_TIME_FIELDS: HashSet<&'static str> = IntoIter::new([
+        "created_at",
     ]).collect();
 }
 
@@ -466,6 +483,35 @@ pub(crate) fn serialize_transaction(
     Ok(value)
 }
 
+pub(crate) fn serialize_message(
+    id: UInt256,
+    message: Message,
+    boc: Vec<u8>,
+) -> Result<Value> {
+    let mut value = ton_block_json::db_serialize_message_ex(
+        "id",
+        &MessageSerializationSet {
+            message,
+            id,
+            block_id: None,
+            transaction_id: None,
+            transaction_now: None,
+            status: ton_block::MessageProcessingStatus::Finalized,
+            boc,
+            proof: None,
+        },
+        ton_block_json::SerializationMode::QServer,
+    )?.into();
+
+    add_time_strings(
+        &mut value,
+        &MESSAGES_UNIX_TIME_FIELDS,
+        JsonPath::new("messages"),
+    );
+
+    Ok(value)
+}
+
 pub(crate) fn compare_blocks(actual: &Value, expected: &Value) -> ClientResult<()> {
     compare_values(
         actual,
@@ -483,5 +529,15 @@ pub(crate) fn compare_transactions(actual: &Value, expected: &Value) -> ClientRe
         JsonPath::new("transactions"),
         &TRANSACTION_IGNORE_FIELDS,
         &TRANSACTION_NUMERIC_FIELDS,
+    )
+}
+
+pub(crate) fn compare_messages(actual: &Value, expected: &Value) -> ClientResult<()> {
+    compare_values(
+        actual,
+        expected,
+        JsonPath::new("messages"),
+        &MESSAGE_IGNORE_FIELDS,
+        &MESSAGE_NUMERIC_FIELDS,
     )
 }
