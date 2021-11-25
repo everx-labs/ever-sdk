@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.26.0] – 2021-11-15
+## [1.26.0] – 2021-11-25
 
 ### New
 - **Debot module**:

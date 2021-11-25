@@ -1,5 +1,5 @@
 {
-  "version": "1.25.0",
+  "version": "1.26.0",
   "modules": [
     {
       "name": "client",
@@ -11635,6 +11635,13 @@
               "value": "812",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "DebotNoCode",
+              "type": "Number",
+              "value": "813",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -11797,6 +11804,12 @@
                 "type": "String"
               },
               "summary": "Vector with IDs of DInterfaces used by DeBot.",
+              "description": null
+            },
+            {
+              "name": "dabiVersion",
+              "type": "String",
+              "summary": "ABI version (\"x.y\") supported by DeBot",
               "description": null
             }
           ],
