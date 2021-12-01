@@ -1,6 +1,6 @@
 [package]
 name = "ton_client"
-version = "1.26.0"
+version = "1.26.1"
 authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
 edition = "2018"
 license = "Apache-2.0"
@@ -63,7 +63,7 @@ serde_json = "1.0.41"
 serde_repr = "0.1.7"
 sha2 = "0.9.5"
 tokio = { version = "0.2.13", features = ["sync", "stream", "fs"], default-features = false }
-zstd = { version = "0.7.0", default-features = false }
+zstd = { version = "0.8.0", default-features = false }
 # TODO: remove fixed versioning when indexmap compilation issue is resolved
 indexmap = "=1.6.2"
 # TODO: remove fixed versioning when tiny-bip39 compilation issue is resolved
