@@ -2,6 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.26.1] – 2021-12-01
+
+### Fixed
+- Fixed building and warning.
+
 ## [1.26.0] – 2021-11-25
 
 ### New
