@@ -1,5 +1,5 @@
 /*
-* Copyright 2018-2020 TON DEV SOLUTIONS LTD.
+* Copyright 2018-2021 TON DEV SOLUTIONS LTD.
 *
 * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
 * this file except in compliance with the License.
@@ -188,7 +188,8 @@ pub fn nacl_sign_detached_verify(
     let public = ed25519_dalek::PublicKey::from_bytes(&hex_decode(&params.public)?)
         .map_err(|err| Error::invalid_public_key(err, &params.public))?;
     let message = base64_decode(&params.unsigned)?;
-    let signature = ed25519_dalek::Signature::new(key512(&hex_decode(&params.signature)?)?);
+    let signature = ed25519_dalek::Signature::from_bytes(&key512(&hex_decode(&params.signature)?)?)
+        .map_err(|err| Error::invalid_signature(err, &params.signature))?;
     let succeeded = public.verify(&message, &signature).is_ok();
     Ok(ResultOfNaclSignDetachedVerify { succeeded })
 }
