@@ -973,6 +973,23 @@ fn test_init_data() {
         "s": "some string",
     });
 
+    const ENCODED_INITIAL_DATA: &str = "te6ccgEBBwEARwABAcABAgPPoAQCAQFIAwAWc29tZSBzdHJpbmcCASAGBQA\
+        DHuAAQQiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIoA==";
+
+    let result: ResultOfEncodeInitialData = client
+        .request(
+            "abi.encode_initial_data",
+            ParamsOfEncodeInitialData {
+                abi: Some(abi.clone()),
+                initial_data: Some(initial_data.clone()),
+                initial_pubkey: Some(hex::encode(&[0x22u8; 32])),
+                boc_cache: None,
+            },
+        )
+        .unwrap();
+
+    assert_eq!(result.data, ENCODED_INITIAL_DATA);
+
     let result: ResultOfUpdateInitialData = client
         .request(
             "abi.update_initial_data",
@@ -985,7 +1002,7 @@ fn test_init_data() {
             },
         )
         .unwrap();
-    assert_eq!(result.data, "te6ccgEBBwEARwABAcABAgPPoAQCAQFIAwAWc29tZSBzdHJpbmcCASAGBQADHuAAQQiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIoA==");
+    assert_eq!(result.data, ENCODED_INITIAL_DATA);
 
     let result: ResultOfDecodeInitialData = client
         .request(
