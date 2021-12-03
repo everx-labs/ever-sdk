@@ -431,8 +431,7 @@ impl GraphQLQuery {
         if result_data.is_null() {
             return Err(crate::net::Error::invalid_server_response(format!(
                 "Missing data.{} in: {}",
-                result_name,
-                result
+                result_name, result
             )));
         }
         if let Some(ParamsOfQueryOperation::WaitForCollection(_)) = param {
@@ -474,11 +473,10 @@ impl GraphQLQuery {
     }
 
     pub fn with_subscription(table: &str, filter: &Value, fields: &str) -> Self {
-        let mut scheme_type = (&table[0..table.len() - 1]).to_owned() + "Filter";
-        scheme_type[..1].make_ascii_uppercase();
+        let filter_type = Self::filter_type_for_collection(&table);
 
         let query = format!("subscription {table}($filter: {type}) {{ {table}(filter: $filter) {{ {fields} }} }}",
-            type=scheme_type,
+            type=filter_type,
             table=table,
             fields=fields);
         let query = query.split_whitespace().collect::<Vec<&str>>().join(" ");
@@ -503,6 +501,16 @@ impl GraphQLQuery {
             timeout: None,
             is_batch: false,
         }
+    }
+
+    pub fn filter_type_for_collection(collection: &str) -> String {
+        let mut filter_type = if let Some(prefix) = collection.strip_suffix("ies") {
+            format!("{}yFilter", prefix)
+        } else {
+            format!("{}Filter", collection[0..collection.len() - 1].to_string())
+        };
+        filter_type[..1].make_ascii_uppercase();
+        filter_type
     }
 }
 
