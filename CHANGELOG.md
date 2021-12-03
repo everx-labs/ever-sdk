@@ -12,7 +12,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- subscription on counterparties was failed with message 'Unknown type "CounterpartieFilter"'. 
+- Subscription for Counterparties failed with 'Unknown type "CounterpartieFilter"' error. 
 
 ## [1.26.0] – 2021-11-25
 
