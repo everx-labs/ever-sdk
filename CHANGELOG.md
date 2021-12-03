@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.27.0] – 2021-12-03
+
+### New
+- Function [`abi.encode_initial_data`](./docs/reference/types-and-methods/mod_abi.md#encode_initial_data) which
+  encodes initial account data with initial values for the contract's static variables and owner's public key. 
+  This function is analogue of `tvm.buildDataInit` function in Solidity.
+
+### Fixed
+- Subscription for Counterparties failed with 'Unknown type "CounterpartieFilter"' error. 
+
 ## [1.26.1] – 2021-12-01
 
 ### Fixed

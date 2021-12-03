@@ -321,6 +321,10 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::init_data::update_initial_data_api,
     );
     module.register_async_fn(
+        crate::abi::encode_initial_data,
+        crate::abi::init_data::encode_initial_data_api,
+    );
+    module.register_async_fn(
         crate::abi::decode_initial_data,
         crate::abi::init_data::decode_initial_data_api,
     );

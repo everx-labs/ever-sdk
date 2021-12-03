@@ -8,6 +8,7 @@ use crate::error::ClientResult;
 use serde_json;
 use serde_json::Value;
 use std::sync::Arc;
+use ton_types::Cell;
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfUpdateInitialData  {
@@ -41,22 +42,78 @@ pub async fn update_initial_data(
 ) -> ClientResult<ResultOfUpdateInitialData> {
     let (_, mut data) = deserialize_cell_from_boc(&context, &params.data, "contract data").await?;
 
-    if let Some(init_data) = params.initial_data {
-        let abi = params.abi
-            .ok_or_else(|| Error::encode_init_data_failed("contract ABI required to set initial data"))?
-            .json_string()?;
-        data = ton_abi::json_abi::update_contract_data(&abi, &init_data.to_string(), data.into())
-            .map_err(|err| Error::encode_init_data_failed(err))?
-            .into_cell();
-    }
+    data = update_initial_data_internal(&params.initial_data, &params.abi, &params.initial_pubkey, data)?;
 
-    if let Some(pubkey) = params.initial_pubkey {
-        data = ton_abi::Contract::insert_pubkey(data.into(), &hex_decode(&pubkey)?)
-            .map_err(|err| Error::encode_init_data_failed(err))?
-            .into_cell();
-    }
+    Ok(ResultOfUpdateInitialData {
+        data: serialize_cell_to_boc(&context, data, "contract data", params.boc_cache).await?
+    })
+}
 
-    Ok(ResultOfUpdateInitialData { 
+fn update_initial_data_internal(
+    initial_data: &Option<Value>,
+    abi: &Option<Abi>,
+    initial_pubkey: &Option<String>,
+    data: Cell,
+) -> ClientResult<Cell> {
+    let data = match initial_data {
+        Some(init_data) => {
+            let abi = abi.as_ref()
+                .ok_or_else(|| Error::encode_init_data_failed("contract ABI required to set initial data"))?
+                .json_string()?;
+            ton_abi::json_abi::update_contract_data(&abi, &init_data.to_string(), data.into())
+                .map_err(|err| Error::encode_init_data_failed(err))?
+                .into_cell()
+        }
+        _ => data
+    };
+
+    match initial_pubkey {
+        Some(pubkey) => {
+            Ok(ton_abi::Contract::insert_pubkey(data.into(), &hex_decode(&pubkey)?)
+                .map_err(|err| Error::encode_init_data_failed(err))?
+                .into_cell())
+        }
+        _ => Ok(data)
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
+pub struct ParamsOfEncodeInitialData {
+    /// Contract ABI
+    pub abi: Option<Abi>,
+    /// List of initial values for contract's static variables. `abi` parameter should be provided to set initial data
+    pub initial_data: Option<Value>,
+    /// Initial account owner's public key to set into account data
+    pub initial_pubkey: Option<String>,
+
+    /// Cache type to put the result.
+    /// The BOC itself returned if no cache type provided.
+    pub boc_cache: Option<BocCacheType>,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default)]
+pub struct ResultOfEncodeInitialData {
+    /// Updated data BOC or BOC handle
+    pub data: String,
+}
+
+/// Encodes initial account data with initial values for the contract's static variables and owner's
+/// public key into a data BOC that can be passed to `encode_tvc` function afterwards.
+///
+/// This function is analogue of `tvm.buildDataInit` function in Solidity.
+#[api_function]
+pub async fn encode_initial_data(
+    context: Arc<ClientContext>,
+    params: ParamsOfEncodeInitialData,
+) -> ClientResult<ResultOfEncodeInitialData> {
+    let data = update_initial_data_internal(
+        &params.initial_data,
+        &params.abi,
+        &params.initial_pubkey,
+        Cell::default(),
+    )?;
+
+    Ok(ResultOfEncodeInitialData {
         data: serialize_cell_to_boc(&context, data, "contract data", params.boc_cache).await?
     })
 }

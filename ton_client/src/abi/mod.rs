@@ -46,8 +46,9 @@ pub use encode_message::{
 };
 pub use errors::{Error, ErrorCode};
 pub use init_data::{
-    decode_initial_data, update_initial_data, ParamsOfDecodeInitialData, ParamsOfUpdateInitialData,
-    ResultOfDecodeInitialData, ResultOfUpdateInitialData,
+    encode_initial_data, decode_initial_data, update_initial_data,
+    ParamsOfEncodeInitialData, ParamsOfDecodeInitialData, ParamsOfUpdateInitialData,
+    ResultOfEncodeInitialData, ResultOfDecodeInitialData, ResultOfUpdateInitialData,
 };
 pub use signing::Signer;
 pub use types::{

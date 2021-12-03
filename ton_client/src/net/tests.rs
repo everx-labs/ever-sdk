@@ -12,6 +12,7 @@ use serde_json::Value;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::vec;
+use crate::net::ton_gql::GraphQLQuery;
 
 #[tokio::test(core_threads = 2)]
 async fn batch_query() {
@@ -1214,4 +1215,13 @@ fn test_endpoints_replacement() {
             "main4.ton.dev".to_owned(),
         ]
     );
+}
+
+#[test]
+fn test_subscription_gql() {
+    let query = GraphQLQuery::with_subscription("counterparties", &Value::Null, "id");
+    assert_eq!(query.query, "subscription counterparties($filter: CounterpartyFilter) { counterparties(filter: $filter) { id } }");
+
+    let query = GraphQLQuery::with_subscription("messages", &Value::Null, "id");
+    assert_eq!(query.query, "subscription messages($filter: MessageFilter) { messages(filter: $filter) { id } }");
 }

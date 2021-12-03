@@ -24,6 +24,8 @@ Provides message encoding and decoding according to the ABI specification.
 
 [update_initial_data](#update_initial_data) – Updates initial account data with initial values for the contract's static variables and owner's public key. This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
 
+[encode_initial_data](#encode_initial_data) – Encodes initial account data with initial values for the contract's static variables and owner's public key into a data BOC that can be passed to `encode_tvc` function afterwards.
+
 [decode_initial_data](#decode_initial_data) – Decodes initial values of a contract's static variables and owner's public key from account initial data This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
 
 [decode_boc](#decode_boc) – Decodes BOC into JSON as a set of provided parameters.
@@ -98,6 +100,10 @@ Provides message encoding and decoding according to the ABI specification.
 [ParamsOfUpdateInitialData](#paramsofupdateinitialdata)
 
 [ResultOfUpdateInitialData](#resultofupdateinitialdata)
+
+[ParamsOfEncodeInitialData](#paramsofencodeinitialdata)
+
+[ResultOfEncodeInitialData](#resultofencodeinitialdata)
 
 [ParamsOfDecodeInitialData](#paramsofdecodeinitialdata)
 
@@ -523,6 +529,41 @@ function update_initial_data(
 ### Parameters
 - `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
+- `initial_data`?: _any_ – List of initial values for contract's static variables.
+<br>`abi` parameter should be provided to set initial data
+- `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+### Result
+
+- `data`: _string_ – Updated data BOC or BOC handle
+
+
+## encode_initial_data
+
+Encodes initial account data with initial values for the contract's static variables and owner's public key into a data BOC that can be passed to `encode_tvc` function afterwards.
+
+This function is analogue of `tvm.buildDataInit` function in Solidity.
+
+```ts
+type ParamsOfEncodeInitialData = {
+    abi?: Abi,
+    initial_data?: any,
+    initial_pubkey?: string,
+    boc_cache?: BocCacheType
+}
+
+type ResultOfEncodeInitialData = {
+    data: string
+}
+
+function encode_initial_data(
+    params: ParamsOfEncodeInitialData,
+): Promise<ResultOfEncodeInitialData>;
+```
+### Parameters
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI
 - `initial_data`?: _any_ – List of initial values for contract's static variables.
 <br>`abi` parameter should be provided to set initial data
 - `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
@@ -1292,6 +1333,31 @@ type ParamsOfUpdateInitialData = {
 ## ResultOfUpdateInitialData
 ```ts
 type ResultOfUpdateInitialData = {
+    data: string
+}
+```
+- `data`: _string_ – Updated data BOC or BOC handle
+
+
+## ParamsOfEncodeInitialData
+```ts
+type ParamsOfEncodeInitialData = {
+    abi?: Abi,
+    initial_data?: any,
+    initial_pubkey?: string,
+    boc_cache?: BocCacheType
+}
+```
+- `abi`?: _[Abi](mod_abi.md#abi)_ – Contract ABI
+- `initial_data`?: _any_ – List of initial values for contract's static variables.
+<br>`abi` parameter should be provided to set initial data
+- `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
+
+
+## ResultOfEncodeInitialData
+```ts
+type ResultOfEncodeInitialData = {
     data: string
 }
 ```

@@ -5857,6 +5857,67 @@
           "description": null
         },
         {
+          "name": "ParamsOfEncodeInitialData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "abi.Abi"
+              },
+              "summary": "Contract ABI",
+              "description": null
+            },
+            {
+              "name": "initial_data",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "List of initial values for contract's static variables.",
+              "description": "`abi` parameter should be provided to set initial data"
+            },
+            {
+              "name": "initial_pubkey",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Initial account owner's public key to set into account data",
+              "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result. The BOC itself returned if no cache type provided.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfEncodeInitialData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "data",
+              "type": "String",
+              "summary": "Updated data BOC or BOC handle",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfDecodeInitialData",
           "type": "Struct",
           "struct_fields": [
@@ -6326,6 +6387,44 @@
               {
                 "type": "Ref",
                 "ref_name": "abi.ResultOfUpdateInitialData"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "encode_initial_data",
+          "summary": "Encodes initial account data with initial values for the contract's static variables and owner's public key into a data BOC that can be passed to `encode_tvc` function afterwards.",
+          "description": "This function is analogue of `tvm.buildDataInit` function in Solidity.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfEncodeInitialData",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "abi.ResultOfEncodeInitialData"
               }
             ]
           },
