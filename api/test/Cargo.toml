@@ -1,12 +1,13 @@
 [package]
-name = "api_test"
-version = "1.27.0"
-authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
-edition = "2018"
+authors = [ 'TON Labs LTD <support@tonlabs.io>' ]
+edition = '2018'
+name = 'api_test'
+version = '1.27.1'
 
 [dependencies]
-api_info = { path = "../info" }
-api_derive = { path = "../derive" }
-serde = "1.0.115"
-serde_json = "1.0.57"
-serde_derive = "1.0.115"
+serde = '1.0.115'
+serde_derive = '1.0.115'
+serde_json = '1.0.57'
+api_derive = { path = '../derive' }
+api_info = { path = '../info' }
+
