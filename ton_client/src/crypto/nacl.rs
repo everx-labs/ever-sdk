@@ -18,7 +18,6 @@ use crate::crypto::keys::KeyPair;
 use crate::crypto::{internal, Error};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
-use ed25519_dalek::ed25519::signature::Signature;
 use ed25519_dalek::Verifier;
 
 // Signing
