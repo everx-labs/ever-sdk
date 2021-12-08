@@ -50,7 +50,7 @@ scrypt = { default-features = false, version = '0.7.0' }
 sodalite = { features = [ 'rand' ], git = 'https://github.com/tonlabs/sodalite.git' }
 tokio = { default-features = false, features = [ 'sync', 'stream', 'fs' ], version = '0.2.13' }
 tokio-tungstenite = { features = [ 'tls' ], optional = true, version = '0.11.0' }
-ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.1.5' }
+ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.1.6' }
 ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.35' }
 ton_block_json = { git = 'https://github.com/tonlabs/ton-labs-block-json.git', tag = '0.6.32' }
 ton_executor = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-executor.git', tag = '1.15.45' }
