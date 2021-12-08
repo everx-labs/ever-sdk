@@ -275,7 +275,7 @@ fn encode_deploy(
                 None,
                 workchain,
             )
-            .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
+            .map_err(|err| abi::Error::encode_run_message_failed(err, Some(&call_set.function_name)))?;
             (message.serialized_message, None, address)
         }
         _ => {
@@ -376,7 +376,7 @@ fn encode_run(
                 call_set.to_function_call_set(pubkey, processing_try_index, &context, abi, false)?,
                 None,
             )
-            .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
+            .map_err(|err| abi::Error::encode_run_message_failed(err, Some(&call_set.function_name)))?;
             (message.serialized_message, None, address)
         }
         _ => {
@@ -384,7 +384,7 @@ fn encode_run(
                 address.clone(),
                 call_set.to_function_call_set(pubkey, processing_try_index, &context, abi, false)?,
             )
-            .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
+            .map_err(|err| abi::Error::encode_run_message_failed(err, Some(&call_set.function_name)))?;
 
             (unsigned.message, Some(unsigned.data_to_sign), address)
         }
@@ -557,7 +557,7 @@ pub async  fn encode_internal_message(
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {
     let src_address = match params.src_address {
-        Some(addr) => Some(account_decode(&addr)?),
+        Some(ref addr) => Some(account_decode(addr)?),
         None => None,
     };
     let ihr_disabled = !params.enable_ihr.unwrap_or(false);
@@ -603,7 +603,11 @@ pub async  fn encode_internal_message(
         let address = account_decode(address)?;
         let value = CurrencyCollection::with_grams(
             u64::from_str(&params.value)
-                .map_err(|err| abi::Error::encode_run_message_failed(err, ""))?
+                .map_err(|err| abi::Error::encode_run_message_failed(
+                    err,
+                    params.call_set.as_ref()
+                        .map(|call_set| call_set.function_name.as_str()),
+                ))?
         );
         if let Some(call_set) = &params.call_set {
             let abi = params.abi
@@ -617,7 +621,7 @@ pub async  fn encode_internal_message(
                 value,
                 call_set.to_function_call_set(None, None, &context, &abi, true)?,
             )
-            .map_err(|err| abi::Error::encode_run_message_failed(err, &call_set.function_name))?;
+            .map_err(|err| abi::Error::encode_run_message_failed(err, Some(&call_set.function_name)))?;
 
             (message.serialized_message, address)
         } else {
@@ -629,7 +633,7 @@ pub async  fn encode_internal_message(
                 value,
                 None,
             )
-            .map_err(|err| abi::Error::encode_run_message_failed(err, ""))?;
+            .map_err(|err| abi::Error::encode_run_message_failed(err, None))?;
             (message.serialized_message, address)
         }
     };
@@ -714,7 +718,7 @@ pub async fn encode_message_body(
                 params.is_internal,
                 None,
             )
-            .map_err(|err| Error::encode_run_message_failed(err, &func))?;
+            .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?;
             (body, None)
         }
         _ => {
@@ -734,16 +738,16 @@ pub async fn encode_message_body(
                     call.header,
                     call.input,
                 ).map(|(body, data_to_sign)| (body, Some(data_to_sign)))
-            }.map_err(|err| Error::encode_run_message_failed(err, &func))?
+            }.map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?
         }
     };
     let body: Vec<u8> = ton_types::serialize_toc(
         &body
             .clone()
             .into_cell()
-            .map_err(|err| Error::encode_run_message_failed(err, &func))?,
+            .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?,
     )
-    .map_err(|err| Error::encode_run_message_failed(err, &func))?;
+    .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?;
     if let Some(unsigned) = &data_to_sign {
         if let Some(signature) = params.signer.sign(context.clone(), unsigned).await? {
             let pubkey = public

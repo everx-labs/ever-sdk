@@ -76,12 +76,12 @@ impl Error {
         )
     }
 
-    pub fn encode_run_message_failed<E: Display>(err: E, function: &str) -> ClientError {
+    pub fn encode_run_message_failed<E: Display>(err: E, function: Option<&str>) -> ClientError {
         error(
             ErrorCode::EncodeRunMessageFailed,
             format!("Create run message failed: {}", err),
         )
-        .add_function(Some(function))
+        .add_function(function)
     }
 
     pub fn attach_signature_failed<E: Display>(err: E) -> ClientError {
