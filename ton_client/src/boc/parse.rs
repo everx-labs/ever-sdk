@@ -116,6 +116,7 @@ pub async fn parse_account(
     let object = deserialize_object_from_boc::<ton_block::Account>(&context, &params.boc, "account").await?;
 
     let set = ton_block_json::AccountSerializationSet {
+        last_trans_block_id: None,
         boc: object.boc.bytes("account")?,
         proof: None,
         account: object.object,
