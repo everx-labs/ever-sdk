@@ -2,7 +2,11 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.27.0] – 2021-12-03
+## [1.27.1] – 2021-12-09
+### Fixed
+- Empty `function_name` field in the "create run message failed" error.
+
+## [1.27.0] – 2021-12-06
 
 ### New
 - Function [`abi.encode_initial_data`](./docs/reference/types-and-methods/mod_abi.md#encode_initial_data) which

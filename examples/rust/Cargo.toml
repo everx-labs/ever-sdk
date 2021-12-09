@@ -1,15 +1,11 @@
 [package]
-name = "test_sdk_v1"
-version = "0.1.0"
-authors = ["Alexey Vavilin <mnogoborec@mail.ru>"]
-edition = "2018"
-
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = [ 'Alexey Vavilin <mnogoborec@mail.ru>' ]
+edition = '2018'
+name = 'test_sdk_v1'
+version = '0.1.0'
 
 [dependencies]
-ton_client = { path = "../../ton_client" }
-serde_json = "1.0.41"
+serde_json = '1.0.41'
+tokio = { features = [ 'rt-threaded', 'macros', 'sync' ], version = '0.2.13' }
+ton_client = { path = '../../ton_client' }
 
-[dependencies.tokio]
-version = "0.2.13"
-features = ["rt-threaded", "macros", "sync"]

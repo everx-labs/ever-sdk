@@ -1,15 +1,15 @@
 [package]
 name = "ton_sdk"
-version = "1.27.0"
+version = "1.27.1"
 edition = "2018"
 license = "Apache-2.0"
-authors = ["TON DEV SOLUTIONS LTD <support@tonlabs.io>"]
+authors = ["TON Labs LTD <support@tonlabs.io>"]
 
 [dependencies]
-ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git", tag = "2.1.4" }
-ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git", tag = "1.7.28" }
-ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", tag = "1.8.20", default-features = false }
-ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git", tag = "1.10.11" }
+ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git", tag = "2.1.6" }
+ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git", tag = "1.7.35" }
+ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", tag = "1.8.27", default-features = false }
+ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git", tag = "1.10.12" }
 
 api_info = { path = "../api/info" }
 api_derive = { path = "../api/derive" }
@@ -28,4 +28,3 @@ crc-any = "2.2.3"
 failure = "0.1"
 num-traits = "^0.2.8"
 log = "0.4.11"
-
