@@ -1,122 +1,84 @@
 [package]
-name = "ton_client"
-version = "1.27.1"
-authors = ["TON Labs LTD <support@tonlabs.io>"]
-edition = "2018"
-license = "Apache-2.0"
-build = "build.rs"
-
-[lib]
-name = "ton_client"
-crate-type = ["cdylib", "rlib", "staticlib"]
-
-[build-dependencies]
-serde = "1.0.117"
-serde_derive = "1.0.117"
-serde_json = "1.0.59"
+authors = [ 'TON Labs LTD <support@tonlabs.io>' ]
+build = 'build.rs'
+edition = '2018'
+license = 'Apache-2.0'
+name = 'ton_client'
+version = '1.27.1'
 
 [dependencies]
-api_derive = { path = "../api/derive" }
-api_info = { path = "../api/info" }
-ton_sdk = { path = "../ton_sdk", default-features = false }
+aes = '0.7.4'
+async-trait = '0.1.40'
+base58 = '0.1.0'
+base64 = '0.10.0'
+bincode = '1.3.3'
+block-modes = '0.8.1'
+byteorder = '1.3.2'
+chacha20 = '0.6.0'
+chrono = '0.4.6'
+crc-any = '2.2.3'
+ed25519-dalek = '1.0.0'
+failure = '0.1'
+futures = '0.3.4'
+hex = '0.3.2'
+hmac = '0.11.0'
+indexmap = '=1.6.2'
+lazy_static = '1.1.0'
+libsecp256k1 = '0.6.0'
+log = '0.4.11'
+lru = '0.6.3'
+num-bigint = '0.2.2'
+num-derive = '0.3'
+num-traits = '0.2'
+rand = '0.7.3'
+regex = '1.5.4'
+serde = '1.0.91'
+serde_derive = '1.0.91'
+serde_json = '1.0.41'
+serde_repr = '0.1.7'
+sha2 = '0.9.5'
+tiny-bip39 = '=0.7.3'
+api_derive = { path = '../api/derive' }
+api_info = { path = '../api/info' }
+home = { optional = true, version = '0.5.3' }
+indexed_db_futures = { default-features = false, optional = true, version = '0.2.0' }
+js-sys = { optional = true, version = '0.3.50' }
+lockfree = { git = 'https://github.com/tonlabs/lockfree.git', package = 'lockfree' }
+pbkdf2 = { default-features = false, version = '0.8.0' }
+reqwest = { optional = true, version = '0.10.4' }
+scrypt = { default-features = false, version = '0.7.0' }
+sodalite = { features = [ 'rand' ], git = 'https://github.com/tonlabs/sodalite.git' }
+tokio = { default-features = false, features = [ 'sync', 'stream', 'fs' ], version = '0.2.13' }
+tokio-tungstenite = { features = [ 'tls' ], optional = true, version = '0.11.0' }
+ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.1.6' }
+ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.35' }
+ton_block_json = { git = 'https://github.com/tonlabs/ton-labs-block-json.git', tag = '0.6.32' }
+ton_executor = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-executor.git', tag = '1.15.45' }
+ton_sdk = { default-features = false, path = '../ton_sdk' }
+ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.10.12' }
+ton_vm = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-vm.git', tag = '1.8.27' }
+wasm-bindgen = { optional = true, version = '0.2.73' }
+wasm-bindgen-futures = { optional = true, version = '0.4.15' }
+web-sys = { features = [ 'ErrorEvent', 'FileReader', 'Headers', 'MessageEvent', 'ProgressEvent', 'Request', 'RequestInit', 'Response', 'Window', 'WebSocket' ], optional = true, version = '0.3.42' }
+zstd = { default-features = false, version = '0.8.0' }
 
-ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git", tag = "2.1.6" }
-ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git", tag = "1.7.35" }
-ton_block_json = { git = "https://github.com/tonlabs/ton-labs-block-json.git", tag = "0.6.32" }
-ton_executor = { git = "https://github.com/tonlabs/ton-labs-executor.git", tag = "1.15.45", default-features = false }
-ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git", tag = "1.10.12" }
-ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", tag = "1.8.27", default-features = false }
-
-lockfree = { git = "https://github.com/tonlabs/lockfree.git", package = "lockfree" }
-sodalite = { git = "https://github.com/tonlabs/sodalite.git", features = ["rand"] }
-
-
-aes = "0.7.4"
-async-trait = "0.1.40"
-base58 = "0.1.0"
-base64 = "0.10.0"
-bincode = "1.3.3"
-block-modes = "0.8.1"
-byteorder = "1.3.2"
-chacha20 = "0.6.0"
-chrono = "0.4.6"
-crc-any = "2.2.3"
-ed25519-dalek = "1.0.0"
-failure = "0.1"
-futures = "0.3.4"
-hex = "0.3.2"
-hmac = "0.11.0"
-lazy_static = "1.1.0"
-libsecp256k1 = "0.6.0"
-log = "0.4.11"
-lru = "0.6.3"
-num-bigint = "0.2.2"
-num-derive = "0.3"
-num-traits = "0.2"
-pbkdf2 = { version = "0.8.0", default-features = false }
-rand = "0.7.3"
-regex = "1.5.4"
-scrypt = { version = "0.7.0", default-features = false }
-serde = "1.0.91"
-serde_derive = "1.0.91"
-serde_json = "1.0.41"
-serde_repr = "0.1.7"
-sha2 = "0.9.5"
-tokio = { version = "0.2.13", features = ["sync", "stream", "fs"], default-features = false }
-zstd = { version = "0.8.0", default-features = false }
-# TODO: remove fixed versioning when indexmap compilation issue is resolved
-indexmap = "=1.6.2"
-# TODO: remove fixed versioning when tiny-bip39 compilation issue is resolved
-tiny-bip39 = "=0.7.3"
-
-# optional for std
-reqwest = { version = "0.10.4", optional = true }
-tokio-tungstenite = { version =  "0.11.0", features = ["tls"], optional = true }
-
-# optional for wasm
-indexed_db_futures = { version = "0.2.0", optional = true, default-features = false }
-js-sys = { version = "0.3.50", optional = true }
-wasm-bindgen = { version = "0.2.73", optional = true }
-wasm-bindgen-futures = { version = "0.4.15", optional = true }
-
-[dependencies.home]
-version = "0.5.3"
-optional = true
-
-[dependencies.web-sys]
-version =  "0.3.42"
-optional = true
-features = [
-    "ErrorEvent",
-    "FileReader",
-    "Headers",
-    "MessageEvent",
-    "ProgressEvent",
-    "Request",
-    "RequestInit",
-    "Response",
-    "Window",
-    "WebSocket",
-]
+[build-dependencies]
+serde = '1.0.117'
+serde_derive = '1.0.117'
+serde_json = '1.0.59'
 
 [dev-dependencies]
-dirs = "2.0.2"
-graphql-parser = "0.3.0"
-log4rs = "^0"
-pretty_assertions = "0.6.1"
-
+dirs = '2.0.2'
+graphql-parser = '0.3.0'
+log4rs = '^0'
+pretty_assertions = '0.6.1'
 
 [features]
-default = ["std"]
-std = ["tokio/rt-threaded", "tokio/macros", "reqwest", "tokio-tungstenite", "home"]
-wasm = [
-    "chrono/wasmbind",
-    "indexed_db_futures",
-    "js-sys",
-    "rand/wasm-bindgen",
-    "wasm-bindgen",
-    "wasm-bindgen-futures",
-    "web-sys",
-    "zstd/thin",
-    "zstd/wasm",
-]
+default = [ 'std' ]
+std = [ 'tokio/rt-threaded', 'tokio/macros', 'reqwest', 'tokio-tungstenite', 'home' ]
+wasm = [ 'chrono/wasmbind', 'indexed_db_futures', 'js-sys', 'rand/wasm-bindgen', 'wasm-bindgen', 'wasm-bindgen-futures', 'web-sys', 'zstd/thin', 'zstd/wasm' ]
+
+[lib]
+crate-type = [ 'cdylib', 'rlib', 'staticlib' ]
+name = 'ton_client'
+
