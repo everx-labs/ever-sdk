@@ -107,13 +107,13 @@ pub fn prepare_ext_in_message(
     let dst_addr: MsgAddressInt = hdr.dst.clone();
     let meta = Metadata::try_from(hdr.src.clone()).unwrap();
 
-    let future = 
+    let future =
         decode_and_fix_ext_msg(msg, now_ms, &signer, true, &meta, &ton_client);
 
     let result = ton_client.env.block_on(future);
 
     let (func_id, msg) = result.map_err(|e| format!("prepare_ext_in_message: {:?}", e))?;
-    
+
     Ok((func_id, meta.answer_id, meta.onerror_id, dst_addr, msg))
 }
 
@@ -328,7 +328,7 @@ impl ContractCall {
                         message_id: _,
                         message: _,
                     } => {
-                        browser.log("Sending message..".to_owned()).await;
+                        browser.log("Sending message...".to_owned()).await;
                     }
                     _ => (),
                 };
