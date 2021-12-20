@@ -37,10 +37,60 @@ contract TestDebot18 is Debot {
                 json = obj.get("code_hash");
                 string val = json.get().as_string().get();
                 string codeHash = format("{:064x}",tvm.hash(tvm.code()));
+                require(val == codeHash, 101);
+            }
+
+            string str = format("{}",address(this));
+            string query = "query { accounts(filter: {id: {eq:\"";
+            query.append(str);
+            query.append("\"}}) {code_hash}}");
+            Query.query(
+                tvm.functionId(queryResultWithoutVar),
+                query,
+                ""
+            );
+        } else {
+            require(false, 102);
+        }
+    }
+
+    function queryResultWithoutVar(QueryStatus status, JsonLib.Value object) public {
+        if(status == QueryStatus.Success) {
+            mapping(uint256 => TvmCell) jsonObj;
+            optional(JsonLib.Value) jsonv;
+
+            jsonObj = object.as_object().get();
+            jsonv = jsonObj.get("data");
+            jsonObj = jsonv.get().as_object().get();
+            jsonv = jsonObj.get("accounts");
+            JsonLib.Cell[] array = jsonv.get().as_array().get();
+            require(array.length == 1, 102);
+            for (JsonLib.Cell e: array) {
+                optional(JsonLib.Value) json = JsonLib.decodeArrayValue(e.cell);
+                mapping(uint256 => TvmCell) obj = json.get().as_object().get();
+                json = obj.get("code_hash");
+                string val = json.get().as_string().get();
+                string codeHash = format("{:064x}",tvm.hash(tvm.code()));
                 require(val == codeHash, 103);
             }
+
+            string str = format("{}",address(this));
+            string query = "query { accounts(filter: {id: {eq:\"";
+            query.append(str);
+            query.append("\"}}) {code_hash}}");
+            Query.query(
+                tvm.functionId(queryResultWithWrongVar),
+                query,
+                "abc"
+            );
         } else {
-            require(false, 101);
+            require(false, 104);
+        }
+    }
+
+    function queryResultWithWrongVar(QueryStatus status, JsonLib.Value object) public {
+        if(status != QueryStatus.VariablesError) {
+            require(false, 105);
         }
     }
 
