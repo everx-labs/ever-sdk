@@ -231,10 +231,10 @@ impl QueryInterface {
 
     fn get_query_variables(&self, variables: String) -> Result<Option<JsonValue>, QueryStatus> {
         if !variables.is_empty() {
-            let variables_opt: Option<JsonValue> = Some(serde_json::from_str(&variables).map_err(|_| QueryStatus::VariablesError)?);
-            return Ok(variables_opt);
+            serde_json::from_str(&variables).map(|x| Some(x)).map_err(|_| QueryStatus::VariablesError)
+        } else {
+            Ok(None)
         }
-        Ok(None)
     }
 
     async fn run_query(
@@ -242,7 +242,7 @@ impl QueryInterface {
         query_str: String,
         variables: String,
     ) -> Result<JsonValue, QueryStatus> {
-        let variables = self.get_query_variables(variables).map_err(|_| QueryStatus::VariablesError)?;
+        let variables = self.get_query_variables(variables)?;
 
         let result = query(
             self.ton.clone(),
