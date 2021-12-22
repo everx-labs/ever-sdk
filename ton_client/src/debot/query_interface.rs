@@ -248,7 +248,7 @@ impl QueryInterface {
             self.ton.clone(),
             ParamsOfQuery {
                 query: query_str,
-                variables: variables,
+                variables,
             },
         )
         .await
