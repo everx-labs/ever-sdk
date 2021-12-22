@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.27.1] – 2021-12-09
+## [1.27.2] – 2021-12-22
 ### Fixed
 - Empty `function_name` field in the "create run message failed" error.
 
