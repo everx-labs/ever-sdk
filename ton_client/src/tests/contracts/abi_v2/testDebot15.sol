@@ -30,7 +30,7 @@ contract TestDebot15 is Debot {
 
         optional(JsonLib.Value) val;
         mapping(uint256 => TvmCell) jsonObj = obj.as_object().get();
-        
+
         val = jsonObj.get("name");
         string name = val.get().as_string().get();
         require(name =="Joe",200);
@@ -52,7 +52,7 @@ contract TestDebot15 is Debot {
 
         val = jsonObj.get("addrs");
         mapping(uint256 => TvmCell) addrs = val.get().as_object().get();
-        
+
         val = addrs.get("0:1111111111111111111111111111111111111111111111111111111111111111");
         string desc1 = val.get().as_string().get();
         require(desc1 == "My main account", 205);
@@ -66,6 +66,28 @@ contract TestDebot15 is Debot {
             require(expectedAddrs.exists(nameOpt.get()), 206);
             require(expectedAddrs[nameOpt.get()] == desc, 207);
         }
+
+        string json = "{\"value1\":10,\"value2\":11.00,\"value3\":12.01}";
+        Json.parse(tvm.functionId(setNumberConvertion), json);
+    }
+
+    function setNumberConvertion(bool result, JsonLib.Value obj) public {
+        require(result == true, 210);
+
+        optional(JsonLib.Value) val;
+        mapping(uint256 => TvmCell) jsonObj = obj.as_object().get();
+
+        val = jsonObj.get("value1");
+        int value1 = val.get().as_number().get();
+        require(value1 == 10,211);
+
+        val = jsonObj.get("value2");
+        string value2 = val.get().as_string().get();
+        require(value2 == "11", 212);
+
+        val = jsonObj.get("value3");
+        string value3 = val.get().as_string().get();
+        require(value3 == "12.01", 213);
     }
 
     function getDebotInfo() public functionID(0xDEB) override view returns(
