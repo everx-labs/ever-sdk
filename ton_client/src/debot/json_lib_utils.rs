@@ -48,11 +48,15 @@ impl Value {
         Some(val)
     }
 
-    fn new_number(v: i64) -> Option<Self> {
-        let mut val = Self::default();
-        val.kind = ValKind::Number;
-        val.value = Self::serialize(ParamType::Int(256), json!(v))?;
-        Some(val)
+    fn new_number(v: serde_json::Number) -> Option<Self> {
+        if v.is_i64() {
+            let mut val = Self::default();
+            val.kind = ValKind::Number;
+            val.value = Self::serialize(ParamType::Int(256), json!(v.as_i64()?))?;
+            Some(val)
+        } else {
+            Value::new_string(v.to_string())
+        }
     }
 
     fn new_string(v: String) -> Option<Self> {
@@ -133,7 +137,7 @@ pub fn pack(json_obj: JsonValue) -> Option<Value> {
         JsonValue::Null => Some(Value::new_null()),
         JsonValue::Bool(v) => Value::new_bool(v),
         JsonValue::String(v) => Value::new_string(v),
-        JsonValue::Number(v) => Value::new_number(v.as_i64()?),
+        JsonValue::Number(v) => Value::new_number(v),
         JsonValue::Object(map) => Value::new_object(map),
         JsonValue::Array(array) => Value::new_array(array),
     }
@@ -171,7 +175,7 @@ fn string_to_hex(obj: &mut JsonValue, pointer: &str) -> Result<(), String> {
 pub(crate) fn bypass_json(
     top_pointer: &str,
     obj: &mut JsonValue,
-    p: Param, 
+    p: Param,
     string_or_bytes: ParamType,
 ) -> Result<(), String> {
     let pointer = format!("{}/{}", top_pointer, p.name);
@@ -214,9 +218,9 @@ pub(crate) fn bypass_json(
                 .collect();
             for key in keys {
                 bypass_json(
-                    &pointer, 
-                    obj, 
-                    Param::new(key.as_str(), (**value).clone()), 
+                    &pointer,
+                    obj,
+                    Param::new(key.as_str(), (**value).clone()),
                     string_or_bytes.clone(),
                 )?;
             }
