@@ -23,7 +23,7 @@ ton_sdk = { path = "../ton_sdk", default-features = false }
 ton_abi = { git = "https://github.com/tonlabs/ton-labs-abi.git", tag = "2.1.7" }
 ton_block = { git = "https://github.com/tonlabs/ton-labs-block.git", tag = "1.7.36" }
 ton_block_json = { git = "https://github.com/tonlabs/ton-labs-block-json.git", tag = "0.6.33" }
-ton_executor = { git = "https://github.com/tonlabs/ton-labs-executor.git", tag = "1.15.45", default-features = false }
+ton_executor = { git = "https://github.com/tonlabs/ton-labs-executor.git", tag = "1.15.46", default-features = false }
 ton_types = { git = "https://github.com/tonlabs/ton-labs-types.git", tag = "1.10.12" }
 ton_vm = { git = "https://github.com/tonlabs/ton-labs-vm.git", tag = "1.8.27", default-features = false }
 
