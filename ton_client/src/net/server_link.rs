@@ -46,7 +46,7 @@ const ENDPOINTS_REPLACE: [EndpointsReplacement; 2] = [
     },
     EndpointsReplacement {
         url: "net.ton.dev",
-        aliases: &["net1.ton.dev", "net5.ton.dev"],
+        aliases: &["eri01.net.everos.dev", "rbx01.net.everos.dev", "gra01.net.everos.dev"],
     },
 ];
 
