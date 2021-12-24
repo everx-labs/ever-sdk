@@ -3,10 +3,18 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.28.0] – 2021-12-24
+
+### New
+- **Debot module**:
+    - Аdded float numbers support for Json interface
+
 ### Fixed
+- fixed a bug in Query.query function called with an empty `variables` field.
 - DevNet endpoints now changed to EverOS domain. 
 
+
 ## [1.27.1] – 2021-12-09
+
 ### Fixed
 - Empty `function_name` field in the "create run message failed" error.
 
