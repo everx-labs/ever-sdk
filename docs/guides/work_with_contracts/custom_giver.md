@@ -153,3 +153,7 @@ async function main(client) {
     console.log(`Hello contract was deployed at address: ${address}`);
 }
 ```
+
+## Sample Source Code
+
+Full sample: [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/custom-giver/](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/custom-giver/)
