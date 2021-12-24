@@ -162,17 +162,15 @@ console.log(`Future address of the contract will be: ${address}`);
 
 ## Transfer funds to the future address
 
-Now that you know the address, you need to transfer the initial funds to it from your wallet.
+Now that you know the address, you need to transfer the initial funds to it from your wallet or the Giver.
 
-TON OS SE offers a pre-deployed giver.
-
-When in real networks, you need to use your wallet for this.
+> **Note**: TON OS SE offers a pre-deployed giver. When in real networks, you need to use your wallet for this or deploy your own giver. We have separated guides of [deployment](https://github.com/tonlabs/tondev/blob/main/docs/work_with_devnet.md) and [usage](./custom_giver.md) of your own giver.
 
 ```javascript
 // Request contract deployment funds form a local TON OS SE giver
-    // not suitable for other networks
-    await get_tokens_from_giver(client, address);
-    console.log(`Tokens were transfered from giver to ${address}`);
+// not suitable for other networks
+await get_tokens_from_giver(client, address);
+console.log(`Tokens were transfered from giver to ${address}`);
 ```
 
 ## Deploy
@@ -193,10 +191,10 @@ Method \`process\_message performs all the deploy steps sequentially in one meth
 // Deploy `hello` contract
 // See more info about `process_message` here  
 // https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_processing.md#process_message
-        await client.processing.process_message({
-        send_events: false,
+await client.processing.process_message({
+    send_events: false,
     message_encode_params: deployOptions
-  });
+});
 
 console.log(`Hello contract was deployed at address: ${address}`);
 ```
