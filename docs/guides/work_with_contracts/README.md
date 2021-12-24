@@ -3,6 +3,7 @@
 This section contains the following guides on working with contracts:
 
 * [Add Contract to your App](add\_contract\_to\_your\_app.md)
+* [Using custom Giver](custom_giver.md)
 * [Deploy](deploy.md)
 * [Run on-chain](run\_onchain.md)
 * [Run ABI Get Method](run\_abi\_get\_method.md)

@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - DevNet endpoints now changed to Ever OS domain: eri01.net.everos.dev, rbx01.net.everos.dev, gra01.net.everos.dev
 - **Debot module**:
     - Аdded float numbers support for Json interface
+- Added guide for custom giver usage.
 
 ### Fixed
 - Debot module: fixed a bug in Query.query function called with an empty `variables` field.
