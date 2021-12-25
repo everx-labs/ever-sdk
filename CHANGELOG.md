@@ -2,7 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.28.0] – 2021-12-24
+
+### New
+- DevNet endpoints now changed to Ever OS domain: eri01.net.everos.dev, rbx01.net.everos.dev, gra01.net.everos.dev
+- **Debot module**:
+    - Аdded float numbers support for Json interface
+- Added guide for custom giver usage.
+
+### Fixed
+- Debot module: fixed a bug in Query.query function called with an empty `variables` field.
+
+
 ## [1.27.1] – 2021-12-09
+
 ### Fixed
 - Empty `function_name` field in the "create run message failed" error.
 

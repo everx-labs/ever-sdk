@@ -1189,8 +1189,9 @@ fn test_endpoints_replacement() {
             "main2.ton.dev".to_owned(),
             "main3.ton.dev".to_owned(),
             "main4.ton.dev".to_owned(),
-            "net1.ton.dev".to_owned(),
-            "net5.ton.dev".to_owned(),
+            "eri01.net.everos.dev".to_owned(),
+            "rbx01.net.everos.dev".to_owned(),
+            "gra01.net.everos.dev".to_owned(),
         ]
     );
 

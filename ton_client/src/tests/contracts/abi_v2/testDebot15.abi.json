@@ -19,6 +19,15 @@
 			]
 		},
 		{
+			"name": "setNumberConvertion",
+			"inputs": [
+				{"name":"result","type":"bool"},
+				{"components":[{"name":"kind","type":"uint8"},{"name":"value","type":"cell"},{"name":"object","type":"map(uint256,cell)"},{"components":[{"name":"cell","type":"cell"}],"name":"array","type":"tuple[]"}],"name":"obj","type":"tuple"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "getDebotInfo",
 			"id": "0xDEB",
 			"inputs": [
