@@ -16,10 +16,10 @@ Node.js latest version installed [Docker](https://www.docker.com/get-started) la
 
 ## Prepare development environment
 
-Install [TONDEV CLI](https://github.com/tonlabs/tondev) that will help you easily start local node, compile your contracts, install demo projects and create new empty projects.
+Install [EVERDEV CLI](https://github.com/tonlabs/everdev) that will help you easily start local node, compile your contracts, install demo projects and create new empty projects.
 
 ```shell
-$ npm install -g tondev
+$ npm install -g everdev
 ```
 
 ## Start local node (SE)
@@ -27,15 +27,15 @@ $ npm install -g tondev
 We will run our test on local blockchain for testing ([TON OS SE](https://github.com/tonlabs/tonos-se), start it with this command (docker should be launched).
 
 ```
-$ tondev se start
+$ everdev se start
 ```
 
 ## Install demo application
 
-Create a working folder. Then create a node.js demo project with TONDEV
+Create a working folder. Then create a node.js demo project with EVERDEV
 
 ```
-$ tondev js demo hello-wallet
+$ everdev js demo hello-wallet
 ```
 
 ## Run it!
@@ -145,7 +145,7 @@ async function main(client) {
         process.exit(0);
     } catch (error) {
         if (error.code === 504) {
-            console.error(`Network is inaccessible. You have to start TON OS SE using \`tondev se start\`.\n If you run SE on another port or ip, replace http://localhost endpoint with http://localhost:port or http://ip:port in index.js file.`);
+            console.error(`Network is inaccessible. You have to start TON OS SE using \`everdev se start\`.\n If you run SE on another port or ip, replace http://localhost endpoint with http://localhost:port or http://ip:port in index.js file.`);
         } else {
             console.error(error);
         }

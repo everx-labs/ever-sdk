@@ -15,13 +15,13 @@ If you need to deploy a contract, then you will also need its tvc file. This fil
 
 If you plan to develop and compile the contracts yourself then these docs will help you:
 
-* [Compiling contract with one command with tondev](https://github.com/tonlabs/tondev#compile)
+* [Compiling contract with one command with everdev](https://github.com/tonlabs/everdev#compile)
 * [Solidity Compiler](https://docs.ton.dev/86757ecb2/p/950f8a-write-smart-contract-in-solidity)
 * [Public TON Labs repository with contracts](https://github.com/tonlabs/ton-labs-contracts)
 
 ## Create contract wrapper
 
-Use TONDEV tool to [generate contract wrapper](https://github.com/tonlabs/tondev#create-contract-js-wrapper) that will have the following structure:
+Use EVERDEV tool to [generate contract wrapper](https://github.com/tonlabs/everdev#create-contract-js-wrapper) that will have the following structure:
 
 ```javascript
 export type Contract = {
@@ -35,16 +35,15 @@ abi: AbiContract,
  * If it is missing, then application can't deploy account of this contracts.
  */
 tvc?: string,
+}
 ```
 
-}
-
-If you have tvc file, `TONDEV` will convert it into base64 that is suitable for SDK. If you don't have tvc, then this wrapper will be only useful for interaction with an already deployed contract.
+If you have tvc file, `EVERDEV` will convert it into base64 that is suitable for SDK. If you don't have tvc, then this wrapper will be only useful for interaction with an already deployed contract.
 
 Run this command:
 
 ```
-tondev js wrap contractName.abi.json
+everdev js wrap contractName.abi.json
 ```
 
 The result name of the wrapper will be "ContractName||"Contract".js".
