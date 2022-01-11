@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.28.0] – 2021-12-24
 
 ### New
-- DevNet endpoints now changed to Ever OS domain: eri01.net.everos.dev, rbx01.net.everos.dev, gra01.net.everos.dev
+- DevNet endpoints now changed to EVER OS domain: eri01.net.everos.dev, rbx01.net.everos.dev, gra01.net.everos.dev
 - **Debot module**:
     - Аdded float numbers support for Json interface
 - Added guide for custom giver usage.

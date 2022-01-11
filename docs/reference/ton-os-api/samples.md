@@ -925,7 +925,7 @@ Result:
 }
 ```
 
-where `id` (full address) consists of workchainID:address (Note: smart contract and an account are the same thing in the context of the TON Blockchain. A large smart-contract may employ several accounts lying in different shardchains of the same workchain for load balancing purposes.)
+where `id` (full address) consists of workchainID:address (Note: smart contract and an account are the same thing in the context of the Everscale Blockchain. A large smart-contract may employ several accounts lying in different shardchains of the same workchain for load balancing purposes.)
 
 fields:
 
@@ -1166,7 +1166,7 @@ In the above query:
 
 * account_addr - address of an account to filter by.
 * now - time of the transaction.
-* lt - Logical time. A component of the TON Blockchain that also plays an important role in message delivery is the logical time, usually denoted by Lt. It is a non-negative 64-bit integer, assigned to certain events. For more details, see the TON blockchain specification.
+* lt - Logical time. A component of the Everscale Blockchain that also plays an important role in message delivery is the logical time, usually denoted by Lt. It is a non-negative 64-bit integer, assigned to certain events. For more details, see the Everscale blockchain specification.
 
 **Pagination Query:**
 

@@ -1,10 +1,10 @@
 # Message Expiration
 
-Find out what 'message expired' means and get the understanding of 'retries' mechanism for reliable message delivery in TON Blockchain
+Find out what 'message expired' means and get the understanding of 'retries' mechanism for reliable message delivery in Everscale Blockchain
 
 ## About message expiration
 
-In TON blockchain, client-to-contract interaction is based on external messages. Yet, there is no guarantee for the successful reception of the message by design, and the time when the contract completes message processing is not determined.
+In Everscale blockchain, client-to-contract interaction is based on external messages. Yet, there is no guarantee for the successful reception of the message by design, and the time when the contract completes message processing is not determined.
 
 Moreover, if, for some reason, a contract rejects a message (e.g., if it triggers replay protection), the message is not recorded to the blockchain, and the client has no means to find out the message processing result. In other words, there is neither exact timeout for message processing nor a tool to determine that it was rejected.
 
