@@ -7,19 +7,19 @@ Core Client Library built on the TON OS GraphQL API for Free TON DApp developmen
 [![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ton\_sdk)
 
 ## Content Table
-
-* [Content Table](./#content-table)
-* [Useful links](./#useful-links)
-* [What is Core Free TON Client Library](./#what-is-core-free-ton-client-library)
-* [SDKs in other languages (bindings over TON-SDK)](./#sdks-in-other-languages-bindings-over-ton-sdk)
-  * [Official Javascript(Typescript) SDK](./#official-javascripttypescript-sdk)
-  * [Community bindings](./#community-bindings)
-* [How to use library](./#how-to-use-library)
-* [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
-* [Build client library](./#build-client-library)
-* [Build artifacts](./#build-artifacts)
-* [Run tests](./#run-tests)
-* [Download precompiled binaries](./#download-precompiled-binaries)
+- [TON SDK](#ton-sdk)
+  - [Content Table](#content-table)
+  - [Useful links](#useful-links)
+  - [What is Core Free TON Client Library](#what-is-core-free-ton-client-library)
+  - [SDKs in other languages (bindings over TON-SDK)](#sdks-in-other-languages-bindings-over-ton-sdk)
+    - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
+    - [Community bindings](#community-bindings)
+  - [How to use library](#how-to-use-library)
+  - [How to avoid Soft Breaking Problems](#how-to-avoid-soft-breaking-problems)
+  - [Build client library](#build-client-library)
+  - [Build artifacts](#build-artifacts)
+  - [Run tests](#run-tests)
+  - [Download precompiled binaries](#download-precompiled-binaries)
 
 ## Useful links
 
