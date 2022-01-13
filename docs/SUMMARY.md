@@ -32,6 +32,7 @@
 ## Samples
 
 * [JavaScript Samples](https://github.com/tonlabs/sdk-samples)
+* [GraphQL Samples](./graphql-samples/README.md)
 
 ## guides
 
