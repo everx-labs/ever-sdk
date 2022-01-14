@@ -7,4 +7,7 @@ Use our GraphQL web playground. Insert the code samples on the left side and see
 * [Block Queries](blocks.md)
 * [Account Queries](accounts.md)
 * [Transaction Queries](transactions.md)
+* [Blockchain Queries](blockchain.md)
+* [Statistics Queries](statistics.md)
+* [Counterparites Queries](counterparties.md)
   

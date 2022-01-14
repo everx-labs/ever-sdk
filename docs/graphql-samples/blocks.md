@@ -65,10 +65,10 @@ So, to get its last block height we sort its blocks by `seq_no` in DESC order an
 ```graphql
 query{
   blocks(filter:{
-    workchain_id:{
-      eq:-1
-    }   
-  }
+      workchain_id:{
+        eq:-1
+      }   
+    }
     orderBy:{
       path:"seq_no"
       direction:DESC
@@ -112,10 +112,10 @@ To get the list of shards for Zero workchain for the current moment run this que
 ```graphql
 query{
   blocks(filter:{
-    workchain_id:{
-      eq:-1
-    }   
-  }
+      workchain_id:{
+        eq:-1
+      }   
+    }
     orderBy:{
       path:"seq_no"
       direction:DESC
@@ -204,13 +204,13 @@ Let's get the latest shardchain 0800000000000000 of zero workchain block height 
 ```graphql
 query{
   blocks(filter:{
-    workchain_id:{
-      eq:0
-    }   
-    shard:{
-      eq:"0800000000000000"
+      workchain_id:{
+        eq:0
+      }   
+      shard:{
+        eq:"0800000000000000"
+      }
     }
-  }
     orderBy:{
       path:"seq_no"
       direction:DESC
