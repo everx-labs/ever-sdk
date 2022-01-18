@@ -1,10 +1,10 @@
 # Validate address, convert address
 
-Validate and convert TON address to different formats
+Validate and convert Everscale address to different formats
 
 ## When you may need it?
 
-If you want to validate TON address and/or convert address to bounceable/non-bounceable base64/base64url formats and back.
+If you want to validate Everscale address and/or convert address to bounceable/non-bounceable base64/base64url formats and back.
 
 ## Convert
 

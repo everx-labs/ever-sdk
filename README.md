@@ -1,6 +1,6 @@
 # TON SDK
 
-Core Client Library built on the TON OS GraphQL API for Free TON DApp development
+Core Client Library built on the EVER OS GraphQL API for Everscale DApp development
 
 **Get quick help in our telegram channel:**
 
@@ -33,7 +33,7 @@ Core Client Library built on the TON OS GraphQL API for Free TON DApp developmen
 
 [Guides](docs/guides/installation/add\_sdk\_to\_your\_app.md)
 
-## What is Core Free TON Client Library
+## What is Core Everscale Client Library
 
 Core Client Library is written in Rust that can be dynamically linked. It provides all heavy-computation components and functions, such as TON Virtual Machine, TON Transaction Executor, ABI-related functions, boc-related functions, crypto functions.
 
@@ -45,7 +45,7 @@ Also this approach provided an opportunity to easily create bindings for any pro
 
 Client Library exposes all the functionality through a few of exported functions. All interaction with library is performed using JSON-RPC like protocol.
 
-Library works over [GraphQL API](docs/reference/ton-os-api/) of [TON OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). So, it can be used to interact directly with [TON OS Clouds](docs/reference/ton-os-api/networks.md).
+Library works over [GraphQL API](docs/reference/ton-os-api/) of [EVER OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). So, it can be used to interact directly with [EVER OS Clouds](docs/reference/ton-os-api/networks.md).
 
 ## SDKs in other languages (bindings over TON-SDK)
 
@@ -189,9 +189,9 @@ To run test suite use standard Rust test command
 cargo test
 ```
 
-SDK tests need [TON OS API](docs/reference/ton-os-api/networks.md) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server) which runs in real networks and by local blockchain [TON OS SE](https://github.com/tonlabs/tonos-se).
+SDK tests need [EVER OS API](docs/reference/ton-os-api/networks.md) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server) which runs in real networks and by local blockchain [TON OS SE](https://github.com/tonlabs/tonos-se).
 
-TON OS SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`. If you have TON OS SE running on another address or you need to run tests on a real TON network use the following environment variables to override the default parameters
+TON OS SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`. If you have TON OS SE running on another address or you need to run tests on a real Everscale network use the following environment variables to override the default parameters
 
 ```
 TON_USE_SE: true/false - flag defining if tests run against TON OS SE or a real network (DApp Server)

@@ -21,7 +21,7 @@
 * [Error Codes](reference/error\_codes.md)
 * [JavaScript Reference](https://tonlabs.github.io/ton-client-js/)
 * [Rust Reference](https://github.com/tonlabs/TON-SDK/tree/master/docs/reference/rust-api)
-* [TON OS API](reference/ton-os-api/README.md)
+* [EVER OS API](reference/ton-os-api/README.md)
   * [Networks](reference/ton-os-api/networks.md)
   * [Web Playground](reference/ton-os-api/web\_playground.md)
   * [Schema](reference/ton-os-api/schema.md)
@@ -32,6 +32,7 @@
 ## Samples
 
 * [JavaScript Samples](https://github.com/tonlabs/sdk-samples)
+* [GraphQL Samples](./graphql-samples/README.md)
 
 ## guides
 
