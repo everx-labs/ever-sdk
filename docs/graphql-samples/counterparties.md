@@ -52,15 +52,8 @@ Result:
         "last_message_is_reverse": false,
         "last_message_value": "1073741824"
       },
-      {
-        "account": "-1:3333333333333333333333333333333333333333333333333333333333333333",
-        "counterparty": "-1:e82fd43b261b5021ecf4c2c98da1ebcd5d8636c757290581cbc44581e8ce9e4c",
-        "last_message_id": "1ffaf74d755a9f4ff71eed183475f20c57df8441fe39827f8a786a58aa830db9",
-        "last_message_at": 1642147693,
-        "last_message_is_reverse": false,
-        "last_message_value": "1000000000"
-      },
-      // ... all other 46 records are omitted...
+
+      // ... all other 47 records are omitted...
     ]
   }
 }
