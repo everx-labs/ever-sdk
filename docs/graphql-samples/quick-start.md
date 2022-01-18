@@ -16,4 +16,4 @@ query{
 
 ![scr1.png](../../.gitbook/assets/scr1.png)
 
-Check out [TON Labs SDK query module](../types-and-methods/mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
+Check out [TON Labs SDK net module](../types-and-methods/mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.

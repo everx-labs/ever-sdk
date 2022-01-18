@@ -23,7 +23,7 @@ The [mutation type](https://graphql.github.io/graphql-spec/June2018/#sec-Type-Sy
 
 The **subscription** root type – a long‐lived request that fetches data in response to source events.
 
-Check out [TON Labs SDK query module](../types-and-methods/mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
+Check out [TON Labs SDK net module](../types-and-methods/mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
 
 ## Non-root types
 

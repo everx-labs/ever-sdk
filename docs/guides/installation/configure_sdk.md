@@ -40,7 +40,7 @@ network: {
 });
 ```
 
-If you are working with [local blockchain EVER OS SE](https://github.com/tonlabs/tonos-se), specify [http://localhost](http://localhost) in the `endpoints`.
+If you are working with [local blockchain TON OS SE](https://github.com/tonlabs/tonos-se), specify [http://localhost](http://localhost) in the `endpoints`.
 
 Check the full list of [supported network endpoints](../../reference/ton-os-api/networks.md).
 
@@ -83,7 +83,7 @@ abi?:{
 
 List of DApp Server addresses. Any correct URL format can be specified, including IP addresses. **This parameter is prevailing over `server_address`**.
 
-For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be `net.ton.dev`. For EVER OS SE the endpoint will be `http://localhost`.
+For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be `net.ton.dev`. For TON OS SE the endpoint will be `http://localhost`.
 
 At the start SDK sends requests to all the specified endpoints and chooses the one whose answer returns first. Later, if the application loses connection, SDK will try to switch to another endpoint from the list. If no endpoint is working there will be an error.
 

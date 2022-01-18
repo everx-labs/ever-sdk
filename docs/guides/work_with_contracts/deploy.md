@@ -164,10 +164,10 @@ console.log(`Future address of the contract will be: ${address}`);
 
 Now that you know the address, you need to transfer the initial funds to it from your wallet or the Giver.
 
-> **Note**: EVER OS SE offers a pre-deployed giver. When in real networks, you need to use your wallet for this or deploy your own giver. We have separated guides of [deployment](https://github.com/tonlabs/tondev/blob/main/docs/work_with_devnet.md) and [usage](./custom_giver.md) of your own giver.
+> **Note**: TON OS SE offers a pre-deployed giver. When in real networks, you need to use your wallet for this or deploy your own giver. We have separated guides of [deployment](https://github.com/tonlabs/tondev/blob/main/docs/work_with_devnet.md) and [usage](./custom_giver.md) of your own giver.
 
 ```javascript
-// Request contract deployment funds form a local EVER OS SE giver
+// Request contract deployment funds form a local TON OS SE giver
 // not suitable for other networks
 await get_tokens_from_giver(client, address);
 console.log(`Tokens were transfered from giver to ${address}`);

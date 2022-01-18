@@ -6,20 +6,20 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 
 [![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ton\_sdk)
 
-## Content Table
-
-* [Content Table](./#content-table)
-* [Useful links](./#useful-links)
-* [What is Core TON Client Library](./#what-is-core-ton-client-library)
-* [SDKs in other languages (bindings over TON-SDK)](./#sdks-in-other-languages-bindings-over-ton-sdk)
-  * [Official Javascript(Typescript) SDK](./#official-javascripttypescript-sdk)
-  * [Community bindings](./#community-bindings)
-* [How to use library](./#how-to-use-library)
-* [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
-* [Build client library](./#build-client-library)
-* [Build artifacts](./#build-artifacts)
-* [Run tests](./#run-tests)
-* [Download precompiled binaries](./#download-precompiled-binaries)
+# Content table
+- [TON SDK](#ton-sdk)
+- [Content table](#content-table)
+  - [Useful links](#useful-links)
+  - [What is Core Everscale Client Library](#what-is-core-everscale-client-library)
+  - [SDKs in other languages (bindings over TON-SDK)](#sdks-in-other-languages-bindings-over-ton-sdk)
+    - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
+    - [Community bindings](#community-bindings)
+  - [How to use library](#how-to-use-library)
+  - [How to avoid Soft Breaking Problems](#how-to-avoid-soft-breaking-problems)
+  - [Build client library](#build-client-library)
+  - [Build artifacts](#build-artifacts)
+  - [Run tests](#run-tests)
+  - [Download precompiled binaries](#download-precompiled-binaries)
 
 ## Useful links
 
@@ -33,7 +33,7 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 
 [Guides](docs/guides/installation/add\_sdk\_to\_your\_app.md)
 
-## What is Core TON Client Library
+## What is Core Everscale Client Library
 
 Core Client Library is written in Rust that can be dynamically linked. It provides all heavy-computation components and functions, such as TON Virtual Machine, TON Transaction Executor, ABI-related functions, boc-related functions, crypto functions.
 
@@ -189,14 +189,14 @@ To run test suite use standard Rust test command
 cargo test
 ```
 
-SDK tests need [EVER OS API](docs/reference/ton-os-api/networks.md) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server) which runs in real networks and by local blockchain [EVER OS SE](https://github.com/tonlabs/tonos-se).
+SDK tests need [EVER OS API](docs/reference/ton-os-api/networks.md) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server) which runs in real networks and by local blockchain [TON OS SE](https://github.com/tonlabs/tonos-se).
 
-EVER OS SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`. If you have EVER OS SE running on another address or you need to run tests on a real Everscale network use the following environment variables to override the default parameters
+TON OS SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`. If you have TON OS SE running on another address or you need to run tests on a real Everscale network use the following environment variables to override the default parameters
 
 ```
-TON_USE_SE: true/false - flag defining if tests run against EVER OS SE or a real network (DApp Server)
-TON_NETWORK_ADDRESS - Dapp server or EVER OS SE addresses separated by comma.
-TON_GIVER_SECRET - Giver secret key. If not defined, default EVER OS SE giver keys are used
+TON_USE_SE: true/false - flag defining if tests run against TON OS SE or a real network (DApp Server)
+TON_NETWORK_ADDRESS - Dapp server or TON OS SE addresses separated by comma.
+TON_GIVER_SECRET - Giver secret key. If not defined, default TON OS SE giver keys are used
 TON_GIVER_ADDRESS - Address of the giver to use for prepaying accounts before deploying test contracts. If not defined, the address is calculated using `GiverV2.tvc` and configured public key
 ```
 
