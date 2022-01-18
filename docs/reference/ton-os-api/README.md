@@ -1,12 +1,12 @@
 # API
 
-## TON OS API
+## EVER OS API
 
 Access Blockchain via GraphQL API
 
 ## Overview
 
-GraphQL Server is a major TON Operating System component that provides API and runtime to access TON Blockchain
+GraphQL Server is a major Everscale Operating System component that provides API and runtime to access Everscale Blockchain
 
 ## Use-cases
 

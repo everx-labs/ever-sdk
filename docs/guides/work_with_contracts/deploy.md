@@ -1,6 +1,6 @@
 # Deploy
 
-Find out how to deploy a contract to Free TON Blockchain with SDK
+Find out how to deploy a contract to Everscale Blockchain with SDK
 
 * [About deploy](deploy.md#about-deploy)
 * [Deploy steps](deploy.md#deploy-steps)
@@ -116,7 +116,7 @@ type CallSet = {
 
 ## Calculate the future contract address
 
-TON blockchain requires every contract to have a positive token balance before deployment. The contract pays for the initial deployment message reducing account balance.
+Everscale blockchain requires every contract to have a positive token balance before deployment. The contract pays for the initial deployment message reducing account balance.
 
 We will create deploy message and get future contract address from it.
 
@@ -179,7 +179,7 @@ At this point, you're all set for deployment.
 
 > **Note**: Insufficient balance will result in a failed deployment.
 >
-> **Note**: TON Blockchain does not guarantee a 100% external inbound messages success rate. There is a possibility that deployment will fail. To ensure success, please check for a completed transaction.
+> **Note**: Everscale Blockchain does not guarantee a 100% external inbound messages success rate. There is a possibility that deployment will fail. To ensure success, please check for a completed transaction.
 
 ### Pattern 1. Deploy in 1 step: `process_message` method
 
@@ -207,7 +207,7 @@ Check out how to run contract's methods in the next [section](run\_onchain.md).
 
 ### Pattern 2. Deploy in 3 steps: `encode_message` -> `send_message` -> `wait_for_transaction`
 
-Any interaction with and within the TON blockchain is implemented via messages.
+Any interaction with and within the Everscale blockchain is implemented via messages.
 
 To deploy a contract, first you need to create a deploy message that will include all the initial data:
 
