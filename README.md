@@ -10,7 +10,7 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 - [TON SDK](#ton-sdk)
   - [Content Table](#content-table)
   - [Useful links](#useful-links)
-  - [What is Core Free TON Client Library](#what-is-core-free-ton-client-library)
+  - [What is Core Everscale Client Library](#what-is-core-everscale-client-library)
   - [SDKs in other languages (bindings over TON-SDK)](#sdks-in-other-languages-bindings-over-ton-sdk)
     - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
     - [Community bindings](#community-bindings)
