@@ -32,15 +32,7 @@
 ## Samples
 
 * [JavaScript Samples](https://github.com/tonlabs/sdk-samples)
-* [GraphQL Samples](graphql-samples/README.md)
-  * [Quick Start](graphql-samples/quick-start.md)
-  * [Network Config](graphql-samples/network-config.md)
-  * [Block Queries](graphql-samples/blocks.md)
-  * [Account Queries](graphql-samples/accounts.md)
-  * [Transaction Queries](graphql-samples/transactions.md)
-  * [Blockchain Queries](graphql-samples/blockchain.md)
-  * [Statistics Queries](graphql-samples/statistics.md)
-  * [Counterparites Queries](graphql-samples/counterparties.md)
+* [GraphQL Samples](./graphql-samples/README.md)
 
 ## guides
 
