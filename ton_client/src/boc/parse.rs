@@ -91,8 +91,7 @@ pub async fn parse_transaction(
         transaction: &object.object,
         proof: None,
         status: ton_block::TransactionProcessingStatus::Finalized,
-        workchain_id: None,
-        ..Default::default()
+        workchain_id: None
     };
 
     let parsed = ton_block_json::db_serialize_transaction_ex(
