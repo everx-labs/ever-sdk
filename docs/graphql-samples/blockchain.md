@@ -35,6 +35,28 @@ query {
 }
 ```
 
+Result:
+```json
+{
+  "data": {
+    "blockchain": {
+      "key_blocks": {
+        "edges": [
+          {
+            "node": {
+              "id": "block/f5d26eaab04ac9f2de4eb5a7f47500acb255147bec3fa966fdd865b169ecfcb6",
+              "seq_no": 14057800,
+              "hash": "f5d26eaab04ac9f2de4eb5a7f47500acb255147bec3fa966fdd865b169ecfcb6",
+              "file_hash": "c1e0c74a777e7a255834e362b68ed9871eca23c74118ab0f34b9be762067503c"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
 ## Workchain blocks
 
 Get all shardchain block chains for materchain block with `seq_no` = 13,928,620.
