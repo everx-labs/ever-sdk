@@ -1,17 +1,24 @@
-- [Blockchain queries](#blockchain-queries)
-  - [Key blocks](#key-blocks)
-  - [Workchain blocks](#workchain-blocks)
-  - [Workchain transactions](#workchain-transactions)
-  - [Account transactions](#account-transactions)
-  - [Pagination](#pagination)
-    - [Key blocks pagination](#key-blocks-pagination)
-    - [Workchain blocks pagination](#workchain-blocks-pagination)
-    - [Workchain transactions pagination](#workchain-transactions-pagination)
-    - [Account transactions pagination](#account-transactions-pagination)
+# Blockchain Queries
 
-# Blockchain queries
+UNSTABLE. \
+New API that includes a set of functions for pagination of `blocks`, `key_blocks`, `transactions` and account’s transactions via blockchain-based cursor that stays the same for all the endpoints, compared to an approach with an artificial database cursor - like timestamp or sequential index - that may vary from instance to instance.&#x20;
 
-## Key blocks
+May be useful for Integrators and DApps who needs to sequentially read all blocks or transactions from API, due to inefficiency of simple collection pagination by timestamps or `seq_no` in multithreaded Everscale environment, also such simple pagination may not work when there are too many objects with the same timestamp.
+
+* [Blockchain queries](blockchain.md#blockchain-queries)
+  * [Key blocks](blockchain.md#key-blocks)
+  * [Workchain blocks](blockchain.md#workchain-blocks)
+  * [Workchain transactions](blockchain.md#workchain-transactions)
+  * [Account transactions](blockchain.md#account-transactions)
+  * [Pagination](blockchain.md#pagination)
+    * [Key blocks pagination](blockchain.md#key-blocks-pagination)
+    * [Workchain blocks pagination](blockchain.md#workchain-blocks-pagination)
+    * [Workchain transactions pagination](blockchain.md#workchain-transactions-pagination)
+    * [Account transactions pagination](blockchain.md#account-transactions-pagination)
+
+## Blockchain queries
+
+### Key blocks
 
 Get the last key-block info before the given masterchain `seq_no` = 10,000,000.
 
@@ -35,7 +42,30 @@ query {
 }
 ```
 
-## Workchain blocks
+Result:
+
+```json
+{
+  "data": {
+    "blockchain": {
+      "key_blocks": {
+        "edges": [
+          {
+            "node": {
+              "id": "block/f5d26eaab04ac9f2de4eb5a7f47500acb255147bec3fa966fdd865b169ecfcb6",
+              "seq_no": 14057800,
+              "hash": "f5d26eaab04ac9f2de4eb5a7f47500acb255147bec3fa966fdd865b169ecfcb6",
+              "file_hash": "c1e0c74a777e7a255834e362b68ed9871eca23c74118ab0f34b9be762067503c"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+```
+
+### Workchain blocks
 
 Get all shardchain block chains for materchain block with `seq_no` = 13,928,620.
 
@@ -63,6 +93,7 @@ query {
 ```
 
 Result:
+
 ```json
 {
   "data": {
@@ -105,7 +136,7 @@ Result:
 }
 ```
 
-## Workchain transactions
+### Workchain transactions
 
 Get all transactions with balance delta 1 token and more:
 
@@ -134,6 +165,7 @@ query {
 ```
 
 Result:
+
 ```json
 {
   "data": {
@@ -182,7 +214,7 @@ Result:
 }
 ```
 
-## Account transactions
+### Account transactions
 
 Get info about the latest 50 transactions for the Elector account in masterchain `seq_no` range from 1 million to 2 millions.
 
@@ -211,11 +243,11 @@ query {
 }
 ```
 
-## Pagination
+### Pagination
 
 By default, record counts of all results of GraphQL queries are limited by 50. In order to obtain more records you need to do additional requests using `cursor` from the first or last previously queried record in `before` or `after`, respectivelly, filters. This will help you to organize pagination of queries.
 
-### Key blocks pagination
+#### Key blocks pagination
 
 ```graphql
 query {
@@ -239,6 +271,7 @@ query {
 ```
 
 Result:
+
 ```json
 {
   "data": {
@@ -282,7 +315,7 @@ Result:
 }
 ```
 
-### Workchain blocks pagination
+#### Workchain blocks pagination
 
 ```graphql
 query {
@@ -310,6 +343,7 @@ query {
 ```
 
 Result:
+
 ```json
 {
   "data": {
@@ -346,7 +380,7 @@ Result:
 }
 ```
 
-### Workchain transactions pagination
+#### Workchain transactions pagination
 
 ```graphql
 query {
@@ -374,6 +408,7 @@ query {
 ```
 
 Result:
+
 ```json
 {
   "data": {
@@ -414,7 +449,7 @@ Result:
 }
 ```
 
-### Account transactions pagination
+#### Account transactions pagination
 
 ```graphql
 query {
@@ -449,6 +484,7 @@ query {
 ```
 
 Result:
+
 ```json
 {
   "data": {
