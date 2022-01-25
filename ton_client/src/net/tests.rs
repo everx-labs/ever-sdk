@@ -1186,19 +1186,28 @@ fn test_endpoints_replacement() {
     assert_eq!(
         endpoints.endpoints,
         vec![
-            "main2.ton.dev".to_owned(),
-            "main3.ton.dev".to_owned(),
-            "main4.ton.dev".to_owned(),
-            "eri01.net.everos.dev".to_owned(),
-            "rbx01.net.everos.dev".to_owned(),
-            "gra01.net.everos.dev".to_owned(),
+            "eri01.main.everos.dev",
+            "gra01.main.everos.dev",
+            "gra02.main.everos.dev",
+            "lim01.main.everos.dev",
+            "rbx01.main.everos.dev",
+            "eri01.net.everos.dev",
+            "rbx01.net.everos.dev",
+            "gra01.net.everos.dev",
         ]
     );
 
 
     let client = TestClient::new_with_config(json!({
         "network": {
-            "endpoints": ["https://main2.ton.dev", "https://main.ton.dev/", "http://main3.ton.dev", "main2.ton.dev", ],
+            "endpoints": [
+                "https://main2.ton.dev",
+                "https://main.ton.dev/",
+                "http://main3.ton.dev",
+                "main2.ton.dev",
+                "https://lim01.main.everos.dev",
+                "gra02.main.everos.dev",
+            ],
         }
     }));
 
@@ -1211,9 +1220,13 @@ fn test_endpoints_replacement() {
     assert_eq!(
         endpoints.endpoints,
         vec![
-            "https://main2.ton.dev".to_owned(),
-            "http://main3.ton.dev".to_owned(),
-            "main4.ton.dev".to_owned(),
+            "https://main2.ton.dev",
+            "http://main3.ton.dev",
+            "https://lim01.main.everos.dev",
+            "gra02.main.everos.dev",
+            "eri01.main.everos.dev",
+            "gra01.main.everos.dev",
+            "rbx01.main.everos.dev",
         ]
     );
 }
