@@ -89,56 +89,34 @@ pub fn calc_subset_for_workchain(
     }
 }
 
-/// ADNL server/node key option
-#[derive(Debug)]
-struct KeyOption {
-    id: KeyId,
-    keys: [Option<[u8; 32]>; 3], // public(0) private-lo(1) private-hi(2) keys
-    type_id: i32
-}
+#[derive(Debug, PartialEq, Eq, Hash)]
+struct AdnlKeyId([u8; 32]);
 
-impl KeyOption {
+impl AdnlKeyId {
     pub const KEY_ED25519: i32 = 1209251014;
 
     /// Create from type and public key
     pub fn from_type_and_public_key(type_id: i32, pub_key: &[u8; 32]) -> Self {
-        Self {
-            id: Self::calc_id(type_id, pub_key),
-            keys: [Some(*pub_key), None, None],
-            type_id
-        }
-    }
-
-    /// Get key id
-    pub fn id(&self) -> &KeyId {
-        &self.id
+        Self::calc_id(type_id, pub_key)
     }
 
     /// Calculate key ID
-    fn calc_id(type_id: i32, pub_key: &[u8; 32]) -> KeyId {
+    fn calc_id(type_id: i32, pub_key: &[u8; 32]) -> Self {
         let mut sha = sha2::Sha256::new();
         sha.update(&type_id.to_le_bytes());
         sha.update(pub_key);
         let buf = sha.finalize();
         let src = buf.as_slice();
 
-        KeyId::from_data(src.try_into().unwrap())
+        Self(src.try_into().unwrap())
     }
-}
 
-#[derive(Debug, Clone, Eq, Hash, Ord, PartialEq, PartialOrd)]
-struct KeyId([u8; 32]);
-
-impl KeyId {
-    pub fn from_data(data: [u8; 32]) -> Self {
-        Self(data)
-    }
     pub fn data(&self) -> &[u8; 32] {
         &self.0
     }
 }
 
-impl Display for KeyId {
+impl Display for AdnlKeyId {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         write!(f, "{}", base64::encode(self.data()))
     }
@@ -151,13 +129,13 @@ pub(crate) fn check_crypto_signatures(
 ) -> Result<u64> {
     // Calc validators short ids
     let validators_map = validators_list.iter().map(|desc| {
-        let key = KeyOption::from_type_and_public_key(KeyOption::KEY_ED25519, desc.public_key.as_slice()).id().clone();
+        let key = AdnlKeyId::from_type_and_public_key(AdnlKeyId::KEY_ED25519, desc.public_key.as_slice());
         (key, desc)
     }).collect::<HashMap<_, _>>();
     // Check signatures
     let mut weight = 0;
     for sign in signatures.pure_signatures() {
-        let key = KeyId::from_data(sign.node_id_short.inner());
+        let key = AdnlKeyId(sign.node_id_short.inner());
         if let Some(vd) = validators_map.get(&key) {
             if !vd.public_key.verify_signature(data, &sign.sign) {
                 bail!("bad signature from validator with pub_key {}", key)
