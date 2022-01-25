@@ -5,9 +5,10 @@ use serde_json::Value;
 use ton_abi::contract::MAX_SUPPORTED_VERSION;
 use ton_abi::token::Tokenizer;
 use ton_abi::TokenValue;
-use ton_types::serialize_tree_of_cells;
 
 use crate::abi::{AbiParam, Error};
+use crate::boc::BocCacheType;
+use crate::boc::internal::serialize_cell_to_boc;
 use crate::ClientContext;
 use crate::error::ClientResult;
 
@@ -17,6 +18,8 @@ pub struct ParamsOfEncodeBoc {
     pub params: Vec<AbiParam>,
     /// Parameters and values as a JSON structure
     pub data: Value,
+    /// Cache type to put the result. The BOC itself returned if no cache type provided
+    pub boc_cache: Option<BocCacheType>
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
@@ -28,7 +31,7 @@ pub struct ResultOfEncodeBoc {
 /// Encodes given parameters in JSON into a BOC using param types from ABI.
 #[api_function]
 pub async fn encode_boc(
-    _context: Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfEncodeBoc,
 ) -> ClientResult<ResultOfEncodeBoc> {
     let mut abi_params = Vec::with_capacity(params.params.len());
@@ -41,13 +44,11 @@ pub async fn encode_boc(
 
     let builder = TokenValue::pack_values_into_chain(&tokens, Vec::new(), &MAX_SUPPORTED_VERSION)
         .map_err(|err| Error::invalid_abi(err))?;
-    let mut boc = Vec::new();
+
     let cell = builder.into_cell()
-        .map_err(|err| Error::invalid_abi(err))?;
-    serialize_tree_of_cells(&cell, &mut boc)
         .map_err(|err| Error::invalid_abi(err))?;
 
     Ok(ResultOfEncodeBoc {
-        boc: base64::encode(&boc),
+        boc: serialize_cell_to_boc(&context, cell, "ABI params", params.boc_cache).await?,
     })
 }
