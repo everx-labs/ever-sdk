@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 - Support breaking changes in `ton-labs-block-json` v0.7.1
+- Updated endpoints for `main.ton.dev` alias.
 
 ## [1.28.0] – 2021-12-24
 
