@@ -332,6 +332,10 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::decode_boc,
         crate::abi::decode_boc::decode_boc_api,
     );
+    module.register_async_fn(
+        crate::abi::encode_boc,
+        crate::abi::encode_boc::encode_boc_api,
+    );
     module.register();
 }
 
