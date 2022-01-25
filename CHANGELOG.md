@@ -2,6 +2,9 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.29.0] – 2022-01-28
+
+
 ## [1.28.0] – 2021-12-24
 
 ### New
