@@ -58,6 +58,7 @@ pub async fn parse_message(
         status: ton_block::MessageProcessingStatus::Finalized,
         transaction_id: None,
         transaction_now: None,
+        ..Default::default()
     };
 
     let parsed = ton_block_json::db_serialize_message_ex(
@@ -90,7 +91,7 @@ pub async fn parse_transaction(
         transaction: &object.object,
         proof: None,
         status: ton_block::TransactionProcessingStatus::Finalized,
-        workchain_id: None,
+        workchain_id: None
     };
 
     let parsed = ton_block_json::db_serialize_transaction_ex(
@@ -119,6 +120,7 @@ pub async fn parse_account(
         boc: object.boc.bytes("account")?,
         proof: None,
         account: object.object,
+        ..Default::default()
     };
 
     let parsed = ton_block_json::db_serialize_account_ex(
@@ -148,6 +150,7 @@ pub async fn parse_block(
         id: object.cell.repr_hash(),
         block: object.object,
         status: ton_block::BlockProcessingStatus::Finalized,
+        ..Default::default()
     };
 
     let parsed = ton_block_json::db_serialize_block_ex(
@@ -179,6 +182,7 @@ pub async fn parse_shardstate(
         state: object.object,
         block_id: None,
         workchain_id: params.workchain_id,
+        ..Default::default()
     };
 
     let parsed = ton_block_json::db_serialize_shard_state_ex(
