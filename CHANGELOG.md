@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.29.0] – 2022-01-28
 
 ### New
-- Added `abi.encode_boc` function to encode parameters with values to BOC.
+- Added `abi.encode_boc` function to encode parameters with values to BOC, using ABI types.
 
 
 ## [1.28.0] – 2021-12-24
