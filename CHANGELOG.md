@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### New
 - Added `abi.encode_boc` function to encode parameters with values to BOC, using ABI types.
+- Added support of internal address builder operation in `boc.encode_boc`.
 
 
 ## [1.28.0] – 2021-12-24
