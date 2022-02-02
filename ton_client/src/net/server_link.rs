@@ -78,14 +78,14 @@ pub(crate) struct NetworkState {
     time_checked: AtomicBool,
 }
 
-async fn query_by_url(client_env: &ClientEnv, address: &str, query: &str) -> ClientResult<Value> {
+async fn query_by_url(client_env: &ClientEnv, address: &str, query: &str, timeout: u32) -> ClientResult<Value> {
     let response = client_env
         .fetch(
             &format!("{}?query={}", address, query),
             FetchMethod::Get,
             None,
             None,
-            None,
+            timeout,
         )
         .await?;
 
@@ -484,7 +484,7 @@ impl ServerLink {
                     FetchMethod::Post,
                     Some(headers.clone()),
                     Some(request.clone()),
-                    query.timeout.or(Some(self.config.query_timeout)),
+                    query.timeout.unwrap_or(self.config.query_timeout),
                 )
                 .await;
 
@@ -650,6 +650,7 @@ impl ServerLink {
             &self.client_env,
             &endpoint.query_url,
             "%7Binfo%7Bendpoints%7D%7D",
+            self.config.query_timeout,
         )
         .await
         .add_network_url(&self)

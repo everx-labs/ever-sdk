@@ -77,6 +77,7 @@ impl Endpoint {
         client_env: &ClientEnv,
         query_url: &str,
         query: &str,
+        timeout: u32,
     ) -> ClientResult<(Value, String, Option<String>)> {
         let response = client_env
             .fetch(
@@ -84,7 +85,7 @@ impl Endpoint {
                 FetchMethod::Get,
                 None,
                 None,
-                None,
+                timeout,
             )
             .await?;
         let query_url = response.url.trim_end_matches(query).to_owned();
@@ -100,7 +101,7 @@ impl Endpoint {
         let address = Self::expand_address(address);
         let info_request_time = client_env.now_ms();
         let (info, query_url, ip_address) =
-            Self::fetch_info_with_url(client_env, &address, QUERY_INFO_SCHEMA).await?;
+            Self::fetch_info_with_url(client_env, &address, QUERY_INFO_SCHEMA, config.query_timeout).await?;
         let subscription_url = query_url
             .replace("https://", "wss://")
             .replace("http://", "ws://");
@@ -126,7 +127,7 @@ impl Endpoint {
         if self.version() >= V_0_39_0 {
             let info_request_time = client_env.now_ms();
             let (info, _, _) =
-                Self::fetch_info_with_url(client_env, &self.query_url, QUERY_INFO_METRICS).await?;
+                Self::fetch_info_with_url(client_env, &self.query_url, QUERY_INFO_METRICS, config.query_timeout).await?;
             self.apply_server_info(client_env, config, info_request_time, &info)?;
         }
         Ok(())
