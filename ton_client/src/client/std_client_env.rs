@@ -192,7 +192,7 @@ impl ClientEnv {
         method: FetchMethod,
         headers: Option<HashMap<String, String>>,
         body: Option<String>,
-        timeout_ms: Option<u32>,
+        timeout_ms: u32,
     ) -> ClientResult<FetchResult> {
         #[cfg(test)]
         {
@@ -204,16 +204,15 @@ impl ClientEnv {
         let method = Method::from_str(method.as_str())
             .map_err(|err| Error::http_request_create_error(err))?;
 
-        let mut request = self.http_client.request(method, url);
+        let mut request = self.http_client
+            .request(method, url)
+            .timeout(std::time::Duration::from_millis(timeout_ms as u64));
 
         if let Some(headers) = headers {
             request = request.headers(Self::string_map_to_header_map(headers)?);
         }
         if let Some(body) = body {
             request = request.body(body);
-        }
-        if let Some(timeout) = timeout_ms {
-            request = request.timeout(std::time::Duration::from_millis(timeout as u64));
         }
 
         let response = request

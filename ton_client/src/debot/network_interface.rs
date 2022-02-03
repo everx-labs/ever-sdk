@@ -108,7 +108,7 @@ impl NetworkInterface {
                     None
                 },
                 body,
-                None,
+                self.client.config.network.query_timeout,
             )
             .await
             .map_err(|e| format!("{}", e))?;
