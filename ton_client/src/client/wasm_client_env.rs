@@ -303,7 +303,7 @@ impl ClientEnv {
 
         let resp_result = futures::select!(
                 result = resp_future => result,
-                timer = Self::set_timer_internal(timeout as u64).fuse() => {
+                timer = Self::set_timer_internal(timeout_ms as u64).fuse() => {
                     Err(timer
                         .err()
                         .unwrap_or(Error::http_request_send_error("fetch operation timeout")))
