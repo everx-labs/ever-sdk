@@ -30,6 +30,8 @@ Provides message encoding and decoding according to the ABI specification.
 
 [decode_boc](#decode_boc) – Decodes BOC into JSON as a set of provided parameters.
 
+[encode_boc](#encode_boc) – Encodes given parameters in JSON into a BOC using param types from ABI.
+
 ## Types
 [AbiErrorCode](#abierrorcode)
 
@@ -112,6 +114,10 @@ Provides message encoding and decoding according to the ABI specification.
 [ParamsOfDecodeBoc](#paramsofdecodeboc)
 
 [ResultOfDecodeBoc](#resultofdecodeboc)
+
+[ParamsOfEncodeBoc](#paramsofencodeboc)
+
+[ResultOfEncodeBoc](#resultofencodeboc)
 
 
 # Functions
@@ -651,6 +657,37 @@ function decode_boc(
 ### Result
 
 - `data`: _any_ – Decoded data as a JSON structure.
+
+
+## encode_boc
+
+Encodes given parameters in JSON into a BOC using param types from ABI.
+
+```ts
+type ParamsOfEncodeBoc = {
+    params: AbiParam[],
+    data: any,
+    boc_cache?: BocCacheType
+}
+
+type ResultOfEncodeBoc = {
+    boc: string
+}
+
+function encode_boc(
+    params: ParamsOfEncodeBoc,
+): Promise<ResultOfEncodeBoc>;
+```
+### Parameters
+- `params`: _[AbiParam](mod_abi.md#abiparam)[]_ – Parameters to encode into BOC
+- `data`: _any_ – Parameters and values as a JSON structure
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result.
+<br>The BOC itself returned if no cache type provided
+
+
+### Result
+
+- `boc`: _string_ – BOC encoded as base64
 
 
 # Types
@@ -1408,5 +1445,28 @@ type ResultOfDecodeBoc = {
 }
 ```
 - `data`: _any_ – Decoded data as a JSON structure.
+
+
+## ParamsOfEncodeBoc
+```ts
+type ParamsOfEncodeBoc = {
+    params: AbiParam[],
+    data: any,
+    boc_cache?: BocCacheType
+}
+```
+- `params`: _[AbiParam](mod_abi.md#abiparam)[]_ – Parameters to encode into BOC
+- `data`: _any_ – Parameters and values as a JSON structure
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result.
+<br>The BOC itself returned if no cache type provided
+
+
+## ResultOfEncodeBoc
+```ts
+type ResultOfEncodeBoc = {
+    boc: string
+}
+```
+- `boc`: _string_ – BOC encoded as base64
 
 

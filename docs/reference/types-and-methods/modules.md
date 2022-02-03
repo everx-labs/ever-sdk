@@ -139,6 +139,8 @@ Where:
 
 [decode_boc](mod_abi.md#decode_boc) – Decodes BOC into JSON as a set of provided parameters.
 
+[encode_boc](mod_abi.md#encode_boc) – Encodes given parameters in JSON into a BOC using param types from ABI.
+
 ## [boc](mod_boc.md) – BOC manipulation module.
 
 [parse_message](mod_boc.md#parse_message) – Parses message boc into a JSON
@@ -165,7 +167,7 @@ Where:
 
 [cache_unpin](mod_boc.md#cache_unpin) – Unpin BOCs with specified pin.
 
-[encode_boc](mod_boc.md#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type
+[encode_boc](mod_boc.md#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type.
 
 [get_code_salt](mod_boc.md#get_code_salt) – Returns the contract code's salt if it is present.
 
