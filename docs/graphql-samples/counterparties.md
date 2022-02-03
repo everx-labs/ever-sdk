@@ -1,10 +1,16 @@
-- [Counterparties queries](#counterparties-queries)
-  - [All counterparties for specific account](#all-counterparties-for-specific-account)
-  - [Pagination](#pagination)
+# Counterparites Queries
 
-# Counterparties queries
+Returns a list of addresses the specified account interacted with, sorted by the latest interaction time (the latest message time between 2 accounts) DESC. Feature may be useful for wallet applications or for chat-based DApps to show the list of counterparties in descending order.\
+\
+Available only in Cloud API.
 
-## All counterparties for specific account
+* [Counterparties queries](counterparties.md#counterparties-queries)
+  * [All counterparties for specific account](counterparties.md#all-counterparties-for-specific-account)
+  * [Pagination](counterparties.md#pagination)
+
+## Counterparties queries
+
+### All counterparties for specific account
 
 Query information about the last value flows of all counterparties of the elector account:
 
@@ -24,6 +30,7 @@ query {
 ```
 
 Result:
+
 ```json
 {
   "data": {
@@ -59,7 +66,7 @@ Result:
 }
 ```
 
-## Pagination
+### Pagination
 
 By default, record counts of all results of GraphQL queries are limited by 50. In order to obtain more records you need to do additional requests using `cursor` from the first or last previously queried record in `before` or `after`, respectivelly, filters. This will help you to organize pagination of counterparites queries:
 
@@ -81,6 +88,7 @@ query {
 ```
 
 Result:
+
 ```json
 {
   "data": {

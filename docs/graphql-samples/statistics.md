@@ -1,4 +1,10 @@
-# Query blockchain statistics
+# Statistics Queries
+
+General Everscale Network statistics related to accounts, transactions, messages and blocks. And also some essential statistics about validators and depools.\
+\
+Available only in Cloud API.
+
+
 
 Get all blockchain statistics:
 
@@ -48,6 +54,7 @@ query {
 ```
 
 Result:
+
 ```json
 {
   "data": {

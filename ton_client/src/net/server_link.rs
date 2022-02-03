@@ -42,11 +42,21 @@ struct EndpointsReplacement<'a> {
 const ENDPOINTS_REPLACE: [EndpointsReplacement; 2] = [
     EndpointsReplacement {
         url: "main.ton.dev",
-        aliases: &["main2.ton.dev", "main3.ton.dev", "main4.ton.dev"],
+        aliases: &[
+            "eri01.main.everos.dev",
+            "gra01.main.everos.dev",
+            "gra02.main.everos.dev",
+            "lim01.main.everos.dev",
+            "rbx01.main.everos.dev",
+        ],
     },
     EndpointsReplacement {
         url: "net.ton.dev",
-        aliases: &["eri01.net.everos.dev", "rbx01.net.everos.dev", "gra01.net.everos.dev"],
+        aliases: &[
+            "eri01.net.everos.dev",
+            "rbx01.net.everos.dev",
+            "gra01.net.everos.dev",
+        ],
     },
 ];
 
