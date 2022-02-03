@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 - Added `abi.encode_boc` function to encode parameters with values to BOC, using ABI types.
 - Added support of `address` type in `boc.encode_boc`.
 - All fetch requests are now called with timeouts to prevent freezing in case of infinite answer.
-- Support of `myCode` instruction in TVM
+- Support of `MYCODE` instruction in TVM
 
 ## [1.28.1] – 2022-01-25
 
