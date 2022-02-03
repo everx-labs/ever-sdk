@@ -1097,9 +1097,9 @@ fn test_encode_boc() {
         AbiParam { name: "bounce".to_owned(), param_type: "bool".to_owned(), ..Default::default() },
     ];
 
-    let boc = client.request::<_, ResultOfEncodeBoc>(
+    let boc = client.request::<_, ResultOfAbiEncodeBoc>(
         "abi.encode_boc",
-        ParamsOfEncodeBoc {
+        ParamsOfAbiEncodeBoc {
             params,
             data: json!({
                 "dest": "-1:3333333333333333333333333333333333333333333333333333333333333333",

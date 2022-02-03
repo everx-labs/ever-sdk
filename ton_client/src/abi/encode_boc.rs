@@ -13,7 +13,7 @@ use crate::ClientContext;
 use crate::error::ClientResult;
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
-pub struct ParamsOfEncodeBoc {
+pub struct ParamsOfAbiEncodeBoc {
     /// Parameters to encode into BOC
     pub params: Vec<AbiParam>,
     /// Parameters and values as a JSON structure
@@ -23,7 +23,7 @@ pub struct ParamsOfEncodeBoc {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
-pub struct ResultOfEncodeBoc {
+pub struct ResultOfAbiEncodeBoc {
     /// BOC encoded as base64
     pub boc: String,
 }
@@ -32,8 +32,8 @@ pub struct ResultOfEncodeBoc {
 #[api_function]
 pub async fn encode_boc(
     context: Arc<ClientContext>,
-    params: ParamsOfEncodeBoc,
-) -> ClientResult<ResultOfEncodeBoc> {
+    params: ParamsOfAbiEncodeBoc,
+) -> ClientResult<ResultOfAbiEncodeBoc> {
     let mut abi_params = Vec::with_capacity(params.params.len());
     for param in params.params {
         abi_params.push(param.try_into()?)
@@ -48,7 +48,7 @@ pub async fn encode_boc(
     let cell = builder.into_cell()
         .map_err(|err| Error::invalid_abi(err))?;
 
-    Ok(ResultOfEncodeBoc {
+    Ok(ResultOfAbiEncodeBoc {
         boc: serialize_cell_to_boc(&context, cell, "ABI params", params.boc_cache).await?,
     })
 }

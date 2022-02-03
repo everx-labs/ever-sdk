@@ -115,9 +115,9 @@ Provides message encoding and decoding according to the ABI specification.
 
 [ResultOfDecodeBoc](#resultofdecodeboc)
 
-[ParamsOfEncodeBoc](#paramsofencodeboc)
+[ParamsOfAbiEncodeBoc](#paramsofabiencodeboc)
 
-[ResultOfEncodeBoc](#resultofencodeboc)
+[ResultOfAbiEncodeBoc](#resultofabiencodeboc)
 
 
 # Functions
@@ -664,19 +664,19 @@ function decode_boc(
 Encodes given parameters in JSON into a BOC using param types from ABI.
 
 ```ts
-type ParamsOfEncodeBoc = {
+type ParamsOfAbiEncodeBoc = {
     params: AbiParam[],
     data: any,
     boc_cache?: BocCacheType
 }
 
-type ResultOfEncodeBoc = {
+type ResultOfAbiEncodeBoc = {
     boc: string
 }
 
 function encode_boc(
-    params: ParamsOfEncodeBoc,
-): Promise<ResultOfEncodeBoc>;
+    params: ParamsOfAbiEncodeBoc,
+): Promise<ResultOfAbiEncodeBoc>;
 ```
 ### Parameters
 - `params`: _[AbiParam](mod_abi.md#abiparam)[]_ – Parameters to encode into BOC
@@ -1447,9 +1447,9 @@ type ResultOfDecodeBoc = {
 - `data`: _any_ – Decoded data as a JSON structure.
 
 
-## ParamsOfEncodeBoc
+## ParamsOfAbiEncodeBoc
 ```ts
-type ParamsOfEncodeBoc = {
+type ParamsOfAbiEncodeBoc = {
     params: AbiParam[],
     data: any,
     boc_cache?: BocCacheType
@@ -1461,9 +1461,9 @@ type ParamsOfEncodeBoc = {
 <br>The BOC itself returned if no cache type provided
 
 
-## ResultOfEncodeBoc
+## ResultOfAbiEncodeBoc
 ```ts
-type ResultOfEncodeBoc = {
+type ResultOfAbiEncodeBoc = {
     boc: string
 }
 ```

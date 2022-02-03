@@ -39,7 +39,7 @@ pub use encode_account::{
     encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,
 };
 pub use encode_boc::{
-    encode_boc, ParamsOfEncodeBoc, ResultOfEncodeBoc,
+    encode_boc, ParamsOfAbiEncodeBoc, ResultOfAbiEncodeBoc,
 };
 pub use encode_message::{
     attach_signature, attach_signature_to_message_body, encode_internal_message, encode_message,
