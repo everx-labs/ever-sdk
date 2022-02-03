@@ -12,4 +12,3 @@ syn = { features = [ 'full' ], version = '1.0' }
 
 [lib]
 proc-macro = true
-
