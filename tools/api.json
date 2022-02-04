@@ -1,5 +1,5 @@
 {
-  "version": "1.29.0",
+  "version": "1.30.0",
   "modules": [
     {
       "name": "client",
@@ -7390,6 +7390,77 @@
           "description": null
         },
         {
+          "name": "ParamsOfEncodeExternalInMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "src",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Source address.",
+              "description": null
+            },
+            {
+              "name": "dst",
+              "type": "String",
+              "summary": "Destination address.",
+              "description": null
+            },
+            {
+              "name": "init",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Bag of cells with state init (used in deploy messages).",
+              "description": null
+            },
+            {
+              "name": "body",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Bag of cells with the message body encoded as base64.",
+              "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result.",
+              "description": "The BOC itself returned if no cache type provided"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfEncodeExternalInMessage",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "message",
+              "type": "String",
+              "summary": "Message BOC encoded with `base64`.",
+              "description": null
+            },
+            {
+              "name": "message_id",
+              "type": "String",
+              "summary": "Message id.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfGetCompilerVersion",
           "type": "Struct",
           "struct_fields": [
@@ -8062,6 +8133,44 @@
               {
                 "type": "Ref",
                 "ref_name": "boc.ResultOfEncodeTvc"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "encode_external_in_message",
+          "summary": "Encodes a message",
+          "description": "Allows to encode any external inbound message.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "boc.ParamsOfEncodeExternalInMessage",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "boc.ResultOfEncodeExternalInMessage"
               }
             ]
           },
@@ -10537,6 +10646,30 @@
           "description": null
         },
         {
+          "name": "ParamsOfSubscribe",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "subscription",
+              "type": "String",
+              "summary": "GraphQL subscription text.",
+              "description": null
+            },
+            {
+              "name": "variables",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "Variables used in subscription.",
+              "description": "Must be a map with named values that can be used in query."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfFindLastShardBlock",
           "type": "Struct",
           "struct_fields": [
@@ -11192,7 +11325,7 @@
         },
         {
           "name": "subscribe_collection",
-          "summary": "Creates a subscription",
+          "summary": "Creates a collection subscription",
           "description": "Triggers for each insert/update of data that satisfies\nthe `filter` conditions.\nThe projection fields are limited to `result` fields.\n\nThe subscription is a persistent communication channel between\nclient and Free TON Network.\nAll changes in the blockchain will be reflected in realtime.\nChanges means inserts and updates of the blockchain entities.\n\n### Important Notes on Subscriptions\n\nUnfortunately sometimes the connection with the network brakes down.\nIn this situation the library attempts to reconnect to the network.\nThis reconnection sequence can take significant time.\nAll of this time the client is disconnected from the network.\n\nBad news is that all blockchain changes that happened while\nthe client was disconnected are lost.\n\nGood news is that the client report errors to the callback when\nit loses and resumes connection.\n\nSo, if the lost changes are important to the application then\nthe application must handle these error reports.\n\nLibrary reports errors with `responseType` == 101\nand the error object passed via `params`.\n\nWhen the library has successfully reconnected\nthe application receives callback with\n`responseType` == 101 and `params.code` == 614 (NetworkModuleResumed).\n\nApplication can use several ways to handle this situation:\n- If application monitors changes for the single blockchain\nobject (for example specific account):  application\ncan perform a query for this object and handle actual data as a\nregular data from the subscription.\n- If application monitors sequence of some blockchain objects\n(for example transactions of the specific account): application must\nrefresh all cached (or visible to user) lists where this sequences presents.",
           "params": [
             {
@@ -11212,6 +11345,57 @@
               "name": "params",
               "type": "Ref",
               "ref_name": "net.ParamsOfSubscribeCollection",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "callback",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "Request"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfSubscribeCollection"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "subscribe",
+          "summary": "Creates a subscription",
+          "description": "The subscription is a persistent communication channel between\nclient and Everscale Network.\n\n### Important Notes on Subscriptions\n\nUnfortunately sometimes the connection with the network brakes down.\nIn this situation the library attempts to reconnect to the network.\nThis reconnection sequence can take significant time.\nAll of this time the client is disconnected from the network.\n\nBad news is that all changes that happened while\nthe client was disconnected are lost.\n\nGood news is that the client report errors to the callback when\nit loses and resumes connection.\n\nSo, if the lost changes are important to the application then\nthe application must handle these error reports.\n\nLibrary reports errors with `responseType` == 101\nand the error object passed via `params`.\n\nWhen the library has successfully reconnected\nthe application receives callback with\n`responseType` == 101 and `params.code` == 614 (NetworkModuleResumed).\n\nApplication can use several ways to handle this situation:\n- If application monitors changes for the single\nobject (for example specific account):  application\ncan perform a query for this object and handle actual data as a\nregular data from the subscription.\n- If application monitors sequence of some objects\n(for example transactions of the specific account): application must\nrefresh all cached (or visible to user) lists where this sequences presents.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "net.ParamsOfSubscribe",
               "summary": null,
               "description": null
             },

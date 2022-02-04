@@ -16,7 +16,9 @@ Network access.
 
 [unsubscribe](#unsubscribe) – Cancels a subscription
 
-[subscribe_collection](#subscribe_collection) – Creates a subscription
+[subscribe_collection](#subscribe_collection) – Creates a collection subscription
+
+[subscribe](#subscribe) – Creates a subscription
 
 [suspend](#suspend) – Suspends network module to stop any network activity
 
@@ -86,6 +88,8 @@ Network access.
 [ResultOfSubscribeCollection](#resultofsubscribecollection)
 
 [ParamsOfSubscribeCollection](#paramsofsubscribecollection)
+
+[ParamsOfSubscribe](#paramsofsubscribe)
 
 [ParamsOfFindLastShardBlock](#paramsoffindlastshardblock)
 
@@ -306,7 +310,7 @@ function unsubscribe(
 
 ## subscribe_collection
 
-Creates a subscription
+Creates a collection subscription
 
 Triggers for each insert/update of data that satisfies
 the `filter` conditions.
@@ -369,6 +373,72 @@ function subscribe_collection(
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
+- `responseHandler`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.
+
+### Result
+
+- `handle`: _number_ – Subscription handle.
+<br>Must be closed with `unsubscribe`
+
+
+## subscribe
+
+Creates a subscription
+
+The subscription is a persistent communication channel between
+client and Everscale Network.
+
+### Important Notes on Subscriptions
+
+Unfortunately sometimes the connection with the network brakes down.
+In this situation the library attempts to reconnect to the network.
+This reconnection sequence can take significant time.
+All of this time the client is disconnected from the network.
+
+Bad news is that all changes that happened while
+the client was disconnected are lost.
+
+Good news is that the client report errors to the callback when
+it loses and resumes connection.
+
+So, if the lost changes are important to the application then
+the application must handle these error reports.
+
+Library reports errors with `responseType` == 101
+and the error object passed via `params`.
+
+When the library has successfully reconnected
+the application receives callback with
+`responseType` == 101 and `params.code` == 614 (NetworkModuleResumed).
+
+Application can use several ways to handle this situation:
+- If application monitors changes for the single
+object (for example specific account):  application
+can perform a query for this object and handle actual data as a
+regular data from the subscription.
+- If application monitors sequence of some objects
+(for example transactions of the specific account): application must
+refresh all cached (or visible to user) lists where this sequences presents.
+
+```ts
+type ParamsOfSubscribe = {
+    subscription: string,
+    variables?: any
+}
+
+type ResultOfSubscribeCollection = {
+    handle: number
+}
+
+function subscribe(
+    params: ParamsOfSubscribe,
+    responseHandler?: ResponseHandler,
+): Promise<ResultOfSubscribeCollection>;
+```
+### Parameters
+- `subscription`: _string_ – GraphQL subscription text.
+- `variables`?: _any_ – Variables used in subscription.
+<br>Must be a map with named values that can be used in query.
 - `responseHandler`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.
 
 ### Result
@@ -1218,6 +1288,18 @@ type ParamsOfSubscribeCollection = {
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
+
+
+## ParamsOfSubscribe
+```ts
+type ParamsOfSubscribe = {
+    subscription: string,
+    variables?: any
+}
+```
+- `subscription`: _string_ – GraphQL subscription text.
+- `variables`?: _any_ – Variables used in subscription.
+<br>Must be a map with named values that can be used in query.
 
 
 ## ParamsOfFindLastShardBlock

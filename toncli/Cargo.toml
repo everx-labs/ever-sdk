@@ -9,7 +9,7 @@ license = 'Apache-2.0'
 name = 'toncli'
 readme = 'README.md'
 repository = 'https://github.com/tonlabs/TON-SDK'
-version = '1.28.1'
+version = '1.30.0'
 
 [dependencies]
 base64 = '0.13.0'

@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.30.0] – 2022-02-03
+## [1.30.0] – 2022-02-04
 
 ### New
 - Added `boc.encode_external_in_message` function to encode message BOC based on 
