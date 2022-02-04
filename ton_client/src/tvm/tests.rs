@@ -12,27 +12,24 @@
  *
  */
 
-use super::*;
 use super::types::resolve_blockchain_config;
+use super::*;
 use crate::abi::{
-    Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
     encode_account::{ParamsOfEncodeAccount, StateInitSource},
+    Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
-use crate::tvm::types::mainnet_config;
-use crate::boc::{
-    BocCacheType,
-    internal::{deserialize_object_from_base64, serialize_cell_to_base64},
-};
+use crate::boc::{internal::{deserialize_object_from_base64, serialize_cell_to_base64}, BocCacheType};
 use crate::error::ClientResult;
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
-use crate::tests::{TestClient, HELLO, SUBSCRIBE, EXCEPTION};
+use crate::tests::{TestClient, EXCEPTION, HELLO, SUBSCRIBE};
+use crate::tvm::types::mainnet_config;
 use api_info::ApiModule;
 use serde_json::Value;
-use ton_types::{BuilderData, Cell};
-use ton_vm::stack::{StackItem, continuation::ContinuationData};
 use std::sync::Arc;
+use ton_types::{BuilderData, Cell};
+use ton_vm::stack::{continuation::ContinuationData, StackItem};
 
 const ELECTOR_ADDRESS: &str = "-1:3333333333333333333333333333333333333333333333333333333333333333";
 const ELECTOR_CODE: &str = "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";
@@ -322,7 +319,9 @@ async fn test_run_account_none() {
             crate::boc::ParamsOfParse {
                 boc: result.account,
             },
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
     assert_eq!(
         parsed.parsed["id"],
         "0:f18d106c11586689b11e946269ec1550b69654a8d5964de668149c28877fb65a"
@@ -378,7 +377,9 @@ async fn test_run_account_uninit() {
             crate::boc::ParamsOfParse {
                 boc: result.account,
             },
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
     assert_eq!(parsed.parsed["id"], message.address);
     assert_eq!(parsed.parsed["acc_type_name"], "Active");
 }
@@ -420,9 +421,18 @@ async fn profile_tvm() {
 
     let start = chrono::prelude::Utc::now().timestamp_millis();
     let mut messages = vec![];
-    for id in result.decoded.unwrap().output.unwrap()["ids"].as_array().unwrap() {
+    for id in result.decoded.unwrap().output.unwrap()["ids"]
+        .as_array()
+        .unwrap()
+    {
         let mut contender_messages = vec![];
-        for func in &["getInfoFor", "getStatsFor", "getVotesFor", "getTotalRatingFor", "getVotesPerJuror"] {
+        for func in &[
+            "getInfoFor",
+            "getStatsFor",
+            "getVotesFor",
+            "getTotalRatingFor",
+            "getVotesPerJuror",
+        ] {
             let message = client
                 .encode_message(ParamsOfEncodeMessage {
                     abi: abi.clone(),
@@ -430,7 +440,7 @@ async fn profile_tvm() {
                         func,
                         json!({
                             "id": id.as_str().unwrap(),
-                        })
+                        }),
                     ),
                     signer: Signer::None,
                     address: Some(address.clone()),
@@ -447,7 +457,11 @@ async fn profile_tvm() {
     }
 
     let account = result.account;
-    println!("{} messages encoded in {}ms", messages.len() * 5, chrono::prelude::Utc::now().timestamp_millis() - start);
+    println!(
+        "{} messages encoded in {}ms",
+        messages.len() * 5,
+        chrono::prelude::Utc::now().timestamp_millis() - start
+    );
     let start = chrono::prelude::Utc::now().timestamp_millis();
 
     for contender_messages in messages {
@@ -468,8 +482,14 @@ async fn profile_tvm() {
         break;
     }
 
-    println!("Tvm called in {}ms", chrono::prelude::Utc::now().timestamp_millis() - start);
-    println!("Whole test in {}ms", chrono::prelude::Utc::now().timestamp_millis() - very_start);
+    println!(
+        "Tvm called in {}ms",
+        chrono::prelude::Utc::now().timestamp_millis() - start
+    );
+    println!(
+        "Whole test in {}ms",
+        chrono::prelude::Utc::now().timestamp_millis() - very_start
+    );
 }
 
 #[test]
@@ -533,20 +553,14 @@ fn test_stack_serialization() {
         StackItem::int(123),
         StackItem::tuple(vec![
             StackItem::int(456),
-            StackItem::tuple(vec![
-                StackItem::int(789),
-                StackItem::None,
-            ])
-        ])
+            StackItem::tuple(vec![StackItem::int(789), StackItem::None]),
+        ]),
     ]);
 
     let extended_list = StackItem::tuple(vec![
         StackItem::tuple(vec![
             StackItem::tuple(vec![StackItem::int(123), StackItem::int(456)]),
-            StackItem::tuple(vec![
-                StackItem::int(123),
-                StackItem::None,
-            ])
+            StackItem::tuple(vec![StackItem::int(123), StackItem::None]),
         ]),
         StackItem::tuple(vec![
             StackItem::tuple(vec![
@@ -555,15 +569,12 @@ fn test_stack_serialization() {
                     StackItem::int(123),
                     StackItem::tuple(vec![
                         StackItem::int(456),
-                        StackItem::tuple(vec![
-                            StackItem::int(789),
-                            StackItem::None
-                        ])
-                    ])
-                ])
+                        StackItem::tuple(vec![StackItem::int(789), StackItem::None]),
+                    ]),
+                ]),
             ]),
             StackItem::None,
-        ])
+        ]),
     ]);
 
     let stack_items = stack::deserialize_items(input.as_array().unwrap().iter()).unwrap();
@@ -587,7 +598,6 @@ fn test_stack_serialization() {
             extended_list.clone(),
         ]
     );
-
 
     let serialized = stack::serialize_items(Box::new(stack_items.iter()), true).unwrap();
 
@@ -743,10 +753,7 @@ async fn test_method_error(
 
     async fn encode_message(client: &Arc<TestClient>, params: &ParamsOfEncodeMessage) -> String {
         client
-            .request_async::<_, ResultOfEncodeMessage>(
-                "abi.encode_message",
-                params.clone(),
-            )
+            .request_async::<_, ResultOfEncodeMessage>("abi.encode_message", params.clone())
             .await
             .unwrap()
             .message
@@ -826,14 +833,15 @@ async fn test_method_error(
 
     assert_eq!(error.data["contract_error"].as_str(), EXPECTED_ERROR);
 
-    let error = process_message(client, &fail_msg_params)
-        .await
-        .unwrap_err();
+    let error = process_message(client, &fail_msg_params).await.unwrap_err();
 
     if TestClient::node_se() {
         assert_eq!(error.data["contract_error"].as_str(), EXPECTED_ERROR);
     } else {
-        assert_eq!(error.data["local_error"]["data"]["contract_error"].as_str(), EXPECTED_ERROR);
+        assert_eq!(
+            error.data["local_error"]["data"]["contract_error"].as_str(),
+            EXPECTED_ERROR
+        );
     }
 }
 
@@ -847,16 +855,98 @@ async fn test_resolve_blockchain_config() {
     config.network.endpoints = Some(TestClient::endpoints());
     let net_context = Arc::new(crate::ClientContext::new(config).unwrap());
 
-    let local_context = Arc::new(crate::ClientContext::new(crate::ClientConfig::default()).unwrap());
+    let local_context =
+        Arc::new(crate::ClientContext::new(crate::ClientConfig::default()).unwrap());
     let block_config = base64::encode(&include_bytes!("../boc/test_data/block_config.boc"));
     let custom_config_params = deserialize_object_from_base64(&block_config, "config").unwrap();
 
-    let config = resolve_blockchain_config(&local_context, Some(block_config)).await.unwrap();
+    let config = resolve_blockchain_config(&local_context, Some(block_config))
+        .await
+        .unwrap();
     assert_eq!(config.raw_config(), &custom_config_params.object);
 
-    let config = resolve_blockchain_config(&local_context, None).await.unwrap();
+    let config = resolve_blockchain_config(&local_context, None)
+        .await
+        .unwrap();
     assert_eq!(config.raw_config(), mainnet_config().raw_config());
 
     let config = resolve_blockchain_config(&net_context, None).await.unwrap();
     assert_ne!(config.raw_config(), mainnet_config().raw_config());
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_my_code() {
+    let client = TestClient::new();
+    let (abi, tvc) = TestClient::package("MyCodeFail", None);
+
+    let keys = client.generate_sign_keys();
+    let ctor_params = json!({ "pubkey": format!("0x{}", keys.public) });
+
+    let deploy_message: ResultOfEncodeMessage = client
+        .request_async(
+            "abi.encode_message",
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                call_set: Some(CallSet {
+                    function_name: "constructor".into(),
+                    input: Some(ctor_params),
+                    ..Default::default()
+                }),
+                deploy_set: Some(DeploySet {
+                    tvc: tvc.clone(),
+                    ..Default::default()
+                }),
+                signer: Signer::Keys { keys: keys.clone() },
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    let deployed: ResultOfRunExecutor = client
+        .request_async(
+            "tvm.run_executor",
+            ParamsOfRunExecutor {
+                message: deploy_message.message.clone(),
+                account: AccountForExecutor::Uninit,
+                return_updated_account: Some(true),
+                abi: Some(abi.clone()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    let get_my_code_message: ResultOfEncodeMessage = client
+        .request_async(
+            "abi.encode_message",
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                address: Some(deploy_message.address.clone()),
+                call_set: Some(CallSet {
+                    function_name: "getCodeRefs".into(),
+                    input: Some(json!({})),
+                    ..Default::default()
+                }),
+                signer: Signer::None,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    let get_my_code: ResultOfRunTvm = client
+        .request_async(
+            "tvm.run_tvm",
+            ParamsOfRunTvm {
+                message: get_my_code_message.message.clone(),
+                account: deployed.account.clone(),
+                abi: Some(abi.clone()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    println!("{:?}", get_my_code);
 }

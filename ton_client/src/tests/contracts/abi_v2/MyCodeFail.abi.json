@@ -1,0 +1,44 @@
+{
+  "ABI version": 2,
+  "version": "2.2.0",
+  "header": [
+    "pubkey",
+    "time",
+    "expire"
+  ],
+  "functions": [
+  {
+    "name": "constructor",
+    "inputs": [
+    { "name":"pubkey", "type":"uint256" }
+    ],
+    "outputs": [
+    ],
+    "id": "0x1"
+  },
+  {
+    "name": "requestCodeRefs",
+    "inputs": [
+    ],
+    "outputs": [
+    { "name":"value0", "type":"uint8" }
+    ],
+    "id": "0x2"
+  },
+  {
+    "name": "getCodeRefs",
+    "inputs": [
+    ],
+    "outputs": [
+    { "name":"value0", "type":"uint8" }
+    ],
+    "id": "0x3"
+  }
+  ],
+  "fields": [
+    { "name":"__uninitialized", "type":"bool" },
+    { "name":"pubkey_", "type":"uint256" }
+  ],
+  "events": [
+  ]
+}
