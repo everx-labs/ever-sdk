@@ -6011,7 +6011,7 @@
           "description": null
         },
         {
-          "name": "ParamsOfEncodeBoc",
+          "name": "ParamsOfAbiEncodeBoc",
           "type": "Struct",
           "struct_fields": [
             {
@@ -6046,7 +6046,7 @@
           "description": null
         },
         {
-          "name": "ResultOfEncodeBoc",
+          "name": "ResultOfAbiEncodeBoc",
           "type": "Struct",
           "struct_fields": [
             {
@@ -6576,7 +6576,7 @@
             {
               "name": "params",
               "type": "Ref",
-              "ref_name": "abi.ParamsOfEncodeBoc",
+              "ref_name": "abi.ParamsOfAbiEncodeBoc",
               "summary": null,
               "description": null
             }
@@ -6587,7 +6587,7 @@
             "generic_args": [
               {
                 "type": "Ref",
-                "ref_name": "abi.ResultOfEncodeBoc"
+                "ref_name": "abi.ResultOfAbiEncodeBoc"
               }
             ]
           },

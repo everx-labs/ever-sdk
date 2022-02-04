@@ -47,7 +47,7 @@ pub use parse::{
     source_boc, ParamsOfParse, ParamsOfParseShardstate, ResultOfParse,
 };
 pub use tvc::{
-    decode_tvc, encode_tvc, get_code_from_tvc, get_code_salt, get_compiler_version, set_code_salt,
+    decode_tvc, encode_tvc, get_code_from_tvc, get_code_salt, get_compiler_version, get_compiler_version_from_cell, set_code_salt,
     ParamsOfDecodeTvc, ParamsOfEncodeTvc, ParamsOfGetCodeFromTvc, ParamsOfGetCodeSalt,
     ParamsOfGetCompilerVersion, ParamsOfSetCodeSalt, ResultOfDecodeTvc, ResultOfEncodeTvc,
     ResultOfGetCodeFromTvc, ResultOfGetCodeSalt, ResultOfGetCompilerVersion, ResultOfSetCodeSalt,
