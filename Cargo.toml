@@ -1,4 +1,9 @@
 [workspace]
 exclude = [ 'examples/rust' ]
-members = [ 'ton_sdk', 'ton_client', 'toncli', 'api/test', 'tools/update_trusted_blocks' ]
-
+members = [
+    'ton_sdk',
+    'ton_client',
+    'toncli',
+    'api/test',
+    'tools/update_trusted_blocks'
+]
