@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - Added `boc.encode_external_in_message` function to encode message BOC based on 
   a low level message parts such as a body, state init etc.
 - Added `net.subscribe` function to start a low level GraphQL subscription.
+- Added support for new MYCODE TVM command in `tvm.run_tvm` and `tvm.run_get` functions.
 
 ## [1.29.0] – 2022-02-03
 
