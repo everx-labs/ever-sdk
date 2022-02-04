@@ -11,15 +11,19 @@
 * limitations under the License.
 */
 
-use std::str::FromStr;
 use super::*;
+use crate::abi::{
+    CallSet, DeploySet, FunctionHeader, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
+};
 use crate::api_info::ApiModule;
+use crate::crypto::KeyPair;
 use crate::json_interface::modules::BocModule;
-use crate::tests::TestClient;
+use crate::tests::{TestClient, EVENTS};
 use internal::serialize_cell_to_base64;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
-use ton_block::{MsgAddressInt, MsgAddrStd, Serializable};
+use std::str::FromStr;
+use ton_block::{MsgAddrStd, MsgAddressInt, Serializable};
 use ton_types::{AccountId, BuilderData, IBitstring};
 
 #[tokio::test(core_threads = 2)]
@@ -57,9 +61,7 @@ async fn test_encode_boc() {
         }
     }
     fn write_address(address: String) -> BuilderOp {
-        BuilderOp::Address {
-            address,
-        }
+        BuilderOp::Address { address }
     }
     fn write_cell(write: Vec<BuilderOp>) -> BuilderOp {
         BuilderOp::Cell { builder: write }
@@ -83,13 +85,13 @@ async fn test_encode_boc() {
 
     let burner_account_id = "efd5a14409a8a129686114fc092525fddd508f1ea56d1b649a3a695d3a5b188c";
 
-    let burner_address = MsgAddressInt::AddrStd(
-        MsgAddrStd::with_address(
-            None,
-            -1,
-            AccountId::from_str(burner_account_id).unwrap(),
-        )
-    ).write_to_new_cell().unwrap();
+    let burner_address = MsgAddressInt::AddrStd(MsgAddrStd::with_address(
+        None,
+        -1,
+        AccountId::from_str(burner_account_id).unwrap(),
+    ))
+    .write_to_new_cell()
+    .unwrap();
 
     let mut builder = BuilderData::new();
     builder
@@ -393,12 +395,14 @@ fn get_boc_hash() {
 fn get_boc_depth() {
     let client = TestClient::new();
 
-    let result: super::ResultOfGetBocDepth = client.request(
-        "boc.get_boc_depth",
-        super::ParamsOfGetBocDepth {
-            boc: base64::encode(include_bytes!("test_data/account.boc"))
-        }
-    ).unwrap();
+    let result: super::ResultOfGetBocDepth = client
+        .request(
+            "boc.get_boc_depth",
+            super::ParamsOfGetBocDepth {
+                boc: base64::encode(include_bytes!("test_data/account.boc")),
+            },
+        )
+        .unwrap();
 
     assert_eq!(result.depth, 8);
 }
@@ -449,12 +453,14 @@ fn parse_message() {
 fn parse_account() {
     let client = TestClient::new();
 
-    let result: ResultOfParse = client.request(
-        "boc.parse_account",
-        ParamsOfParse {
-            boc: base64::encode(&include_bytes!("test_data/account.boc"))
-        }
-    ).unwrap();
+    let result: ResultOfParse = client
+        .request(
+            "boc.parse_account",
+            ParamsOfParse {
+                boc: base64::encode(&include_bytes!("test_data/account.boc")),
+            },
+        )
+        .unwrap();
 
     assert_eq!(
         result.parsed["id"],
@@ -535,7 +541,10 @@ fn get_blockchain_config() {
         )
         .unwrap();
 
-    assert_eq!(result.config_boc, base64::encode(&include_bytes!("test_data/block_config.boc")));
+    assert_eq!(
+        result.config_boc,
+        base64::encode(&include_bytes!("test_data/block_config.boc"))
+    );
 
     let result: ResultOfGetBlockchainConfig = client
         .request(
@@ -546,14 +555,23 @@ fn get_blockchain_config() {
         )
         .unwrap();
 
-    assert_eq!(result.config_boc, base64::encode(&include_bytes!("test_data/zerostate_config.boc")));
+    assert_eq!(
+        result.config_boc,
+        base64::encode(&include_bytes!("test_data/zerostate_config.boc"))
+    );
 }
 
 fn read_salted_boc(name: &str) -> String {
     base64::encode(&std::fs::read("src/boc/test_data/salt/".to_owned() + name).unwrap())
 }
 
-fn check_salt(client: &TestClient, name: &str, read_salt: Option<&str>, set_salt: &str, name_with_salt: Option<&str>) {
+fn check_salt(
+    client: &TestClient,
+    name: &str,
+    read_salt: Option<&str>,
+    set_salt: &str,
+    name_with_salt: Option<&str>,
+) {
     let code = read_salted_boc(name);
     let result: ResultOfGetCodeSalt = client
         .request(
@@ -572,17 +590,17 @@ fn check_salt(client: &TestClient, name: &str, read_salt: Option<&str>, set_salt
             ParamsOfSetCodeSalt {
                 code,
                 salt: set_salt.to_owned(),
-                boc_cache: Some(BocCacheType::Unpinned)
+                boc_cache: Some(BocCacheType::Unpinned),
             },
         )
         .unwrap();
-    
+
     if let Some(name_with_salt) = name_with_salt {
         let boc: ResultOfBocCacheGet = client
             .request(
                 "boc.cache_get",
                 ParamsOfBocCacheGet {
-                    boc_ref: result.code.clone()
+                    boc_ref: result.code.clone(),
                 },
             )
             .unwrap();
@@ -605,56 +623,76 @@ fn check_salt(client: &TestClient, name: &str, read_salt: Option<&str>, set_salt
 fn test_code_salt() {
     let client = TestClient::new();
 
-    check_salt(&client,
+    check_salt(
+        &client,
         "old_cpp_sel_nosalt.boc",
         None,
         "te6ccgEBAQEAJAAAQ4AGPqCXQ2drhdqhLLt3rJ80LxA65YMTwgWLLUmt9EbElFA=",
-        None);
-    check_salt(&client,
+        None,
+    );
+    check_salt(
+        &client,
         "old_cpp_sel_salt.boc",
         Some("te6ccgEBAQEAJAAAQ4AGPqCXQ2drhdqhLLt3rJ80LxA65YMTwgWLLUmt9EbElFA="),
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADk",
-        None);
-    check_salt(&client,
+        None,
+    );
+    check_salt(
+        &client,
         "new_sel_nodict_nosalt.boc",
         None,
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADk",
-        Some("new_sel_nodict_salt.boc"));
-    check_salt(&client,
+        Some("new_sel_nodict_salt.boc"),
+    );
+    check_salt(
+        &client,
         "new_sel_nodict_salt.boc",
         Some("te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADk"),
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABF",
-        None);
-    check_salt(&client,
+        None,
+    );
+    check_salt(
+        &client,
         "new_sel_dict_nosalt.boc",
         None,
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABF",
-        Some("new_sel_dict_salt.boc"));
-    check_salt(&client,
+        Some("new_sel_dict_salt.boc"),
+    );
+    check_salt(
+        &client,
         "new_sel_dict_salt.boc",
         Some("te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABF"),
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKa",
-        None);
-    check_salt(&client,
+        None,
+    );
+    check_salt(
+        &client,
         "mycode_sel_nodict_nosalt.boc",
         None,
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKa",
-        Some("mycode_sel_nodict_salt.boc"));
-    check_salt(&client,
+        Some("mycode_sel_nodict_salt.boc"),
+    );
+    check_salt(
+        &client,
         "mycode_sel_nodict_salt.boc",
         Some("te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAKa"),
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACG",
-        None);
-    check_salt(&client,
+        None,
+    );
+    check_salt(
+        &client,
         "mycode_sel_dict_nosalt.boc",
         None,
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACG",
-        Some("mycode_sel_dict_salt.boc"));
-    check_salt(&client,
+        Some("mycode_sel_dict_salt.boc"),
+    );
+    check_salt(
+        &client,
         "mycode_sel_dict_salt.boc",
         Some("te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACG"),
         "te6ccgEBAQEAIgAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADk",
-        None);
+        None,
+    );
 
     let code = read_salted_boc("old_sol_sel.boc");
     let result: ResultOfGetCodeSalt = client
@@ -691,7 +729,7 @@ fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeTvc
                 split_depth: result.split_depth,
                 tick: result.tick,
                 tock: result.tock,
-                boc_cache: None
+                boc_cache: None,
             },
         )
         .unwrap();
@@ -763,4 +801,75 @@ fn test_get_compiler_version() {
         .unwrap();
 
     assert_eq!(result.version.as_deref(), Some("sol 0.51.0"));
+}
+
+#[test]
+fn encode_external_in_message() {
+    TestClient::init_log();
+    let client = TestClient::new();
+    let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
+    let keys = KeyPair {
+        public: "4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499".into(),
+        secret: "cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7".into(),
+    };
+    let abi = events_abi.clone();
+    let time: u64 = 1599458364291;
+    let expire: u32 = 1599458404;
+
+    let deploy_params = |signing: Signer| ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        address: None,
+        deploy_set: Some(DeploySet {
+            tvc: events_tvc.clone(),
+            ..Default::default()
+        }),
+        call_set: Some(CallSet {
+            function_name: "constructor".into(),
+            header: Some(FunctionHeader {
+                pubkey: Some(keys.public.clone()),
+                time: Some(time),
+                expire: Some(expire),
+            }),
+            input: None,
+        }),
+        signer: signing,
+        processing_try_index: None,
+    };
+
+    let abi_encoded: ResultOfEncodeMessage = client
+        .request(
+            "abi.encode_message",
+            deploy_params(Signer::Keys { keys: keys.clone() }),
+        )
+        .unwrap();
+    assert_eq!(abi_encoded.message, "te6ccgECGAEAA6wAA0eIAAt9aqvShfTon7Lei1PVOhUEkEEZQkhDKPgNyzeTL6YSEbAHAgEA4bE5Gr3mWwDtlcEOWHr6slWoyQlpIWeYyw/00eKFGFkbAJMMFLWnu0mq4HSrPmktmzeeAboa4kxkFymCsRVt44dTHxAj/Hd67jWQF7peccWoU/dbMCBJBB6YdPCVZcJlJkAAAF0ZyXLg19VzGRotV8/gAQHAAwIDzyAGBAEB3gUAA9AgAEHaY+IEf47vXcayAvdLzji1Cn7rZgQJIIPTDp4SrLhMpMwCJv8A9KQgIsABkvSg4YrtU1gw9KEKCAEK9KQg9KEJAAACASANCwHI/38h7UTQINdJwgGOENP/0z/TANF/+GH4Zvhj+GKOGPQFcAGAQPQO8r3XC//4YnD4Y3D4Zn/4YeLTAAGOHYECANcYIPkBAdMAAZTT/wMBkwL4QuIg+GX5EPKoldMAAfJ64tM/AQwAao4e+EMhuSCfMCD4I4ED6KiCCBt3QKC53pL4Y+CANPI02NMfAfgjvPK50x8B8AH4R26S8jzeAgEgEw4CASAQDwC9uotV8/+EFujjXtRNAg10nCAY4Q0//TP9MA0X/4Yfhm+GP4Yo4Y9AVwAYBA9A7yvdcL//hicPhjcPhmf/hh4t74RvJzcfhm0fgA+ELIy//4Q88LP/hGzwsAye1Uf/hngCASASEQDluIAGtb8ILdHCfaiaGn/6Z/pgGi//DD8M3wx/DFvfSDK6mjofSBv6PwikDdJGDhvfCFdeXAyfABkZP2CEGRnwoRnRoIEB9AAAAAAAAAAAAAAAAAAIGeLZMCAQH2AGHwhZGX//CHnhZ/8I2eFgGT2qj/8M8ADFuZPCot8ILdHCfaiaGn/6Z/pgGi//DD8M3wx/DFva4b/yupo6Gn/7+j8AGRF7gAAAAAAAAAAAAAAAAhni2fA58jjyxi9EOeF/+S4/YAYfCFkZf/8IeeFn/wjZ4WAZPaqP/wzwAgFIFxQBCbi3xYJQFQH8+EFujhPtRNDT/9M/0wDRf/hh+Gb4Y/hi3tcN/5XU0dDT/9/R+ADIi9wAAAAAAAAAAAAAAAAQzxbPgc+Rx5YxeiHPC//JcfsAyIvcAAAAAAAAAAAAAAAAEM8Wz4HPklb4sEohzwv/yXH7ADD4QsjL//hDzws/+EbPCwDJ7VR/FgAE+GcActxwItDWAjHSADDcIccAkvI74CHXDR+S8jzhUxGS8jvhwQQighD////9vLGS8jzgAfAB+EdukvI83g==");
+
+    let abi_parsed = client
+        .request::<ParamsOfParse, ResultOfParse>(
+            "boc.parse_message",
+            ParamsOfParse {
+                boc: abi_encoded.message.clone(),
+            },
+        )
+        .unwrap()
+        .parsed;
+    let init = client.request::<ParamsOfEncodeTvc, ResultOfEncodeTvc>("boc.encode_tvc", ParamsOfEncodeTvc {
+        code: abi_parsed["code"].as_str().map(|x|x.to_string()),
+        data: abi_parsed["data"].as_str().map(|x|x.to_string()),
+        library: abi_parsed["library"].as_str().map(|x|x.to_string()),
+        ..Default::default()
+    }).unwrap().tvc;
+    let boc_encoded: ResultOfEncodeExternalInMessage = client
+        .request(
+            "boc.encode_external_in_message",
+            ParamsOfEncodeExternalInMessage {
+                dst: abi_encoded.address.clone(),
+                body: abi_parsed["body"].as_str().map(|x|x.to_string()),
+                init: Some(init),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+    assert_eq!(boc_encoded.message, abi_encoded.message);
 }

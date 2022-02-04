@@ -369,8 +369,14 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
         crate::boc::get_blockchain_config,
         crate::boc::blockchain_config::get_blockchain_config_api,
     );
-    module.register_async_fn(crate::boc::get_boc_hash, crate::boc::common::get_boc_hash_api);
-    module.register_async_fn(crate::boc::get_boc_depth, crate::boc::common::get_boc_depth_api);
+    module.register_async_fn(
+        crate::boc::get_boc_hash,
+        crate::boc::common::get_boc_hash_api,
+    );
+    module.register_async_fn(
+        crate::boc::get_boc_depth,
+        crate::boc::common::get_boc_depth_api,
+    );
     module.register_async_fn(
         crate::boc::get_code_from_tvc,
         crate::boc::tvc::get_code_from_tvc_api,
@@ -380,11 +386,24 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
     module.register_async_fn(crate::boc::cache_unpin, crate::boc::cache::cache_unpin_api);
     module.register_type::<BuilderOp>();
     module.register_async_fn(crate::boc::encode_boc, crate::boc::encode::encode_boc_api);
-    module.register_async_fn(crate::boc::get_code_salt, crate::boc::tvc::get_code_salt_api);
-    module.register_async_fn(crate::boc::set_code_salt, crate::boc::tvc::set_code_salt_api);
+    module.register_async_fn(
+        crate::boc::get_code_salt,
+        crate::boc::tvc::get_code_salt_api,
+    );
+    module.register_async_fn(
+        crate::boc::set_code_salt,
+        crate::boc::tvc::set_code_salt_api,
+    );
     module.register_async_fn(crate::boc::decode_tvc, crate::boc::tvc::decode_tvc_api);
     module.register_async_fn(crate::boc::encode_tvc, crate::boc::tvc::encode_tvc_api);
-    module.register_async_fn(crate::boc::get_compiler_version, crate::boc::tvc::get_compiler_version_api);
+    module.register_async_fn(
+        crate::boc::encode_external_in_message,
+        crate::boc::encode_external_in_message::encode_external_in_message_api,
+    );
+    module.register_async_fn(
+        crate::boc::get_compiler_version,
+        crate::boc::tvc::get_compiler_version_api,
+    );
     module.register();
 }
 
@@ -427,6 +446,7 @@ fn register_net(handlers: &mut RuntimeHandlers) {
         super::net::subscribe_collection,
         super::net::subscribe_collection_api,
     );
+    module.register_async_fn_with_callback(super::net::subscribe, super::net::subscribe_api);
     module.register_async_fn_no_args(crate::net::suspend, crate::net::suspend_api);
     module.register_async_fn_no_args(crate::net::resume, crate::net::resume_api);
     module.register_async_fn(
@@ -592,9 +612,18 @@ fn register_proofs(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::proofs::ParamsOfProofTransactionData>();
     module.register_type::<crate::proofs::ParamsOfProofMessageData>();
 
-    module.register_async_fn(crate::proofs::proof_block_data, crate::proofs::proof_block_data_api);
-    module.register_async_fn(crate::proofs::proof_transaction_data, crate::proofs::proof_transaction_data_api);
-    module.register_async_fn(crate::proofs::proof_message_data, crate::proofs::proof_message_data_api);
+    module.register_async_fn(
+        crate::proofs::proof_block_data,
+        crate::proofs::proof_block_data_api,
+    );
+    module.register_async_fn(
+        crate::proofs::proof_transaction_data,
+        crate::proofs::proof_transaction_data_api,
+    );
+    module.register_async_fn(
+        crate::proofs::proof_message_data,
+        crate::proofs::proof_message_data_api,
+    );
     module.register();
 }
 

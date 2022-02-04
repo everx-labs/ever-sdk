@@ -7,12 +7,13 @@ use crate::tests::{TestClient, HELLO};
 
 use super::*;
 use crate::client::NetworkMock;
+use crate::net::subscriptions::ParamsOfSubscribe;
+use crate::net::ton_gql::GraphQLQuery;
 use crate::ClientConfig;
 use serde_json::Value;
 use std::collections::HashSet;
 use std::sync::Arc;
 use std::vec;
-use crate::net::ton_gql::GraphQLQuery;
 
 #[tokio::test(core_threads = 2)]
 async fn batch_query() {
@@ -697,31 +698,31 @@ async fn retry_query_on_network_errors() {
         .election(now, 1000)
         .blocks("3")
         .ok(&json!({
-            "errors": [
-              {
-                "message": "Service Unavailable",
-                "locations": [
-                  {
-                    "line": 2,
-                    "column": 3
-                  }
-                ],
-                "path": [
-                  "counterparties"
-                ],
-                "extensions": {
-                  "code": "INTERNAL_SERVER_ERROR",
-                  "exception": {
-                    "source": "graphql",
-                    "code": 503
-                  }
+          "errors": [
+            {
+              "message": "Service Unavailable",
+              "locations": [
+                {
+                  "line": 2,
+                  "column": 3
+                }
+              ],
+              "path": [
+                "counterparties"
+              ],
+              "extensions": {
+                "code": "INTERNAL_SERVER_ERROR",
+                "exception": {
+                  "source": "graphql",
+                  "code": 503
                 }
               }
-            ],
-            "data": {
-              "blocks": null
             }
-          })
+          ],
+          "data": {
+            "blocks": null
+          }
+        })
         .to_string())
         .election(now, 1000)
         .blocks("4")
@@ -1012,15 +1013,16 @@ async fn transaction_tree() {
         .await
         .unwrap();
 
-    let messages: ResultOfQueryCollection = client.request_async(
-        "net.query_collection",
-        ParamsOfQueryCollection {
-            collection: "messages".to_owned(),
-            filter: Some(json!({
-                "id": { "eq": run_result.transaction["in_msg"].as_str() },
-                "msg_type": { "eq": 1 },
-            })),
-            result: r#"
+    let messages: ResultOfQueryCollection = client
+        .request_async(
+            "net.query_collection",
+            ParamsOfQueryCollection {
+                collection: "messages".to_owned(),
+                filter: Some(json!({
+                    "id": { "eq": run_result.transaction["in_msg"].as_str() },
+                    "msg_type": { "eq": 1 },
+                })),
+                result: r#"
             id dst
             dst_transaction { id aborted
               out_messages { id dst msg_type_name
@@ -1033,29 +1035,28 @@ async fn transaction_tree() {
               }
             }
         "#
-            .to_string(),
-            limit: None,
-            order: None,
-        },
-    )
-    .await
-    .unwrap();
+                .to_string(),
+                limit: None,
+                order: None,
+            },
+        )
+        .await
+        .unwrap();
 
-    let abi_registry = vec![
-        TestClient::giver_abi(),
-    ];
+    let abi_registry = vec![TestClient::giver_abi()];
 
     let mut has_decoded_bodies = false;
-    let result: ResultOfQueryTransactionTree = client.request_async(
-        "net.query_transaction_tree",
-        ParamsOfQueryTransactionTree {
-            in_msg: messages.result[0]["id"].as_str().unwrap().to_string(),
-            abi_registry: Some(abi_registry.clone()),
-            ..Default::default()
-        },
-    )
-    .await
-    .unwrap();
+    let result: ResultOfQueryTransactionTree = client
+        .request_async(
+            "net.query_transaction_tree",
+            ParamsOfQueryTransactionTree {
+                in_msg: messages.result[0]["id"].as_str().unwrap().to_string(),
+                abi_registry: Some(abi_registry.clone()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
     let mut ref_messages = Vec::new();
     let mut ref_transactions = Vec::new();
     collect(&messages.result, &mut ref_messages, &mut ref_transactions);
@@ -1177,11 +1178,7 @@ fn test_endpoints_replacement() {
         }
     }));
 
-    let endpoints: ResultOfGetEndpoints = client
-        .request(
-            "net.get_endpoints",
-            json!({}),
-        ).unwrap();
+    let endpoints: ResultOfGetEndpoints = client.request("net.get_endpoints", json!({})).unwrap();
 
     assert_eq!(
         endpoints.endpoints,
@@ -1197,7 +1194,6 @@ fn test_endpoints_replacement() {
         ]
     );
 
-
     let client = TestClient::new_with_config(json!({
         "network": {
             "endpoints": [
@@ -1211,11 +1207,7 @@ fn test_endpoints_replacement() {
         }
     }));
 
-    let endpoints: ResultOfGetEndpoints = client
-        .request(
-            "net.get_endpoints",
-            json!({}),
-        ).unwrap();
+    let endpoints: ResultOfGetEndpoints = client.request("net.get_endpoints", json!({})).unwrap();
 
     assert_eq!(
         endpoints.endpoints,
@@ -1233,9 +1225,68 @@ fn test_endpoints_replacement() {
 
 #[test]
 fn test_subscription_gql() {
-    let query = GraphQLQuery::with_subscription("counterparties", &Value::Null, "id");
+    let query = GraphQLQuery::with_collection_subscription("counterparties", &Value::Null, "id");
     assert_eq!(query.query, "subscription counterparties($filter: CounterpartyFilter) { counterparties(filter: $filter) { id } }");
 
-    let query = GraphQLQuery::with_subscription("messages", &Value::Null, "id");
-    assert_eq!(query.query, "subscription messages($filter: MessageFilter) { messages(filter: $filter) { id } }");
+    let query = GraphQLQuery::with_collection_subscription("messages", &Value::Null, "id");
+    assert_eq!(
+        query.query,
+        "subscription messages($filter: MessageFilter) { messages(filter: $filter) { id } }"
+    );
+}
+
+#[tokio::test(core_threads = 2)]
+async fn low_level_subscribe() {
+    let messages = std::sync::Arc::new(Mutex::new(Vec::new()));
+    let messages_copy = messages.clone();
+
+    let callback = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
+        let result = match response_type {
+            SubscriptionResponseType::Ok => {
+                Ok(serde_json::from_value::<ResultOfSubscription>(result).unwrap())
+            }
+            SubscriptionResponseType::Error => {
+                Err(serde_json::from_value::<ClientError>(result).unwrap())
+            }
+        }
+        .unwrap();
+        let messages_copy = messages_copy.clone();
+        async move {
+            messages_copy.lock().await.push(result.result);
+        }
+    };
+
+    let client = TestClient::new();
+
+    let handle: ResultOfSubscribeCollection = client
+        .request_async_callback(
+            "net.subscribe",
+            ParamsOfSubscribe {
+                subscription: r#"
+                subscription test($dst: String) {
+                    messages(filter: { dst: { eq: $dst } }) {
+                        id
+                    }
+                }
+                "#
+                .to_string(),
+                variables: Some(json!({
+                    "dst": client.giver_address().await,
+                })),
+            },
+            callback,
+        )
+        .await
+        .unwrap();
+
+    client
+        .get_tokens_from_giver_async(&client.giver_address().await, None)
+        .await;
+
+    assert_ne!(messages.lock().await.len(), 0);
+
+    let _: () = client
+        .request_async("net.unsubscribe", handle)
+        .await
+        .unwrap();
 }
