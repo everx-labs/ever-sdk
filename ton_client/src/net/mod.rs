@@ -33,8 +33,8 @@ pub use queries::{
 };
 pub(crate) use server_link::{EndpointStat, NetworkState, ServerLink, MAX_TIMEOUT};
 pub use subscriptions::{
-    subscribe_collection, unsubscribe, ParamsOfSubscribeCollection, ResultOfSubscribeCollection,
-    ResultOfSubscription, SubscriptionResponseType,
+    subscribe, subscribe_collection, unsubscribe, ParamsOfSubscribeCollection,
+    ResultOfSubscribeCollection, ResultOfSubscription, SubscriptionResponseType,
 };
 pub use ton_gql::{
     AggregationFn, FieldAggregation, GraphQLQueryEvent, OrderBy, ParamsOfAggregateCollection,

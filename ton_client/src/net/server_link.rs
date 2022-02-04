@@ -402,7 +402,7 @@ impl ServerLink {
     }
 
     // Returns Stream with updates database fields by provided filter
-    pub async fn subscribe(
+    pub async fn subscribe_collection(
         &self,
         table: &str,
         filter: &Value,
@@ -410,7 +410,7 @@ impl ServerLink {
     ) -> ClientResult<Subscription> {
         let event_receiver = self
             .websocket_link
-            .start_operation(GraphQLQuery::with_subscription(table, filter, fields))
+            .start_operation(GraphQLQuery::with_collection_subscription(table, filter, fields))
             .await?;
 
         let operation_id = Arc::new(Mutex::new(0u32));
@@ -433,6 +433,46 @@ impl ServerLink {
                         None
                     }
                     GraphQLQueryEvent::Data(value) => Some(Ok(value[&collection_name].clone())),
+                    GraphQLQueryEvent::Error(error) => Some(Err(error)),
+                    GraphQLQueryEvent::Complete => Some(Ok(Value::Null)),
+                }
+            }
+        });
+        Ok(Subscription {
+            data_stream: Box::pin(data_receiver),
+            unsubscribe: Box::pin(unsubscribe),
+        })
+    }
+
+    // Returns Stream with updates database fields by provided filter
+    pub async fn subscribe(
+        &self,
+        subscription: String,
+        variables: Option<Value>,
+    ) -> ClientResult<Subscription> {
+        let event_receiver = self
+            .websocket_link
+            .start_operation(GraphQLQuery::with_subscription(subscription, variables))
+            .await?;
+
+        let operation_id = Arc::new(Mutex::new(0u32));
+        let unsubscribe_operation_id = operation_id.clone();
+
+        let link = self.websocket_link.clone();
+        let unsubscribe = async move {
+            let id = *unsubscribe_operation_id.lock().await;
+            link.stop_operation(id).await;
+        };
+
+        let data_receiver = event_receiver.filter_map(move |event| {
+            let operation_id = operation_id.clone();
+            async move {
+                match event {
+                    GraphQLQueryEvent::Id(id) => {
+                        *operation_id.lock().await = id;
+                        None
+                    }
+                    GraphQLQueryEvent::Data(value) => Some(Ok(value.clone())),
                     GraphQLQueryEvent::Error(error) => Some(Err(error)),
                     GraphQLQueryEvent::Complete => Some(Ok(Value::Null)),
                 }

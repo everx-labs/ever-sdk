@@ -24,7 +24,11 @@ pub(crate) mod tvc;
 
 #[cfg(test)]
 pub(crate) mod tests;
+pub(crate) mod encode_external_in_message;
 
+pub use encode_external_in_message::{
+    encode_external_in_message, ParamsOfEncodeExternalInMessage, ResultOfEncodeExternalInMessage,
+};
 pub use blockchain_config::{
     get_blockchain_config, ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig,
 };
