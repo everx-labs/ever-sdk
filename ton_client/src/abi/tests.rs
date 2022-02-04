@@ -1086,3 +1086,31 @@ fn test_decode_boc() {
         })
     );
 }
+
+#[test]
+fn test_encode_boc() {
+    let client = TestClient::new();
+
+    let params = vec![
+        AbiParam { name: "dest".to_owned(), param_type: "address".to_owned(), ..Default::default() },
+        AbiParam { name: "value".to_owned(), param_type: "uint128".to_owned(), ..Default::default() },
+        AbiParam { name: "bounce".to_owned(), param_type: "bool".to_owned(), ..Default::default() },
+    ];
+
+    let boc = client.request::<_, ResultOfAbiEncodeBoc>(
+        "abi.encode_boc",
+        ParamsOfAbiEncodeBoc {
+            params,
+            data: json!({
+                "dest": "-1:3333333333333333333333333333333333333333333333333333333333333333",
+                "value": 1234567,
+                "bounce": true,
+            }),
+            boc_cache: None,
+        },
+    )
+        .unwrap()
+        .boc;
+
+    assert_eq!(boc, "te6ccgEBAQEANAAAY5/mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmAAAAAAAAAAAAAAAAACWtD4");
+}

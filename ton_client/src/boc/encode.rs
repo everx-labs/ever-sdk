@@ -2,6 +2,7 @@ use std::slice::Iter;
 
 use crate::{error::ClientResult, ClientContext};
 use serde_json::Value;
+use ton_block::Serializable;
 use ton_types::{BuilderData, Cell, IBitstring};
 
 use super::{internal::serialize_cell_to_boc, Error};
@@ -10,6 +11,7 @@ use crate::boc::BocCacheType;
 use num_bigint::{BigInt, BigUint, Sign};
 use num_traits::Num;
 use std::ops::ShlAssign;
+use crate::encoding::account_decode;
 
 /// Cell builder operation.
 #[derive(Serialize, Deserialize, Clone, ApiType)]
@@ -45,16 +47,21 @@ pub enum BuilderOp {
         /// `n00101101100`, `N00101101100`
         value: String,
     },
-    /// Append ref to nested cells
+    /// Append ref to nested cells.
     Cell {
-        /// Nested cell builder
+        /// Nested cell builder.
         builder: Vec<BuilderOp>,
     },
-    /// Append ref to nested cell
+    /// Append ref to nested cell.
     CellBoc {
         /// Nested cell BOC encoded with `base64` or BOC cache key.
         boc: String,
     },
+    /// Address.
+    Address {
+        /// Address in a common `workchain:account` or base64 format.
+        address: String,
+    }
 }
 
 impl Default for BuilderOp {
@@ -84,7 +91,7 @@ pub struct ResultOfEncodeBoc {
 /// Encodes bag of cells (BOC) with builder operations.
 /// This method provides the same functionality as Solidity TvmBuilder.
 /// Resulting BOC of this method can be passed into 
-/// Solidity and C++ contracts as TvmCell type
+/// Solidity and C++ contracts as TvmCell type.
 #[api_function]
 pub async fn encode_boc(
     context: std::sync::Arc<ClientContext>,
@@ -160,6 +167,11 @@ impl<'a> Builder<'a> {
                         nested: Self::new(builder),
                         prev: self,
                     });
+                }
+                BuilderOp::Address { address } => {
+                    account_decode(address)?
+                        .write_to(&mut self.result)
+                        .map_err(|err| Error::invalid_boc(err))?;
                 }
             }
         }

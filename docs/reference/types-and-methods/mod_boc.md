@@ -28,7 +28,7 @@ BOC manipulation module.
 
 [cache_unpin](#cache_unpin) – Unpin BOCs with specified pin.
 
-[encode_boc](#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type
+[encode_boc](#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type.
 
 [get_code_salt](#get_code_salt) – Returns the contract code's salt if it is present.
 
@@ -431,7 +431,7 @@ function cache_unpin(
 
 ## encode_boc
 
-Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type
+Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type.
 
 ```ts
 type ParamsOfEncodeBoc = {
@@ -863,6 +863,9 @@ type BuilderOp = {
 } | {
     type: 'CellBoc'
     boc: string
+} | {
+    type: 'Address'
+    address: string
 }
 ```
 Depends on value of the  `type` field.
@@ -886,17 +889,24 @@ Append bit string to cell data.
 
 When _type_ is _'Cell'_
 
-Append ref to nested cells
+Append ref to nested cells.
 
 
-- `builder`: _[BuilderOp](mod_boc.md#builderop)[]_ – Nested cell builder
+- `builder`: _[BuilderOp](mod_boc.md#builderop)[]_ – Nested cell builder.
 
 When _type_ is _'CellBoc'_
 
-Append ref to nested cell
+Append ref to nested cell.
 
 
 - `boc`: _string_ – Nested cell BOC encoded with `base64` or BOC cache key.
+
+When _type_ is _'Address'_
+
+Address.
+
+
+- `address`: _string_ – Address in a common `workchain:account` or base64 format.
 
 
 Variant constructors:
@@ -906,6 +916,7 @@ function builderOpInteger(size: number, value: any): BuilderOp;
 function builderOpBitString(value: string): BuilderOp;
 function builderOpCell(builder: BuilderOp[]): BuilderOp;
 function builderOpCellBoc(boc: string): BuilderOp;
+function builderOpAddress(address: string): BuilderOp;
 ```
 
 ## ParamsOfEncodeBoc

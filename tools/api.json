@@ -1,5 +1,5 @@
 {
-  "version": "1.28.1",
+  "version": "1.29.0",
   "modules": [
     {
       "name": "client",
@@ -6009,6 +6009,55 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfAbiEncodeBoc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "params",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "abi.AbiParam"
+              },
+              "summary": "Parameters to encode into BOC",
+              "description": null
+            },
+            {
+              "name": "data",
+              "type": "Ref",
+              "ref_name": "Value",
+              "summary": "Parameters and values as a JSON structure",
+              "description": null
+            },
+            {
+              "name": "boc_cache",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "boc.BocCacheType"
+              },
+              "summary": "Cache type to put the result.",
+              "description": "The BOC itself returned if no cache type provided"
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfAbiEncodeBoc",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "boc",
+              "type": "String",
+              "summary": "BOC encoded as base64",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -6505,6 +6554,44 @@
             ]
           },
           "errors": null
+        },
+        {
+          "name": "encode_boc",
+          "summary": "Encodes given parameters in JSON into a BOC using param types from ABI.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfAbiEncodeBoc",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "abi.ResultOfAbiEncodeBoc"
+              }
+            ]
+          },
+          "errors": null
         }
       ]
     },
@@ -6911,11 +6998,11 @@
                     "type": "Ref",
                     "ref_name": "boc.BuilderOp"
                   },
-                  "summary": "Nested cell builder",
+                  "summary": "Nested cell builder.",
                   "description": null
                 }
               ],
-              "summary": "Append ref to nested cells",
+              "summary": "Append ref to nested cells.",
               "description": null
             },
             {
@@ -6929,7 +7016,21 @@
                   "description": null
                 }
               ],
-              "summary": "Append ref to nested cell",
+              "summary": "Append ref to nested cell.",
+              "description": null
+            },
+            {
+              "name": "Address",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "address",
+                  "type": "String",
+                  "summary": "Address in a common `workchain:account` or base64 format.",
+                  "description": null
+                }
+              ],
+              "summary": "Address.",
               "description": null
             }
           ],
@@ -7778,7 +7879,7 @@
         },
         {
           "name": "encode_boc",
-          "summary": "Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type",
+          "summary": "Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type.",
           "description": null,
           "params": [
             {

@@ -18,6 +18,7 @@ pub(crate) mod decode_boc;
 pub(crate) mod decode_data;
 pub(crate) mod decode_message;
 pub(crate) mod encode_account;
+pub(crate) mod encode_boc;
 pub(crate) mod encode_message;
 pub(crate) mod init_data;
 
@@ -36,6 +37,9 @@ pub use decode_message::{
 };
 pub use encode_account::{
     encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,
+};
+pub use encode_boc::{
+    encode_boc, ParamsOfAbiEncodeBoc, ResultOfAbiEncodeBoc,
 };
 pub use encode_message::{
     attach_signature, attach_signature_to_message_body, encode_internal_message, encode_message,

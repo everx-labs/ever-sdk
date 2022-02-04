@@ -271,7 +271,7 @@ impl ClientEnv {
         method: FetchMethod,
         headers: Option<HashMap<String, String>>,
         body: Option<String>,
-        timeout_ms: Option<u32>,
+        timeout_ms: u32,
     ) -> ClientResult<FetchResult> {
         let mut opts = RequestInit::new();
         opts.method(method.as_str());
@@ -301,19 +301,14 @@ impl ClientEnv {
                 Err(err) => Err(Error::http_request_send_error(js_error_to_string(err))),
             });
 
-        let resp_result = match timeout_ms {
-            Some(timeout) => {
-                futures::select!(
-                    result = resp_future => result,
-                    timer = Self::set_timer_internal(timeout as u64).fuse() => {
-                        Err(timer
-                            .err()
-                            .unwrap_or(Error::http_request_send_error("fetch operation timeout")))
-                    }
-                )
-            }
-            None => resp_future.await
-        };
+        let resp_result = futures::select!(
+                result = resp_future => result,
+                timer = Self::set_timer_internal(timeout_ms as u64).fuse() => {
+                    Err(timer
+                        .err()
+                        .unwrap_or(Error::http_request_send_error("fetch operation timeout")))
+                }
+            );
 
         let response: Response = resp_result?.dyn_into().map_err(|_| {
             Error::http_request_parse_error("Can not cast response to `Response` struct")
@@ -376,7 +371,7 @@ impl ClientEnv {
         method: FetchMethod,
         headers: Option<HashMap<String, String>>,
         body: Option<String>,
-        timeout_ms: Option<u32>,
+        timeout_ms: u32,
     ) -> ClientResult<FetchResult> {
         let url = url.to_owned();
         execute_spawned(move || async move {

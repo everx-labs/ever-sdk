@@ -11,6 +11,7 @@
 * limitations under the License.
 */
 
+use std::str::FromStr;
 use super::*;
 use crate::api_info::ApiModule;
 use crate::json_interface::modules::BocModule;
@@ -18,7 +19,8 @@ use crate::tests::TestClient;
 use internal::serialize_cell_to_base64;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
-use ton_types::{BuilderData, IBitstring};
+use ton_block::{MsgAddressInt, MsgAddrStd, Serializable};
+use ton_types::{AccountId, BuilderData, IBitstring};
 
 #[tokio::test(core_threads = 2)]
 async fn test_encode_boc() {
@@ -54,6 +56,11 @@ async fn test_encode_boc() {
             value: value.into(),
         }
     }
+    fn write_address(address: String) -> BuilderOp {
+        BuilderOp::Address {
+            address,
+        }
+    }
     fn write_cell(write: Vec<BuilderOp>) -> BuilderOp {
         BuilderOp::Cell { builder: write }
     }
@@ -73,6 +80,16 @@ async fn test_encode_boc() {
     inner_builder.append_u16(0x123).unwrap();
     inner_builder.append_i16(0x123).unwrap();
     inner_builder.append_i16(-0x123).unwrap();
+
+    let burner_account_id = "efd5a14409a8a129686114fc092525fddd508f1ea56d1b649a3a695d3a5b188c";
+
+    let burner_address = MsgAddressInt::AddrStd(
+        MsgAddrStd::with_address(
+            None,
+            -1,
+            AccountId::from_str(burner_account_id).unwrap(),
+        )
+    ).write_to_new_cell().unwrap();
 
     let mut builder = BuilderData::new();
     builder
@@ -95,6 +112,8 @@ async fn test_encode_boc() {
         .append_bits(0x123, 12)
         .unwrap()
         .append_bits(0b00101101100, 11)
+        .unwrap()
+        .append_builder(&burner_address)
         .unwrap();
     let inner_cell = inner_builder.into_cell().unwrap();
     builder.append_reference_cell(inner_cell.clone());
@@ -116,6 +135,7 @@ async fn test_encode_boc() {
                 write_bitstring("123"),
                 write_bitstring("x2d9_"),
                 write_bitstring("80_"),
+                write_address(format!("-1:{}", burner_account_id)),
                 write_cell(vec![
                     write_bitstring("n101100111000"),
                     write_bitstring("N100111000"),
@@ -147,6 +167,7 @@ async fn test_encode_boc() {
                 write_bitstring("123"),
                 write_bitstring("x2d9_"),
                 write_bitstring("80_"),
+                write_address(format!("-1:{}", burner_account_id)),
                 BuilderOp::CellBoc {
                     boc: serialize_cell_to_base64(&inner_cell, "cell").unwrap(),
                 },
