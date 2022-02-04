@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.30.0] – 2022-02-03
+
+### New
+- Added `boc.encode_external_in_message` function to encode message BOC based on 
+  a low level message parts such as a body, state init etc.
+- Added `net.subscribe` function to start a low level GraphQL subscription.
+
 ## [1.29.0] – 2022-02-03
 
 ### New
