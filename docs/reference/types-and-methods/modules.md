@@ -177,6 +177,8 @@ Where:
 
 [encode_tvc](mod_boc.md#encode_tvc) – Encodes tvc from code, data, libraries ans special options (see input params)
 
+[encode_external_in_message](mod_boc.md#encode_external_in_message) – Encodes a message
+
 [get_compiler_version](mod_boc.md#get_compiler_version) – Returns the compiler version used to compile the code.
 
 ## [processing](mod_processing.md) – Message processing module.
@@ -221,7 +223,9 @@ Where:
 
 [unsubscribe](mod_net.md#unsubscribe) – Cancels a subscription
 
-[subscribe_collection](mod_net.md#subscribe_collection) – Creates a subscription
+[subscribe_collection](mod_net.md#subscribe_collection) – Creates a collection subscription
+
+[subscribe](mod_net.md#subscribe) – Creates a subscription
 
 [suspend](mod_net.md#suspend) – Suspends network module to stop any network activity
 

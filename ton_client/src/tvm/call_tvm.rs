@@ -17,13 +17,11 @@ use crate::error::ClientResult;
 use crate::tvm::Error;
 use std::sync::Arc;
 use ton_block::{
-    Account, ConfigParams, CurrencyCollection,
-    CommonMsgInfo, Deserializable, Serializable,
-    OutActions, OutAction,
-    Message, MsgAddressInt,
+    Account, CommonMsgInfo, ConfigParams, CurrencyCollection, Deserializable, Message,
+    MsgAddressInt, OutAction, OutActions, Serializable,
 };
 use ton_types::dictionary::HashmapType;
-use ton_types::SliceData;
+use ton_types::{Cell, SliceData};
 use ton_vm::executor::gas::gas_state::Gas;
 use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
 
@@ -33,16 +31,19 @@ pub(crate) fn call_tvm(
     stack: Stack,
 ) -> ClientResult<ton_vm::executor::Engine> {
     let code = account.get_code().unwrap_or_default();
-    let data = account.get_data().ok_or_else(|| Error::invalid_account_boc("Account has no code"))?;
-    let addr = account.get_addr().ok_or_else(|| Error::invalid_account_boc("Account has no address"))?;
-    let balance = account.balance().ok_or_else(|| Error::invalid_account_boc("Account has no balance"))?;
+    let data = account
+        .get_data()
+        .ok_or_else(|| Error::invalid_account_boc("Account has no code"))?;
+    let addr = account
+        .get_addr()
+        .ok_or_else(|| Error::invalid_account_boc("Account has no address"))?;
+    let balance = account
+        .balance()
+        .ok_or_else(|| Error::invalid_account_boc("Account has no balance"))?;
 
     let mut ctrls = SaveList::new();
     ctrls
-        .put(
-            4,
-            &mut StackItem::Cell(data),
-        )
+        .put(4, &mut StackItem::Cell(data))
         .map_err(|err| Error::internal_error(format!("can not put data to registers: {}", err)))?;
 
     let sci = build_contract_info(
@@ -52,6 +53,7 @@ pub(crate) fn call_tvm(
         options.block_time,
         options.block_lt,
         options.transaction_lt,
+        code.clone(),
     );
     ctrls
         .put(7, &mut sci.into_temp_data())
@@ -89,15 +91,13 @@ pub(crate) fn call_tvm(
                 true,
             ))
         }
-        Ok(_) => {
-            match engine.get_committed_state().get_root() {
-                StackItem::Cell(data) => {
-                    account.set_data(data);
-                    Ok(engine)
-                }
-                _ => Err(Error::internal_error("invalid committed state"))
+        Ok(_) => match engine.get_committed_state().get_root() {
+            StackItem::Cell(data) => {
+                account.set_data(data);
+                Ok(engine)
             }
-        }
+            _ => Err(Error::internal_error("invalid committed state")),
+        },
     }
 }
 
@@ -156,6 +156,7 @@ fn build_contract_info(
     block_unixtime: u32,
     block_lt: u64,
     tr_lt: u64,
+    code: Cell,
 ) -> ton_vm::SmartContractInfo {
     let mut info =
         ton_vm::SmartContractInfo::with_myself(address.serialize().unwrap_or_default().into());
@@ -164,9 +165,9 @@ fn build_contract_info(
     *info.unix_time_mut() = block_unixtime;
     *info.balance_remaining_grams_mut() = balance.grams.0;
     *info.balance_remaining_other_mut() = balance.other_as_hashmap();
-
     if let Some(data) = config_params.config_params.data() {
         info.set_config_params(data.clone());
     }
+    info.set_mycode(code);
     info
 }

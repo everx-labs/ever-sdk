@@ -38,6 +38,8 @@ BOC manipulation module.
 
 [encode_tvc](#encode_tvc) – Encodes tvc from code, data, libraries ans special options (see input params)
 
+[encode_external_in_message](#encode_external_in_message) – Encodes a message
+
 [get_compiler_version](#get_compiler_version) – Returns the compiler version used to compile the code.
 
 ## Types
@@ -98,6 +100,10 @@ BOC manipulation module.
 [ParamsOfEncodeTvc](#paramsofencodetvc)
 
 [ResultOfEncodeTvc](#resultofencodetvc)
+
+[ParamsOfEncodeExternalInMessage](#paramsofencodeexternalinmessage)
+
+[ResultOfEncodeExternalInMessage](#resultofencodeexternalinmessage)
 
 [ParamsOfGetCompilerVersion](#paramsofgetcompilerversion)
 
@@ -610,6 +616,45 @@ function encode_tvc(
 - `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
 
 
+## encode_external_in_message
+
+Encodes a message
+
+Allows to encode any external inbound message.
+
+```ts
+type ParamsOfEncodeExternalInMessage = {
+    src?: string,
+    dst: string,
+    init?: string,
+    body?: string,
+    boc_cache?: BocCacheType
+}
+
+type ResultOfEncodeExternalInMessage = {
+    message: string,
+    message_id: string
+}
+
+function encode_external_in_message(
+    params: ParamsOfEncodeExternalInMessage,
+): Promise<ResultOfEncodeExternalInMessage>;
+```
+### Parameters
+- `src`?: _string_ – Source address.
+- `dst`: _string_ – Destination address.
+- `init`?: _string_ – Bag of cells with state init (used in deploy messages).
+- `body`?: _string_ – Bag of cells with the message body encoded as base64.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result.
+<br>The BOC itself returned if no cache type provided
+
+
+### Result
+
+- `message`: _string_ – Message BOC encoded with `base64`.
+- `message_id`: _string_ – Message id.
+
+
 ## get_compiler_version
 
 Returns the compiler version used to compile the code.
@@ -1056,6 +1101,35 @@ type ResultOfEncodeTvc = {
 }
 ```
 - `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
+
+
+## ParamsOfEncodeExternalInMessage
+```ts
+type ParamsOfEncodeExternalInMessage = {
+    src?: string,
+    dst: string,
+    init?: string,
+    body?: string,
+    boc_cache?: BocCacheType
+}
+```
+- `src`?: _string_ – Source address.
+- `dst`: _string_ – Destination address.
+- `init`?: _string_ – Bag of cells with state init (used in deploy messages).
+- `body`?: _string_ – Bag of cells with the message body encoded as base64.
+- `boc_cache`?: _[BocCacheType](mod_boc.md#boccachetype)_ – Cache type to put the result.
+<br>The BOC itself returned if no cache type provided
+
+
+## ResultOfEncodeExternalInMessage
+```ts
+type ResultOfEncodeExternalInMessage = {
+    message: string,
+    message_id: string
+}
+```
+- `message`: _string_ – Message BOC encoded with `base64`.
+- `message_id`: _string_ – Message id.
 
 
 ## ParamsOfGetCompilerVersion
