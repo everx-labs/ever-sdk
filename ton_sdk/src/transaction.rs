@@ -159,7 +159,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
             out_msgs,
             out_messages: out_messages,
             aborted: descr.aborted,
-            total_fees: grams_to_u64(&transaction.total_fees.grams)?,
+            total_fees: grams_to_u64(&transaction.total_fees().grams)?,
             storage: storage_phase,
             compute: compute_phase,
             action: action_phase,

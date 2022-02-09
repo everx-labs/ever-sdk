@@ -50,7 +50,7 @@ lazy_static = '1.1.0'
 libsecp256k1 = '0.6.0'
 log = '0.4.11'
 lru = '0.6.3'
-num-bigint = '0.2.2'
+num-bigint = '0.4'
 num-derive = '0.3'
 num-traits = '0.2'
 pbkdf2 = { default-features = false, version = '0.8.0' }
