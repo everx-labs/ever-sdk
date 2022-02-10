@@ -17,8 +17,8 @@ use crate::error::ClientResult;
 use crate::tvm::Error;
 use std::sync::Arc;
 use ton_block::{
-    Account, CommonMsgInfo, ConfigParams, CurrencyCollection, Deserializable, Message,
-    MsgAddressInt, OutAction, OutActions, Serializable,
+    Account, CommonMsgInfo, ConfigParams, CurrencyCollection, Deserializable, GlobalCapabilities,
+    Message, MsgAddressInt, OutAction, OutActions, Serializable,
 };
 use ton_types::dictionary::HashmapType;
 use ton_types::{Cell, SliceData};
@@ -63,7 +63,10 @@ pub(crate) fn call_tvm(
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
     let mut engine = ton_vm::executor::Engine::with_capabilities(
-        options.blockchain_config.capabilites()
+        // TODO: use specific blockchain configs when they will be available 
+        // TODO: for now use maximum available capabilities 
+        // options.blockchain_config.capabilites()
+        (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapInitCodeHash as u64)
     ).setup(
         SliceData::from(code),
         Some(ctrls),
