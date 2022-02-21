@@ -12,10 +12,15 @@
  *
  */
 
+use std::sync::Arc;
+
 use crate::client::{AppObject, ClientContext, Error};
-use crate::error::ClientResult;
 use crate::crypto::{EncryptionBoxInfo, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox};
+use crate::crypto::boxes::crypto_box::{AppPasswordProvider, ParamsOfCreateCryptoBox, RegisteredCryptoBox, ResultOfGetPassword};
 use crate::crypto::boxes::encryption_box::EncryptionBox;
+use crate::crypto::internal::key256;
+use crate::encoding::hex_decode;
+use crate::error::ClientResult;
 
 /// Signing box callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
@@ -184,4 +189,67 @@ pub(crate) async fn register_encryption_box(
     app_object: AppObject<ParamsOfAppEncryptionBox, ResultOfAppEncryptionBox>,
 ) -> ClientResult<RegisteredEncryptionBox> {
     crate::crypto::register_encryption_box(context, ExternalEncryptionBox::new(app_object)).await
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[serde(tag="type")]
+pub enum ParamsOfAppPasswordProvider {
+    GetPassword {
+        encryption_public_key: String,
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[serde(tag="type")]
+pub enum ResultOfAppPasswordProvider {
+    GetPassword {
+        /// Hex encoded user's password hash.
+        /// Crypto box uses this password to decrypt its secret (seed phrase).
+        /// Password is encrypted with `encryption_public_key`.
+        encrypted_password: String,
+        /// Hex encoded public key of the key pair, used for password encryption in client
+        /// application.
+        app_encryption_pubkey: String,
+    }
+}
+
+struct ExternalPasswordProvider {
+    app_object: AppObject<ParamsOfAppPasswordProvider, ResultOfAppPasswordProvider>,
+}
+
+#[async_trait::async_trait]
+impl AppPasswordProvider for ExternalPasswordProvider {
+    async fn get_password(&self, encryption_public_key: &sodalite::BoxPublicKey) -> ClientResult<ResultOfGetPassword> {
+        let ResultOfAppPasswordProvider::GetPassword { encrypted_password, app_encryption_pubkey } =
+            self.app_object.call(
+                ParamsOfAppPasswordProvider::GetPassword {
+                    encryption_public_key: hex::encode(encryption_public_key),
+                },
+            ).await?;
+
+        Ok(ResultOfGetPassword {
+            encrypted_password: hex_decode(&encrypted_password)?,
+            app_encryption_pubkey: key256(&hex_decode(&app_encryption_pubkey)?)?,
+        })
+    }
+}
+
+/// Creates Crypto Box
+/// Crypto Box is a root crypto object, that encapsulates some secret (seed phrase usually)
+/// in encrypted form and acts as a factory for all crypto primitives used in SDK:
+/// keys for signing and encryption, derived from this secret.
+///
+/// Crypto Box encrypts original Seed Phrase with salt and some secret that is retrieved
+/// in runtime via `password_provider` callback, implemented on Application side.
+#[api_function]
+pub(crate) async fn create_crypto_box(
+    context: std::sync::Arc<ClientContext>,
+    params: ParamsOfCreateCryptoBox,
+    password_provider: AppObject<ParamsOfAppPasswordProvider, ResultOfAppPasswordProvider>,
+) -> ClientResult<RegisteredCryptoBox> {
+    crate::crypto::boxes::crypto_box::create_crypto_box(
+        context,
+        params,
+        Arc::new(ExternalPasswordProvider { app_object: password_provider }),
+    ).await
 }

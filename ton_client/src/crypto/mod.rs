@@ -27,6 +27,9 @@ pub(crate) mod encryption;
 #[cfg(test)]
 mod tests;
 
+pub use crate::crypto::boxes::crypto_box::{
+    remove_crypto_box, get_crypto_box_info, get_crypto_box_seed_phrase,
+};
 pub use crate::crypto::boxes::signing_box::{
     get_signing_box, register_signing_box, remove_signing_box, signing_box_get_public_key,
     signing_box_sign,

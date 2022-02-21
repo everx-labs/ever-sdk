@@ -197,9 +197,9 @@ pub fn nacl_sign_detached_verify(
 // Box
 
 fn prepare_to_convert(
-    input: &Vec<u8>,
-    nonce: &Vec<u8>,
-    key: &Vec<u8>,
+    input: &[u8],
+    nonce: &[u8],
+    key: &[u8],
     pad_len: usize,
 ) -> ClientResult<(Vec<u8>, Vec<u8>, [u8; 24], [u8; 32])> {
     let mut padded_input = Vec::new();
@@ -321,25 +321,42 @@ pub fn nacl_box_open(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclBoxOpen,
 ) -> ClientResult<ResultOfNaclBoxOpen> {
-    let (mut padded_output, padded_input, nonce, secret) = prepare_to_convert(
+    let padded_output = nacl_box_open_internal(
         &base64_decode(&params.encrypted)?,
         &hex_decode(&params.nonce)?,
+        &key256(&hex_decode(&params.their_public)?)?,
         &hex_decode(&params.secret)?,
+    )?;
+    Ok(ResultOfNaclBoxOpen {
+        decrypted: base64::encode(&padded_output),
+    })
+}
+
+pub fn nacl_box_open_internal(
+    encrypted: &[u8],
+    nonce: &[u8],
+    their_public: &sodalite::BoxPublicKey,
+    secret: &[u8],
+) -> ClientResult<Vec<u8>> {
+    let (mut padded_output, padded_input, nonce, secret) = prepare_to_convert(
+        encrypted,
+        nonce,
+        secret,
         16,
     )?;
     sodalite::box_open(
         &mut padded_output,
         &padded_input,
         &nonce,
-        &key256(&hex_decode(&params.their_public)?)?,
+        their_public,
         &secret,
     )
-    .map_err(|_| crypto::Error::nacl_box_failed("box open failed"))?;
+        .map_err(|_| crypto::Error::nacl_box_failed("box open failed"))?;
     padded_output.drain(..32);
-    Ok(ResultOfNaclBoxOpen {
-        decrypted: base64::encode(&padded_output),
-    })
+
+    Ok(padded_output)
 }
+
 
 // Secret Box
 

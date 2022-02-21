@@ -25,6 +25,7 @@ use crate::boc::{BocConfig, cache::Bocs};
 use crate::client::storage::KeyValueStorage;
 use crate::crypto::CryptoConfig;
 use crate::crypto::boxes::{signing_box::SigningBox, encryption_box::EncryptionBox};
+use crate::crypto::boxes::crypto_box::CryptoBox;
 use crate::debot::DEngine;
 use crate::error::ClientResult;
 use crate::json_interface::interop::ResponseType;
@@ -40,6 +41,7 @@ use super::wasm_client_env::ClientEnv;
 
 #[derive(Default)]
 pub struct Boxes {
+    pub(crate) crypto_boxes: LockfreeMap<u32, CryptoBox>,
     pub(crate) signing_boxes: LockfreeMap<u32, Box<dyn SigningBox + Send + Sync>>,
     pub(crate) encryption_boxes: LockfreeMap<u32, Box<dyn EncryptionBox + Send + Sync>>,
 }
