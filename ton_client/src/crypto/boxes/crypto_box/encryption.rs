@@ -3,6 +3,7 @@ use rand::RngCore;
 use sodalite::{BOX_NONCE_LEN, BOX_PUBLIC_KEY_LEN, BOX_SECRET_KEY_LEN};
 use zeroize::ZeroizeOnDrop;
 
+use crate::crypto::boxes::crypto_box::SecretInternal;
 use crate::crypto::nacl::nacl_box_open_internal;
 use crate::error::ClientResult;
 
@@ -24,7 +25,7 @@ fn generate_nonce() -> SecretBuf {
 fn derive_key(password: &[u8], salt: &str) -> ClientResult<SecretBuf> {
     let scrypt_params = scrypt::Params::new(14, 8, 1)
         .expect("Scrypt params setup failed");
-    let mut key = SecretBuf::default();
+    let mut key = SecretBuf(vec![0;32]);
     scrypt::scrypt(password, salt.as_bytes(), &scrypt_params, &mut key.0)
         .map_err(|err| Error::scrypt_failed(err))?;
 
@@ -49,26 +50,30 @@ async fn apply_chacha20(
     Ok(output)
 }
 
-pub(super) async fn encrypt_secret(
-    secret: &[u8],
+pub(crate) async fn encrypt_secret(
+    secret: &SecretInternal,
     password_provider: &PasswordProvider,
     salt: &str,
 ) -> ClientResult<SecretBuf> {
     let mut result = generate_nonce();
-    apply_chacha20(secret, password_provider, salt, &result.0).await
+    let serialized = SecretBuf(bincode::serialize(secret)
+        .map_err(|err| Error::crypto_box_secret_serialization_error(err))?);
+    apply_chacha20(&serialized.0, password_provider, salt, &result.0).await
         .map(|mut output| {
             result.0.append(&mut output.0);
             result
         })
 }
 
-pub(super) async fn decrypt_secret(
+pub(crate) async fn decrypt_secret(
     encrypted_secret: &[u8],
     password_provider: &PasswordProvider,
     salt: &str,
-) -> ClientResult<SecretBuf> {
+) -> ClientResult<SecretInternal> {
     let (nonce, encrypted_secret) = encrypted_secret.split_at(NONCE_LEN);
-    apply_chacha20(encrypted_secret, password_provider, salt, nonce).await
+    let data = apply_chacha20(encrypted_secret, password_provider, salt, nonce).await?;
+    bincode::deserialize(&data.0)
+        .map_err(|err| Error::crypto_box_secret_deserialization_error(err))
 }
 
 async fn get_password(

@@ -1,3 +1,5 @@
+use std::sync::Arc;
+use crate::client::ParamsOfAppRequest;
 use crate::crypto::boxes::encryption_box::ParamsOfCreateEncryptionBox;
 use crate::crypto::encscrypt::{ParamsOfScrypt, ResultOfScrypt};
 use crate::crypto::hash::{ParamsOfHash, ResultOfHash};
@@ -27,7 +29,14 @@ use crate::crypto::nacl::{
     ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
 use crate::crypto::{ParamsOfChaCha20, ResultOfChaCha20};
-use crate::json_interface::crypto::{ParamsOfAppSigningBox, ResultOfAppSigningBox};
+use crate::crypto::boxes::crypto_box::{
+    CryptoBoxSecret, ParamsOfCreateCryptoBox, RegisteredCryptoBox, ResultOfGetCryptoBoxInfo,
+    ResultOfGetCryptoBoxSeedPhrase,
+};
+use crate::json_interface::crypto::{
+    ParamsOfAppPasswordProvider, ParamsOfAppSigningBox, ResultOfAppPasswordProvider,
+    ResultOfAppSigningBox,
+};
 use crate::tests::TestClient;
 use super::*;
 
@@ -951,4 +960,129 @@ async fn test_aes_encryption_box() {
         "src/crypto/test_data/aes.plaintext.for.padding.bin",
         "src/crypto/test_data/cbc-aes256.ciphertext.padded.bin"
     ).await;
+}
+
+#[tokio::test]
+async fn test_crypto_boxes() -> ton_types::Result<()> {
+    let client = Arc::new(TestClient::new());
+    let password_hash = Arc::new(
+        "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_string()
+    );
+    let salt = "123123123";
+
+    fn get_callback(
+        client: &Arc<TestClient>,
+        password_hash: &Arc<String>,
+    ) -> impl Fn(ParamsOfAppRequest, u32) -> futures::future::Ready<()> {
+        let client = Arc::clone(client);
+        let password_hash = Arc::clone(password_hash);
+        move |request: ParamsOfAppRequest, _: u32| {
+            let client = Arc::clone(&client);
+            let password_hash = Arc::clone(&password_hash);
+            tokio::spawn(async move {
+                let ParamsOfAppPasswordProvider::GetPassword { encryption_public_key } =
+                    serde_json::from_value(request.request_data).unwrap();
+
+                let KeyPair { public, secret } =
+                    client.request_no_params("crypto.nacl_box_keypair").unwrap();
+
+                let ResultOfNaclBox { encrypted } =
+                    client.request_async(
+                        "crypto.nacl_box",
+                        ParamsOfNaclBox {
+                            decrypted: base64::encode(&hex::decode(password_hash.as_ref()).unwrap()),
+                            nonce: encryption_public_key[..48].to_string(),
+                            their_public: encryption_public_key,
+                            secret,
+                        },
+                    ).await
+                        .unwrap();
+
+                client.resolve_app_request(
+                    request.app_request_id,
+                    ResultOfAppPasswordProvider::GetPassword {
+                        encrypted_password: encrypted,
+                        app_encryption_pubkey: public,
+                    },
+                ).await;
+            });
+            futures::future::ready(())
+        }
+    }
+
+    let RegisteredCryptoBox { handle } = client
+        .request_async_callback(
+            "crypto.create_crypto_box",
+            ParamsOfCreateCryptoBox {
+                secret_encryption_salt: salt.to_string(),
+                secret: CryptoBoxSecret::RandomSeedPhrase {
+                    dictionary: Default::default(),
+                    wordcount: 12,
+                }
+            },
+            get_callback(&client, &password_hash),
+        ).await?;
+
+    let seed_phrase: ResultOfGetCryptoBoxSeedPhrase = client.request_async(
+        "crypto.get_crypto_box_seed_phrase",
+        RegisteredCryptoBox { handle },
+    ).await?;
+
+    let verify_result: ResultOfMnemonicVerify = client
+        .request(
+            "crypto.mnemonic_verify",
+            ParamsOfMnemonicVerify {
+                phrase: seed_phrase.phrase.clone(),
+                dictionary: Some(0),
+                word_count: Some(12),
+            },
+        )
+        .unwrap();
+
+    assert!(verify_result.valid);
+
+    let crypto_box_info: ResultOfGetCryptoBoxInfo = client.request_async(
+        "crypto.get_crypto_box_info",
+        RegisteredCryptoBox { handle },
+    ).await?;
+
+    let RegisteredCryptoBox { handle } = client
+        .request_async_callback(
+            "crypto.create_crypto_box",
+            ParamsOfCreateCryptoBox {
+                secret_encryption_salt: salt.to_string(),
+                secret: CryptoBoxSecret::EncryptedSecret {
+                    encrypted_secret: crypto_box_info.encrypted_secret.clone(),
+                }
+            },
+            get_callback(&client, &password_hash),
+        ).await?;
+
+    let seed_phrase2: ResultOfGetCryptoBoxSeedPhrase = client.request_async(
+        "crypto.get_crypto_box_seed_phrase",
+        RegisteredCryptoBox { handle },
+    ).await?;
+
+    assert_eq!(seed_phrase.phrase, seed_phrase2.phrase);
+
+    let RegisteredCryptoBox { handle } = client
+        .request_async_callback(
+            "crypto.create_crypto_box",
+            ParamsOfCreateCryptoBox {
+                secret_encryption_salt: salt.to_string(),
+                secret: CryptoBoxSecret::PredefinedSeedPhrase {
+                    phrase: seed_phrase.phrase.clone(),
+                }
+            },
+            get_callback(&client, &password_hash),
+        ).await?;
+
+    let seed_phrase3: ResultOfGetCryptoBoxSeedPhrase = client.request_async(
+        "crypto.get_crypto_box_seed_phrase",
+        RegisteredCryptoBox { handle },
+    ).await?;
+
+    assert_eq!(seed_phrase.phrase, seed_phrase3.phrase);
+
+    Ok(())
 }

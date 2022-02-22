@@ -34,7 +34,8 @@ pub enum ErrorCode {
     IvRequired = 129,
     CryptoBoxNotRegistered = 130,
     InvalidCryptoBoxType = 131,
-    CryptoBoxSecretDeserializationError = 132,
+    CryptoBoxSecretSerializationError = 132,
+    CryptoBoxSecretDeserializationError = 133,
 }
 
 pub struct Error;
@@ -245,6 +246,13 @@ impl Error {
         error(
             ErrorCode::InvalidCryptoBoxType,
             format!("Invalid crypto box type: {}", crypto_box_type),
+        )
+    }
+
+    pub fn crypto_box_secret_serialization_error(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::CryptoBoxSecretSerializationError,
+            format!("Crypto box secret serialization error: {}", err),
         )
     }
 

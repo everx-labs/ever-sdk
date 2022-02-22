@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use failure::bail;
 use lockfree::map::ReadGuard;
-use ton_block::{Deserializable, Serializable};
-use ton_types::{BuilderData, IBitstring, SliceData};
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use crate::ClientContext;
@@ -28,7 +25,13 @@ pub struct RegisteredCryptoBox {
     pub handle: CryptoBoxHandle,
 }
 
-#[derive(ZeroizeOnDrop)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, ZeroizeOnDrop)]
+pub(crate) struct SecretString(pub String);
+
+#[derive(Debug, Default, Clone, ZeroizeOnDrop)]
+pub(crate) struct SecretBuf(pub Vec<u8>);
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, ZeroizeOnDrop)]
 pub struct ResultOfGetPassword {
     /// User's password hash.
     /// Crypto box uses this password to decrypt its secret (seed phrase).
@@ -46,13 +49,8 @@ pub trait AppPasswordProvider {
     ) -> ClientResult<ResultOfGetPassword>;
 }
 
-#[derive(ZeroizeOnDrop)]
-pub(crate) struct SecretString(String);
-
-#[derive(Default, Clone, ZeroizeOnDrop)]
-pub(crate) struct SecretBuf(Vec<u8>);
-
-enum SecretInternal {
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
+pub(crate) enum SecretInternal {
     SeedPhrase {
         phrase: SecretString,
     },
@@ -64,68 +62,50 @@ impl Default for SecretInternal {
     }
 }
 
-const SECRET_SEED_PHRASE: u8 = 0;
-
-impl Serializable for SecretInternal {
-    fn write_to(&self, cell: &mut BuilderData) -> ton_types::Result<()> {
-        match self {
-            SecretInternal::SeedPhrase { phrase } => {
-                cell.append_u8(SECRET_SEED_PHRASE)?;
-                cell.append_u16(phrase.0.len() as u16)?;
-                cell.append_bitstring(phrase.0.as_bytes())?;
-            }
-        }
-        Ok(())
-    }
-}
-
-impl Deserializable for SecretInternal {
-    fn read_from(&mut self, slice: &mut SliceData) -> ton_types::Result<()> {
-        let secret_type = slice.get_next_byte()?;
-        match secret_type {
-            SECRET_SEED_PHRASE => {
-                let len = slice.get_next_u16()?;
-                let phrase = SecretString(
-                    String::from_utf8(
-                        slice.get_next_bytes(len as usize)?
-                    )?
-                );
-                *self = SecretInternal::SeedPhrase { phrase };
-            }
-
-            _ => bail!("Unsupported secret_type: {}", secret_type),
-        }
-        Ok(())
-    }
-}
-
 pub(crate) struct CryptoBox {
     pub password_provider: PasswordProvider,
     pub secret_encryption_salt: SecretString,
     pub encrypted_secret: SecretBuf,
 }
 
+/// Crypto Box Secret.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq, ZeroizeOnDrop)]
 #[serde(tag="type")]
 pub enum CryptoBoxSecret {
-    /// Generates new random seed phrase and wraps it into crypto box.
-    /// This option can be used if the developer doesn't want the seed phrase to leave
-    /// client's library memory, where it is immediately encrypted with salt and password, received
-    /// from `AppPasswordProvider`.
+    /// Creates Crypto Box from a random seed phrase.
+    /// This option can be used if a developer doesn't want the seed phrase to leave the core
+    /// library's memory, where it is stored encrypted.
+    ///
+    /// This type should be used upon the first wallet initialization, all further initializations
+    /// should use `EncryptedSecret` type instead.
+    ///
+    /// Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
     RandomSeedPhrase {
         dictionary: CryptoBoxDictionary,
         wordcount: u8,
     },
 
     /// Restores crypto box instance from an existing seed phrase.
-    /// Takes the phrase, encrypts it with salt and password, received from `AppPasswordProvider`.
-    /// After this save `encrypted_secret` and login via `encrypted_secret` the next time.
+    /// This type should be used when Crypto Box is initialized from a seed phrase, entered by a user.
+    ///
+    /// This type should be used only upon the first wallet initialization, all further
+    /// initializations should use `EncryptedSecret` type instead.
+    ///
+    /// Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
     PredefinedSeedPhrase {
         phrase: String,
     },
 
-    /// Use specified encrypted secret. This type is used when user already logged in before.
-    /// Can be only retrieved via `get_crypto_box_info`.
+    /// Use this type for wallet reinitializations, when you already have `encrypted_secret` on hands.
+    /// To get `encrypted_secret`, use `get_crypto_box_info` function after you initialized your
+    /// crypto box for the first time.
+    ///
+    /// It is an object, containing seed phrase or private key, encrypted with
+    /// `secret_encryption_salt` and `password_provider`.
+    ///
+    /// Note that if you want to change salt or password provider, then you need to reinitialize
+    /// the wallet with `PredefinedSeedPhrase`, then get `EncryptedSecret` via `get_crypto_box_info`,
+    /// store it somewhere, and only after that initialize the wallet with `EncryptedSecret` type.
     EncryptedSecret {
         /// It is an object, containing seed phrase or private key (now we support only seed phrase).
         encrypted_secret: String,
@@ -149,7 +129,17 @@ pub struct ParamsOfCreateCryptoBox {
     pub secret: CryptoBoxSecret,
 }
 
-/// Create Crypto Box
+/// Creates Crypto Box.
+///
+/// Crypto Box is a root crypto object, that encapsulates some secret (seed phrase usually)
+/// in encrypted form and acts as a factory for all crypto primitives used in SDK:
+/// keys for signing and encryption, derived from this secret.
+///
+/// Crypto Box encrypts original Seed Phrase with salt and some secret that is retrieved
+/// in runtime via `password_provider` callback, implemented on Application side.
+///
+/// When used, decrypted secret has shown up in core library's memory for a very short period
+/// of time and then is immediately overwritten with zeroes.
 pub async fn create_crypto_box(
     context: Arc<ClientContext>,
     params: ParamsOfCreateCryptoBox,
@@ -164,20 +154,22 @@ pub async fn create_crypto_box(
             };
             let phrase = {
                 let mnemonics = mnemonics(&config, Some(dictionary.0), Some(*wordcount))?;
-                SecretString(mnemonics.generate_random_phrase()?)
+                SecretInternal::SeedPhrase { phrase: SecretString(mnemonics.generate_random_phrase()?) }
             };
             encrypt_secret(
-                phrase.0.as_bytes(),
+                &phrase,
                 &password_provider,
                 &params.secret_encryption_salt,
             ).await?
         },
 
-        CryptoBoxSecret::PredefinedSeedPhrase { phrase } => encrypt_secret(
-            phrase.as_bytes(),
-            &password_provider,
-            &params.secret_encryption_salt,
-        ).await?,
+        CryptoBoxSecret::PredefinedSeedPhrase { phrase } => {
+            encrypt_secret(
+                &SecretInternal::SeedPhrase { phrase: SecretString(phrase.clone()) },
+                &password_provider,
+                &params.secret_encryption_salt,
+            ).await?
+        },
 
         CryptoBoxSecret::EncryptedSecret { encrypted_secret } =>
             SecretBuf(base64_decode(&encrypted_secret)?),
@@ -194,7 +186,7 @@ pub async fn create_crypto_box(
     Ok(RegisteredCryptoBox { handle: CryptoBoxHandle(id) })
 }
 
-/// Remove Crypto Box
+/// Remove Crypto Box.
 #[api_function]
 pub async fn remove_crypto_box(
     context: Arc<ClientContext>,
@@ -209,7 +201,9 @@ pub struct ResultOfGetCryptoBoxSeedPhrase {
     pub phrase: String,
 }
 
-/// Get Crypto Box Seed Phrase
+/// Get Crypto Box Seed Phrase.
+///
+/// Store this data in your application for a very short time and overwrite it with zeroes ASAP.
 #[api_function]
 pub async fn get_crypto_box_seed_phrase(
     context: Arc<ClientContext>,
@@ -217,14 +211,12 @@ pub async fn get_crypto_box_seed_phrase(
 ) -> ClientResult<ResultOfGetCryptoBoxSeedPhrase> {
     let SecretInternal::SeedPhrase { phrase } = {
         let guard = get_crypto_box(&context, &params.handle)?;
-
-        SecretInternal::construct_from_bytes(
-        &decrypt_secret(
-                &guard.val().encrypted_secret.0,
-                &guard.val().password_provider,
-                &guard.val().secret_encryption_salt.0,
-            ).await?.0
-        ).map_err(|err| Error::crypto_box_secret_deserialization_error(err))?
+        let crypto_box = guard.val();
+        decrypt_secret(
+            &crypto_box.encrypted_secret.0,
+            &crypto_box.password_provider,
+            &crypto_box.secret_encryption_salt.0,
+        ).await?
     };
 
     Ok(ResultOfGetCryptoBoxSeedPhrase { phrase: phrase.0.clone() })
@@ -235,7 +227,7 @@ pub struct ResultOfGetCryptoBoxInfo {
     pub encrypted_secret: String,
 }
 
-/// Get Crypto Box Info
+/// Get Crypto Box Info.
 #[api_function]
 pub async fn get_crypto_box_info(
     context: Arc<ClientContext>,
