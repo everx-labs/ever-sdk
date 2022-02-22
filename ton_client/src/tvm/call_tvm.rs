@@ -66,7 +66,7 @@ pub(crate) fn call_tvm(
         // TODO: use specific blockchain configs when they will be available 
         // TODO: for now use maximum available capabilities 
         // options.blockchain_config.capabilites()
-        (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapVmInitCodeHash as u64)
+        (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapInitCodeHash as u64)
     ).setup(
         SliceData::from(code),
         Some(ctrls),
