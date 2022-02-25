@@ -1,4 +1,4 @@
-# Network Config
+# Get a network config
 
 Fetch the last key block and get config from it:
 
@@ -6,7 +6,7 @@ Fetch the last key block and get config from it:
 query{
   blocks(filter:{
     workchain_id:{
-      eq:-1
+      eq:*1
     }
     key_block:{
       eq:true
