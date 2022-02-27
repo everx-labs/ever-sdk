@@ -1,24 +1,28 @@
+use std::future::Future;
 use std::sync::Arc;
 
+use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use lockfree::map::ReadGuard;
-use zeroize::{Zeroize, ZeroizeOnDrop};
+use tokio::sync::RwLock;
+use zeroize::ZeroizeOnDrop;
 
 use crate::ClientContext;
-use crate::crypto::{CryptoConfig, Error};
+use crate::crypto::{CryptoConfig, Error, register_signing_box, RegisteredSigningBox, SigningBox};
 use crate::crypto::boxes::crypto_box::encryption::{decrypt_secret, encrypt_secret};
+use crate::crypto::boxes::signing_box::KeysSigningBox;
 use crate::crypto::mnemonic::mnemonics;
-use crate::encoding::base64_decode;
+use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 
 mod encryption;
 
 type PasswordProvider = Arc<dyn AppPasswordProvider + Send + Sync + 'static>;
 
+const DEFAULT_DICTIONARY: u8 = 0;
+const DEFAULT_WORDCOUNT: u8 = 12;
+
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, ApiType, Default, PartialEq)]
 pub struct CryptoBoxHandle(pub u32);
-
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, ApiType, Default, PartialEq, Zeroize)]
-pub struct CryptoBoxDictionary(pub u8);
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct RegisteredCryptoBox {
@@ -53,12 +57,18 @@ pub trait AppPasswordProvider {
 pub(crate) enum SecretInternal {
     SeedPhrase {
         phrase: SecretString,
+        dictionary: u8,
+        wordcount: u8,
     },
 }
 
 impl Default for SecretInternal {
     fn default() -> Self {
-        SecretInternal::SeedPhrase { phrase: SecretString(String::new()) }
+        SecretInternal::SeedPhrase {
+            phrase: SecretString(String::new()),
+            dictionary: DEFAULT_DICTIONARY,
+            wordcount: DEFAULT_WORDCOUNT,
+        }
     }
 }
 
@@ -81,7 +91,7 @@ pub enum CryptoBoxSecret {
     ///
     /// Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
     RandomSeedPhrase {
-        dictionary: CryptoBoxDictionary,
+        dictionary: u8,
         wordcount: u8,
     },
 
@@ -94,6 +104,8 @@ pub enum CryptoBoxSecret {
     /// Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
     PredefinedSeedPhrase {
         phrase: String,
+        dictionary: u8,
+        wordcount: u8,
     },
 
     /// Use this type for wallet reinitializations, when you already have `encrypted_secret` on hands.
@@ -114,7 +126,11 @@ pub enum CryptoBoxSecret {
 
 impl Default for CryptoBoxSecret {
     fn default() -> Self {
-        Self::PredefinedSeedPhrase { phrase: Default::default() }
+        Self::PredefinedSeedPhrase {
+            phrase: Default::default(),
+            dictionary: DEFAULT_DICTIONARY,
+            wordcount: DEFAULT_WORDCOUNT,
+        }
     }
 }
 
@@ -147,14 +163,14 @@ pub async fn create_crypto_box(
 ) -> ClientResult<RegisteredCryptoBox> {
     let encrypted_secret = match &params.secret {
         CryptoBoxSecret::RandomSeedPhrase { dictionary, wordcount } => {
-            let config = CryptoConfig {
-                mnemonic_dictionary: dictionary.0,
-                mnemonic_word_count: *wordcount,
-                ..Default::default()
-            };
+            let config = CryptoConfig::default();
             let phrase = {
-                let mnemonics = mnemonics(&config, Some(dictionary.0), Some(*wordcount))?;
-                SecretInternal::SeedPhrase { phrase: SecretString(mnemonics.generate_random_phrase()?) }
+                let mnemonics = mnemonics(&config, Some(*dictionary), Some(*wordcount))?;
+                SecretInternal::SeedPhrase {
+                    phrase: SecretString(mnemonics.generate_random_phrase()?),
+                    dictionary: *dictionary,
+                    wordcount: *wordcount,
+                }
             };
             encrypt_secret(
                 &phrase,
@@ -163,9 +179,13 @@ pub async fn create_crypto_box(
             ).await?
         },
 
-        CryptoBoxSecret::PredefinedSeedPhrase { phrase } => {
+        CryptoBoxSecret::PredefinedSeedPhrase { phrase, dictionary, wordcount } => {
             encrypt_secret(
-                &SecretInternal::SeedPhrase { phrase: SecretString(phrase.clone()) },
+                &SecretInternal::SeedPhrase {
+                    phrase: SecretString(phrase.clone()),
+                    dictionary: *dictionary,
+                    wordcount: *wordcount,
+                },
                 &password_provider,
                 &params.secret_encryption_salt,
             ).await?
@@ -199,6 +219,8 @@ pub async fn remove_crypto_box(
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, ZeroizeOnDrop)]
 pub struct ResultOfGetCryptoBoxSeedPhrase {
     pub phrase: String,
+    pub dictionary: u8,
+    pub wordcount: u8,
 }
 
 /// Get Crypto Box Seed Phrase.
@@ -209,7 +231,7 @@ pub async fn get_crypto_box_seed_phrase(
     context: Arc<ClientContext>,
     params: RegisteredCryptoBox,
 ) -> ClientResult<ResultOfGetCryptoBoxSeedPhrase> {
-    let SecretInternal::SeedPhrase { phrase } = {
+    let SecretInternal::SeedPhrase { phrase, dictionary, wordcount } = {
         let guard = get_crypto_box(&context, &params.handle)?;
         let crypto_box = guard.val();
         decrypt_secret(
@@ -219,7 +241,7 @@ pub async fn get_crypto_box_seed_phrase(
         ).await?
     };
 
-    Ok(ResultOfGetCryptoBoxSeedPhrase { phrase: phrase.0.clone() })
+    Ok(ResultOfGetCryptoBoxSeedPhrase { phrase: phrase.0.clone(), dictionary, wordcount })
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
@@ -243,4 +265,138 @@ fn get_crypto_box<'context>(context: &'context Arc<ClientContext>, handle: &Cryp
 {
     context.boxes.crypto_boxes.get(&handle.0)
         .ok_or_else(|| Error::crypto_box_not_registered(handle.0))
+}
+
+#[derive(Serialize, Deserialize, Default, Clone, Debug, ApiType, PartialEq)]
+pub struct ParamsOfGetSigningBoxFromCryptoBox {
+    /// Crypto Box Handle.
+    pub handle: u32,
+    /// HD key derivation path. By default, Everscale HD path is used.
+    pub hdpath: Option<String>,
+    /// Store derived secret for encryption algorithm for this lifetime (in ms).
+    /// The timer starts after each signing box operation.
+    /// Secrets will be deleted after each signing box operation, if this value is not set.
+    pub secret_lifetime: Option<u32>,
+}
+
+/// Get Signing Box from Crypto Box.
+#[api_function]
+pub async fn get_signing_box_from_crypto_box(
+    context: Arc<ClientContext>,
+    params: ParamsOfGetSigningBoxFromCryptoBox,
+) -> ClientResult<RegisteredSigningBox> {
+    register_signing_box(
+        context,
+        SigningBoxFromCryptoBoxLifeCycleManager {
+            params,
+            internal_signing_box: Default::default(),
+        }
+    ).await
+}
+
+struct SigningBoxFromCryptoBoxLifeCycleManager {
+    params: ParamsOfGetSigningBoxFromCryptoBox,
+    internal_signing_box: Arc<RwLock<Option<Arc<KeysSigningBox>>>>,
+}
+
+impl SigningBoxFromCryptoBoxLifeCycleManager {
+    async fn with_internal_signing_box<Cb, Fut, Ret>(
+        &self,
+        context: Arc<ClientContext>,
+        callback: Cb,
+    ) -> ClientResult<Ret>
+    where
+        Cb: Fn(Arc<KeysSigningBox>) -> Fut,
+        Fut: Future<Output=ClientResult<Ret>>,
+    {
+        loop {
+            if let Some(signing_box) = self.internal_signing_box.read().await.as_ref() {
+                return callback(Arc::clone(signing_box)).await;
+            }
+            let mut write_guard = self.internal_signing_box.write().await;
+            if let Some(signing_box) = write_guard.as_ref() {
+                return callback(Arc::clone(signing_box)).await;
+            }
+
+            let seed_phrase = get_crypto_box_seed_phrase(
+                Arc::clone(&context),
+                RegisteredCryptoBox { handle: CryptoBoxHandle(self.params.handle) },
+            ).await?;
+
+            let mnemonic = mnemonics(
+                &context.config.crypto,
+                Some(seed_phrase.dictionary),
+                Some(seed_phrase.wordcount),
+            )?;
+            let hdpath = self.params.hdpath.as_ref()
+                .unwrap_or(&context.config.crypto.hdkey_derivation_path);
+            let keypair = mnemonic.derive_ed25519_keys_from_phrase(&context.config.crypto, &seed_phrase.phrase, hdpath)
+                .map::<ClientResult<Keypair>, _>(|keypair| Ok(Keypair {
+                    public: PublicKey::from_bytes(&hex_decode(&keypair.public)?)
+                        .map_err(|err| Error::invalid_public_key(err, &keypair.public))?,
+                    secret: SecretKey::from_bytes(&hex_decode(&keypair.secret)?)
+                        .map_err(|err| Error::invalid_secret_key(err, &keypair.secret))?,
+                }))??;
+
+            *write_guard = Some(Arc::new(KeysSigningBox::new(keypair)));
+
+            let lifetime = self.params.secret_lifetime.unwrap_or(0) as u64;
+            let context_copy = Arc::clone(&context);
+            let internal_signing_box = Arc::clone(&self.internal_signing_box);
+            context.env.spawn(async move {
+                if lifetime > 0 {
+                    context_copy.env.set_timer(lifetime).await.ok();
+                }
+                Self::drop_secret(internal_signing_box).await;
+            });
+        }
+    }
+
+    async fn drop_secret<T>(internal_signing_box: Arc<RwLock<Option<T>>>) {
+        *internal_signing_box.write().await = None;
+    }
+}
+
+#[async_trait::async_trait]
+impl SigningBox for SigningBoxFromCryptoBoxLifeCycleManager {
+    async fn get_public_key(&self, context: Arc<ClientContext>) -> ClientResult<Vec<u8>> {
+        self.with_internal_signing_box(Arc::clone(&context), move |signing_box| {
+            let context = Arc::clone(&context);
+            async move {
+                signing_box.get_public_key(Arc::clone(&context)).await
+            }
+        }).await
+    }
+
+    async fn sign(&self, context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
+        self.with_internal_signing_box(Arc::clone(&context), move |signing_box| {
+            let context = Arc::clone(&context);
+            async move {
+                signing_box.sign(Arc::clone(&context), unsigned).await
+            }
+        }).await
+    }
+}
+
+/// Remove all cached secrets from signing boxes, derived from selected crypto box.
+#[api_function]
+pub async fn clear_crypto_box_secret_cache(
+    context: Arc<ClientContext>,
+    params: RegisteredCryptoBox,
+) -> ClientResult<()> {
+    for item in context.boxes.signing_boxes.iter() {
+        let signing_box_opt: Option<&SigningBoxFromCryptoBoxLifeCycleManager> =
+            item.val().downcast_ref();
+        if let Some(signing_box) = signing_box_opt {
+            if signing_box.params.handle == params.handle.0 {
+                SigningBoxFromCryptoBoxLifeCycleManager::drop_secret(
+                    Arc::clone(&signing_box.internal_signing_box),
+                ).await;
+            }
+        }
+    }
+
+    // TODO: Add support for ecnryption boxes created from crypto boxes.
+
+    Ok(())
 }

@@ -63,7 +63,7 @@ impl ExternalSigningBox {
 
 #[async_trait::async_trait]
 impl SigningBox for ExternalSigningBox {
-    async fn get_public_key(&self) -> ClientResult<Vec<u8>> {
+    async fn get_public_key(&self, _context: Arc<ClientContext>) -> ClientResult<Vec<u8>> {
         let response = self.app_object.call(ParamsOfAppSigningBox::GetPublicKey).await?;
 
         match response {
@@ -75,7 +75,7 @@ impl SigningBox for ExternalSigningBox {
         }
     }
 
-    async fn sign(&self, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
+    async fn sign(&self, _context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
         let response = self.app_object.call(ParamsOfAppSigningBox::Sign { 
             unsigned: base64::encode(unsigned)
         }).await?;

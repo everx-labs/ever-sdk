@@ -42,8 +42,8 @@ use super::wasm_client_env::ClientEnv;
 #[derive(Default)]
 pub struct Boxes {
     pub(crate) crypto_boxes: LockfreeMap<u32, CryptoBox>,
-    pub(crate) signing_boxes: LockfreeMap<u32, Box<dyn SigningBox + Send + Sync>>,
-    pub(crate) encryption_boxes: LockfreeMap<u32, Box<dyn EncryptionBox + Send + Sync>>,
+    pub(crate) signing_boxes: LockfreeMap<u32, Box<dyn SigningBox>>,
+    pub(crate) encryption_boxes: LockfreeMap<u32, Box<dyn EncryptionBox>>,
 }
 
 #[derive(Debug)]

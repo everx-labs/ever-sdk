@@ -13,6 +13,8 @@
 
 use std::sync::Arc;
 
+use mopa::mopafy;
+
 use crate::client::ClientContext;
 use crate::crypto::Error;
 use crate::crypto::KeyPair;
@@ -28,12 +30,14 @@ impl From<u32> for SigningBoxHandle {
 }
 
 #[async_trait::async_trait]
-pub trait SigningBox {
+pub trait SigningBox: mopa::Any + Send + Sync {
     /// Get public key of key pair
-    async fn get_public_key(&self) -> ClientResult<Vec<u8>>;
+    async fn get_public_key(&self, context: Arc<ClientContext>) -> ClientResult<Vec<u8>>;
     /// Sign data with key pair
-    async fn sign(&self, unsigned: &[u8]) -> ClientResult<Vec<u8>>;
+    async fn sign(&self, context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>>;
 }
+
+mopa::mopafy!(SigningBox);
 
 pub(crate) struct KeysSigningBox {
     key_pair: ed25519_dalek::Keypair
@@ -53,11 +57,11 @@ impl KeysSigningBox {
 
 #[async_trait::async_trait]
 impl SigningBox for KeysSigningBox {
-    async fn get_public_key(&self) -> ClientResult<Vec<u8>> {
+    async fn get_public_key(&self, _context: Arc<ClientContext>) -> ClientResult<Vec<u8>> {
         Ok(self.key_pair.public.to_bytes().to_vec())
     }
 
-    async fn sign(&self, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
+    async fn sign(&self, _context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
         crate::crypto::internal::sign_using_keys(unsigned, &self.key_pair).map(|result| result.1)
     }
 }
@@ -112,7 +116,7 @@ pub async fn signing_box_get_public_key(
         .get(&params.handle.0)
         .ok_or(Error::signing_box_not_registered(params.handle.0))?;
 
-    let key = signing_box.1.get_public_key().await?;
+    let key = signing_box.1.get_public_key(Arc::clone(&context)).await?;
 
     Ok(ResultOfSigningBoxGetPublicKey {
         pubkey: hex::encode(&key)
@@ -145,7 +149,7 @@ pub async fn signing_box_sign(
 
     let unsigned = crate::encoding::base64_decode(&params.unsigned)?;
 
-    let signed = signing_box.1.sign(&unsigned).await?;
+    let signed = signing_box.1.sign(Arc::clone(&context), &unsigned).await?;
 
     Ok(ResultOfSigningBoxSign {
         signature: hex::encode(&signed)
