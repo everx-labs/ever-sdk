@@ -7,8 +7,11 @@ use tokio::sync::RwLock;
 use zeroize::ZeroizeOnDrop;
 
 use crate::ClientContext;
-use crate::crypto::{CryptoConfig, Error, register_signing_box, RegisteredSigningBox, SigningBox};
+use crate::crypto::{CryptoConfig, EncryptionBox, EncryptionBoxInfo, Error, register_encryption_box, register_signing_box, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox};
 use crate::crypto::boxes::crypto_box::encryption::{decrypt_secret, encrypt_secret};
+use crate::crypto::boxes::encryption_box::chacha20::ChaCha20EncryptionBox;
+use crate::crypto::boxes::encryption_box::nacl_box::NaclEncryptionBox;
+use crate::crypto::boxes::encryption_box::nacl_secret_box::NaclSecretEncryptionBox;
 use crate::crypto::boxes::signing_box::KeysSigningBox;
 use crate::crypto::mnemonic::mnemonics;
 use crate::encoding::{base64_decode, hex_decode};
@@ -279,6 +282,12 @@ pub struct ParamsOfGetSigningBoxFromCryptoBox {
     pub secret_lifetime: Option<u32>,
 }
 
+struct InternalBoxParams {
+    handle: u32,
+    hdpath: Option<String>,
+    secret_lifetime: Option<u32>,
+}
+
 /// Get Signing Box from Crypto Box.
 #[api_function]
 pub async fn get_signing_box_from_crypto_box(
@@ -287,94 +296,364 @@ pub async fn get_signing_box_from_crypto_box(
 ) -> ClientResult<RegisteredSigningBox> {
     register_signing_box(
         context,
-        SigningBoxFromCryptoBoxLifeCycleManager {
-            params,
-            internal_signing_box: Default::default(),
+        BoxFromCryptoBoxLifeCycleManager::<KeysSigningBox> {
+            params: InternalBoxParams {
+                handle: params.handle,
+                hdpath: params.hdpath,
+                secret_lifetime: params.secret_lifetime,
+            },
+            internal_box: Default::default(),
         }
     ).await
 }
 
-struct SigningBoxFromCryptoBoxLifeCycleManager {
-    params: ParamsOfGetSigningBoxFromCryptoBox,
-    internal_signing_box: Arc<RwLock<Option<Arc<KeysSigningBox>>>>,
+struct BoxFromCryptoBoxLifeCycleManager<T> {
+    params: InternalBoxParams,
+    internal_box: Arc<RwLock<Option<Arc<T>>>>,
 }
 
-impl SigningBoxFromCryptoBoxLifeCycleManager {
-    async fn with_internal_signing_box<Cb, Fut, Ret>(
+impl<T: Send + Sync + 'static> BoxFromCryptoBoxLifeCycleManager<T> {
+    async fn with_internal_box<Cb, Fut, Ret>(
         &self,
         context: Arc<ClientContext>,
         callback: Cb,
+        factory: impl Fn(Keypair) -> ClientResult<T>,
     ) -> ClientResult<Ret>
     where
-        Cb: Fn(Arc<KeysSigningBox>) -> Fut,
+        Cb: Fn(Arc<T>) -> Fut,
         Fut: Future<Output=ClientResult<Ret>>,
     {
-        loop {
-            if let Some(signing_box) = self.internal_signing_box.read().await.as_ref() {
-                return callback(Arc::clone(signing_box)).await;
-            }
-            let mut write_guard = self.internal_signing_box.write().await;
-            if let Some(signing_box) = write_guard.as_ref() {
-                return callback(Arc::clone(signing_box)).await;
-            }
+        if let Some(internal_box) = self.internal_box.read().await.as_ref() {
+            return callback(Arc::clone(internal_box)).await;
+        }
+        let mut write_guard = self.internal_box.write().await;
+        if let Some(internal_box) = write_guard.as_ref() {
+            return callback(Arc::clone(internal_box)).await;
+        }
 
-            let seed_phrase = get_crypto_box_seed_phrase(
-                Arc::clone(&context),
-                RegisteredCryptoBox { handle: CryptoBoxHandle(self.params.handle) },
-            ).await?;
+        let seed_phrase = get_crypto_box_seed_phrase(
+            Arc::clone(&context),
+            RegisteredCryptoBox { handle: CryptoBoxHandle(self.params.handle) },
+        ).await?;
 
+        let hdpath = self.params.hdpath.as_ref()
+            .unwrap_or(&context.config.crypto.hdkey_derivation_path);
+
+        let keypair = {
             let mnemonic = mnemonics(
                 &context.config.crypto,
                 Some(seed_phrase.dictionary),
                 Some(seed_phrase.wordcount),
             )?;
-            let hdpath = self.params.hdpath.as_ref()
-                .unwrap_or(&context.config.crypto.hdkey_derivation_path);
-            let keypair = mnemonic.derive_ed25519_keys_from_phrase(&context.config.crypto, &seed_phrase.phrase, hdpath)
+
+            mnemonic.derive_ed25519_keys_from_phrase(&context.config.crypto, &seed_phrase.phrase, hdpath)
                 .map::<ClientResult<Keypair>, _>(|keypair| Ok(Keypair {
                     public: PublicKey::from_bytes(&hex_decode(&keypair.public)?)
                         .map_err(|err| Error::invalid_public_key(err, &keypair.public))?,
                     secret: SecretKey::from_bytes(&hex_decode(&keypair.secret)?)
                         .map_err(|err| Error::invalid_secret_key(err, &keypair.secret))?,
-                }))??;
+                }))??
+        };
 
-            *write_guard = Some(Arc::new(KeysSigningBox::new(keypair)));
+        let lifetime = self.params.secret_lifetime.unwrap_or(0) as u64;
+        let internal_box = Arc::new(factory(keypair)?);
 
-            let lifetime = self.params.secret_lifetime.unwrap_or(0) as u64;
+        let result = callback(Arc::clone(&internal_box)).await;
+
+        if lifetime > 0 {
+            *write_guard = Some(internal_box);
+
             let context_copy = Arc::clone(&context);
-            let internal_signing_box = Arc::clone(&self.internal_signing_box);
+            let internal_box = Arc::clone(&self.internal_box);
             context.env.spawn(async move {
                 if lifetime > 0 {
                     context_copy.env.set_timer(lifetime).await.ok();
                 }
-                Self::drop_secret(internal_signing_box).await;
+                Self::drop_secret(internal_box).await;
             });
         }
+
+        result
     }
 
-    async fn drop_secret<T>(internal_signing_box: Arc<RwLock<Option<T>>>) {
-        *internal_signing_box.write().await = None;
+    async fn drop_secret<I>(internal_box: Arc<RwLock<Option<I>>>) {
+        *internal_box.write().await = None;
     }
 }
 
 #[async_trait::async_trait]
-impl SigningBox for SigningBoxFromCryptoBoxLifeCycleManager {
+impl SigningBox for BoxFromCryptoBoxLifeCycleManager<KeysSigningBox> {
     async fn get_public_key(&self, context: Arc<ClientContext>) -> ClientResult<Vec<u8>> {
-        self.with_internal_signing_box(Arc::clone(&context), move |signing_box| {
-            let context = Arc::clone(&context);
-            async move {
-                signing_box.get_public_key(Arc::clone(&context)).await
-            }
-        }).await
+        self.with_internal_box(
+            Arc::clone(&context),
+            move |signing_box| {
+                let context = Arc::clone(&context);
+                async move {
+                    signing_box.get_public_key(Arc::clone(&context)).await
+                }
+            },
+            |key_pair| Ok(KeysSigningBox::new(key_pair)),
+        ).await
     }
 
     async fn sign(&self, context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
-        self.with_internal_signing_box(Arc::clone(&context), move |signing_box| {
-            let context = Arc::clone(&context);
-            async move {
-                signing_box.sign(Arc::clone(&context), unsigned).await
-            }
-        }).await
+        self.with_internal_box(
+            Arc::clone(&context),
+            move |signing_box| {
+                let context = Arc::clone(&context);
+                async move {
+                    signing_box.sign(Arc::clone(&context), unsigned).await
+                }
+            },
+            |key_pair| Ok(KeysSigningBox::new(key_pair)),
+        ).await
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
+pub struct ChaCha20Params {
+    /// 96-bit nonce. Must be encoded with `hex`.
+    pub nonce: String,
+}
+
+impl ChaCha20Params {
+    fn to_encryption_box_params(
+        &self,
+        key: SecretString,
+    ) -> super::encryption_box::chacha20::ChaCha20Params {
+        super::encryption_box::chacha20::ChaCha20Params {
+            key: key.0.clone(),
+            nonce: self.nonce.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
+pub struct NaclBoxParams {
+    /// 256-bit key. Must be encoded with `hex`.
+    pub their_public: String,
+    /// 96-bit nonce. Must be encoded with `hex`.
+    pub nonce: String,
+}
+
+impl NaclBoxParams {
+    fn to_encryption_box_params(
+        &self,
+        secret: SecretString,
+    ) -> super::encryption_box::nacl_box::NaclBoxParams {
+        super::encryption_box::nacl_box::NaclBoxParams {
+            their_public: self.their_public.clone(),
+            secret: secret.0.clone(),
+            nonce: self.nonce.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
+pub struct NaclSecretBoxParams {
+    /// Nonce in `hex`
+    pub nonce: String,
+}
+
+impl NaclSecretBoxParams {
+    fn to_encryption_box_params(
+        &self,
+        key: SecretString,
+    ) -> super::encryption_box::nacl_secret_box::NaclSecretBoxParams {
+        super::encryption_box::nacl_secret_box::NaclSecretBoxParams {
+            key: key.0.clone(),
+            nonce: self.nonce.clone(),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
+#[serde(tag = "type", content = "value")]
+pub enum BoxEncryptionAlgorithm {
+    ChaCha20(ChaCha20Params),
+    NaclBox(NaclBoxParams),
+    NaclSecretBox(NaclSecretBoxParams),
+}
+
+impl Default for BoxEncryptionAlgorithm {
+    fn default() -> Self {
+        Self::ChaCha20(ChaCha20Params::default())
+    }
+}
+
+// impl From<BoxEncryptionAlgorithm> for EncryptionAlgorithm {
+//     fn from(algorithm: BoxEncryptionAlgorithm) -> Self {
+//         match algorithm {
+//             BoxEncryptionAlgorithm::ChaCha20(params) => EncryptionAlgorithm::ChaCha20(params),
+//             BoxEncryptionAlgorithm::NaclBox(params) => EncryptionAlgorithm::NaclBox(params),
+//             BoxEncryptionAlgorithm::NaclSecretBox(params) => EncryptionAlgorithm::NaclSecretBox(params),
+//         }
+//     }
+// }
+
+#[derive(Serialize, Deserialize, Default, Clone, Debug, ApiType, PartialEq)]
+pub struct ParamsOfGetEncryptionBoxFromCryptoBox {
+    /// Crypto Box Handle.
+    pub handle: u32,
+    /// HD key derivation path. By default, Everscale HD path is used.
+    pub hdpath: Option<String>,
+    /// Encryption algorithm.
+    pub algorithm: BoxEncryptionAlgorithm,
+    /// Store derived secret for encryption algorithm for this lifetime (in ms).
+    /// The timer starts after each encryption box operation.
+    /// Secrets will be deleted after each signing box operation, if this value is not set.
+    pub secret_lifetime: Option<u32>,
+}
+
+/// Get Encryption Box from Crypto Box.
+#[api_function]
+pub async fn get_encryption_box_from_crypto_box(
+    context: Arc<ClientContext>,
+    params: ParamsOfGetEncryptionBoxFromCryptoBox,
+) -> ClientResult<RegisteredEncryptionBox> {
+    async fn register<T: EncryptionBox + 'static>(
+        context: Arc<ClientContext>,
+        params: InternalBoxParams,
+        algorithm: BoxEncryptionAlgorithm,
+    ) -> ClientResult<RegisteredEncryptionBox> {
+        let manager = BoxFromCryptoBoxLifeCycleManager::<T> {
+            params,
+            internal_box: Default::default(),
+        };
+
+        let encryption_box = EncryptionBoxFromCryptoBox::<T> {
+            manager,
+            algorithm,
+        };
+
+        register_encryption_box(context, encryption_box).await
+    }
+
+    let internal_box_params = InternalBoxParams {
+        handle: params.handle,
+        hdpath: params.hdpath,
+        secret_lifetime: params.secret_lifetime,
+    };
+
+    match params.algorithm {
+        BoxEncryptionAlgorithm::ChaCha20(_) =>
+            register::<ChaCha20EncryptionBox>(context, internal_box_params, params.algorithm).await,
+
+        BoxEncryptionAlgorithm::NaclBox(_) =>
+            register::<NaclEncryptionBox>(context, internal_box_params, params.algorithm).await,
+
+        BoxEncryptionAlgorithm::NaclSecretBox(_) =>
+            register::<NaclSecretEncryptionBox>(context, internal_box_params, params.algorithm).await,
+    }
+}
+
+struct EncryptionBoxFromCryptoBox<T: EncryptionBox + 'static> {
+    manager: BoxFromCryptoBoxLifeCycleManager<T>,
+    algorithm: BoxEncryptionAlgorithm,
+}
+
+trait EncryptionBoxFactory {
+    type Output: EncryptionBox + 'static;
+
+    fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output>;
+}
+
+impl EncryptionBoxFactory for EncryptionBoxFromCryptoBox<ChaCha20EncryptionBox> {
+    type Output = ChaCha20EncryptionBox;
+
+    fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output> {
+        match &self.algorithm {
+            BoxEncryptionAlgorithm::ChaCha20(params) =>
+                ChaCha20EncryptionBox::new(
+                    params.to_encryption_box_params(SecretString(hex::encode(key_pair.secret))),
+                    self.manager.params.hdpath.clone(),
+                ),
+
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl EncryptionBoxFactory for EncryptionBoxFromCryptoBox<NaclEncryptionBox> {
+    type Output = NaclEncryptionBox;
+
+    fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output> {
+        match &self.algorithm {
+            BoxEncryptionAlgorithm::NaclBox(params) =>
+                Ok(NaclEncryptionBox::new(
+                    params.to_encryption_box_params(SecretString(hex::encode(key_pair.secret))),
+                    self.manager.params.hdpath.clone(),
+                )),
+
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl EncryptionBoxFactory for EncryptionBoxFromCryptoBox<NaclSecretEncryptionBox> {
+    type Output = NaclSecretEncryptionBox;
+
+    fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output> {
+        match &self.algorithm {
+            BoxEncryptionAlgorithm::NaclSecretBox(params) =>
+                Ok(NaclSecretEncryptionBox::new(
+                    params.to_encryption_box_params(SecretString(hex::encode(key_pair.secret))),
+                    self.manager.params.hdpath.clone(),
+                )),
+
+            _ => unreachable!(),
+        }
+    }
+}
+
+// impl<T: EncryptionBox + 'static> EncryptionBoxFromCryptoBox<T> {
+//     fn factory(&self, key_pair: Keypair) -> ClientResult<T> {
+//         let secret = SecretString(hex::encode(key_pair.secret));
+//         Ok(match &self.algorithm {
+//             BoxEncryptionAlgorithm::ChaCha20(params) =>
+//                 ChaCha20EncryptionBox::new(
+//                     params.to_encryption_box_params(secret),
+//                     self.manager.params.hdpath.clone(),
+//                 )?,
+//
+//             BoxEncryptionAlgorithm::NaclBox(params) =>
+//                 NaclEncryptionBox::new(
+//                     params.to_encryption_box_params(secret),
+//                     self.manager.params.hdpath.clone(),
+//                 ),
+//
+//             BoxEncryptionAlgorithm::NaclSecretBox(params) =>
+//                 NaclSecretEncryptionBox::new(
+//                     params.to_encryption_box_params(secret),
+//                     self.manager.params.hdpath.clone(),
+//                 ),
+//
+//             _ => {}
+//         })
+//     }
+// }
+
+#[async_trait::async_trait]
+impl<T: EncryptionBox + EncryptionBoxFactory + 'static> EncryptionBox for EncryptionBoxFromCryptoBox<T> {
+    async fn get_info(&self, context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
+        self.manager.with_internal_box(
+            Arc::clone(&context),
+            move |encryption_box| {
+                let context = Arc::clone(&context);
+                async move {
+                    encryption_box.get_info(Arc::clone(&context)).await
+                }
+            },
+            |key_pair| self.factory(key_pair),
+        ).await
+    }
+
+    async fn encrypt(&self, context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
+        todo!()
+    }
+
+    async fn decrypt(&self, context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
+        todo!()
     }
 }
 
@@ -385,12 +664,12 @@ pub async fn clear_crypto_box_secret_cache(
     params: RegisteredCryptoBox,
 ) -> ClientResult<()> {
     for item in context.boxes.signing_boxes.iter() {
-        let signing_box_opt: Option<&SigningBoxFromCryptoBoxLifeCycleManager> =
+        let signing_box_opt: Option<&BoxFromCryptoBoxLifeCycleManager<KeysSigningBox>> =
             item.val().downcast_ref();
         if let Some(signing_box) = signing_box_opt {
             if signing_box.params.handle == params.handle.0 {
-                SigningBoxFromCryptoBoxLifeCycleManager::drop_secret(
-                    Arc::clone(&signing_box.internal_signing_box),
+                BoxFromCryptoBoxLifeCycleManager::<KeysSigningBox>::drop_secret(
+                    Arc::clone(&signing_box.internal_box),
                 ).await;
             }
         }

@@ -401,7 +401,7 @@ pub struct ParamsOfNaclSecretBoxOpen {
     pub encrypted: String,
     /// Nonce in `hex`
     pub nonce: String,
-    /// Public key - unprefixed 0-padded to 64 symbols hex string
+    /// Secret key - unprefixed 0-padded to 64 symbols hex string
     pub key: String,
 }
 

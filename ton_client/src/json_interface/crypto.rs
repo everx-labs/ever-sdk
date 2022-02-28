@@ -149,7 +149,7 @@ impl ExternalEncryptionBox {
 
 #[async_trait::async_trait]
 impl EncryptionBox for ExternalEncryptionBox {
-    async fn get_info(&self) -> ClientResult<EncryptionBoxInfo> {
+    async fn get_info(&self, context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
         let response = self.app_object.call(ParamsOfAppEncryptionBox::GetInfo).await?;
 
         match response {
@@ -159,7 +159,7 @@ impl EncryptionBox for ExternalEncryptionBox {
         }
     }
 
-    async fn encrypt(&self, data: &String) -> ClientResult<String> {
+    async fn encrypt(&self, context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
         let response =
             self.app_object.call(ParamsOfAppEncryptionBox::Encrypt { data: data.clone() }).await?;
 
@@ -170,7 +170,7 @@ impl EncryptionBox for ExternalEncryptionBox {
         }
     }
 
-    async fn decrypt(&self, data: &String) -> ClientResult<String> {
+    async fn decrypt(&self, context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
         let response =
             self.app_object.call(ParamsOfAppEncryptionBox::Decrypt { data: data.clone() }).await?;
 

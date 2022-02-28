@@ -17,6 +17,7 @@ use std::sync::Arc;
 use crate::tests::TestClient;
 use crate::client::ParamsOfAppRequest;
 use serde_json::Value;
+use crate::ClientContext;
 use crate::error::ClientResult;
 use crate::json_interface::crypto::*;
 use crate::json_interface::interop::ResponseType;
@@ -175,9 +176,11 @@ impl EncryptionBoxInput {
                 let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
                 let nonce = args["nonce"].as_str().unwrap().to_owned();
                 let their_key = args["theirPubkey"].as_str().unwrap().to_owned();
-                let client_copy = self.client.clone();
+                let client_copy = Arc::clone(&self.client);
+                let context = self.client.context();
                 let callback = move |params, response_type| {
-                    let client = client_copy.clone();
+                    let client = Arc::clone(&client_copy);
+                    let context = Arc::clone(&context);
                     let nonce = nonce.clone();
                     let their_key = their_key.clone();
                     async move {
@@ -186,6 +189,7 @@ impl EncryptionBoxInput {
                                 tokio::spawn(async move {
                                     let request: ParamsOfAppRequest = serde_json::from_value(params).unwrap();
                                     let result = Self::process_call(
+                                        context,
                                         NaclBoxEncryption::new(nonce, their_key),
                                         serde_json::from_value(request.request_data).unwrap()
                                     ).await;
@@ -218,16 +222,20 @@ impl EncryptionBoxInput {
         }
     }
 
-    async fn process_call(enbox: impl EncryptionBox + Send + Sync + 'static, params: ParamsOfAppEncryptionBox) -> ResultOfAppEncryptionBox {
+    async fn process_call(
+        context: Arc<ClientContext>,
+        enbox: impl EncryptionBox + 'static,
+        params: ParamsOfAppEncryptionBox,
+    ) -> ResultOfAppEncryptionBox {
         match params {
             ParamsOfAppEncryptionBox::GetInfo => {
-                ResultOfAppEncryptionBox::GetInfo { info: enbox.get_info().await.unwrap() }
+                ResultOfAppEncryptionBox::GetInfo { info: enbox.get_info(context).await.unwrap() }
             },
             ParamsOfAppEncryptionBox::Encrypt {data} => {
-                ResultOfAppEncryptionBox::Encrypt { data: enbox.encrypt(&data).await.unwrap() }
+                ResultOfAppEncryptionBox::Encrypt { data: enbox.encrypt(context, &data).await.unwrap() }
             },
             ParamsOfAppEncryptionBox::Decrypt {data} => {
-                ResultOfAppEncryptionBox::Decrypt { data: enbox.decrypt(&data).await.unwrap() }
+                ResultOfAppEncryptionBox::Decrypt { data: enbox.decrypt(context, &data).await.unwrap() }
             },
         }
     }
@@ -246,22 +254,22 @@ impl NaclBoxEncryption {
 
 #[async_trait::async_trait]
 impl EncryptionBox for NaclBoxEncryption {
-    async fn get_info(&self) -> ClientResult<EncryptionBoxInfo> {
+    async fn get_info(&self, _context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
         // emulate getnifo
-        Ok(dbg!(EncryptionBoxInfo {
+        Ok(EncryptionBoxInfo {
             hdpath: Some(format!("m/44'/396'/0'/0/1")),
             algorithm: Some(format!("NaclBox")),
             options: Some(json!({"nonce": self.nonce, "theirPubkey": self.their_key })),
             public: Some(json!({"key": MY_TEST_PUBKEY})),
-        }))
+        })
     }
 
-    async fn encrypt(&self, data: &String) -> ClientResult<String> {
+    async fn encrypt(&self, _context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
         // emulate encryption
         Ok(hex::encode(data))
     }
 
-    async fn decrypt(&self, data: &String) -> ClientResult<String> {
+    async fn decrypt(&self, _context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
         // emulate decryption
         Ok(String::from_utf8(hex::decode(data).unwrap()).unwrap())
     }

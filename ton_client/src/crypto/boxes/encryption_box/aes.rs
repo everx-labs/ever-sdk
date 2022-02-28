@@ -11,15 +11,17 @@
 * limitations under the License.
 */
 
+use std::sync::Arc;
 use aes::{Aes128, Aes192, Aes256, BlockCipher, BlockDecrypt, BlockEncrypt, NewBlockCipher};
 use block_modes::{BlockMode, Cbc};
+use crate::ClientContext;
 
 use crate::crypto::Error;
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 use super::{CipherMode, EncryptionBox, EncryptionBoxInfo};
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct AesParams {
     pub mode: CipherMode,
     pub key: String,
@@ -115,7 +117,7 @@ impl AesEncryptionBox {
 #[async_trait::async_trait]
 impl EncryptionBox for AesEncryptionBox {
     /// Gets encryption box information
-    async fn get_info(&self) -> ClientResult<EncryptionBoxInfo> {
+    async fn get_info(&self, _context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
         let iv = if self.iv.len() != 0 {
             Some(hex::encode(&self.iv))
         } else {
@@ -135,7 +137,7 @@ impl EncryptionBox for AesEncryptionBox {
         })
     }
     /// Encrypts data
-    async fn encrypt(&self, data: &String) -> ClientResult<String> {
+    async fn encrypt(&self, _context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
         let (mut data, size) = Self::decode_base64_aligned(data, aes::BLOCK_SIZE)?;
         let result = match (self.key.len(), &self.mode) {
             (16, CipherMode::CBC) => Self::encrypt_data::<Aes128, Cbc<Aes128, _>>(&self.key, &self.iv, &mut data, size)?,
@@ -146,7 +148,7 @@ impl EncryptionBox for AesEncryptionBox {
         Ok(base64::encode(result))
     }
     /// Decrypts data
-    async fn decrypt(&self, data: &String) -> ClientResult<String> {
+    async fn decrypt(&self, _context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
         let mut data = base64_decode(data)?;
         match (self.key.len(), &self.mode) {
             (16, CipherMode::CBC) => Self::decrypt_data::<Aes128, Cbc<Aes128, _>>(&self.key, &self.iv, &mut data)?,

@@ -1144,8 +1144,6 @@ async fn test_crypto_box_signing_boxes() -> ton_types::Result<()> {
     assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 2);
     assert_eq!(pubkey.len(), 64);
 
-    tokio::time::delay_for(Duration::from_millis(100)).await;
-
     let _: ResultOfSigningBoxGetPublicKey = client.request_async(
         "crypto.signing_box_get_public_key",
         RegisteredSigningBox {
@@ -1175,8 +1173,6 @@ async fn test_crypto_box_signing_boxes() -> ton_types::Result<()> {
         ).await?;
 
         assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 4);
-
-        tokio::time::delay_for(Duration::from_millis(100)).await;
     }
 
     client.request_async(
