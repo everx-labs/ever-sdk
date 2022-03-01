@@ -32,12 +32,12 @@ impl ChaCha20EncryptionBox {
         Ok(Self { key, nonce, hdpath })
     }
 
-    fn apply_chacha(&self, data: &mut str) -> ClientResult<()> {
+    fn chacha20(&self, data: &str) -> ClientResult<String> {
         let mut cipher = chacha20::ChaCha20::new(&self.key, &self.nonce);
         let mut data = base64_decode(data)?;
         cipher.apply_keystream(&mut data);
 
-        Ok(())
+        Ok(base64::encode(&data))
     }
 }
 
@@ -53,16 +53,10 @@ impl EncryptionBox for ChaCha20EncryptionBox {
     }
 
     async fn encrypt(&self, _context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
-        let mut result = data.clone();
-        self.apply_chacha(&mut result)?;
-
-        Ok(result)
+        self.chacha20(data)
     }
 
     async fn decrypt(&self, _context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
-        let mut result = data.clone();
-        self.apply_chacha(&mut result)?;
-
-        Ok(result)
+        self.chacha20(data)
     }
 }

@@ -226,6 +226,10 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
         crate::crypto::boxes::crypto_box::get_signing_box_from_crypto_box_api,
     );
     module.register_async_fn(
+        crate::crypto::get_encryption_box_from_crypto_box,
+        crate::crypto::boxes::crypto_box::get_encryption_box_from_crypto_box_api,
+    );
+    module.register_async_fn(
         crate::crypto::clear_crypto_box_secret_cache,
         crate::crypto::boxes::crypto_box::clear_crypto_box_secret_cache_api,
     );

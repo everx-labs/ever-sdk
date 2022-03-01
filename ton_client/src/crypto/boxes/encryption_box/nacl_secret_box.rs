@@ -36,7 +36,7 @@ impl EncryptionBox for NaclSecretEncryptionBox {
             algorithm: Some("NaclSecretBox".to_owned()),
             hdpath: self.hdpath.clone(),
             public: None,
-            options: Some(json!({ "nonce": hex::encode(&self.params.nonce) })),
+            options: Some(json!({ "nonce": &self.params.nonce })),
         })
     }
 

@@ -13,10 +13,8 @@
 
 use std::sync::Arc;
 
-use mopa::mopafy;
-
 use crate::client::ClientContext;
-use crate::crypto::Error;
+use crate::crypto::{CryptoBoxHandle, Error};
 use crate::crypto::KeyPair;
 use crate::error::ClientResult;
 
@@ -30,14 +28,17 @@ impl From<u32> for SigningBoxHandle {
 }
 
 #[async_trait::async_trait]
-pub trait SigningBox: mopa::Any + Send + Sync {
+pub trait SigningBox: Send + Sync {
     /// Get public key of key pair
     async fn get_public_key(&self, context: Arc<ClientContext>) -> ClientResult<Vec<u8>>;
     /// Sign data with key pair
     async fn sign(&self, context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>>;
+    /// Zeroize all secret data
+    async fn drop_secret(&self, _crypto_box_handle: CryptoBoxHandle) {
+        // Not implemented by default, but must be implemented for signing boxes that created from
+        // crypto boxes.
+    }
 }
-
-mopa::mopafy!(SigningBox);
 
 pub(crate) struct KeysSigningBox {
     key_pair: ed25519_dalek::Keypair

@@ -37,7 +37,7 @@ impl EncryptionBox for NaclEncryptionBox {
             public: None,
             options: Some(json!({
                 "their_public": &self.params.their_public,
-                "nonce": hex::encode(&self.params.nonce),
+                "nonce": &self.params.nonce,
             }))
         })
     }

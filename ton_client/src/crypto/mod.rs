@@ -29,7 +29,7 @@ mod tests;
 
 pub use crate::crypto::boxes::crypto_box::{
     create_crypto_box, remove_crypto_box, get_crypto_box_info, get_crypto_box_seed_phrase,
-    get_signing_box_from_crypto_box, clear_crypto_box_secret_cache,
+    get_signing_box_from_crypto_box, get_encryption_box_from_crypto_box, clear_crypto_box_secret_cache,
     ParamsOfCreateCryptoBox, ParamsOfGetSigningBoxFromCryptoBox, CryptoBoxHandle, RegisteredCryptoBox,
     AppPasswordProvider, CryptoBoxSecret,
     ResultOfGetCryptoBoxInfo, ResultOfGetCryptoBoxSeedPhrase, ResultOfGetPassword,
