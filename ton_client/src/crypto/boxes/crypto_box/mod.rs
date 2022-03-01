@@ -511,130 +511,111 @@ pub async fn get_encryption_box_from_crypto_box(
     context: Arc<ClientContext>,
     params: ParamsOfGetEncryptionBoxFromCryptoBox,
 ) -> ClientResult<RegisteredEncryptionBox> {
-    async fn register<T: EncryptionBox + 'static>(
-        context: Arc<ClientContext>,
-        params: InternalBoxParams,
-        algorithm: BoxEncryptionAlgorithm,
-    ) -> ClientResult<RegisteredEncryptionBox> {
-        let manager = BoxFromCryptoBoxLifeCycleManager::<T> {
-            params,
-            internal_box: Default::default(),
-        };
-
-        let encryption_box = EncryptionBoxFromCryptoBox::<T> {
-            manager,
-            algorithm,
-        };
-
-        register_encryption_box(context, encryption_box).await
-    }
-
     let internal_box_params = InternalBoxParams {
         handle: params.handle,
         hdpath: params.hdpath,
         secret_lifetime: params.secret_lifetime,
     };
 
-    match params.algorithm {
-        BoxEncryptionAlgorithm::ChaCha20(_) =>
-            register::<ChaCha20EncryptionBox>(context, internal_box_params, params.algorithm).await,
+    let manager = BoxFromCryptoBoxLifeCycleManager::<Box<dyn EncryptionBox + 'static>> {
+        params: internal_box_params,
+        internal_box: Default::default(),
+    };
 
-        BoxEncryptionAlgorithm::NaclBox(_) =>
-            register::<NaclEncryptionBox>(context, internal_box_params, params.algorithm).await,
+    let encryption_box = EncryptionBoxFromCryptoBox {
+        manager,
+        algorithm: params.algorithm,
+    };
 
-        BoxEncryptionAlgorithm::NaclSecretBox(_) =>
-            register::<NaclSecretEncryptionBox>(context, internal_box_params, params.algorithm).await,
-    }
+    register_encryption_box(context, encryption_box).await
 }
 
-struct EncryptionBoxFromCryptoBox<T: EncryptionBox + 'static> {
-    manager: BoxFromCryptoBoxLifeCycleManager<T>,
+struct EncryptionBoxFromCryptoBox {
+    manager: BoxFromCryptoBoxLifeCycleManager<Box<dyn EncryptionBox + 'static>>,
     algorithm: BoxEncryptionAlgorithm,
 }
 
-trait EncryptionBoxFactory {
-    type Output: EncryptionBox + 'static;
-
-    fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output>;
-}
-
-impl EncryptionBoxFactory for EncryptionBoxFromCryptoBox<ChaCha20EncryptionBox> {
-    type Output = ChaCha20EncryptionBox;
-
-    fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output> {
-        match &self.algorithm {
-            BoxEncryptionAlgorithm::ChaCha20(params) =>
-                ChaCha20EncryptionBox::new(
-                    params.to_encryption_box_params(SecretString(hex::encode(key_pair.secret))),
-                    self.manager.params.hdpath.clone(),
-                ),
-
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl EncryptionBoxFactory for EncryptionBoxFromCryptoBox<NaclEncryptionBox> {
-    type Output = NaclEncryptionBox;
-
-    fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output> {
-        match &self.algorithm {
-            BoxEncryptionAlgorithm::NaclBox(params) =>
-                Ok(NaclEncryptionBox::new(
-                    params.to_encryption_box_params(SecretString(hex::encode(key_pair.secret))),
-                    self.manager.params.hdpath.clone(),
-                )),
-
-            _ => unreachable!(),
-        }
-    }
-}
-
-impl EncryptionBoxFactory for EncryptionBoxFromCryptoBox<NaclSecretEncryptionBox> {
-    type Output = NaclSecretEncryptionBox;
-
-    fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output> {
-        match &self.algorithm {
-            BoxEncryptionAlgorithm::NaclSecretBox(params) =>
-                Ok(NaclSecretEncryptionBox::new(
-                    params.to_encryption_box_params(SecretString(hex::encode(key_pair.secret))),
-                    self.manager.params.hdpath.clone(),
-                )),
-
-            _ => unreachable!(),
-        }
-    }
-}
-
-// impl<T: EncryptionBox + 'static> EncryptionBoxFromCryptoBox<T> {
-//     fn factory(&self, key_pair: Keypair) -> ClientResult<T> {
-//         let secret = SecretString(hex::encode(key_pair.secret));
-//         Ok(match &self.algorithm {
+// trait EncryptionBoxFactory {
+//     type Output: EncryptionBox + 'static;
+//
+//     fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output>;
+// }
+//
+// impl EncryptionBoxFactory for EncryptionBoxFromCryptoBox<ChaCha20EncryptionBox> {
+//     type Output = ChaCha20EncryptionBox;
+//
+//     fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output> {
+//         match &self.algorithm {
 //             BoxEncryptionAlgorithm::ChaCha20(params) =>
 //                 ChaCha20EncryptionBox::new(
-//                     params.to_encryption_box_params(secret),
+//                     params.to_encryption_box_params(SecretString(hex::encode(key_pair.secret))),
 //                     self.manager.params.hdpath.clone(),
-//                 )?,
+//                 ),
 //
+//             _ => unreachable!(),
+//         }
+//     }
+// }
+//
+// impl EncryptionBoxFactory for EncryptionBoxFromCryptoBox<NaclEncryptionBox> {
+//     type Output = NaclEncryptionBox;
+//
+//     fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output> {
+//         match &self.algorithm {
 //             BoxEncryptionAlgorithm::NaclBox(params) =>
-//                 NaclEncryptionBox::new(
-//                     params.to_encryption_box_params(secret),
+//                 Ok(NaclEncryptionBox::new(
+//                     params.to_encryption_box_params(SecretString(hex::encode(key_pair.secret))),
 //                     self.manager.params.hdpath.clone(),
-//                 ),
+//                 )),
 //
+//             _ => unreachable!(),
+//         }
+//     }
+// }
+//
+// impl EncryptionBoxFactory for EncryptionBoxFromCryptoBox<NaclSecretEncryptionBox> {
+//     type Output = NaclSecretEncryptionBox;
+//
+//     fn create(&self, key_pair: Keypair) -> ClientResult<Self::Output> {
+//         match &self.algorithm {
 //             BoxEncryptionAlgorithm::NaclSecretBox(params) =>
-//                 NaclSecretEncryptionBox::new(
-//                     params.to_encryption_box_params(secret),
+//                 Ok(NaclSecretEncryptionBox::new(
+//                     params.to_encryption_box_params(SecretString(hex::encode(key_pair.secret))),
 //                     self.manager.params.hdpath.clone(),
-//                 ),
+//                 )),
 //
-//             _ => {}
-//         })
+//             _ => unreachable!(),
+//         }
 //     }
 // }
 
+impl EncryptionBoxFromCryptoBox {
+    fn factory(&self, key_pair: Keypair) -> ClientResult<Box<dyn EncryptionBox + 'static>> {
+        let secret = SecretString(hex::encode(key_pair.secret));
+        Ok(match &self.algorithm {
+            BoxEncryptionAlgorithm::ChaCha20(params) =>
+                Box::new(ChaCha20EncryptionBox::new(
+                    params.to_encryption_box_params(secret),
+                    self.manager.params.hdpath.clone(),
+                )?),
+
+            BoxEncryptionAlgorithm::NaclBox(params) =>
+                Box::new(NaclEncryptionBox::new(
+                    params.to_encryption_box_params(secret),
+                    self.manager.params.hdpath.clone(),
+                )),
+
+            BoxEncryptionAlgorithm::NaclSecretBox(params) =>
+                Box::new(NaclSecretEncryptionBox::new(
+                    params.to_encryption_box_params(secret),
+                    self.manager.params.hdpath.clone(),
+                )),
+        })
+    }
+}
+
 #[async_trait::async_trait]
-impl<T: EncryptionBox + EncryptionBoxFactory + 'static> EncryptionBox for EncryptionBoxFromCryptoBox<T> {
+impl EncryptionBox for EncryptionBoxFromCryptoBox {
     async fn get_info(&self, context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
         self.manager.with_internal_box(
             Arc::clone(&context),

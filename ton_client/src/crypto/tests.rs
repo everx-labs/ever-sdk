@@ -1,6 +1,5 @@
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::time::Duration;
 use crate::client::ParamsOfAppRequest;
 use crate::crypto::boxes::encryption_box::ParamsOfCreateEncryptionBox;
 use crate::crypto::encscrypt::{ParamsOfScrypt, ResultOfScrypt};

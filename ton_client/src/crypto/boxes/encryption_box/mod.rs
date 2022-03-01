@@ -227,6 +227,16 @@ pub async fn create_encryption_box(
     params: ParamsOfCreateEncryptionBox,
 ) -> ClientResult<RegisteredEncryptionBox> {
     match params.algorithm {
-        EncryptionAlgorithm::AES(params) => register_encryption_box(context, aes::AesEncryptionBox::new(params)?).await
+        EncryptionAlgorithm::AES(params) =>
+            register_encryption_box(context, aes::AesEncryptionBox::new(params)?).await,
+
+        EncryptionAlgorithm::ChaCha20(params) =>
+            register_encryption_box(context, chacha20::ChaCha20EncryptionBox::new(params, None)?).await,
+
+        EncryptionAlgorithm::NaclBox(params) =>
+            register_encryption_box(context, nacl_box::NaclEncryptionBox::new(params, None)).await,
+
+        EncryptionAlgorithm::NaclSecretBox(params) =>
+            register_encryption_box(context, nacl_secret_box::NaclSecretEncryptionBox::new(params, None)).await,
     }
 }
