@@ -17,10 +17,13 @@ use lockfree::map::ReadGuard;
 use serde_json::Value;
 
 use crate::client::ClientContext;
-use crate::crypto::Error;
+use crate::crypto::{CryptoBoxHandle, Error};
 use crate::error::ClientResult;
 
 pub(crate) mod aes;
+pub(crate) mod chacha20;
+pub(crate) mod nacl_box;
+pub(crate) mod nacl_secret_box;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct EncryptionBoxHandle(pub u32);
@@ -31,7 +34,7 @@ impl From<u32> for EncryptionBoxHandle {
     }
 }
 
-/// Encryption box information
+/// Encryption box information.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct EncryptionBoxInfo {
     /// Derivation path, for instance "m/44'/396'/0'/0/0"
@@ -45,25 +48,30 @@ pub struct EncryptionBoxInfo {
 }
 
 #[async_trait::async_trait]
-pub trait EncryptionBox {
+pub trait EncryptionBox: Send + Sync {
     /// Gets encryption box information
-    async fn get_info(&self) -> ClientResult<EncryptionBoxInfo>;
+    async fn get_info(&self, context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo>;
     /// Encrypts data
-    async fn encrypt(&self, data: &String) -> ClientResult<String>;
+    async fn encrypt(&self, context: Arc<ClientContext>, data: &String) -> ClientResult<String>;
     /// Decrypts data
-    async fn decrypt(&self, data: &String) -> ClientResult<String>;
+    async fn decrypt(&self, context: Arc<ClientContext>, data: &String) -> ClientResult<String>;
+    /// Zeroize all secret data
+    async fn drop_secret(&self, _crypto_box_handle: CryptoBoxHandle) {
+        // Not implemented by default, but must be implemented for encryption boxes that created
+        // from crypto boxes.
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct RegisteredEncryptionBox {
-    /// Handle of the encryption box
+    /// Handle of the encryption box.
     pub handle: EncryptionBoxHandle,
 }
 
 /// Registers an application implemented encryption box.
 pub async fn register_encryption_box(
     context: std::sync::Arc<ClientContext>,
-    encryption_box: impl EncryptionBox + Send + Sync + 'static,
+    encryption_box: impl EncryptionBox + 'static,
 ) -> ClientResult<RegisteredEncryptionBox> {
     let id = context.get_next_id();
     context.boxes.encryption_boxes.insert(id, Box::new(encryption_box));
@@ -76,7 +84,7 @@ pub async fn register_encryption_box(
 fn get_registered_encryption_box<'context>(
     context: &'context Arc<ClientContext>,
     handle: &EncryptionBoxHandle
-) -> ClientResult<ReadGuard<'context, u32, Box<dyn EncryptionBox + Send + Sync>>> {
+) -> ClientResult<ReadGuard<'context, u32, Box<dyn EncryptionBox>>> {
     context.boxes.encryption_boxes
         .get(&handle.0)
         .ok_or(Error::encryption_box_not_registered(handle.0))
@@ -113,7 +121,7 @@ pub async fn encryption_box_get_info(
     Ok(ResultOfEncryptionBoxGetInfo {
         info: get_registered_encryption_box(&context, &params.encryption_box)?
             .val()
-            .get_info()
+            .get_info(Arc::clone(&context))
             .await?
     })
 }
@@ -145,7 +153,7 @@ pub async fn encryption_box_encrypt(
     Ok(ResultOfEncryptionBoxEncrypt {
         data: get_registered_encryption_box(&context, &params.encryption_box)?
             .val()
-            .encrypt(&params.data)
+            .encrypt(Arc::clone(&context), &params.data)
             .await?
     })
 }
@@ -176,12 +184,12 @@ pub async fn encryption_box_decrypt(
     Ok(ResultOfEncryptionBoxDecrypt {
         data: get_registered_encryption_box(&context, &params.encryption_box)?
             .val()
-            .decrypt(&params.data)
+            .decrypt(Arc::clone(&context), &params.data)
             .await?
     })
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 pub enum CipherMode {
     CBC,
     CFB,
@@ -196,10 +204,13 @@ impl Default for CipherMode {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag = "type", content = "value")]
 pub enum EncryptionAlgorithm {
     AES(aes::AesParams),
+    ChaCha20(chacha20::ChaCha20Params),
+    NaclBox(nacl_box::NaclBoxParams),
+    NaclSecretBox(nacl_secret_box::NaclSecretBoxParams),
 }
 
 impl Default for EncryptionAlgorithm {
@@ -221,6 +232,16 @@ pub async fn create_encryption_box(
     params: ParamsOfCreateEncryptionBox,
 ) -> ClientResult<RegisteredEncryptionBox> {
     match params.algorithm {
-        EncryptionAlgorithm::AES(params) => register_encryption_box(context, aes::AesEncryptionBox::new(params)?).await
+        EncryptionAlgorithm::AES(params) =>
+            register_encryption_box(context, aes::AesEncryptionBox::new(params)?).await,
+
+        EncryptionAlgorithm::ChaCha20(params) =>
+            register_encryption_box(context, chacha20::ChaCha20EncryptionBox::new(params, None)?).await,
+
+        EncryptionAlgorithm::NaclBox(params) =>
+            register_encryption_box(context, nacl_box::NaclEncryptionBox::new(params, None)).await,
+
+        EncryptionAlgorithm::NaclSecretBox(params) =>
+            register_encryption_box(context, nacl_secret_box::NaclSecretEncryptionBox::new(params, None)).await,
     }
 }

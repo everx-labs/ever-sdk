@@ -28,7 +28,11 @@ pub(crate) mod encryption;
 mod tests;
 
 pub use crate::crypto::boxes::crypto_box::{
-    remove_crypto_box, get_crypto_box_info, get_crypto_box_seed_phrase,
+    create_crypto_box, remove_crypto_box, get_crypto_box_info, get_crypto_box_seed_phrase,
+    get_signing_box_from_crypto_box, get_encryption_box_from_crypto_box, clear_crypto_box_secret_cache,
+    ParamsOfCreateCryptoBox, ParamsOfGetSigningBoxFromCryptoBox, CryptoBoxHandle, RegisteredCryptoBox,
+    AppPasswordProvider, CryptoBoxSecret,
+    ResultOfGetCryptoBoxInfo, ResultOfGetCryptoBoxSeedPhrase, ResultOfGetPassword,
 };
 pub use crate::crypto::boxes::signing_box::{
     get_signing_box, register_signing_box, remove_signing_box, signing_box_get_public_key,

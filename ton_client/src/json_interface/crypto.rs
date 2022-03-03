@@ -63,7 +63,7 @@ impl ExternalSigningBox {
 
 #[async_trait::async_trait]
 impl SigningBox for ExternalSigningBox {
-    async fn get_public_key(&self) -> ClientResult<Vec<u8>> {
+    async fn get_public_key(&self, _context: Arc<ClientContext>) -> ClientResult<Vec<u8>> {
         let response = self.app_object.call(ParamsOfAppSigningBox::GetPublicKey).await?;
 
         match response {
@@ -75,7 +75,7 @@ impl SigningBox for ExternalSigningBox {
         }
     }
 
-    async fn sign(&self, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
+    async fn sign(&self, _context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
         let response = self.app_object.call(ParamsOfAppSigningBox::Sign { 
             unsigned: base64::encode(unsigned)
         }).await?;
@@ -149,7 +149,7 @@ impl ExternalEncryptionBox {
 
 #[async_trait::async_trait]
 impl EncryptionBox for ExternalEncryptionBox {
-    async fn get_info(&self) -> ClientResult<EncryptionBoxInfo> {
+    async fn get_info(&self, _context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
         let response = self.app_object.call(ParamsOfAppEncryptionBox::GetInfo).await?;
 
         match response {
@@ -159,7 +159,7 @@ impl EncryptionBox for ExternalEncryptionBox {
         }
     }
 
-    async fn encrypt(&self, data: &String) -> ClientResult<String> {
+    async fn encrypt(&self, _context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
         let response =
             self.app_object.call(ParamsOfAppEncryptionBox::Encrypt { data: data.clone() }).await?;
 
@@ -170,7 +170,7 @@ impl EncryptionBox for ExternalEncryptionBox {
         }
     }
 
-    async fn decrypt(&self, data: &String) -> ClientResult<String> {
+    async fn decrypt(&self, _context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
         let response =
             self.app_object.call(ParamsOfAppEncryptionBox::Decrypt { data: data.clone() }).await?;
 
