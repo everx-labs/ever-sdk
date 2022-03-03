@@ -2,27 +2,27 @@
 
 Find out how to create and configure `TONClient` object to start interacting with blockchain
 
-- [Configure SDK](#configure-sdk)
-  - [Create TONClient](#create-tonclient)
-  - [Configure Client](#configure-client)
-    - [Network Config](#network-config)
-      - [endpoints](#endpoints)
-      - [server\_address](#server_address)
-      - [network\_retries\_count](#network_retries_count)
-      - [message\_retries\_count](#message_retries_count)
-      - [message\_processing\_timeout](#message_processing_timeout)
-      - [wait\_for\_timeout](#wait_for_timeout)
-      - [out\_of\_sync\_threshold](#out_of_sync_threshold)
-      - [reconnect\_timeout](#reconnect_timeout)
-      - [access\_key](#access_key)
-    - [Crypto Config](#crypto-config)
-      - [mnemonic\_dictionary](#mnemonic_dictionary)
-      - [mnemonic\_word\_count](#mnemonic_word_count)
-      - [hdkey\_derivation\_path](#hdkey_derivation_path)
-    - [ABI Config](#abi-config)
-      - [workchain](#workchain)
-      - [message\_expiration\_timeout](#message_expiration_timeout)
-      - [message\_expiration\_timeout\_grow\_factor](#message_expiration_timeout_grow_factor)
+* [Configure SDK](configure\_sdk.md#configure-sdk)
+  * [Create TONClient](configure\_sdk.md#create-tonclient)
+  * [Configure Client](configure\_sdk.md#configure-client)
+    * [Network Config](configure\_sdk.md#network-config)
+      * [endpoints](configure\_sdk.md#endpoints)
+      * [server\_address](configure\_sdk.md#server\_address)
+      * [network\_retries\_count](configure\_sdk.md#network\_retries\_count)
+      * [message\_retries\_count](configure\_sdk.md#message\_retries\_count)
+      * [message\_processing\_timeout](configure\_sdk.md#message\_processing\_timeout)
+      * [wait\_for\_timeout](configure\_sdk.md#wait\_for\_timeout)
+      * [out\_of\_sync\_threshold](configure\_sdk.md#out\_of\_sync\_threshold)
+      * [reconnect\_timeout](configure\_sdk.md#reconnect\_timeout)
+      * [access\_key](configure\_sdk.md#access\_key)
+    * [Crypto Config](configure\_sdk.md#crypto-config)
+      * [mnemonic\_dictionary](configure\_sdk.md#mnemonic\_dictionary)
+      * [mnemonic\_word\_count](configure\_sdk.md#mnemonic\_word\_count)
+      * [hdkey\_derivation\_path](configure\_sdk.md#hdkey\_derivation\_path)
+    * [ABI Config](configure\_sdk.md#abi-config)
+      * [workchain](configure\_sdk.md#workchain)
+      * [message\_expiration\_timeout](configure\_sdk.md#message\_expiration\_timeout)
+      * [message\_expiration\_timeout\_grow\_factor](configure\_sdk.md#message\_expiration\_timeout\_grow\_factor)
 
 ## Create TONClient
 
@@ -30,17 +30,21 @@ Make sure you completed the previous step and [installed SDK properly](add\_sdk\
 
 `TONClient` is the main class of TON SDK Library. To start using library one needs to create and setup a TONClient instance.
 
-The simplest initialization code can look like this: we just specify the network, other parameters are used by default. See the defaults below.
+The simplest initialization code can look like this: we just specify the Developer Network endpoints, other parameters are used by default. See the defaults below.
 
 ```graphql
 const client = new TonClient({
 network: { 
-    endpoints: ['net.ton.dev'] 
+    endpoints: [
+        '​https://eri01.net.everos.dev',
+        'https://rbx01.net.everos.dev',
+        'https://gra01.net.everos.dev'​
+] 
     } 
 });
 ```
 
-If you are working with [local blockchain TON OS SE](https://github.com/tonlabs/tonos-se), specify [http://localhost](http://localhost) in the `endpoints`.
+If you are working with [local blockchain Evernode SE](https://github.com/tonlabs/evernode-se), specify [http://localhost](http://localhost) in the `endpoints`.
 
 Check the full list of [supported network endpoints](../../reference/ton-os-api/networks.md).
 
