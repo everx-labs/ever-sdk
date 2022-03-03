@@ -32,6 +32,10 @@ pub enum ErrorCode {
     EncryptDataError = 127,
     DecryptDataError = 128,
     IvRequired = 129,
+    CryptoBoxNotRegistered = 130,
+    InvalidCryptoBoxType = 131,
+    CryptoBoxSecretSerializationError = 132,
+    CryptoBoxSecretDeserializationError = 133,
 }
 
 pub struct Error;
@@ -228,6 +232,34 @@ impl Error {
         error(
             ErrorCode::DecryptDataError,
             format!("initialization vector is required for {:?} cipher mode", mode),
+        )
+    }
+
+    pub fn crypto_box_not_registered(id: u32) -> ClientError {
+        error(
+            ErrorCode::CryptoBoxNotRegistered,
+            format!("Crypto box is not registered. ID {}", id),
+        )
+    }
+
+    pub fn invalid_crypto_box_type(crypto_box_type: impl Display) -> ClientError {
+        error(
+            ErrorCode::InvalidCryptoBoxType,
+            format!("Invalid crypto box type: {}", crypto_box_type),
+        )
+    }
+
+    pub fn crypto_box_secret_serialization_error(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::CryptoBoxSecretSerializationError,
+            format!("Crypto box secret serialization error: {}", err),
+        )
+    }
+
+    pub fn crypto_box_secret_deserialization_error(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::CryptoBoxSecretDeserializationError,
+            format!("Crypto box secret deserialization error: {}", err),
         )
     }
 }

@@ -204,6 +204,36 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
 
     // Boxes
 
+    // Crypto box
+    module.register_async_fn_with_app_object(
+        super::crypto::create_crypto_box,
+        super::crypto::create_crypto_box_api,
+    );
+    module.register_async_fn(
+        crate::crypto::remove_crypto_box,
+        crate::crypto::boxes::crypto_box::remove_crypto_box_api,
+    );
+    module.register_async_fn(
+        crate::crypto::get_crypto_box_info,
+        crate::crypto::boxes::crypto_box::get_crypto_box_info_api,
+    );
+    module.register_async_fn(
+        crate::crypto::get_crypto_box_seed_phrase,
+        crate::crypto::boxes::crypto_box::get_crypto_box_seed_phrase_api,
+    );
+    module.register_async_fn(
+        crate::crypto::get_signing_box_from_crypto_box,
+        crate::crypto::boxes::crypto_box::get_signing_box_from_crypto_box_api,
+    );
+    module.register_async_fn(
+        crate::crypto::get_encryption_box_from_crypto_box,
+        crate::crypto::boxes::crypto_box::get_encryption_box_from_crypto_box_api,
+    );
+    module.register_async_fn(
+        crate::crypto::clear_crypto_box_secret_cache,
+        crate::crypto::boxes::crypto_box::clear_crypto_box_secret_cache_api,
+    );
+
     // Signing box
     module.register_async_fn_with_app_object_no_args(
         super::crypto::register_signing_box,

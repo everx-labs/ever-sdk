@@ -1,3 +1,6 @@
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use crate::client::ParamsOfAppRequest;
 use crate::crypto::boxes::encryption_box::ParamsOfCreateEncryptionBox;
 use crate::crypto::encscrypt::{ParamsOfScrypt, ResultOfScrypt};
 use crate::crypto::hash::{ParamsOfHash, ResultOfHash};
@@ -27,7 +30,17 @@ use crate::crypto::nacl::{
     ResultOfNaclSignDetached, ResultOfNaclSignOpen,
 };
 use crate::crypto::{ParamsOfChaCha20, ResultOfChaCha20};
-use crate::json_interface::crypto::{ParamsOfAppSigningBox, ResultOfAppSigningBox};
+use crate::crypto::boxes::crypto_box::{
+    BoxEncryptionAlgorithm, ChaCha20Params, CryptoBoxSecret, ParamsOfCreateCryptoBox, 
+    ParamsOfGetEncryptionBoxFromCryptoBox, ParamsOfGetSigningBoxFromCryptoBox, RegisteredCryptoBox, 
+    ResultOfGetCryptoBoxInfo, ResultOfGetCryptoBoxSeedPhrase,
+};
+use crate::crypto::boxes::encryption_box::nacl_box::NaclBoxParams;
+use crate::crypto::boxes::encryption_box::nacl_secret_box::NaclSecretBoxParams;
+use crate::json_interface::crypto::{
+    ParamsOfAppPasswordProvider, ParamsOfAppSigningBox, ResultOfAppPasswordProvider,
+    ResultOfAppSigningBox,
+};
 use crate::tests::TestClient;
 use super::*;
 
@@ -951,4 +964,570 @@ async fn test_aes_encryption_box() {
         "src/crypto/test_data/aes.plaintext.for.padding.bin",
         "src/crypto/test_data/cbc-aes256.ciphertext.padded.bin"
     ).await;
+}
+
+#[tokio::test]
+async fn test_chacha20_encryption_box() {
+    let client = Arc::new(TestClient::new());
+
+    let key = "01".repeat(32);
+    let nonce = "ff".repeat(12);
+
+    let box_handle = client
+        .request_async::<_, RegisteredEncryptionBox>(
+            "crypto.create_encryption_box",
+            ParamsOfCreateEncryptionBox {
+                algorithm: EncryptionAlgorithm::ChaCha20(
+                    super::boxes::encryption_box::chacha20::ChaCha20Params {
+                        key: key.clone(),
+                        nonce: nonce.clone(),
+                    }
+                )
+            },
+        )
+        .await
+        .unwrap()
+        .handle;
+
+    let decrypted: String = base64::encode("Message");
+
+    let result: ResultOfEncryptionBoxEncrypt = client
+        .request_async(
+            "crypto.encryption_box_encrypt",
+            ParamsOfEncryptionBoxEncrypt {
+                encryption_box: box_handle.clone(),
+                data: decrypted.clone(),
+            },
+        ).await.unwrap();
+
+    assert_eq!(result.data, "w5QOGsJodQ==");
+
+    let result: ResultOfEncryptionBoxDecrypt = client
+        .request_async(
+            "crypto.encryption_box_decrypt",
+            ParamsOfEncryptionBoxDecrypt {
+                encryption_box: box_handle.clone(),
+                data: result.data,
+            },
+        ).await.unwrap();
+
+    assert_eq!(result.data, decrypted);
+
+    let result: ResultOfEncryptionBoxGetInfo = client
+        .request_async(
+            "crypto.encryption_box_get_info",
+            ParamsOfEncryptionBoxGetInfo {
+                encryption_box: box_handle,
+            },
+        ).await.unwrap();
+
+    assert_eq!(
+        result.info,
+        EncryptionBoxInfo {
+            hdpath: None,
+            algorithm: Some("ChaCha20".to_string()),
+            options: Some(json!({
+                "nonce": nonce,
+            })),
+            public: None,
+        },
+    );
+}
+
+#[tokio::test]
+async fn test_nacl_encryption_box() {
+    let client = Arc::new(TestClient::new());
+
+    const THEIR_PUBLIC: &str = "c4e2d9fe6a6baf8d1812b799856ef2a306291be7a7024837ad33a8530db79c6b";
+    const NONCE: &str = "cd7f99924bf422544046e83595dd5803f17536f5c9a11746";
+    const SECRET: &str = "d9b9dc5033fb416134e5d2107fdbacab5aadb297cb82dbdcd137d663bac59f7f";
+
+    let box_handle = client
+        .request_async::<_, RegisteredEncryptionBox>(
+            "crypto.create_encryption_box",
+            ParamsOfCreateEncryptionBox {
+                algorithm: EncryptionAlgorithm::NaclBox(
+                    NaclBoxParams {
+                        their_public: THEIR_PUBLIC.to_string(),
+                        secret: SECRET.to_string(),
+                        nonce: NONCE.to_string(),
+                    }
+                )
+            },
+        )
+        .await
+        .unwrap()
+        .handle;
+
+    let decrypted: String = base64::encode("Test Message");
+
+    let result: ResultOfEncryptionBoxEncrypt = client
+        .request_async(
+            "crypto.encryption_box_encrypt",
+            ParamsOfEncryptionBoxEncrypt {
+                encryption_box: box_handle.clone(),
+                data: decrypted.clone(),
+            },
+        ).await.unwrap();
+
+    assert_eq!(result.data, "li4XED4kx/pjQ2qdP0eR2d/K30uN94voNADxwA==");
+
+    let result: ResultOfEncryptionBoxDecrypt = client
+        .request_async(
+            "crypto.encryption_box_decrypt",
+            ParamsOfEncryptionBoxDecrypt {
+                encryption_box: box_handle.clone(),
+                data: result.data,
+            },
+        ).await.unwrap();
+
+    assert_eq!(result.data, decrypted);
+
+    let result: ResultOfEncryptionBoxGetInfo = client
+        .request_async(
+            "crypto.encryption_box_get_info",
+            ParamsOfEncryptionBoxGetInfo {
+                encryption_box: box_handle,
+            },
+        ).await.unwrap();
+
+    assert_eq!(
+        result.info,
+        EncryptionBoxInfo {
+            hdpath: None,
+            algorithm: Some("NaclBox".to_string()),
+            options: Some(json!({
+                "their_public": THEIR_PUBLIC,
+                "nonce": NONCE,
+            })),
+            public: None,
+        },
+    );
+}
+
+#[tokio::test]
+async fn test_nacl_secret_encryption_box() {
+    let client = Arc::new(TestClient::new());
+
+    const KEY: &str = "8f68445b4e78c000fe4d6b7fc826879c1e63e3118379219a754ae66327764bd8";
+    const NONCE: &str = "2a33564717595ebe53d91a785b9e068aba625c8453a76e45";
+
+    let box_handle = client
+        .request_async::<_, RegisteredEncryptionBox>(
+            "crypto.create_encryption_box",
+            ParamsOfCreateEncryptionBox {
+                algorithm: EncryptionAlgorithm::NaclSecretBox(
+                    NaclSecretBoxParams {
+                        key: KEY.to_string(),
+                        nonce: NONCE.to_string(),
+                    }
+                )
+            },
+        )
+        .await
+        .unwrap()
+        .handle;
+
+    let decrypted: String = base64::encode("Test Message");
+
+    let result: ResultOfEncryptionBoxEncrypt = client
+        .request_async(
+            "crypto.encryption_box_encrypt",
+            ParamsOfEncryptionBoxEncrypt {
+                encryption_box: box_handle.clone(),
+                data: decrypted.clone(),
+            },
+        ).await.unwrap();
+
+    assert_eq!(result.data, "JL7ejKWe2KXmrsns41yfXoQF0t/C1Q8RGyzQ2A==");
+
+    let result: ResultOfEncryptionBoxDecrypt = client
+        .request_async(
+            "crypto.encryption_box_decrypt",
+            ParamsOfEncryptionBoxDecrypt {
+                encryption_box: box_handle.clone(),
+                data: result.data,
+            },
+        ).await.unwrap();
+
+    assert_eq!(result.data, decrypted);
+
+    let result: ResultOfEncryptionBoxGetInfo = client
+        .request_async(
+            "crypto.encryption_box_get_info",
+            ParamsOfEncryptionBoxGetInfo {
+                encryption_box: box_handle,
+            },
+        ).await.unwrap();
+
+    assert_eq!(
+        result.info,
+        EncryptionBoxInfo {
+            hdpath: None,
+            algorithm: Some("NaclSecretBox".to_string()),
+            options: Some(json!({
+                "nonce": NONCE,
+            })),
+            public: None,
+        },
+    );
+}
+
+fn get_callback(
+    client: &Arc<TestClient>,
+    password_hash: &Arc<String>,
+    on_callback: impl Fn() + Send + Sync + 'static,
+) -> impl Fn(ParamsOfAppRequest, u32) -> futures::future::Ready<()> {
+    let client = Arc::clone(client);
+    let password_hash = Arc::clone(password_hash);
+    let on_callback = Arc::new(on_callback);
+    move |request: ParamsOfAppRequest, _: u32| {
+        let client = Arc::clone(&client);
+        let password_hash = Arc::clone(&password_hash);
+        let on_callback = Arc::clone(&on_callback);
+        tokio::spawn(async move {
+            on_callback();
+            let ParamsOfAppPasswordProvider::GetPassword { encryption_public_key } =
+                serde_json::from_value(request.request_data).unwrap();
+
+            let KeyPair { public, secret } =
+                client.request_no_params("crypto.nacl_box_keypair").unwrap();
+
+            let ResultOfNaclBox { encrypted } =
+                client.request_async(
+                    "crypto.nacl_box",
+                    ParamsOfNaclBox {
+                        decrypted: base64::encode(&hex::decode(password_hash.as_ref()).unwrap()),
+                        nonce: encryption_public_key[..48].to_string(),
+                        their_public: encryption_public_key,
+                        secret,
+                    },
+                ).await
+                    .unwrap();
+
+            client.resolve_app_request(
+                request.app_request_id,
+                ResultOfAppPasswordProvider::GetPassword {
+                    encrypted_password: encrypted,
+                    app_encryption_pubkey: public,
+                },
+            ).await;
+        });
+        futures::future::ready(())
+    }
+}
+
+#[tokio::test]
+async fn test_crypto_boxes() -> ton_types::Result<()> {
+    let client = Arc::new(TestClient::new());
+    let password_hash = Arc::new(
+        "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_string()
+    );
+    let salt = "123123123";
+
+    let RegisteredCryptoBox { handle } = client
+        .request_async_callback(
+            "crypto.create_crypto_box",
+            ParamsOfCreateCryptoBox {
+                secret_encryption_salt: salt.to_string(),
+                secret: CryptoBoxSecret::RandomSeedPhrase {
+                    dictionary: Default::default(),
+                    wordcount: 12,
+                }
+            },
+            get_callback(&client, &password_hash, || ()),
+        ).await?;
+
+    let seed_phrase: ResultOfGetCryptoBoxSeedPhrase = client.request_async(
+        "crypto.get_crypto_box_seed_phrase",
+        RegisteredCryptoBox { handle },
+    ).await?;
+
+    let verify_result: ResultOfMnemonicVerify = client
+        .request(
+            "crypto.mnemonic_verify",
+            ParamsOfMnemonicVerify {
+                phrase: seed_phrase.phrase.clone(),
+                dictionary: Some(0),
+                word_count: Some(12),
+            },
+        )
+        .unwrap();
+
+    assert!(verify_result.valid);
+
+    let crypto_box_info: ResultOfGetCryptoBoxInfo = client.request_async(
+        "crypto.get_crypto_box_info",
+        RegisteredCryptoBox { handle },
+    ).await?;
+
+    let RegisteredCryptoBox { handle } = client
+        .request_async_callback(
+            "crypto.create_crypto_box",
+            ParamsOfCreateCryptoBox {
+                secret_encryption_salt: salt.to_string(),
+                secret: CryptoBoxSecret::EncryptedSecret {
+                    encrypted_secret: crypto_box_info.encrypted_secret.clone(),
+                }
+            },
+            get_callback(&client, &password_hash, || ()),
+        ).await?;
+
+    let seed_phrase2: ResultOfGetCryptoBoxSeedPhrase = client.request_async(
+        "crypto.get_crypto_box_seed_phrase",
+        RegisteredCryptoBox { handle },
+    ).await?;
+
+    assert_eq!(seed_phrase.phrase, seed_phrase2.phrase);
+
+    let RegisteredCryptoBox { handle } = client
+        .request_async_callback(
+            "crypto.create_crypto_box",
+            ParamsOfCreateCryptoBox {
+                secret_encryption_salt: salt.to_string(),
+                secret: CryptoBoxSecret::PredefinedSeedPhrase {
+                    phrase: seed_phrase.phrase.clone(),
+                    dictionary: 0,
+                    wordcount: 12,
+                }
+            },
+            get_callback(&client, &password_hash, || ()),
+        ).await?;
+
+    let seed_phrase3: ResultOfGetCryptoBoxSeedPhrase = client.request_async(
+        "crypto.get_crypto_box_seed_phrase",
+        RegisteredCryptoBox { handle },
+    ).await?;
+
+    assert_eq!(seed_phrase.phrase, seed_phrase3.phrase);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_crypto_box_signing_boxes() -> ton_types::Result<()> {
+    let client = Arc::new(TestClient::new());
+    let password_hash = Arc::new(
+        "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_string()
+    );
+    let salt = "123123123";
+    let callback_calls_counter = Arc::new(AtomicUsize::new(0));
+    let callback_calls_counter_copy = Arc::clone(&callback_calls_counter);
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 0);
+
+    let crypto_box: RegisteredCryptoBox = client.request_async_callback(
+        "crypto.create_crypto_box",
+        ParamsOfCreateCryptoBox {
+            secret_encryption_salt: salt.to_string(),
+            secret: CryptoBoxSecret::RandomSeedPhrase {
+                dictionary: Default::default(),
+                wordcount: 12,
+            }
+        },
+        get_callback(&client, &password_hash, move || {
+            callback_calls_counter_copy.fetch_add(1, Ordering::Relaxed);
+        }),
+    ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 1);
+
+    let signing_box: RegisteredSigningBox = client.request_async(
+        "crypto.get_signing_box_from_crypto_box",
+        ParamsOfGetSigningBoxFromCryptoBox {
+            handle: crypto_box.handle.0,
+            hdpath: None,
+            secret_lifetime: None,
+        }
+    ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 1);
+
+    let ResultOfSigningBoxGetPublicKey { pubkey } = client.request_async(
+        "crypto.signing_box_get_public_key",
+        RegisteredSigningBox {
+            handle: signing_box.handle.clone(),
+        }
+    ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 2);
+    assert_eq!(pubkey.len(), 64);
+
+    let _: ResultOfSigningBoxGetPublicKey = client.request_async(
+        "crypto.signing_box_get_public_key",
+        RegisteredSigningBox {
+            handle: signing_box.handle.clone(),
+        }
+    ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 3);
+
+    let signing_box: RegisteredSigningBox = client.request_async(
+        "crypto.get_signing_box_from_crypto_box",
+        ParamsOfGetSigningBoxFromCryptoBox {
+            handle: crypto_box.handle.0,
+            hdpath: None,
+            secret_lifetime: Some(u32::MAX),
+        }
+    ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 3);
+
+    for _ in 0..3 {
+        let _: ResultOfSigningBoxGetPublicKey = client.request_async(
+            "crypto.signing_box_get_public_key",
+            RegisteredSigningBox {
+                handle: signing_box.handle.clone(),
+            }
+        ).await?;
+
+        assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 4);
+    }
+
+    client.request_async(
+        "crypto.clear_crypto_box_secret_cache",
+        RegisteredCryptoBox {
+            handle: crypto_box.handle.clone(),
+        }
+    ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 4);
+
+    for _ in 0..3 {
+        let _: ResultOfSigningBoxGetPublicKey = client.request_async(
+            "crypto.signing_box_get_public_key",
+            RegisteredSigningBox {
+                handle: signing_box.handle.clone(),
+            }
+        ).await?;
+
+        assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 5);
+    }
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_crypto_box_encryption_boxes() -> ton_types::Result<()> {
+    let client = Arc::new(TestClient::new());
+    let password_hash = Arc::new(
+        "1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_string()
+    );
+    let nonce = "ff".repeat(12);
+    let salt = "123123123";
+    let callback_calls_counter = Arc::new(AtomicUsize::new(0));
+    let callback_calls_counter_copy = Arc::clone(&callback_calls_counter);
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 0);
+
+    let crypto_box: RegisteredCryptoBox = client.request_async_callback(
+        "crypto.create_crypto_box",
+        ParamsOfCreateCryptoBox {
+            secret_encryption_salt: salt.to_string(),
+            secret: CryptoBoxSecret::RandomSeedPhrase {
+                dictionary: Default::default(),
+                wordcount: 12,
+            }
+        },
+        get_callback(&client, &password_hash, move || {
+            callback_calls_counter_copy.fetch_add(1, Ordering::Relaxed);
+        }),
+    ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 1);
+
+    let encryption_box: RegisteredEncryptionBox = client.request_async(
+        "crypto.get_encryption_box_from_crypto_box",
+        ParamsOfGetEncryptionBoxFromCryptoBox {
+            handle: crypto_box.handle.0,
+            hdpath: None,
+            algorithm: BoxEncryptionAlgorithm::ChaCha20(ChaCha20Params {
+                nonce: nonce.clone(),
+            }),
+            secret_lifetime: None,
+        }
+    ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 1);
+
+    let result: ResultOfEncryptionBoxGetInfo = client
+        .request_async(
+            "crypto.encryption_box_get_info",
+            ParamsOfEncryptionBoxGetInfo {
+                encryption_box: encryption_box.handle.clone(),
+            },
+        ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 2);
+
+    assert_eq!(
+        result.info,
+        EncryptionBoxInfo {
+            hdpath: None,
+            algorithm: Some("ChaCha20".to_string()),
+            options: Some(json!({
+                "nonce": nonce,
+            })),
+            public: None,
+        },
+    );
+
+    let _: ResultOfEncryptionBoxGetInfo = client
+        .request_async(
+            "crypto.encryption_box_get_info",
+            ParamsOfEncryptionBoxGetInfo {
+                encryption_box: encryption_box.handle.clone(),
+            },
+        ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 3);
+
+    let encryption_box: RegisteredEncryptionBox = client.request_async(
+        "crypto.get_encryption_box_from_crypto_box",
+        ParamsOfGetEncryptionBoxFromCryptoBox {
+            handle: crypto_box.handle.0,
+            hdpath: None,
+            algorithm: BoxEncryptionAlgorithm::ChaCha20(ChaCha20Params {
+                nonce: nonce.clone(),
+            }),
+            secret_lifetime: Some(u32::MAX),
+        }
+    ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 3);
+
+    for _ in 0..3 {
+        let _: ResultOfEncryptionBoxGetInfo = client
+            .request_async(
+                "crypto.encryption_box_get_info",
+                ParamsOfEncryptionBoxGetInfo {
+                    encryption_box: encryption_box.handle.clone(),
+                },
+            ).await?;
+
+        assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 4);
+    }
+
+    client.request_async(
+        "crypto.clear_crypto_box_secret_cache",
+        RegisteredCryptoBox {
+            handle: crypto_box.handle.clone(),
+        }
+    ).await?;
+
+    assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 4);
+
+    for _ in 0..3 {
+        let _: ResultOfEncryptionBoxGetInfo = client
+            .request_async(
+                "crypto.encryption_box_get_info",
+                ParamsOfEncryptionBoxGetInfo {
+                    encryption_box: encryption_box.handle.clone(),
+                },
+            ).await?;
+
+        assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 5);
+    }
+
+    Ok(())
 }
