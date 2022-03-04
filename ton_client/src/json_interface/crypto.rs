@@ -99,7 +99,7 @@ pub(crate) async fn register_signing_box(
     crate::crypto::register_signing_box(context, ExternalSigningBox::new(app_object)).await
 }
 
-/// Encryption box callbacks.
+/// Interface for data encryption/decryption
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag="type")]
 pub enum ParamsOfAppEncryptionBox {
@@ -191,10 +191,24 @@ pub(crate) async fn register_encryption_box(
     crate::crypto::register_encryption_box(context, ExternalEncryptionBox::new(app_object)).await
 }
 
+/// Interface that provides a callback that returns an encrypted
+/// password, used for cryptobox secret encryption
+/// 
+/// To secure the password while passing it from application to the library,
+/// the library generates a temporary key pair, passes the pubkey 
+/// to the passwordProvider, decrypts the received password with private key, 
+/// and deletes the key pair right away. 
+///
+/// Application should generate a temporary nacl_box_keypair
+/// and encrypt the password with naclbox function using nacl_box_keypair.secret 
+/// and encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key. 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag="type")]
 pub enum ParamsOfAppPasswordProvider {
     GetPassword {
+        /// Temporary library pubkey, that is used on application side for 
+        /// password encryption, along with application temporary private key and nonce.
+        /// Used for password decryption on library side.
         encryption_public_key: String,
     }
 }
@@ -203,12 +217,12 @@ pub enum ParamsOfAppPasswordProvider {
 #[serde(tag="type")]
 pub enum ResultOfAppPasswordProvider {
     GetPassword {
-        /// User's password hash, encrypted and encoded to base64.
+        /// Password, encrypted and encoded to base64.
         /// Crypto box uses this password to decrypt its secret (seed phrase).
-        /// Password is encrypted with `encryption_public_key`.
         encrypted_password: String,
-        /// Hex encoded public key of the key pair, used for password encryption in client
-        /// application.
+        /// Hex encoded public key of a temporary key pair, used for password encryption 
+        /// on application side. Used together with `encryption_public_key` to decode 
+        /// `encrypted_password`.
         app_encryption_pubkey: String,
     }
 }
@@ -234,16 +248,16 @@ impl AppPasswordProvider for ExternalPasswordProvider {
     }
 }
 
-/// Creates Crypto Box.
+/// Creates a Crypto Box instance.
 ///
 /// Crypto Box is a root crypto object, that encapsulates some secret (seed phrase usually)
 /// in encrypted form and acts as a factory for all crypto primitives used in SDK:
 /// keys for signing and encryption, derived from this secret.
 ///
-/// Crypto Box encrypts original Seed Phrase with salt and some secret that is retrieved
-/// in runtime via `password_provider` callback, implemented on Application side.
+/// Crypto Box encrypts original Seed Phrase with salt and password that is retrieved
+/// from `password_provider` callback, implemented on Application side.
 ///
-/// When used, decrypted secret has shown up in core library's memory for a very short period
+/// When used, decrypted secret shows up in core library's memory for a very short period
 /// of time and then is immediately overwritten with zeroes.
 #[api_function]
 pub(crate) async fn create_crypto_box(

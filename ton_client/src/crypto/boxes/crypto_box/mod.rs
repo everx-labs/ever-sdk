@@ -119,13 +119,13 @@ pub enum CryptoBoxSecret {
     /// crypto box for the first time.
     ///
     /// It is an object, containing seed phrase or private key, encrypted with
-    /// `secret_encryption_salt` and `password_provider`.
+    /// `secret_encryption_salt` and password from `password_provider`.
     ///
     /// Note that if you want to change salt or password provider, then you need to reinitialize
     /// the wallet with `PredefinedSeedPhrase`, then get `EncryptedSecret` via `get_crypto_box_info`,
     /// store it somewhere, and only after that initialize the wallet with `EncryptedSecret` type.
     EncryptedSecret {
-        /// It is an object, containing seed phrase or private key (now we support only seed phrase).
+        /// It is an object, containing encrypted seed phrase or private key (now we support only seed phrase).
         encrypted_secret: String,
     },
 }
@@ -143,11 +143,10 @@ impl Default for CryptoBoxSecret {
 #[derive(Serialize, Deserialize, Default, Clone, Debug, ApiType, PartialEq, ZeroizeOnDrop)]
 pub struct ParamsOfCreateCryptoBox {
     /// Salt used for secret encryption.
-    /// Crypto box stores all secret information in encrypted form.
     /// For example, a mobile device can use device ID as salt.
     pub secret_encryption_salt: String,
 
-    /// Secret.
+    /// Cryptobox secret
     pub secret: CryptoBoxSecret,
 }
 
@@ -160,7 +159,7 @@ pub struct ParamsOfCreateCryptoBox {
 /// Crypto Box encrypts original Seed Phrase with salt and some secret that is retrieved
 /// in runtime via `password_provider` callback, implemented on Application side.
 ///
-/// When used, decrypted secret has shown up in core library's memory for a very short period
+/// When used, decrypted secret is shown up in core library's memory for a very short period
 /// of time and then is immediately overwritten with zeroes.
 pub async fn create_crypto_box(
     context: Arc<ClientContext>,
@@ -212,7 +211,8 @@ pub async fn create_crypto_box(
     Ok(RegisteredCryptoBox { handle: CryptoBoxHandle(id) })
 }
 
-/// Remove Crypto Box.
+/// Removes Crypto Box.
+/// Clears all secret data. 
 #[api_function]
 pub async fn remove_crypto_box(
     context: Arc<ClientContext>,
@@ -231,7 +231,7 @@ pub struct ResultOfGetCryptoBoxSeedPhrase {
 
 /// Get Crypto Box Seed Phrase.
 ///
-/// Store this data in your application for a very short time and overwrite it with zeroes ASAP.
+/// Attention! Store this data in your application for a very short period of time and overwrite it with zeroes ASAP.
 #[api_function]
 pub async fn get_crypto_box_seed_phrase(
     context: Arc<ClientContext>,
@@ -252,10 +252,13 @@ pub async fn get_crypto_box_seed_phrase(
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct ResultOfGetCryptoBoxInfo {
+    /// Secret (seed phrase) encrypted with salt and password.
     pub encrypted_secret: String,
 }
 
 /// Get Crypto Box Info.
+/// Used to get `encrypted_secret` that should be used
+/// for all the cryptobox initializations except the first one. 
 #[api_function]
 pub async fn get_crypto_box_info(
     context: Arc<ClientContext>,
@@ -279,9 +282,9 @@ pub struct ParamsOfGetSigningBoxFromCryptoBox {
     pub handle: u32,
     /// HD key derivation path. By default, Everscale HD path is used.
     pub hdpath: Option<String>,
-    /// Store derived secret for encryption algorithm for this lifetime (in ms).
+    /// Store derived secret for this lifetime (in ms).
     /// The timer starts after each signing box operation.
-    /// Secrets will be deleted after each signing box operation, if this value is not set.
+    /// Secrets will be deleted immediately after each signing box operation, if this value is not set.
     pub secret_lifetime: Option<u32>,
 }
 
@@ -291,7 +294,7 @@ struct InternalBoxParams {
     secret_lifetime: Option<u32>,
 }
 
-/// Get Signing Box from Crypto Box.
+/// Get handle of Signing Box derived from Crypto Box.
 #[api_function]
 pub async fn get_signing_box_from_crypto_box(
     context: Arc<ClientContext>,
@@ -603,7 +606,8 @@ impl EncryptionBox for EncryptionBoxFromCryptoBox {
     }
 }
 
-/// Remove all cached secrets from signing boxes, derived from selected crypto box.
+/// Removes cached secrets from all signing and encryption boxes, 
+/// derived from crypto box.
 #[api_function]
 pub async fn clear_crypto_box_secret_cache(
     context: Arc<ClientContext>,
