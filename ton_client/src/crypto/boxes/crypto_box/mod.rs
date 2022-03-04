@@ -499,11 +499,17 @@ pub struct ParamsOfGetEncryptionBoxFromCryptoBox {
     pub algorithm: BoxEncryptionAlgorithm,
     /// Store derived secret for encryption algorithm for this lifetime (in ms).
     /// The timer starts after each encryption box operation.
-    /// Secrets will be deleted after each signing box operation, if this value is not set.
+    /// Secrets will be deleted (overwritten with zeroes) after each encryption operation, if this value is not set.
     pub secret_lifetime: Option<u32>,
 }
 
-/// Get Encryption Box from Crypto Box.
+/// Gets Encryption Box from Crypto Box.
+///
+/// Derives encryption keypair from cryptobox secret and hdpath and
+/// stores it in cache for `secret_lifetime` 
+/// or until explicitly cleared by `clear_crypto_box_secret_cache` method.
+/// If `secret_lifetime` is not specified - overwrites encryption secret with zeroes immediately after
+/// encryption operation. 
 #[api_function]
 pub async fn get_encryption_box_from_crypto_box(
     context: Arc<ClientContext>,
@@ -606,7 +612,7 @@ impl EncryptionBox for EncryptionBoxFromCryptoBox {
     }
 }
 
-/// Removes cached secrets from all signing and encryption boxes, 
+/// Removes cached secrets (overwrites with zeroes) from all signing and encryption boxes, 
 /// derived from crypto box.
 #[api_function]
 pub async fn clear_crypto_box_secret_cache(
