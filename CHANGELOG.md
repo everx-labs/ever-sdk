@@ -3,8 +3,14 @@
 All notable changes to this project will be documented in this file.
 
 ## [1.31.0] – 2022-02-04
+
 ### New 
+
 - Cryptobox added
+- Documentation generator for app object interface fills documentation from
+  `ParamsOfXXXAppObject` enum.
+- Documentation generator for function with `obj` parameter add this parameter 
+  into parameters section with link to appropriate AppObject interface.  
 
 ## [1.30.0] – 2022-02-04
 

@@ -87,20 +87,20 @@ export class Docs extends Code {
 
     type(type: ApiType, indent: string): string {
         switch (type.type) {
-            case ApiTypeIs.Ref:
-                const refType = this.findType(type.ref_name);
-                if (refType) {
-                    return this.type(refType, indent);
-                }
-                return `_${type.ref_name}_`;
-            case ApiTypeIs.Optional:
-                return `Optional value of:\n\n${this.type(type.optional_inner, indent)}`;
-            case ApiTypeIs.Struct:
-                return this.typeFields(type.struct_fields);
-            case ApiTypeIs.EnumOfTypes:
-                return this.enumOfTypes(type, indent);
-            case ApiTypeIs.EnumOfConsts:
-                return this.enumOfConsts(type);
+        case ApiTypeIs.Ref:
+            const refType = this.findType(type.ref_name);
+            if (refType) {
+                return this.type(refType, indent);
+            }
+            return `_${type.ref_name}_`;
+        case ApiTypeIs.Optional:
+            return `Optional value of:\n\n${this.type(type.optional_inner, indent)}`;
+        case ApiTypeIs.Struct:
+            return this.typeFields(type.struct_fields);
+        case ApiTypeIs.EnumOfTypes:
+            return this.enumOfTypes(type, indent);
+        case ApiTypeIs.EnumOfConsts:
+            return this.enumOfConsts(type);
         }
         return "";
     }
@@ -160,40 +160,40 @@ export class Docs extends Code {
 
     fieldType(type: ApiType): string {
         switch (type.type) {
-            case ApiTypeIs.Ref:
-                if (type.ref_name === "Value") {
-                    return "any";
-                }
-                const parts = type.ref_name.split(".");
-                return parts.length === 2
-                    ? `[${parts[1]}](mod_${parts[0]}.md#${parts[1].toLowerCase()})`
-                    : type.ref_name;
-            case ApiTypeIs.Optional:
-                return `${this.fieldType(type.optional_inner)}?`;
-            case ApiTypeIs.Struct:
-                return "struct";
-            case ApiTypeIs.EnumOfTypes:
-                return "enum";
-            case ApiTypeIs.EnumOfConsts:
-                return "const";
-            case ApiTypeIs.Array:
-                return `${this.fieldType(type.array_item)}[]`;
-            case ApiTypeIs.String:
-                return "string";
-            case ApiTypeIs.Any:
+        case ApiTypeIs.Ref:
+            if (type.ref_name === "Value") {
                 return "any";
-            case ApiTypeIs.Boolean:
-                return "boolean";
-            case ApiTypeIs.Number:
-                return "number";
-            case ApiTypeIs.Generic:
-                return `${type.generic_name}<${this.fieldType(type.generic_args[0])}>`;
-            case ApiTypeIs.BigInt:
-                return "bigint";
-            case ApiTypeIs.None:
-                return "void";
-            default:
-                return "";
+            }
+            const parts = type.ref_name.split(".");
+            return parts.length === 2
+                ? `[${parts[1]}](mod_${parts[0]}.md#${parts[1].toLowerCase()})`
+                : type.ref_name;
+        case ApiTypeIs.Optional:
+            return `${this.fieldType(type.optional_inner)}?`;
+        case ApiTypeIs.Struct:
+            return "struct";
+        case ApiTypeIs.EnumOfTypes:
+            return "enum";
+        case ApiTypeIs.EnumOfConsts:
+            return "const";
+        case ApiTypeIs.Array:
+            return `${this.fieldType(type.array_item)}[]`;
+        case ApiTypeIs.String:
+            return "string";
+        case ApiTypeIs.Any:
+            return "any";
+        case ApiTypeIs.Boolean:
+            return "boolean";
+        case ApiTypeIs.Number:
+            return "number";
+        case ApiTypeIs.Generic:
+            return `${type.generic_name}<${this.fieldType(type.generic_args[0])}>`;
+        case ApiTypeIs.BigInt:
+            return "bigint";
+        case ApiTypeIs.None:
+            return "void";
+        default:
+            return "";
         }
     }
 
@@ -233,6 +233,7 @@ export class Docs extends Code {
         md += docOf(func);
         const funcInfo = this.getFunctionInfo(func);
         let code = "";
+        const appObject = funcInfo.appObject;
         let params: ApiField | undefined = funcInfo.params;
         if (params) {
             params = this.resolveRef(params, func.module);
@@ -247,10 +248,13 @@ export class Docs extends Code {
         code += this.code.functionInterface(func);
         md += `\`\`\`${this.code.language()}\n${code}\n\`\`\`\n`;
 
-        if (params || funcInfo.hasResponseHandler) {
+        if (appObject || params || funcInfo.hasResponseHandler) {
             md += "### Parameters\n";
             if (params) {
                 md += this.type(params, "");
+            }
+            if (appObject) {
+                md += `- \`obj\`: ${appObjectTypeRef(appObject)}${summaryOf(appObject)}\n\n`
             }
             if (funcInfo.hasResponseHandler) {
                 md += `- \`responseHandler\`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.`;
@@ -358,18 +362,18 @@ Where:
         for (const variant of type.enum_types) {
             let params = "";
             switch (variant.type) {
-                case ApiTypeIs.Ref:
-                    params = `params: ${typeName(variant.ref_name)}`;
-                    break;
-                case ApiTypeIs.Struct:
-                    const fields = variant.struct_fields;
-                    for (const field of fields) {
-                        if (params !== "") {
-                            params += ", ";
-                        }
-                        params += `${this.code.field(field, "")}`;
+            case ApiTypeIs.Ref:
+                params = `params: ${typeName(variant.ref_name)}`;
+                break;
+            case ApiTypeIs.Struct:
+                const fields = variant.struct_fields;
+                for (const field of fields) {
+                    if (params !== "") {
+                        params += ", ";
                     }
-                    break;
+                    params += `${this.code.field(field, "")}`;
+                }
+                break;
             }
             md += `\nfunction ${TSCode.lowerFirst(enumName)}${variant.name}(${params}): ${enumName};`;
         }
