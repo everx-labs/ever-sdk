@@ -1,4 +1,4 @@
-# Counterparites Queries
+# Counterparties
 
 Returns a list of addresses the specified account interacted with, sorted by the latest interaction time (the latest message time between 2 accounts) DESC. Feature may be useful for wallet applications or for chat-based DApps to show the list of counterparties in descending order.\
 \
@@ -8,7 +8,7 @@ Available only in Cloud API.
   * [All counterparties for specific account](counterparties.md#all-counterparties-for-specific-account)
   * [Pagination](counterparties.md#pagination)
 
-## Counterparties queries
+## Counterparties query
 
 ### All counterparties for specific account
 

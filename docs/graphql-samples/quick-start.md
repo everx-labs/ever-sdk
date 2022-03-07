@@ -1,6 +1,12 @@
 # Quick Start
 
-Go to net.ton.dev/graphql (or [choose another network GraphQL endpoint](networks.md)) in your browser.
+## How to use playground
+
+Choose any playground from the network list
+
+{% content-ref url="../reference/ton-os-api/networks.md" %}
+[networks.md](../reference/ton-os-api/networks.md)
+{% endcontent-ref %}
 
 You will see the GraphQL playground.
 
@@ -16,4 +22,16 @@ query{
 
 ![scr1.png](../../.gitbook/assets/scr1.png)
 
-Check out [TON Labs SDK net module](../types-and-methods/mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
+## API documentation
+
+GraphQL schema is self-documented. You can find all fields descriptions in the playground. Click this button:
+
+![](../.gitbook/assets/image.png)
+
+## Access API from Client Libraries
+
+Check out [Client Libraries net module](../reference/types-and-methods/mod\_net.md).
+
+Use [`query_collection`](../reference/types-and-methods/mod\_net.md#query\_collection) method for `blocks`, `accounts`, `messages`, `transactions` queries.&#x20;
+
+Use [`query`](../reference/types-and-methods/mod\_net.md#query) method for all other queries.&#x20;
