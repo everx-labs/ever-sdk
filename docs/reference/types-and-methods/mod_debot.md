@@ -49,7 +49,7 @@
 
 [ParamsOfRemove](#paramsofremove) – [UNSTABLE](UNSTABLE.md)
 
-[AppDebotBrowser](#appdebotbrowser)
+[AppDebotBrowser](#appdebotbrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
 
 
 # Functions
@@ -81,6 +81,8 @@ function init(
 ```
 ### Parameters
 - `address`: _string_ – Debot smart contract address
+- `obj`: [AppDebotBrowser](#appdebotbrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
+
 
 
 ### Result
@@ -630,6 +632,10 @@ type ParamsOfRemove = {
 
 
 ## AppDebotBrowser
+[UNSTABLE](UNSTABLE.md) Debot Browser callbacks
+
+Called by debot engine to communicate with debot browser.
+
 
 ```ts
 
