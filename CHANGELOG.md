@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.31.0] – 2022-02-04
+## [1.31.0] – 2022-03-09
 
 ### New 
 **crypto module:**
