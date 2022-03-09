@@ -1,15 +1,10 @@
-# Block Queries
-
-* [Block queries](blocks.md#block-queries)
-  * [Get the block hash by seq\_no](blocks.md#get-the-block-hash-by-seq\_no)
-  * [Query the latest masterchain block height](blocks.md#query-the-latest-masterchain-block-height)
-  * [Get the current list of shards](blocks.md#get-the-current-list-of-shards)
-  * [Query the latest shardchain block height](blocks.md#query-the-latest-shardchain-block-height)
-  * [Get block transactions](blocks.md#get-block-transactions)
+# Blocks
 
 ## Blocks pagination
 
 ### About cursor
+
+<mark style="color:orange;">**Attention! Pagination functionality is new and not yet supported in Evernode-DS. But will be soon!**</mark>
 
 As Everscale is a multi-chain multi-threaded blockchain, to paginate blocks we need to paginate several parallel workchains each having several parallel threads, which can split and merge over time, simultaneously. This differs Everscale from other blockchains where you simply paginate one chain with one thread and that has one height in a single moment in time.
 
@@ -17,7 +12,7 @@ This was really a challenge for us to solve this task. We needed to construct su
 
 We formed this cursor based on the fact that all workchain blocks are commited into masterchain blocks in some specific order. And masterchain is ordered by seq\_no and has 1 thread. In simple words, this cursor splits all blockchain blocks into ranges between masterchain blocks and sort them inside that range in an ambiguos order. And, by the way, we derived the cursor for all blockchain transactions - from cursor for blocks, so that it is possible to paginate them too (check transactions pagination section).&#x20;
 
-### Paginate by masterchain blocks seq\_no range
+### Paginate by masterchain blocks seq\_no range <a href="#paginate_by_seqno" id="paginate_by_seqno"></a>
 
 Query:
 
@@ -171,7 +166,7 @@ Result:
 }
 ```
 
-### Paginate by masterchain blocks time range
+### Paginate by masterchain blocks time range <a href="#paginate_by_timerange" id="paginate_by_timerange"></a>
 
 If you do not know the `seq_no` of masterchain blocks  to create a range you can first obtain it by the time range, and then implement pagination the same way as described above.
 
@@ -200,6 +195,72 @@ query{
   }
 }
 ```
+
+## Key blocks pagination
+
+Sometimes it may be needed to paginate key blocks - for instance, it is used for proofs calculations.&#x20;
+
+Or you can get blockchain config with this simple query:
+
+```graphql
+query {
+   key_blocks( last:1){
+          edges {
+           node {
+                    workchain_id
+                    id
+                    shard
+                    seq_no
+                    hash
+                    file_hash
+                    gen_utime
+                    gen_utime_string
+                    master{
+                     config{
+                       p34{
+                         total_weight
+                       }
+                     }
+                    }
+           }
+          }
+   }
+}
+```
+
+Result:
+
+```graphql
+{
+  "data": {
+    "key_blocks": {
+      "edges": [
+        {
+          "node": {
+            "workchain_id": -1,
+            "id": "block/8c62ab1980161adcc59ff6932c375e25ff1119dc9bdd6d190eb994076d3efe83",
+            "shard": "8000000000000000",
+            "seq_no": 15418884,
+            "hash": "8c62ab1980161adcc59ff6932c375e25ff1119dc9bdd6d190eb994076d3efe83",
+            "file_hash": "d92a29245f368e4936e97e552e9b009bb8af8cd955d5e8b4da22dede28da8ee6",
+            "gen_utime": 1646810740,
+            "gen_utime_string": "2022-03-09 07:25:40.000",
+            "master": {
+              "config": {
+                "p34": {
+                  "total_weight": "0xfffffffffffffa2"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+Implement Pagination  the same way as described above:)
 
 ## Get the block hash by seq\_no
 

@@ -1,14 +1,4 @@
-- [Account queries](#account-queries)
-  - [Get account info](#get-account-info)
-  - [Pagination of account transactions](#pagination-of-account-transactions)
-  - [Get the last message from user's account to a specified destination address](#get-the-last-message-from-users-account-to-a-specified-destination-address)
-  - [Get all transactions of a specified account](#get-all-transactions-of-a-specified-account)
-  - [Get all messages of a specified account](#get-all-messages-of-a-specified-account)
-  - [Get the number of account transactions](#get-the-number-of-account-transactions)
-  - [Aggregate transfers between 2 accounts](#aggregate-transfers-between-2-accounts)
-  - [Aggregate gas consumption](#aggregate-gas-consumption)
-
-# Account queries
+# Accounts
 
 ## Get account info
 
@@ -61,293 +51,74 @@ where `id` (full address) consists of workchainID:address (Note: smart contract 
 
 fields:
 
-* acc_type
+* acc\_type
   * 0 – uninit (Account has balance but no code)
   * 1 – active (Account has balance and code)
   * 2 – frozen(Account has been frozen for some reasons)
-* last_paid - unixtime of the most recent storage payment or
+* last\_paid - unixtime of the most recent storage payment or
 * balance - tokens on account (Note: to deploy smart contract code you need to have non-zero balance)
-* last_trans_lt - logical time of last account transaction
-* data_hash - data field hash
-* code_hash - code field hash
+* last\_trans\_lt - logical time of last account transaction
+* data\_hash - data field hash
+* code\_hash - code field hash
 * library - If present, contains library code used in smart-contract.
-* library_hash - library field hash
+* library\_hash - library field hash
 * boc - Bag of cells with the account struct encoded as base64.
-
-In case account not found result will be empty:
-
-```graphql
-{
-  "data": {
-    "accounts": []
-  }
-}
-```
 
 ## Pagination of account transactions
 
-To implement account transactions pagination in descending order do the following steps:
+<mark style="color:orange;">**Attention! Pagination with cursor functionality is new and not yet supported in Evernode-DS. But will be soon!**</mark>&#x20;
 
-1. Get the last account transaction logical time. You will receive it in hexadecimal string format. This is the start point of your pagination range.
-
-```graphql
-query{
-  accounts(filter:{
-    id:{
-      eq:"-1:f6967e2ce65843a5cc450362b898e87a0fab3925bdc507195fa5003465cd62af"
-    }
-  })
-  {
-    last_trans_lt
-  }
-}
-```
-
-Result:
-
-```graphql
-{
-  "data": {
-    "accounts": [
-      {
-        "last_trans_lt": "0x448c10cd4c2"
-      }
-    ]
-  }
-}
-```
-
-1. Now lets fetch the first batch of transactions. We need to filter them by the account, specify the start point `lt` and sort by block time now and logical time in descending order. Limit the result by 25 records.
-
-We use `lt` (less than) operator instead of `le` (less or equal) even for the first step because the `last_trans_lt` field of account is always equal to the (last transaction lt +1).
+If you want to paginate all account transactions from the very first one, use this query
 
 ```graphql
 query{
-    transactions(
-    filter:{
-      account_addr:{
-        eq:"-1:f6967e2ce65843a5cc450362b898e87a0fab3925bdc507195fa5003465cd62af"
-      }    
-
-      lt:{
-        lt:"0x448c10cd4c2"
-      }
-    }
-    orderBy:[
-            { path:"now",direction:DESC },
-              { path:"lt", direction:DESC }
-    ]
-    limit:25
+  account_transactions(
+    account_address:"0:27da7884e032ede0f7d5758bb58bcab9942dfb6c1b764a38bb6377a47a0822de"
   ){
-    id
-    lt
-    now
-    account_addr
-  }
-}
-```
-
-the result shows us 25 records. These are the last 2 records:
-
-```graphql
-{
-        "id": "a7c9296961d0c105c060dbb1c7d4a92afbfc6a4606982407ab56a88ebc06cefb",
-        "lt": "0x3b5608087c1",
-        "now": 1598369415,
-        "account_addr": "-1:f6967e2ce65843a5cc450362b898e87a0fab3925bdc507195fa5003465cd62af"
-      },
-      {
-        "id": "7457721794359aec848f9ac26e0759125d6d53def115f702d8c31c955c229d5a",
-        "lt": "0x3b55ff73381",
-        "now": 1598369395,
-        "account_addr": "-1:f6967e2ce65843a5cc450362b898e87a0fab3925bdc507195fa5003465cd62af"
+    edges{
+      node{
+        id
+        lt
+        now
       }
-    ]
+      cursor
+    }
+    pageInfo{
+      endCursor
+      hasNextPage
+    }
   }
 }
 ```
 
-1. Take the `lt` of the last retrieved transaction and use it as the start point for the next batch. Make sure to use `lt` operator, not `le`, so that you will not get the same transaction in 2 batches:
+Use `endCursor` field for further pagination and `hasNextCursor` for identifying if more records exist.&#x20;
+
+If you want to paginate within some time range, you can use masterchain seq\_no or time range filter. Also you can use additional handy pagination parameters such as `after`, `first`, `before`, `last`. Read more about it in [blocks pagination section](blocks.md#about-cursor).
+
+## Get the list of account's counterparties
+
+Returns the paginable list of accounts the account has ever interacted with, with the last message info attached, sorted by the last message time. Useful for applications that want to show a screen with dialog list sorted by the last interaction time.
+
+<mark style="color:orange;">**Attention! Available only in public API. Is not available in Evernode-DS**</mark>**.**[ **See functionality comparison section.** ](https://tonlabs.gitbook.io/evernode-platform/products/functionality-comparison)****
 
 ```graphql
 query{
-    transactions(
-    filter:{
-      account_addr:{
-        eq:"-1:f6967e2ce65843a5cc450362b898e87a0fab3925bdc507195fa5003465cd62af"
-      }    
-
-      lt:{
-        lt:"0x3b55ff73381"
-      }
-    }
-    orderBy:[
-            { path:"now",direction:DESC },
-              { path:"lt", direction:DESC }
-    ]
-    limit:25
+  counterparties(
+    account:"0:27da7884e032ede0f7d5758bb58bcab9942dfb6c1b764a38bb6377a47a0822de"
   ){
-    id
-    lt
-    now
-    account_addr
+    last_message_id
+    last_message_value
+    last_message_at
+    last_message_is_reverse
   }
 }
 ```
 
-And so on.
 
-## Get the last message from user's account to a specified destination address
 
-Use the following query:
+## Transaction count
 
-```graphql
-{
-  messages( 
-    filter: { 
-      src:{eq:"-1:7777777777777777777777777777777777777777777777777777777777777777"}
-        dst:{eq:"0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"}
-    }
-    orderBy:{ path:"created_at", direction: DESC}
-    limit: 1
-  ) 
-  { 
-    id 
-    msg_type
-    body
-    status
-  } 
-}
-```
-
-Result:
-
-```graphql
-{
-  "data": {
-    "messages": [
-      {
-        "id": "b0989c38a1b3be613be6dab1c78072fc915737be771445bb9f718db000727532",
-        "msg_type": 0,
-        "body": null,
-        "status": 5
-      }
-    ]
-  }
-}
-```
-
-In the above query:
-
-* src - User's account (source address).
-* dst - destination account (destination address).
-
-## Get all transactions of a specified account
-
-By default query result is limited to 50 records. To implement pagination you need to use creation lt (creation logical time) of the last record in the next query.
-
-Please note that we do not sort by `created_at` here because the data for one account is unequivocally sorted by lt (to be precise - all the data inside one shard).
-
-In the next example we limit the number of results returned to 2.
-
-**Query**:
-
-```graphql
-{
-  transactions(
-    filter: { 
-          account_addr: { 
-              eq:"0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"
-          }
-    }
-    orderBy:[
-          {path:"lt",direction:ASC}
-        ]
-    limit:2
-  )
-  {
-    id
-    now
-    lt
-  }
-}
-```
-
-**Result**:
-
-```graphql
-{
-  "data": {
-    "transactions": [
-      {
-        "id": "35394c0caae38b34e17d9dbbbfd068a02c65c133583fb516a65ca11431e8b9ff",
-        "now": 1593681814,
-        "lt": "0x4514efc01"
-      },
-      {
-        "id": "72b89951ebbe819a82fc0c1d3bc3af49096e7aa6f76d8dc3069addc8b993858c",
-        "now": 1593682165,
-        "lt": "0x458b31301"
-      }
-    ]
-  }
-}
-```
-
-In the above query:
-
-* account_addr - address of an account to filter by.
-* now - time of the transaction.
-* lt - Logical time. A component of the Everscale Blockchain that also plays an important role in message delivery is the logical time, usually denoted by Lt. It is a non-negative 64-bit integer, assigned to certain events. For more details, see the Everscale blockchain specification.
-
-**Pagination Query:**
-
-We take last record `lt` retrieved from the initial query and repeat query with "greater than lt" condition:
-
-```graphql
-{
-  transactions(
-    filter: { 
-          account_addr:{
-              eq:"0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"
-          }
-          lt:    {gt:"0x458b31301"}
-    }
-    orderBy:[{path:"lt",direction:ASC}]
-    limit:2
-  )
-  {
-    id
-    now
-    lt
-  }
-}
-```
-
-**Result**:
-
-```graphql
-{
-  "data": {
-    "transactions": [
-      {
-        "id": "76fa008118645ce5376d5be728ed79fbb86466fa32ce72e4786a2fce3bb9e629",
-        "now": 1593682244,
-        "lt": "0x45a5e5201"
-      },
-      {
-        "id": "d5f8e3b6ca81b84a1288979ca291df567eb9da4d2027010532d658d825b998c6",
-        "now": 1593682274,
-        "lt": "0x45ac921c1"
-      }
-    ]
-  }
-}
-```
-
-You need to repeat it `count of transactions`/ 50 times.
-
-To get count of transactions use `aggregateTransactions`:
+To get count of account transactions use `aggregateTransactions`:
 
 **Query**:
 
@@ -380,7 +151,9 @@ query {
 
 ## Get all messages of a specified account
 
-By default query result is limited to 50 records. To get next 50 records, you need to use created_lt (creation logical time) of the last record in the next query.
+<mark style="color:orange;">**Attention! At the moment we are developing a handy method for account messages pagination. Please use the approach below as temporary, it will be deprecated soon.**</mark>&#x20;
+
+By default query result is limited to 50 records. To get next 50 records, you need to use created\_lt (creation logical time) of the last record in the next query.
 
 In the next example we limit the number of results returned to 2.
 
@@ -435,7 +208,7 @@ In the next example we limit the number of results returned to 2.
 }
 ```
 
-There are two records returned and that may mean that there is another page. We take last record `created_lt` and repeat query with "greater than created_lt" condition:
+There are two records returned and that may mean that there is another page. We take last record `created_lt` and repeat query with "greater than created\_lt" condition:
 
 **Query**:
 
@@ -512,38 +285,6 @@ Result:
 }
 ```
 
-## Get the number of account transactions
-
-Get COUNT of the transactions of a specified account
-
-```graphql
-query{
-  aggregateTransactions(
-    filter:{
-     account_addr : { 
-        eq: "0:a52f6a7ea6bc7279728cbff01ad1e8b1dfc386098cfac1f381ae3959bf2ae9db" }
-    },
-    fields:[
-      {
-        fn:COUNT
-      }
-    ]
-  )
-}
-```
-
-Result:
-
-```graphql
-{
-  "data": {
-    "aggregateTransactions": [
-      "1444"
-    ]
-  }
-}
-```
-
 ## Aggregate transfers between 2 accounts
 
 Determine min, max and sum values of transferred tokens and number of transfers between two accounts
@@ -587,7 +328,7 @@ Result:
 
 ## Aggregate gas consumption
 
-Determine min, max and sum value for the gas_used of a transactions compute phase.
+Determine min, max and sum value for the gas\_used of a transactions compute phase.
 
 You can use a dot separated path as a field name to use fields resided deep in a JSON structure of a transaction record:
 

@@ -1,10 +1,141 @@
-- [Transaction queries](#transaction-queries)
-  - [Query transaction data](#query-transaction-data)
-  - [Get aborted transaction reason](#get-aborted-transaction-reason)
-  - [Get all transaction fees](#get-all-transaction-fees)
-  - [Get the number of transactions in a specified shard over a period of time.](#get-the-number-of-transactions-in-a-specified-shard-over-a-period-of-time)
+# Transactions
 
-# Transaction queries
+## Paginate blockchain transactions
+
+Sometimes it is needed to  paginate all the network transactions.&#x20;
+
+Due to the fact that Everscale is a multi-chain multi-threaded blockchain, pagination is not a straightforward operation and requires some special cursor and order of blocks and transactions inside them.
+
+We provide our users with such functionality.
+
+Read more about the used cursor-based approach in [blocks pagination section.](blocks.md#blocks-pagination)
+
+You can either paginate all workchains' transactions (if you omit `workchain` parameter) or only the specified workchain's transactions.
+
+If you do not specify time range you will start pagination from the start (`first` parameter) or the end (`last` parameter) of the network.
+
+Here is a simple query how to get last 3 transactions of the network and paginate backwards.
+
+You can paginate from the beginning and specify masterchain seq\_no range or masterchain time range to paginate within some time period. Check how to define this range in[ blocks pagination section.](blocks.md#paginate\_by\_seqno)
+
+```graphql
+query{
+  workchain_transactions(
+    last:3
+  ){
+    edges{
+      node{
+        id
+        now
+      }
+      cursor
+    }
+    pageInfo{
+      startCursor
+      hasPreviousPage
+    }
+  }
+}
+```
+
+Result:
+
+```graphql
+{
+  "data": {
+    "workchain_transactions": {
+      "edges": [
+        {
+          "node": {
+            "id": "transaction/f9f6a2e6f0d82ed4c91432d15135481bc2744d1e57a5b198a4c4577c3c1556ea",
+            "now": 1646867623
+          },
+          "cursor": "5eb8b7fm02"
+        },
+        {
+          "node": {
+            "id": "transaction/9491a1d47959670bbee2103c49f6ebd4000758773175b322c97171827852ba21",
+            "now": 1646867623
+          },
+          "cursor": "5eb8b7fm03"
+        },
+        {
+          "node": {
+            "id": "transaction/3509cbd336d24d8ca7bcde8d4ef9212041ed09f7a5606c35e3aa6b56d9dfb2af",
+            "now": 1646867623
+          },
+          "cursor": "5eb8b7fm04"
+        }
+      ],
+      "pageInfo": {
+        "startCursor": "5eb8b7fm02",
+        "hasPreviousPage": true
+      }
+    }
+  }
+}
+```
+
+Use `startCursor` and `hasPreviousPage` == true condition to paginate backwards like this:
+
+```graphql
+query{
+  workchain_transactions(
+    last:3
+    before:"5eb8b7fm02"
+  ){
+    edges{
+      node{
+        id
+        now
+      }
+      cursor
+    }
+    pageInfo{
+      startCursor
+      hasPreviousPage
+    }
+  }
+}
+```
+
+Result:
+
+```graphql
+{
+  "data": {
+    "workchain_transactions": {
+      "edges": [
+        {
+          "node": {
+            "id": "transaction/beebd27cbc94a9a9fbd29f00eba00850f627d7e1cd063672da06c34af1e4e812",
+            "now": 1646867620
+          },
+          "cursor": "5eb8b7em04"
+        },
+        {
+          "node": {
+            "id": "transaction/8475e48a6cb0e8aa8068d8eb7624b8a123ad4e51f9d005a60724e1b13b444338",
+            "now": 1646867623
+          },
+          "cursor": "5eb8b7fm00"
+        },
+        {
+          "node": {
+            "id": "transaction/276ccd18e275bcc908c1e819a32abfcbee1c6a94679e43b20d28ae0035d0c208",
+            "now": 1646867623
+          },
+          "cursor": "5eb8b7fm01"
+        }
+      ],
+      "pageInfo": {
+        "startCursor": "5eb8b7em04",
+        "hasPreviousPage": true
+      }
+    }
+  }
+}
+```
 
 ## Query transaction data
 
@@ -68,62 +199,6 @@ The result:
           "dst": "-1:f6967e2ce65843a5cc450362b898e87a0fab3925bdc507195fa5003465cd62af",
           "value": "0x95203900d92ee"
         }
-      }
-    ]
-  }
-}
-```
-
-## Get aborted transaction reason
-
-The sample below shows how to query fail reasons for aborted transactions:
-
-```graphql
-query {
-  transactions(filter: {aborted: {eq: true }}) {
-    id
-        compute {
-            skipped_reason
-            exit_code
-      }
-    }
-}
-```
-
-## Get all transaction fees
-
-To receive all transaction fees please query fwd_fee and total_fees fields and sum values:
-
-```graphql
-query{
-  transactions(filter:{
-    id:{
-      eq:"a450b8d6d6785a47b50b8442b3ee25a7ead43a42916c728f62c5c5f7f5dc50f3"
-    }   
-  }
-  )
-  {
-    out_messages{
-        fwd_fee(format:DEC)
-    }
-    total_fees(format:DEC)
-  }
-}
-```
-
-The result:
-
-```graphql
-{
-  "data": {
-    "transactions": [
-      {
-        "out_messages": [
-          {
-            "fwd_fee": "666672"
-          }
-        ],
-        "total_fees": "13330802"
       }
     ]
   }
