@@ -1,6 +1,60 @@
 # Network Config
 
-Fetch the last key block and get config from it:
+## Get blockchain config
+
+<mark style="color:orange;">**Attention! This query is available only in Public API now, but soon will be supported in Evernode-DS. Use**</mark> [**this temporary solution** ](network-config.md#old-get-blockchain-config-via-blocks-collection)<mark style="color:orange;">**to get network config in Evernode-DS.**</mark>
+
+```graphql
+query {
+   key_blocks( last:1){
+          edges {
+           node {
+                    master{
+                     config{
+                       p34{
+                         total_weight
+                       }
+                       #...any other config params
+                       # check graphql schema for available fields
+                     }
+                    }
+           }
+          }
+   }
+}
+```
+
+Result:
+
+```graphql
+{
+  "data": {
+    "key_blocks": {
+      "edges": [
+        {
+          "node": {
+            "master": {
+              "config": {
+                "p34": {
+                  "total_weight": "0xfffffffffffffa2"
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+Implement Pagination  the same way as described above:)
+
+
+
+## (Old) Get blockchain config via blocks collection
+
+<mark style="color:orange;">**Will be deprecated soon**</mark>
 
 ```graphql
 query{
