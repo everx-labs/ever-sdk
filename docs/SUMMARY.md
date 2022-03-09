@@ -38,7 +38,6 @@
   * [Blocks](graphql-samples/blocks.md)
   * [Accounts](graphql-samples/accounts.md)
   * [Transactions](graphql-samples/transactions.md)
-  * [Blockchain Queries](graphql-samples/blockchain.md)
   * [Blockchain Statistics](graphql-samples/statistics.md)
   * [Counterparties](graphql-samples/counterparties.md)
 
