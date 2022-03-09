@@ -6,17 +6,17 @@ All notable changes to this project will be documented in this file.
 
 ### New 
 **crypto module:**
-- Cryptobox introduced: root crypto object that stores encrypted secret and acts as a factory for all crypto primitives used in SDK. 
+- `Cryptobox` introduced: root crypto object that stores encrypted secret and acts as a factory for all crypto primitives used in SDK. 
   Crypto box provides signing and encryption boxes.
 
-  Functions:
-  [`create_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#create_crypto_box) - initializes cryptobox with secret
-  [`remove_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#remove_crypto_box) - removes cryptobox and overwrites all secrets with zeroes
-  [`get_crypto_box_seed_phrase`](./docs/reference/types-and-methods/mod_crypto.md#get_crypto_box_seed_phrase) - returns decrypted seed phrase
-  [`get_crypto_box_info`](./docs/reference/types-and-methods/mod_crypto.md#get_crypto_box_info) - returns encrypted cryptobox secret for next cryptobox initializations
-  [`get_signing_box_from_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#get_signing_box_from_crypto_box) - derives signing box from secret
-  [`get_encryption_box_from_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#get_encryption_box_from_crypto_box) - derives encryption box from secret
-  [`clear_crypto_box_secret_cache`](./docs/reference/types-and-methods/mod_crypto.md#clear_crypto_box_secret_cache) - forces secret cache (signing and encryption) clean up (overwrites all secrets with zeroes)
+  Functions:  
+  [`create_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#create_crypto_box) - initializes cryptobox with secret   
+  [`remove_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#remove_crypto_box) - removes cryptobox and overwrites all secrets with zeroes  
+  [`get_crypto_box_seed_phrase`](./docs/reference/types-and-methods/mod_crypto.md#get_crypto_box_seed_phrase) - returns decrypted seed phrase  
+  [`get_crypto_box_info`](./docs/reference/types-and-methods/mod_crypto.md#get_crypto_box_info) - returns encrypted cryptobox secret for next cryptobox initializations  
+  [`get_signing_box_from_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#get_signing_box_from_crypto_box) - derives signing box from secret  
+  [`get_encryption_box_from_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#get_encryption_box_from_crypto_box) - derives encryption box from secret  
+  [`clear_crypto_box_secret_cache`](./docs/reference/types-and-methods/mod_crypto.md#clear_crypto_box_secret_cache) - forces secret cache (signing and encryption) clean up (overwrites all secrets with zeroes). 
 
 
 ### Fixed
