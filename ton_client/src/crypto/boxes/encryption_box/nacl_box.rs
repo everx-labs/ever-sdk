@@ -7,7 +7,7 @@ use crate::crypto::{EncryptionBox, EncryptionBoxInfo, nacl_box, nacl_box_open, P
 use crate::error::ClientResult;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, ZeroizeOnDrop)]
-pub struct NaclBoxParams {
+pub struct NaclBoxParamsEB {
     /// 256-bit key. Must be encoded with `hex`.
     pub their_public: String,
     /// 256-bit key. Must be encoded with `hex`.
@@ -18,12 +18,12 @@ pub struct NaclBoxParams {
 
 #[derive(Debug)]
 pub(crate) struct NaclEncryptionBox {
-    params: NaclBoxParams,
+    params: NaclBoxParamsEB,
     hdpath: Option<String>,
 }
 
 impl NaclEncryptionBox {
-    pub fn new(params: NaclBoxParams, hdpath: Option<String>) -> Self {
+    pub fn new(params: NaclBoxParamsEB, hdpath: Option<String>) -> Self {
         Self { params, hdpath }
     }
 }

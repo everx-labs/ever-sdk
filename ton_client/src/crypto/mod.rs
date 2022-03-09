@@ -31,7 +31,7 @@ pub use crate::crypto::boxes::crypto_box::{
     create_crypto_box, remove_crypto_box, get_crypto_box_info, get_crypto_box_seed_phrase,
     get_signing_box_from_crypto_box, get_encryption_box_from_crypto_box, clear_crypto_box_secret_cache,
     ParamsOfCreateCryptoBox, ParamsOfGetSigningBoxFromCryptoBox, CryptoBoxHandle, RegisteredCryptoBox,
-    AppPasswordProvider, CryptoBoxSecret,
+    AppPasswordProvider, CryptoBoxSecret, BoxEncryptionAlgorithm,
     ResultOfGetCryptoBoxInfo, ResultOfGetCryptoBoxSeedPhrase, ResultOfGetPassword,
 };
 pub use crate::crypto::boxes::signing_box::{
@@ -49,7 +49,13 @@ pub use crate::crypto::boxes::encryption_box::{
     ParamsOfEncryptionBoxEncrypt, ResultOfEncryptionBoxEncrypt,
     ParamsOfEncryptionBoxDecrypt, ResultOfEncryptionBoxDecrypt,
 };
-pub use crate::crypto::boxes::encryption_box::aes::{AesInfo, AesParams};
+pub use crate::crypto::boxes::encryption_box::aes::{AesInfo, AesParamsEB};
+pub use crate::crypto::boxes::encryption_box::chacha20::ChaCha20ParamsEB;
+pub use crate::crypto::boxes::encryption_box::nacl_box::NaclBoxParamsEB;
+pub use crate::crypto::boxes::encryption_box::nacl_secret_box::NaclSecretBoxParamsEB;
+pub use crate::crypto::boxes::crypto_box::ChaCha20ParamsCB;
+pub use crate::crypto::boxes::crypto_box::NaclBoxParamsCB;
+pub use crate::crypto::boxes::crypto_box::NaclSecretBoxParamsCB;
 pub use crate::crypto::encscrypt::{scrypt, ParamsOfScrypt, ResultOfScrypt};
 pub use crate::crypto::hash::{sha256, sha512, ParamsOfHash, ResultOfHash};
 pub use crate::crypto::hdkey::{

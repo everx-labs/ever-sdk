@@ -207,10 +207,10 @@ impl Default for CipherMode {
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag = "type", content = "value")]
 pub enum EncryptionAlgorithm {
-    AES(aes::AesParams),
-    ChaCha20(chacha20::ChaCha20Params),
-    NaclBox(nacl_box::NaclBoxParams),
-    NaclSecretBox(nacl_secret_box::NaclSecretBoxParams),
+    AES(aes::AesParamsEB),
+    ChaCha20(chacha20::ChaCha20ParamsEB),
+    NaclBox(nacl_box::NaclBoxParamsEB),
+    NaclSecretBox(nacl_secret_box::NaclSecretBoxParamsEB),
 }
 
 impl Default for EncryptionAlgorithm {

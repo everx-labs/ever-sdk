@@ -22,7 +22,7 @@ use crate::error::ClientResult;
 use super::{CipherMode, EncryptionBox, EncryptionBoxInfo};
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
-pub struct AesParams {
+pub struct AesParamsEB {
     pub mode: CipherMode,
     pub key: String,
     pub iv: Option<String>,
@@ -41,7 +41,7 @@ pub(crate) struct AesEncryptionBox {
 }
 
 impl AesEncryptionBox {
-    pub fn new(params: AesParams) -> ClientResult<Self> {
+    pub fn new(params: AesParamsEB) -> ClientResult<Self> {
         let iv_required = match params.mode {
             CipherMode::CBC => true,
             _ => return Err(Error::unsupported_cipher_mode(&format!("{:?}", params.mode)))

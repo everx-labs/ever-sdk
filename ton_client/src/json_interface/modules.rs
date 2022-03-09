@@ -62,8 +62,17 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::crypto::EncryptionBoxInfo>();
     module.register_type::<crate::crypto::EncryptionAlgorithm>();
     module.register_type::<crate::crypto::CipherMode>();
-    module.register_type::<crate::crypto::AesParams>();
+    module.register_type::<crate::crypto::AesParamsEB>();
     module.register_type::<crate::crypto::AesInfo>();
+    module.register_type::<crate::crypto::ChaCha20ParamsEB>();
+    module.register_type::<crate::crypto::NaclBoxParamsEB>();
+    module.register_type::<crate::crypto::NaclSecretBoxParamsEB>();
+    module.register_type::<crate::crypto::CryptoBoxSecret>();
+    module.register_type::<crate::crypto::CryptoBoxHandle>();
+    module.register_type::<crate::crypto::BoxEncryptionAlgorithm>();
+    module.register_type::<crate::crypto::ChaCha20ParamsCB>();
+    module.register_type::<crate::crypto::NaclBoxParamsCB>();
+    module.register_type::<crate::crypto::NaclSecretBoxParamsCB>();
 
     // Math
 

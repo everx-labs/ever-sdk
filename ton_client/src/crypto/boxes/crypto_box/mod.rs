@@ -419,17 +419,17 @@ impl SigningBox for BoxFromCryptoBoxLifeCycleManager<KeysSigningBox> {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
-pub struct ChaCha20Params {
+pub struct ChaCha20ParamsCB {
     /// 96-bit nonce. Must be encoded with `hex`.
     pub nonce: String,
 }
 
-impl ChaCha20Params {
+impl ChaCha20ParamsCB {
     fn to_encryption_box_params(
         &self,
         key: SecretString,
-    ) -> super::encryption_box::chacha20::ChaCha20Params {
-        super::encryption_box::chacha20::ChaCha20Params {
+    ) -> super::encryption_box::chacha20::ChaCha20ParamsEB {
+        super::encryption_box::chacha20::ChaCha20ParamsEB {
             key: key.0.clone(),
             nonce: self.nonce.clone(),
         }
@@ -437,19 +437,19 @@ impl ChaCha20Params {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
-pub struct NaclBoxParams {
+pub struct NaclBoxParamsCB {
     /// 256-bit key. Must be encoded with `hex`.
     pub their_public: String,
     /// 96-bit nonce. Must be encoded with `hex`.
     pub nonce: String,
 }
 
-impl NaclBoxParams {
+impl NaclBoxParamsCB {
     fn to_encryption_box_params(
         &self,
         secret: SecretString,
-    ) -> super::encryption_box::nacl_box::NaclBoxParams {
-        super::encryption_box::nacl_box::NaclBoxParams {
+    ) -> super::encryption_box::nacl_box::NaclBoxParamsEB {
+        super::encryption_box::nacl_box::NaclBoxParamsEB {
             their_public: self.their_public.clone(),
             secret: secret.0.clone(),
             nonce: self.nonce.clone(),
@@ -458,17 +458,17 @@ impl NaclBoxParams {
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
-pub struct NaclSecretBoxParams {
+pub struct NaclSecretBoxParamsCB {
     /// Nonce in `hex`
     pub nonce: String,
 }
 
-impl NaclSecretBoxParams {
+impl NaclSecretBoxParamsCB {
     fn to_encryption_box_params(
         &self,
         key: SecretString,
-    ) -> super::encryption_box::nacl_secret_box::NaclSecretBoxParams {
-        super::encryption_box::nacl_secret_box::NaclSecretBoxParams {
+    ) -> super::encryption_box::nacl_secret_box::NaclSecretBoxParamsEB {
+        super::encryption_box::nacl_secret_box::NaclSecretBoxParamsEB {
             key: key.0.clone(),
             nonce: self.nonce.clone(),
         }
@@ -478,14 +478,14 @@ impl NaclSecretBoxParams {
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag = "type", content = "value")]
 pub enum BoxEncryptionAlgorithm {
-    ChaCha20(ChaCha20Params),
-    NaclBox(NaclBoxParams),
-    NaclSecretBox(NaclSecretBoxParams),
+    ChaCha20(ChaCha20ParamsCB),
+    NaclBox(NaclBoxParamsCB),
+    NaclSecretBox(NaclSecretBoxParamsCB),
 }
 
 impl Default for BoxEncryptionAlgorithm {
     fn default() -> Self {
-        Self::ChaCha20(ChaCha20Params::default())
+        Self::ChaCha20(ChaCha20ParamsCB::default())
     }
 }
 

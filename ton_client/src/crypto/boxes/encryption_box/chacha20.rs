@@ -10,7 +10,7 @@ use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, ZeroizeOnDrop)]
-pub struct ChaCha20Params {
+pub struct ChaCha20ParamsEB {
     /// 256-bit key. Must be encoded with `hex`.
     pub key: String,
     /// 96-bit nonce. Must be encoded with `hex`.
@@ -25,7 +25,7 @@ pub(crate) struct ChaCha20EncryptionBox {
 }
 
 impl ChaCha20EncryptionBox {
-    pub fn new(params: ChaCha20Params, hdpath: Option<String>) -> ClientResult<Self> {
+    pub fn new(params: ChaCha20ParamsEB, hdpath: Option<String>) -> ClientResult<Self> {
         let key = Key::clone_from_slice(&hex_decode(&params.key)?);
         let nonce = Nonce::clone_from_slice(&hex_decode(&params.nonce)?);
 

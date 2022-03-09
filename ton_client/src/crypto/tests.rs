@@ -31,12 +31,12 @@ use crate::crypto::nacl::{
 };
 use crate::crypto::{ParamsOfChaCha20, ResultOfChaCha20};
 use crate::crypto::boxes::crypto_box::{
-    BoxEncryptionAlgorithm, ChaCha20Params, CryptoBoxSecret, ParamsOfCreateCryptoBox, 
+    BoxEncryptionAlgorithm, ChaCha20ParamsCB, CryptoBoxSecret, ParamsOfCreateCryptoBox, 
     ParamsOfGetEncryptionBoxFromCryptoBox, ParamsOfGetSigningBoxFromCryptoBox, RegisteredCryptoBox, 
     ResultOfGetCryptoBoxInfo, ResultOfGetCryptoBoxSeedPhrase,
 };
-use crate::crypto::boxes::encryption_box::nacl_box::NaclBoxParams;
-use crate::crypto::boxes::encryption_box::nacl_secret_box::NaclSecretBoxParams;
+use crate::crypto::boxes::encryption_box::nacl_box::NaclBoxParamsEB;
+use crate::crypto::boxes::encryption_box::nacl_secret_box::NaclSecretBoxParamsEB;
 use crate::json_interface::crypto::{
     ParamsOfAppPasswordProvider, ParamsOfAppSigningBox, ResultOfAppPasswordProvider,
     ResultOfAppSigningBox,
@@ -906,7 +906,7 @@ async fn test_aes_params(key: &str, data: &str, encrypted: &str) {
         .request_async::<_, RegisteredEncryptionBox>(
             "crypto.create_encryption_box",
             ParamsOfCreateEncryptionBox {
-                algorithm: EncryptionAlgorithm::AES(AesParams {
+                algorithm: EncryptionAlgorithm::AES(AesParamsEB {
                     key: key.clone(),
                     iv: Some(iv.clone()),
                     mode: CipherMode::CBC,
@@ -978,7 +978,7 @@ async fn test_chacha20_encryption_box() {
             "crypto.create_encryption_box",
             ParamsOfCreateEncryptionBox {
                 algorithm: EncryptionAlgorithm::ChaCha20(
-                    super::boxes::encryption_box::chacha20::ChaCha20Params {
+                    super::boxes::encryption_box::chacha20::ChaCha20ParamsEB {
                         key: key.clone(),
                         nonce: nonce.clone(),
                     }
@@ -1047,7 +1047,7 @@ async fn test_nacl_encryption_box() {
             "crypto.create_encryption_box",
             ParamsOfCreateEncryptionBox {
                 algorithm: EncryptionAlgorithm::NaclBox(
-                    NaclBoxParams {
+                    NaclBoxParamsEB {
                         their_public: THEIR_PUBLIC.to_string(),
                         secret: SECRET.to_string(),
                         nonce: NONCE.to_string(),
@@ -1117,7 +1117,7 @@ async fn test_nacl_secret_encryption_box() {
             "crypto.create_encryption_box",
             ParamsOfCreateEncryptionBox {
                 algorithm: EncryptionAlgorithm::NaclSecretBox(
-                    NaclSecretBoxParams {
+                    NaclSecretBoxParamsEB {
                         key: KEY.to_string(),
                         nonce: NONCE.to_string(),
                     }
@@ -1441,7 +1441,7 @@ async fn test_crypto_box_encryption_boxes() -> ton_types::Result<()> {
         ParamsOfGetEncryptionBoxFromCryptoBox {
             handle: crypto_box.handle.0,
             hdpath: None,
-            algorithm: BoxEncryptionAlgorithm::ChaCha20(ChaCha20Params {
+            algorithm: BoxEncryptionAlgorithm::ChaCha20(ChaCha20ParamsCB {
                 nonce: nonce.clone(),
             }),
             secret_lifetime: None,
@@ -1487,7 +1487,7 @@ async fn test_crypto_box_encryption_boxes() -> ton_types::Result<()> {
         ParamsOfGetEncryptionBoxFromCryptoBox {
             handle: crypto_box.handle.0,
             hdpath: None,
-            algorithm: BoxEncryptionAlgorithm::ChaCha20(ChaCha20Params {
+            algorithm: BoxEncryptionAlgorithm::ChaCha20(ChaCha20ParamsCB {
                 nonce: nonce.clone(),
             }),
             secret_lifetime: Some(u32::MAX),
