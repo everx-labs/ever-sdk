@@ -1,7 +1,7 @@
 # Blockchain Queries
 
-UNSTABLE. \
-New API that includes a set of functions for pagination of `blocks`, `key_blocks`, `transactions` and account’s transactions via blockchain-based cursor that stays the same for all the endpoints, compared to an approach with an artificial database cursor - like timestamp or sequential index - that may vary from instance to instance.&#x20;
+UNSTABLE.\
+New API that includes a set of functions for pagination of `blocks`, `key_blocks`, `transactions` and account’s transactions via blockchain-based cursor that stays the same for all the endpoints, compared to an approach with an artificial database cursor - like timestamp or sequential index - that may vary from instance to instance.
 
 May be useful for Integrators and DApps who needs to sequentially read all blocks or transactions from API, due to inefficiency of simple collection pagination by timestamps or `seq_no` in multithreaded Everscale environment, also such simple pagination may not work when there are too many objects with the same timestamp.
 
@@ -67,73 +67,63 @@ Result:
 
 ### Workchain blocks
 
-Get all shardchain block chains for materchain block with `seq_no` = 13,928,620.
+Get all 0 workchain blocks for materchain block range from `seq_no` = 13928620 to 13928625.
 
 ```graphql
 query {
-	blockchain {
-		workchain_blocks(
-			master_seq_no: {
-				start: 13928620
-				end: 13928621
-			}
-		) {
-			edges {
-				node {
-					id
-					shard
-					seq_no
-					hash
-					file_hash
-				}
-			}
-		}
+workchain_blocks(
+	master_seq_no: {
+		start: 13928620
+		end: 13928621
 	}
+      workchain:0
+) {
+	edges {
+		node {
+          workchain_id
+			id
+			shard
+			seq_no
+			hash
+			file_hash
+		}
+        cursor
+	}
+      pageInfo{
+        endCursor
+      }
+}
 }
 ```
 
 Result:
 
 ```json
-{
-  "data": {
-    "blockchain": {
-      "workchain_blocks": {
-        "edges": [
-          {
-            "node": {
-              "id": "block/1a23b2d52c5030b98c685ab3fa400507e8f68454f34b17584b30e73f14fec445",
-              "shard": "1800000000000000",
-              "seq_no": 20272673,
-              "hash": "1a23b2d52c5030b98c685ab3fa400507e8f68454f34b17584b30e73f14fec445",
-              "file_hash": "f3b745078896e2457f828f0a8ed88c81ddf973cf0ec5f7e6f8605156646cbf9f"
-            }
+"data": {
+    "workchain_blocks": {
+      "edges": [
+        {
+          "node": {
+            "workchain_id": 0,
+            "id": "block/1a23b2d52c5030b98c685ab3fa400507e8f68454f34b17584b30e73f14fec445",
+            "shard": "1800000000000000",
+            "seq_no": 20272673,
+            "hash": "1a23b2d52c5030b98c685ab3fa400507e8f68454f34b17584b30e73f14fec445",
+            "file_hash": "f3b745078896e2457f828f0a8ed88c81ddf973cf0ec5f7e6f8605156646cbf9f"
           },
-          {
-            "node": {
-              "id": "block/1d1c37dc1f074f8a1e84b7e16f3517ba6fdae2fe92cb52de90cbafef17ce672b",
-              "shard": "1800000000000000",
-              "seq_no": 20272674,
-              "hash": "1d1c37dc1f074f8a1e84b7e16f3517ba6fdae2fe92cb52de90cbafef17ce672b",
-              "file_hash": "eba0d9ebe14b7205088b5c4ebdf6616e5724abf9649d87617e47b77f927f0489"
-            }
+          "cursor": "5d488ac0061355621118"
+        },
+        {
+          "node": {
+            "workchain_id": 0,
+            "id": "block/1d1c37dc1f074f8a1e84b7e16f3517ba6fdae2fe92cb52de90cbafef17ce672b",
+            "shard": "1800000000000000",
+            "seq_no": 20272674,
+            "hash": "1d1c37dc1f074f8a1e84b7e16f3517ba6fdae2fe92cb52de90cbafef17ce672b",
+            "file_hash": "eba0d9ebe14b7205088b5c4ebdf6616e5724abf9649d87617e47b77f927f0489"
           },
-          {
-            "node": {
-              "id": "block/40ae559adaea29153f8280ebc323c636379745ccf195a4edfb9f68019a463817",
-              "shard": "1800000000000000",
-              "seq_no": 20272675,
-              "hash": "40ae559adaea29153f8280ebc323c636379745ccf195a4edfb9f68019a463817",
-              "file_hash": "2d21ffc832a63003feb1e2dffa4be4c4322169b016e4c20cf67a50bbab0be13b"
-            }
-          },
-          
-          // ... other shards are omitted ...
-        ]
-      }
-    }
-  }
-}
+          "cursor": "5d488ac0061355622118"
+        },
 ```
 
 ### Workchain transactions
