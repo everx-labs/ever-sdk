@@ -1220,61 +1220,29 @@
           "enum_types": [
             {
               "name": "AES",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "value",
-                  "type": "Ref",
-                  "ref_name": "crypto.AesParams",
-                  "summary": null,
-                  "description": null
-                }
-              ],
+              "type": "Ref",
+              "ref_name": "crypto.AesParamsEB",
               "summary": null,
               "description": null
             },
             {
               "name": "ChaCha20",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "value",
-                  "type": "Ref",
-                  "ref_name": "ChaCha20Params",
-                  "summary": null,
-                  "description": null
-                }
-              ],
+              "type": "Ref",
+              "ref_name": "crypto.ChaCha20ParamsEB",
               "summary": null,
               "description": null
             },
             {
               "name": "NaclBox",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "value",
-                  "type": "Ref",
-                  "ref_name": "NaclBoxParams",
-                  "summary": null,
-                  "description": null
-                }
-              ],
+              "type": "Ref",
+              "ref_name": "crypto.NaclBoxParamsEB",
               "summary": null,
               "description": null
             },
             {
               "name": "NaclSecretBox",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "value",
-                  "type": "Ref",
-                  "ref_name": "NaclSecretBoxParams",
-                  "summary": null,
-                  "description": null
-                }
-              ],
+              "type": "Ref",
+              "ref_name": "crypto.NaclSecretBoxParamsEB",
               "summary": null,
               "description": null
             }
@@ -1321,7 +1289,7 @@
           "description": null
         },
         {
-          "name": "AesParams",
+          "name": "AesParamsEB",
           "type": "Struct",
           "struct_fields": [
             {
@@ -1368,6 +1336,233 @@
                 "type": "String"
               },
               "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ChaCha20ParamsEB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "key",
+              "type": "String",
+              "summary": "256-bit key.",
+              "description": "Must be encoded with `hex`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "96-bit nonce.",
+              "description": "Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "NaclBoxParamsEB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "their_public",
+              "type": "String",
+              "summary": "256-bit key.",
+              "description": "Must be encoded with `hex`."
+            },
+            {
+              "name": "secret",
+              "type": "String",
+              "summary": "256-bit key.",
+              "description": "Must be encoded with `hex`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "96-bit nonce.",
+              "description": "Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "NaclSecretBoxParamsEB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "key",
+              "type": "String",
+              "summary": "Secret key - unprefixed 0-padded to 64 symbols hex string",
+              "description": null
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "Nonce in `hex`",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "CryptoBoxSecret",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "RandomSeedPhrase",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "dictionary",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "wordcount",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": "Creates Crypto Box from a random seed phrase. This option can be used if a developer doesn't want the seed phrase to leave the core library's memory, where it is stored encrypted.",
+              "description": "This type should be used upon the first wallet initialization, all further initializations\nshould use `EncryptedSecret` type instead.\n\nGet `encrypted_secret` with `get_crypto_box_info` function and store it on your side."
+            },
+            {
+              "name": "PredefinedSeedPhrase",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "phrase",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "dictionary",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "wordcount",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": "Restores crypto box instance from an existing seed phrase. This type should be used when Crypto Box is initialized from a seed phrase, entered by a user.",
+              "description": "This type should be used only upon the first wallet initialization, all further\ninitializations should use `EncryptedSecret` type instead.\n\nGet `encrypted_secret` with `get_crypto_box_info` function and store it on your side."
+            },
+            {
+              "name": "EncryptedSecret",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "encrypted_secret",
+                  "type": "String",
+                  "summary": "It is an object, containing encrypted seed phrase or private key (now we support only seed phrase).",
+                  "description": null
+                }
+              ],
+              "summary": "Use this type for wallet reinitializations, when you already have `encrypted_secret` on hands. To get `encrypted_secret`, use `get_crypto_box_info` function after you initialized your crypto box for the first time.",
+              "description": "It is an object, containing seed phrase or private key, encrypted with\n`secret_encryption_salt` and password from `password_provider`.\n\nNote that if you want to change salt or password provider, then you need to reinitialize\nthe wallet with `PredefinedSeedPhrase`, then get `EncryptedSecret` via `get_crypto_box_info`,\nstore it somewhere, and only after that initialize the wallet with `EncryptedSecret` type."
+            }
+          ],
+          "summary": "Crypto Box Secret.",
+          "description": null
+        },
+        {
+          "name": "CryptoBoxHandle",
+          "type": "Number",
+          "number_type": "UInt",
+          "number_size": 32,
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "BoxEncryptionAlgorithm",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "ChaCha20",
+              "type": "Ref",
+              "ref_name": "crypto.ChaCha20ParamsCB",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclBox",
+              "type": "Ref",
+              "ref_name": "crypto.NaclBoxParamsCB",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclSecretBox",
+              "type": "Ref",
+              "ref_name": "crypto.NaclSecretBoxParamsCB",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ChaCha20ParamsCB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "96-bit nonce.",
+              "description": "Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "NaclBoxParamsCB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "their_public",
+              "type": "String",
+              "summary": "256-bit key.",
+              "description": "Must be encoded with `hex`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "96-bit nonce.",
+              "description": "Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "NaclSecretBoxParamsCB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "Nonce in `hex`",
               "description": null
             }
           ],
@@ -2473,7 +2668,7 @@
             {
               "name": "secret",
               "type": "Ref",
-              "ref_name": "CryptoBoxSecret",
+              "ref_name": "crypto.CryptoBoxSecret",
               "summary": "Cryptobox secret",
               "description": null
             }
@@ -2488,7 +2683,7 @@
             {
               "name": "handle",
               "type": "Ref",
-              "ref_name": "CryptoBoxHandle",
+              "ref_name": "crypto.CryptoBoxHandle",
               "summary": null,
               "description": null
             }
@@ -2665,7 +2860,7 @@
             {
               "name": "algorithm",
               "type": "Ref",
-              "ref_name": "BoxEncryptionAlgorithm",
+              "ref_name": "crypto.BoxEncryptionAlgorithm",
               "summary": "Encryption algorithm.",
               "description": null
             },
