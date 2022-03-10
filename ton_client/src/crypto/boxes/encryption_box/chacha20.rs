@@ -18,7 +18,7 @@ pub struct ChaCha20ParamsEB {
 }
 
 #[derive(Debug)]
-pub(crate) struct ChaCha20EncryptionBox {
+pub struct ChaCha20EncryptionBox {
     key: Key,
     nonce: Nonce,
     hdpath: Option<String>,

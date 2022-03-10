@@ -34,7 +34,7 @@ pub struct AesInfo {
     pub iv: Option<String>,
 }
 
-pub(crate) struct AesEncryptionBox {
+pub struct AesEncryptionBox {
     key: Vec<u8>,
     mode: CipherMode,
     iv: Vec<u8>,

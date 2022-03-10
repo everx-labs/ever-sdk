@@ -48,10 +48,10 @@ pub use crate::crypto::boxes::encryption_box::{
     ParamsOfEncryptionBoxEncrypt, ResultOfEncryptionBoxEncrypt,
     ParamsOfEncryptionBoxDecrypt, ResultOfEncryptionBoxDecrypt,
 };
-pub use crate::crypto::boxes::encryption_box::aes::{AesInfo, AesParamsEB};
-pub use crate::crypto::boxes::encryption_box::chacha20::ChaCha20ParamsEB;
-pub use crate::crypto::boxes::encryption_box::nacl_box::NaclBoxParamsEB;
-pub use crate::crypto::boxes::encryption_box::nacl_secret_box::NaclSecretBoxParamsEB;
+pub use crate::crypto::boxes::encryption_box::aes::{AesInfo, AesParamsEB, AesEncryptionBox};
+pub use crate::crypto::boxes::encryption_box::chacha20::{ChaCha20ParamsEB, ChaCha20EncryptionBox};
+pub use crate::crypto::boxes::encryption_box::nacl_box::{NaclBoxParamsEB, NaclEncryptionBox};
+pub use crate::crypto::boxes::encryption_box::nacl_secret_box::{NaclSecretBoxParamsEB, NaclSecretEncryptionBox};
 pub use crate::crypto::boxes::crypto_box::ChaCha20ParamsCB;
 pub use crate::crypto::boxes::crypto_box::NaclBoxParamsCB;
 pub use crate::crypto::boxes::crypto_box::NaclSecretBoxParamsCB;

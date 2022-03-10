@@ -17,7 +17,7 @@ pub struct NaclBoxParamsEB {
 }
 
 #[derive(Debug)]
-pub(crate) struct NaclEncryptionBox {
+pub struct NaclEncryptionBox {
     params: NaclBoxParamsEB,
     hdpath: Option<String>,
 }
