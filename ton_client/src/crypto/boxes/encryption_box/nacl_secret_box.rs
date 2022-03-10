@@ -10,7 +10,7 @@ use crate::crypto::{
 use crate::error::ClientResult;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, ZeroizeOnDrop)]
-pub struct NaclSecretBoxParams {
+pub struct NaclSecretBoxParamsEB {
     /// Secret key - unprefixed 0-padded to 64 symbols hex string
     pub key: String,
     /// Nonce in `hex`
@@ -19,12 +19,12 @@ pub struct NaclSecretBoxParams {
 
 #[derive(Debug)]
 pub(crate) struct NaclSecretEncryptionBox {
-    params: NaclSecretBoxParams,
+    params: NaclSecretBoxParamsEB,
     hdpath: Option<String>,
 }
 
 impl NaclSecretEncryptionBox {
-    pub fn new(params: NaclSecretBoxParams, hdpath: Option<String>) -> Self {
+    pub fn new(params: NaclSecretBoxParamsEB, hdpath: Option<String>) -> Self {
         Self { params, hdpath }
     }
 }
