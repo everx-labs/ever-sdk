@@ -119,9 +119,27 @@ Crypto functions.
 
 [CipherMode](#ciphermode)
 
-[AesParams](#aesparams)
+[AesParamsEB](#aesparamseb)
 
 [AesInfo](#aesinfo)
+
+[ChaCha20ParamsEB](#chacha20paramseb)
+
+[NaclBoxParamsEB](#naclboxparamseb)
+
+[NaclSecretBoxParamsEB](#naclsecretboxparamseb)
+
+[CryptoBoxSecret](#cryptoboxsecret) – Crypto Box Secret.
+
+[CryptoBoxHandle](#cryptoboxhandle)
+
+[BoxEncryptionAlgorithm](#boxencryptionalgorithm)
+
+[ChaCha20ParamsCB](#chacha20paramscb)
+
+[NaclBoxParamsCB](#naclboxparamscb)
+
+[NaclSecretBoxParamsCB](#naclsecretboxparamscb)
 
 [ParamsOfFactorize](#paramsoffactorize)
 
@@ -1315,14 +1333,14 @@ function create_crypto_box(
 ```
 ### Parameters
 - `secret_encryption_salt`: _string_ – Salt used for secret encryption. For example, a mobile device can use device ID as salt.
-- `secret`: _CryptoBoxSecret_ – Cryptobox secret
+- `secret`: _[CryptoBoxSecret](mod_crypto.md#cryptoboxsecret)_ – Cryptobox secret
 - `obj`: [AppPasswordProvider](#apppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
 
 
 
 ### Result
 
-- `handle`: _CryptoBoxHandle_
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
 
 
 ## remove_crypto_box
@@ -1339,7 +1357,7 @@ function remove_crypto_box(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _CryptoBoxHandle_
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
 
 
 ## get_crypto_box_info
@@ -1360,7 +1378,7 @@ function get_crypto_box_info(
 ): Promise<ResultOfGetCryptoBoxInfo>;
 ```
 ### Parameters
-- `handle`: _CryptoBoxHandle_
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
 
 
 ### Result
@@ -1390,7 +1408,7 @@ function get_crypto_box_seed_phrase(
 ): Promise<ResultOfGetCryptoBoxSeedPhrase>;
 ```
 ### Parameters
-- `handle`: _CryptoBoxHandle_
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
 
 
 ### Result
@@ -1461,7 +1479,7 @@ function get_encryption_box_from_crypto_box(
 - `handle`: _number_ – Crypto Box Handle.
 - `hdpath`?: _string_ – HD key derivation path.
 <br>By default, Everscale HD path is used.
-- `algorithm`: _BoxEncryptionAlgorithm_ – Encryption algorithm.
+- `algorithm`: _[BoxEncryptionAlgorithm](mod_crypto.md#boxencryptionalgorithm)_ – Encryption algorithm.
 - `secret_lifetime`?: _number_ – Store derived secret for encryption algorithm for this lifetime (in ms). The timer starts after each encryption box operation. Secrets will be deleted (overwritten with zeroes) after each encryption operation, if this value is not set.
 
 
@@ -1484,7 +1502,7 @@ function clear_crypto_box_secret_cache(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _CryptoBoxHandle_
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
 
 
 ## register_signing_box
@@ -1870,50 +1888,53 @@ type EncryptionBoxInfo = {
 
 ## EncryptionAlgorithm
 ```ts
-type EncryptionAlgorithm = {
+type EncryptionAlgorithm = ({
     type: 'AES'
-    value: AesParams
-} | {
+} & AesParamsEB) | ({
     type: 'ChaCha20'
-    value: ChaCha20Params
-} | {
+} & ChaCha20ParamsEB) | ({
     type: 'NaclBox'
-    value: NaclBoxParams
-} | {
+} & NaclBoxParamsEB) | ({
     type: 'NaclSecretBox'
-    value: NaclSecretBoxParams
-}
+} & NaclSecretBoxParamsEB)
 ```
 Depends on value of the  `type` field.
 
 When _type_ is _'AES'_
 
-
-- `value`: _[AesParams](mod_crypto.md#aesparams)_
+- `mode`: _[CipherMode](mod_crypto.md#ciphermode)_
+- `key`: _string_
+- `iv`?: _string_
 
 When _type_ is _'ChaCha20'_
 
-
-- `value`: _ChaCha20Params_
+- `key`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
 
 When _type_ is _'NaclBox'_
 
-
-- `value`: _NaclBoxParams_
+- `their_public`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `secret`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
 
 When _type_ is _'NaclSecretBox'_
 
-
-- `value`: _NaclSecretBoxParams_
+- `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
+- `nonce`: _string_ – Nonce in `hex`
 
 
 Variant constructors:
 
 ```ts
-function encryptionAlgorithmAES(value: AesParams): EncryptionAlgorithm;
-function encryptionAlgorithmChaCha20(value: ChaCha20Params): EncryptionAlgorithm;
-function encryptionAlgorithmNaclBox(value: NaclBoxParams): EncryptionAlgorithm;
-function encryptionAlgorithmNaclSecretBox(value: NaclSecretBoxParams): EncryptionAlgorithm;
+function encryptionAlgorithmAES(params: AesParamsEB): EncryptionAlgorithm;
+function encryptionAlgorithmChaCha20(params: ChaCha20ParamsEB): EncryptionAlgorithm;
+function encryptionAlgorithmNaclBox(params: NaclBoxParamsEB): EncryptionAlgorithm;
+function encryptionAlgorithmNaclSecretBox(params: NaclSecretBoxParamsEB): EncryptionAlgorithm;
 ```
 
 ## CipherMode
@@ -1935,9 +1956,9 @@ One of the following value:
 - `OFB = "OFB"`
 
 
-## AesParams
+## AesParamsEB
 ```ts
-type AesParams = {
+type AesParamsEB = {
     mode: CipherMode,
     key: string,
     iv?: string
@@ -1957,6 +1978,191 @@ type AesInfo = {
 ```
 - `mode`: _[CipherMode](mod_crypto.md#ciphermode)_
 - `iv`?: _string_
+
+
+## ChaCha20ParamsEB
+```ts
+type ChaCha20ParamsEB = {
+    key: string,
+    nonce: string
+}
+```
+- `key`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+
+## NaclBoxParamsEB
+```ts
+type NaclBoxParamsEB = {
+    their_public: string,
+    secret: string,
+    nonce: string
+}
+```
+- `their_public`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `secret`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+
+## NaclSecretBoxParamsEB
+```ts
+type NaclSecretBoxParamsEB = {
+    key: string,
+    nonce: string
+}
+```
+- `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
+- `nonce`: _string_ – Nonce in `hex`
+
+
+## CryptoBoxSecret
+Crypto Box Secret.
+
+```ts
+type CryptoBoxSecret = {
+    type: 'RandomSeedPhrase'
+    dictionary: number,
+    wordcount: number
+} | {
+    type: 'PredefinedSeedPhrase'
+    phrase: string,
+    dictionary: number,
+    wordcount: number
+} | {
+    type: 'EncryptedSecret'
+    encrypted_secret: string
+}
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'RandomSeedPhrase'_
+
+Creates Crypto Box from a random seed phrase. This option can be used if a developer doesn't want the seed phrase to leave the core library's memory, where it is stored encrypted.
+
+This type should be used upon the first wallet initialization, all further initializations
+should use `EncryptedSecret` type instead.
+
+Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
+
+
+- `dictionary`: _number_
+- `wordcount`: _number_
+
+When _type_ is _'PredefinedSeedPhrase'_
+
+Restores crypto box instance from an existing seed phrase. This type should be used when Crypto Box is initialized from a seed phrase, entered by a user.
+
+This type should be used only upon the first wallet initialization, all further
+initializations should use `EncryptedSecret` type instead.
+
+Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
+
+
+- `phrase`: _string_
+- `dictionary`: _number_
+- `wordcount`: _number_
+
+When _type_ is _'EncryptedSecret'_
+
+Use this type for wallet reinitializations, when you already have `encrypted_secret` on hands. To get `encrypted_secret`, use `get_crypto_box_info` function after you initialized your crypto box for the first time.
+
+It is an object, containing seed phrase or private key, encrypted with
+`secret_encryption_salt` and password from `password_provider`.
+
+Note that if you want to change salt or password provider, then you need to reinitialize
+the wallet with `PredefinedSeedPhrase`, then get `EncryptedSecret` via `get_crypto_box_info`,
+store it somewhere, and only after that initialize the wallet with `EncryptedSecret` type.
+
+
+- `encrypted_secret`: _string_ – It is an object, containing encrypted seed phrase or private key (now we support only seed phrase).
+
+
+Variant constructors:
+
+```ts
+function cryptoBoxSecretRandomSeedPhrase(dictionary: number, wordcount: number): CryptoBoxSecret;
+function cryptoBoxSecretPredefinedSeedPhrase(phrase: string, dictionary: number, wordcount: number): CryptoBoxSecret;
+function cryptoBoxSecretEncryptedSecret(encrypted_secret: string): CryptoBoxSecret;
+```
+
+## CryptoBoxHandle
+```ts
+type CryptoBoxHandle = number
+```
+
+
+## BoxEncryptionAlgorithm
+```ts
+type BoxEncryptionAlgorithm = ({
+    type: 'ChaCha20'
+} & ChaCha20ParamsCB) | ({
+    type: 'NaclBox'
+} & NaclBoxParamsCB) | ({
+    type: 'NaclSecretBox'
+} & NaclSecretBoxParamsCB)
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'ChaCha20'_
+
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+When _type_ is _'NaclBox'_
+
+- `their_public`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+When _type_ is _'NaclSecretBox'_
+
+- `nonce`: _string_ – Nonce in `hex`
+
+
+Variant constructors:
+
+```ts
+function boxEncryptionAlgorithmChaCha20(params: ChaCha20ParamsCB): BoxEncryptionAlgorithm;
+function boxEncryptionAlgorithmNaclBox(params: NaclBoxParamsCB): BoxEncryptionAlgorithm;
+function boxEncryptionAlgorithmNaclSecretBox(params: NaclSecretBoxParamsCB): BoxEncryptionAlgorithm;
+```
+
+## ChaCha20ParamsCB
+```ts
+type ChaCha20ParamsCB = {
+    nonce: string
+}
+```
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+
+## NaclBoxParamsCB
+```ts
+type NaclBoxParamsCB = {
+    their_public: string,
+    nonce: string
+}
+```
+- `their_public`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+
+## NaclSecretBoxParamsCB
+```ts
+type NaclSecretBoxParamsCB = {
+    nonce: string
+}
+```
+- `nonce`: _string_ – Nonce in `hex`
 
 
 ## ParamsOfFactorize
@@ -2557,7 +2763,7 @@ type ParamsOfCreateCryptoBox = {
 }
 ```
 - `secret_encryption_salt`: _string_ – Salt used for secret encryption. For example, a mobile device can use device ID as salt.
-- `secret`: _CryptoBoxSecret_ – Cryptobox secret
+- `secret`: _[CryptoBoxSecret](mod_crypto.md#cryptoboxsecret)_ – Cryptobox secret
 
 
 ## RegisteredCryptoBox
@@ -2566,7 +2772,7 @@ type RegisteredCryptoBox = {
     handle: CryptoBoxHandle
 }
 ```
-- `handle`: _CryptoBoxHandle_
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
 
 
 ## ParamsOfAppPasswordProvider
@@ -2682,7 +2888,7 @@ type ParamsOfGetEncryptionBoxFromCryptoBox = {
 - `handle`: _number_ – Crypto Box Handle.
 - `hdpath`?: _string_ – HD key derivation path.
 <br>By default, Everscale HD path is used.
-- `algorithm`: _BoxEncryptionAlgorithm_ – Encryption algorithm.
+- `algorithm`: _[BoxEncryptionAlgorithm](mod_crypto.md#boxencryptionalgorithm)_ – Encryption algorithm.
 - `secret_lifetime`?: _number_ – Store derived secret for encryption algorithm for this lifetime (in ms). The timer starts after each encryption box operation. Secrets will be deleted (overwritten with zeroes) after each encryption operation, if this value is not set.
 
 
