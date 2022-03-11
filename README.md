@@ -4,7 +4,7 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 
 **Get quick help in our telegram channel:**
 
-[![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ton\_sdk)
+[![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ever_sdk)
 
 ## Content Table
 - [TON SDK](#ton-sdk)
