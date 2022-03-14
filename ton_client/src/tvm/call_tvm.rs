@@ -21,7 +21,7 @@ use ton_block::{
     Message, MsgAddressInt, OutAction, OutActions, Serializable,
 };
 use ton_types::dictionary::HashmapType;
-use ton_types::{Cell, SliceData};
+use ton_types::{Cell, SliceData, UInt256};
 use ton_vm::executor::gas::gas_state::Gas;
 use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
 
@@ -54,6 +54,7 @@ pub(crate) fn call_tvm(
         options.block_lt,
         options.transaction_lt,
         code.clone(),
+        account.init_code_hash(),
     );
     ctrls
         .put(7, &mut sci.into_temp_data())
@@ -162,6 +163,7 @@ fn build_contract_info(
     block_lt: u64,
     tr_lt: u64,
     code: Cell,
+    init_code_hash: Option<&UInt256>,
 ) -> ton_vm::SmartContractInfo {
     let mut info =
         ton_vm::SmartContractInfo::with_myself(address.serialize().unwrap_or_default().into());
@@ -172,6 +174,9 @@ fn build_contract_info(
     *info.balance_remaining_other_mut() = balance.other_as_hashmap();
     if let Some(data) = config_params.config_params.data() {
         info.set_config_params(data.clone());
+    }
+    if let Some(hash) = init_code_hash {
+        info.set_init_code_hash(hash.clone());
     }
     info.set_mycode(code);
     info
