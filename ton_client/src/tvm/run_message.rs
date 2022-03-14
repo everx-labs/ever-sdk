@@ -427,5 +427,5 @@ where
         }
     };
 
-    Ok((transaction.0, account_root))
+    Ok((transaction, account_root))
 }
