@@ -6,6 +6,7 @@
 
 ```graphql
 query {
+  blockchain{
    key_blocks( last:1){
           edges {
            node {
@@ -21,7 +22,9 @@ query {
            }
           }
    }
+  }
 }
+
 ```
 
 Result:
@@ -29,20 +32,22 @@ Result:
 ```graphql
 {
   "data": {
-    "key_blocks": {
-      "edges": [
-        {
-          "node": {
-            "master": {
-              "config": {
-                "p34": {
-                  "total_weight": "0xfffffffffffffa2"
+    "blockchain": {
+      "key_blocks": {
+        "edges": [
+          {
+            "node": {
+              "master": {
+                "config": {
+                  "p34": {
+                    "total_weight": "0xfffffffffffffff"
+                  }
                 }
               }
             }
           }
-        }
-      ]
+        ]
+      }
     }
   }
 }
