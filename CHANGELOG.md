@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 ## [1.31.0] – 2022-03-09
 
 ### New 
+
+- `network.queries_protocol` config parameter allows selecting protocol the SDK uses to send queries 
+  to the GraphQL endpoint:
+  - `HTTP` – SDK performs single HTTP-request for each query.
+  - `WS` – SDK uses single WebSocket connection to send all requests. This protocol is a preferable
+    way when the application sends many GraphQL queries in parallel. 
+
 **crypto module:**
 - `Cryptobox` introduced: root crypto object that stores encrypted secret and acts as a factory for all crypto primitives used in SDK. 
   Crypto box provides signing and encryption boxes.

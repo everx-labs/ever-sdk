@@ -21,11 +21,12 @@ use crate::crypto::{
 };
 use crate::json_interface::interop::{ResponseType, StringData};
 use crate::json_interface::modules::{AbiModule, NetModule, ProcessingModule};
+use crate::json_interface::runtime::Runtime;
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
 use crate::{
     crypto::KeyPair,
     error::{ClientError, ClientResult},
-    net::{ParamsOfWaitForCollection, ParamsOfQueryTransactionTree, ResultOfQueryTransactionTree},
+    net::{ParamsOfQueryTransactionTree, ParamsOfWaitForCollection, ResultOfQueryTransactionTree},
     tc_create_context, tc_destroy_context, ContextHandle,
 };
 use api_info::ApiModule;
@@ -41,7 +42,6 @@ use tokio::sync::{
     oneshot::{channel, Sender},
     Mutex,
 };
-use crate::json_interface::runtime::Runtime;
 
 mod common;
 
@@ -116,7 +116,6 @@ impl TestRuntime {
 lazy_static::lazy_static! {
     static ref TEST_RUNTIME: Mutex<TestRuntime> = Mutex::new(TestRuntime::new());
 }
-
 
 pub(crate) struct TestClient {
     context: ContextHandle,
@@ -299,6 +298,18 @@ impl TestClient {
             .collect()
     }
 
+    pub fn queries_protocol() -> Option<String> {
+        let protocol = std::env::var("TON_QUERIES_PROTOCOL")
+            .unwrap_or("".into())
+            .trim()
+            .to_string();
+        if protocol.is_empty() {
+            None
+        } else {
+            Some(protocol)
+        }
+    }
+
     pub fn node_se() -> bool {
         std::env::var("TON_USE_SE").unwrap_or(DEFAULT_TON_USE_SE.to_owned()) == "true".to_owned()
     }
@@ -349,6 +360,7 @@ impl TestClient {
         Self::new_with_config(json!({
             "network": {
                 "endpoints": TestClient::endpoints(),
+                "queries_protocol": TestClient::queries_protocol(),
             }
         }))
     }
@@ -635,15 +647,19 @@ impl TestClient {
             .unwrap();
 
         // wait for tokens reception
-        let _: ResultOfQueryTransactionTree = self.request_async(
-            "net.query_transaction_tree",
-            ParamsOfQueryTransactionTree {
-                in_msg: run_result.transaction["in_msg"].as_str().unwrap().to_string(),
-                ..Default::default()
-            },
-        )
-        .await
-        .unwrap();
+        let _: ResultOfQueryTransactionTree = self
+            .request_async(
+                "net.query_transaction_tree",
+                ParamsOfQueryTransactionTree {
+                    in_msg: run_result.transaction["in_msg"]
+                        .as_str()
+                        .unwrap()
+                        .to_string(),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
     }
 
     pub(crate) async fn deploy_with_giver_async(

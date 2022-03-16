@@ -1290,3 +1290,43 @@ async fn low_level_subscribe() {
         .await
         .unwrap();
 }
+
+#[tokio::test(core_threads = 2)]
+async fn query_using_ws() {
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": TestClient::endpoints(),
+            "queries_protocol": "WS"
+        }
+    }));
+
+    let accounts: ResultOfQueryCollection = client
+        .request_async(
+            "net.query_collection",
+            ParamsOfQueryCollection {
+                collection: "accounts".to_owned(),
+                filter: Some(json!({})),
+                result: "id".to_owned(),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    assert!(accounts.result.len() > 0);
+    let messages: ResultOfQueryCollection = client
+        .request_async(
+            "net.query_collection",
+            ParamsOfQueryCollection {
+                collection: "messages".to_owned(),
+                filter: Some(json!({})),
+                result: "id".to_owned(),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    assert!(messages.result.len() > 0);
+}
+

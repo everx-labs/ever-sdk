@@ -46,8 +46,8 @@ pub use transaction_tree::{
     ResultOfQueryTransactionTree, TransactionNode,
 };
 pub use types::{
-    NetworkConfig, ACCOUNTS_COLLECTION, BLOCKS_COLLECTION, MESSAGES_COLLECTION,
-    TRANSACTIONS_COLLECTION,
+    NetworkConfig, NetworkQueriesProtocol, ACCOUNTS_COLLECTION, BLOCKS_COLLECTION,
+    MESSAGES_COLLECTION, TRANSACTIONS_COLLECTION,
 };
 
 use crate::client::ClientContext;
