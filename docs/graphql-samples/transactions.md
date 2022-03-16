@@ -2,11 +2,11 @@
 
 ## Paginate blockchain transactions
 
-Sometimes it is needed to  paginate all the network transactions.&#x20;
+Sometimes it is needed to  paginate all the network transactions. &#x20;
 
 Due to the fact that Everscale is a multi-chain multi-threaded blockchain, pagination is not a straightforward operation and requires some special cursor and order of blocks and transactions inside them.
 
-We provide our users with such functionality.
+We provide our users with such functionality.  &#x20;
 
 Read more about the used cursor-based approach in [blocks pagination section.](blocks.md#blocks-pagination)
 
@@ -16,24 +16,26 @@ If you do not specify time range you will start pagination from the start (`firs
 
 Here is a simple query how to get last 3 transactions of the network and paginate backwards.
 
-You can paginate from the beginning and specify masterchain seq\_no range or masterchain time range to paginate within some time period. Check how to define this range in[ blocks pagination section.](blocks.md#paginate\_by\_seqno)
+You can paginate from the beginning, specify time period and number of returned items. Check how to implement different pagination use-cases in[ blocks pagination section.](blocks.md#paginate\_by\_seqno)
 
 ```graphql
 query{
-  workchain_transactions(
-    last:3
-  ){
-    edges{
-      node{
-        id
-        now
+  blockchain{
+      transactions(
+        last:3
+      ){
+        edges{
+          node{
+            id
+            now
+          }
+          cursor
+        }
+        pageInfo{
+          startCursor
+          hasPreviousPage
+        }
       }
-      cursor
-    }
-    pageInfo{
-      startCursor
-      hasPreviousPage
-    }
   }
 }
 ```
@@ -43,33 +45,35 @@ Result:
 ```graphql
 {
   "data": {
-    "workchain_transactions": {
-      "edges": [
-        {
-          "node": {
-            "id": "transaction/f9f6a2e6f0d82ed4c91432d15135481bc2744d1e57a5b198a4c4577c3c1556ea",
-            "now": 1646867623
+    "blockchain": {
+      "transactions": {
+        "edges": [
+          {
+            "node": {
+              "id": "transaction/d5ec03df890727a90eb80960560664ca49d9842e0a9f6f3c188ad1a49fca7264",
+              "now": 1647429363
+            },
+            "cursor": "528cc96m05"
           },
-          "cursor": "5eb8b7fm02"
-        },
-        {
-          "node": {
-            "id": "transaction/9491a1d47959670bbee2103c49f6ebd4000758773175b322c97171827852ba21",
-            "now": 1646867623
+          {
+            "node": {
+              "id": "transaction/39c2c3174aa414003bc55e68b6a08710cbcf6ce1b71dec1a0c8962fdcef5fc76",
+              "now": 1647429363
+            },
+            "cursor": "528cc96m06"
           },
-          "cursor": "5eb8b7fm03"
-        },
-        {
-          "node": {
-            "id": "transaction/3509cbd336d24d8ca7bcde8d4ef9212041ed09f7a5606c35e3aa6b56d9dfb2af",
-            "now": 1646867623
-          },
-          "cursor": "5eb8b7fm04"
+          {
+            "node": {
+              "id": "transaction/fa674f4c537aeaac951ebe4fd9eb2a1d094aae26d611f126652bee92827f3ed2",
+              "now": 1647429363
+            },
+            "cursor": "528cc96m07"
+          }
+        ],
+        "pageInfo": {
+          "startCursor": "528cc96m05",
+          "hasPreviousPage": true
         }
-      ],
-      "pageInfo": {
-        "startCursor": "5eb8b7fm02",
-        "hasPreviousPage": true
       }
     }
   }
@@ -80,21 +84,23 @@ Use `startCursor` and `hasPreviousPage` == true condition to paginate backwards 
 
 ```graphql
 query{
-  workchain_transactions(
-    last:3
-    before:"5eb8b7fm02"
-  ){
-    edges{
-      node{
-        id
-        now
+  blockchain{
+      transactions(
+        last:3
+        before: "528cc96m05"
+      ){
+        edges{
+          node{
+            id
+            now
+          }
+          cursor
+        }
+        pageInfo{
+          startCursor
+          hasPreviousPage
+        }
       }
-      cursor
-    }
-    pageInfo{
-      startCursor
-      hasPreviousPage
-    }
   }
 }
 ```
@@ -104,33 +110,35 @@ Result:
 ```graphql
 {
   "data": {
-    "workchain_transactions": {
-      "edges": [
-        {
-          "node": {
-            "id": "transaction/beebd27cbc94a9a9fbd29f00eba00850f627d7e1cd063672da06c34af1e4e812",
-            "now": 1646867620
+    "blockchain": {
+      "transactions": {
+        "edges": [
+          {
+            "node": {
+              "id": "transaction/2ddaa133fb753c34d72bbae1b9040b773d2b9360612874da5fce19bcdd4b37a1",
+              "now": 1647429363
+            },
+            "cursor": "528cc96m02"
           },
-          "cursor": "5eb8b7em04"
-        },
-        {
-          "node": {
-            "id": "transaction/8475e48a6cb0e8aa8068d8eb7624b8a123ad4e51f9d005a60724e1b13b444338",
-            "now": 1646867623
+          {
+            "node": {
+              "id": "transaction/051363b194ebf6cf0ecab31643b34254aef7ec859d027211c0701df9046ad0bc",
+              "now": 1647429363
+            },
+            "cursor": "528cc96m03"
           },
-          "cursor": "5eb8b7fm00"
-        },
-        {
-          "node": {
-            "id": "transaction/276ccd18e275bcc908c1e819a32abfcbee1c6a94679e43b20d28ae0035d0c208",
-            "now": 1646867623
-          },
-          "cursor": "5eb8b7fm01"
+          {
+            "node": {
+              "id": "transaction/d7b764cd13e5b945aff381e45d1b2b855bf81444950f6b83eb355ac9b2d53ef5",
+              "now": 1647429363
+            },
+            "cursor": "528cc96m04"
+          }
+        ],
+        "pageInfo": {
+          "startCursor": "528cc96m02",
+          "hasPreviousPage": true
         }
-      ],
-      "pageInfo": {
-        "startCursor": "5eb8b7em04",
-        "hasPreviousPage": true
       }
     }
   }
