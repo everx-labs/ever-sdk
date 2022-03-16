@@ -1,53 +1,17 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 
-use failure::bail;
 use serde_json::json;
 use ton_client::ClientContext;
 use ton_client::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
 use ton_client::proofs::{ParamsOfProofBlockData, proof_block_data};
 use ton_types::{Result, UInt256};
 
-async fn query_current_network_zs_hash(
-    context: Arc<ClientContext>,
-) -> Result<UInt256> {
-    let mut blocks = query_collection(Arc::clone(&context), ParamsOfQueryCollection {
-        collection: "blocks".to_string(),
-        filter: Some(json!({
-            "workchain_id": {
-                "eq": -1
-            },
-            "seq_no": {
-                "eq": 1
-            },
-        })),
-        result: "id boc prev_ref{root_hash}".to_string(),
-        limit: Some(1),
-        ..Default::default()
-    }).await?.result;
-
-    if blocks.is_empty() {
-        bail!("Unable to resolve zerostate's root hash: can't get masterchain block #1");
-    }
-
-    let block = blocks.remove(0);
-
-    proof_block_data(Arc::clone(&context), ParamsOfProofBlockData {
-        block: block.clone(),
-    }).await?;
-
-    let prev_ref = &block["prev_ref"];
-    if prev_ref.is_null() {
-        bail!("Unable to resolve zerostate's root hash: prev_ref of the block #1 is not set");
-    }
-
-    UInt256::from_str(
-        prev_ref["root_hash"].as_str()
-            .expect("Field `prev_ref.root_hash` must be a string")
-    )
-}
-
-async fn query_network_keyblocks(server_address: &'static str) -> Result<(UInt256, Vec<(u32, [u8; 32])>)> {
+async fn query_network_keyblocks(
+    server_address: &'static str,
+    zs_root_hash: UInt256,
+    trusted_blocks: Option<Vec<(u32, [u8; 32])>>,
+) -> Result<Vec<(u32, [u8; 32])>> {
     println!("*** [{}] ***", server_address);
     let context = Arc::new(
         ClientContext::new(
@@ -59,13 +23,15 @@ async fn query_network_keyblocks(server_address: &'static str) -> Result<(UInt25
         )?
     );
 
-    let zs_root_hash = query_current_network_zs_hash(Arc::clone(&context)).await?;
-
     println!("Zerostate root_hash: {}", zs_root_hash.as_hex_string());
 
-    let mut result = Vec::new();
-    let mut last_seq_no = 0;
+    let mut result = trusted_blocks.unwrap_or_default();
+    let mut last_seq_no = match result.last() {
+        Some((seq_no, _)) => *seq_no,
+        None => 0,
+    };
     let mut last_gen_utime = 0;
+
     loop {
         let key_blocks = query_collection(
             Arc::clone(&context),
@@ -95,7 +61,7 @@ async fn query_network_keyblocks(server_address: &'static str) -> Result<(UInt25
 
         if key_blocks.is_empty() {
             println!("*** [{} done] ***", server_address);
-            return Ok((zs_root_hash, result));
+            return Ok(result);
         }
 
         for key_block in key_blocks {
@@ -132,16 +98,31 @@ async fn main() -> Result<()> {
         std::process::exit(1);
     }
 
-    let mut trusted_key_blocks = HashMap::new();
-
     let networks = [
-        "main.ton.dev",
-        "net.ton.dev",
+        ("main.ton.dev", "58ffca1a178daff705de54216e5433c9bd2e7d850070d334d38997847ab9e845"),
+        ("net.ton.dev", "cd81dae0c23d78e7c3eb5903f2a7bd98889991d36a26812a9163ca0f29c47093"),
     ];
 
-    for network in networks {
-        let (key, value) = query_network_keyblocks(network).await?;
-        trusted_key_blocks.insert(key.inner(), value);
+    let mut trusted_key_blocks = match std::fs::read(&args[1]) {
+        Ok(data) => {
+            println!("Updating trusted blocks list in {}", &args[1]);
+            bincode::deserialize(&data)?
+        },
+        Err(_) => {
+            println!("Creating new trusted blocks list in {}", &args[1]);
+            HashMap::new()
+        } 
+    };
+
+
+    for (network, zs_root_hash) in networks {
+        let zs_root_hash = UInt256::from_str(zs_root_hash)?;
+        let value = query_network_keyblocks(
+            network,
+            zs_root_hash,
+            trusted_key_blocks.remove(&zs_root_hash.inner()),
+        ).await?;
+        trusted_key_blocks.insert(zs_root_hash.inner(), value);
     }
 
     let data = bincode::serialize(&trusted_key_blocks)?;

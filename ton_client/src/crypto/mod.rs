@@ -27,10 +27,16 @@ pub(crate) mod encryption;
 #[cfg(test)]
 mod tests;
 
+pub use crate::crypto::boxes::crypto_box::{
+    create_crypto_box, remove_crypto_box, get_crypto_box_info, get_crypto_box_seed_phrase,
+    get_signing_box_from_crypto_box, get_encryption_box_from_crypto_box, clear_crypto_box_secret_cache,
+    ParamsOfCreateCryptoBox, ParamsOfGetSigningBoxFromCryptoBox, CryptoBoxHandle, RegisteredCryptoBox,
+    AppPasswordProvider, CryptoBoxSecret, BoxEncryptionAlgorithm,
+    ResultOfGetCryptoBoxInfo, ResultOfGetCryptoBoxSeedPhrase, ResultOfGetPassword,
+};
 pub use crate::crypto::boxes::signing_box::{
     get_signing_box, register_signing_box, remove_signing_box, signing_box_get_public_key,
-    signing_box_sign,
-    ParamsOfSigningBoxSign, RegisteredSigningBox, ResultOfSigningBoxGetPublicKey,
+    signing_box_sign, ParamsOfSigningBoxSign, RegisteredSigningBox, ResultOfSigningBoxGetPublicKey,
     ResultOfSigningBoxSign, SigningBox, SigningBoxHandle,
 };
 pub use crate::crypto::boxes::encryption_box::{
@@ -42,7 +48,13 @@ pub use crate::crypto::boxes::encryption_box::{
     ParamsOfEncryptionBoxEncrypt, ResultOfEncryptionBoxEncrypt,
     ParamsOfEncryptionBoxDecrypt, ResultOfEncryptionBoxDecrypt,
 };
-pub use crate::crypto::boxes::encryption_box::aes::{AesInfo, AesParams};
+pub use crate::crypto::boxes::encryption_box::aes::{AesInfo, AesParamsEB, AesEncryptionBox};
+pub use crate::crypto::boxes::encryption_box::chacha20::{ChaCha20ParamsEB, ChaCha20EncryptionBox};
+pub use crate::crypto::boxes::encryption_box::nacl_box::{NaclBoxParamsEB, NaclEncryptionBox};
+pub use crate::crypto::boxes::encryption_box::nacl_secret_box::{NaclSecretBoxParamsEB, NaclSecretEncryptionBox};
+pub use crate::crypto::boxes::crypto_box::ChaCha20ParamsCB;
+pub use crate::crypto::boxes::crypto_box::NaclBoxParamsCB;
+pub use crate::crypto::boxes::crypto_box::NaclSecretBoxParamsCB;
 pub use crate::crypto::encscrypt::{scrypt, ParamsOfScrypt, ResultOfScrypt};
 pub use crate::crypto::hash::{sha256, sha512, ParamsOfHash, ResultOfHash};
 pub use crate::crypto::hdkey::{
@@ -120,7 +132,7 @@ fn deserialize_hdkey_derivation_path<'de, D: Deserializer<'de>>(
 #[derive(Deserialize, Debug, Clone, ApiType)]
 /// Crypto config.
 pub struct CryptoConfig {
-    /// Mnemonic dictionary that will be used by default in crypto functions. 
+    /// Mnemonic dictionary that will be used by default in crypto functions.
     /// If not specified, 1 dictionary will be used.
     #[serde(
         default = "default_mnemonic_dictionary",
