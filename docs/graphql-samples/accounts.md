@@ -71,21 +71,57 @@ fields:
 If you want to paginate all account transactions from the very first one, use this query
 
 ```graphql
-query{
-  account_transactions(
-    account_address:"0:27da7884e032ede0f7d5758bb58bcab9942dfb6c1b764a38bb6377a47a0822de"
-  ){
-    edges{
-      node{
-        id
-        lt
-        now
+query {
+  blockchain{
+   account(address:"0:653b9a6452c7a982c6dc92b2da9eba832ade1c467699ebb3b43dca6d77b780dd"){
+    transactions{
+      edges{
+        node{
+          id
+          hash
+          
+        }
       }
-      cursor
+      pageInfo{
+        endCursor
+        hasNextPage
+      }
     }
-    pageInfo{
-      endCursor
-      hasNextPage
+  }
+  }
+}
+
+```
+
+Result
+
+```graphql
+{
+  "data": {
+    "blockchain": {
+      "account": {
+        "transactions": {
+          "edges": [
+            {
+              "node": {
+                "id": "transaction/172880ec68742d85cbbae19cda7bf900d2701c65847b8e11158142fc4af89099",
+                "hash": "172880ec68742d85cbbae19cda7bf900d2701c65847b8e11158142fc4af89099"
+              }
+            },
+            {
+              "node": {
+                "id": "transaction/c5ec73599e55d9257ca9e072ce867ab996c579b81ebc003acca121f7fb4797f6",
+                "hash": "c5ec73599e55d9257ca9e072ce867ab996c579b81ebc003acca121f7fb4797f6"
+              }
+            },
+            ...
+          ],
+          "pageInfo": {
+            "endCursor": "5286af50052a33e50104",
+            "hasNextPage": true
+          }
+        }
+      }
     }
   }
 }
@@ -93,7 +129,9 @@ query{
 
 Use `endCursor` field for further pagination and `hasNextCursor` for identifying if more records exist.&#x20;
 
-If you want to paginate within some time range, you can use masterchain seq\_no or time range filter. Also you can use additional handy pagination parameters such as `after`, `first`, `before`, `last`. Read more about it in [blocks pagination section](blocks.md#about-cursor).
+
+
+If you want to paginate within some time range, you can use masterchain seq\_no or time range filter. You can paginate backwards as well.  Also you can use additional handy pagination parameters such as `after`, `first`, `before`, `last`. Read more about it in [blocks pagination section](blocks.md#about-cursor).&#x20;
 
 ## Get the list of account's counterparties
 
