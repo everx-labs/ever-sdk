@@ -4,6 +4,22 @@ use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use hmac::*;
 use sha2::Digest;
 use sha2::Sha512;
+use zeroize::Zeroize;
+
+#[derive(Serialize, Deserialize, Debug, PartialEq, Zeroize, ZeroizeOnDrop)]
+pub(crate) struct SecretString(pub String);
+
+#[derive(Debug, Default, Clone, Zeroize, ZeroizeOnDrop)]
+pub(crate) struct SecretBuf(pub Vec<u8>);
+
+#[derive(Debug, Clone)]
+pub(crate) struct SecretBufConst<const N: usize>(pub [u8; N]);
+
+impl<const N: usize> Drop for SecretBufConst<N> {
+    fn drop(&mut self) {
+        self.0.zeroize();
+    }
+}
 
 pub(crate) type Key192 = [u8; 24];
 pub(crate) type Key256 = [u8; 32];
@@ -36,37 +52,25 @@ fn parse_key(s: &String) -> ClientResult<Vec<u8>> {
     hex::decode(s).map_err(|err| crypto::Error::invalid_key(err, s))
 }
 
-pub(crate) fn key512(slice: &[u8]) -> ClientResult<Key512> {
-    if slice.len() != 64 {
-        return Err(crypto::Error::invalid_key_size(slice.len(), &[64]));
+pub(crate) fn key_from_slice<const N: usize>(slice: &[u8]) -> ClientResult<[u8; N]> {
+    if slice.len() != N {
+        return Err(crypto::Error::invalid_key_size(slice.len(), &[N]));
     }
-    let mut key = [0u8; 64];
-    for (place, element) in key.iter_mut().zip(slice.iter()) {
-        *place = *element;
-    }
+    let mut key = [0u8; N];
+    key.copy_from_slice(slice);
     Ok(key)
+}
+
+pub(crate) fn key512(slice: &[u8]) -> ClientResult<Key512> {
+    key_from_slice(slice)
 }
 
 pub(crate) fn key256(slice: &[u8]) -> ClientResult<Key256> {
-    if slice.len() != 32 {
-        return Err(crypto::Error::invalid_key_size(slice.len(), &[32]));
-    }
-    let mut key = [0u8; 32];
-    for (place, element) in key.iter_mut().zip(slice.iter()) {
-        *place = *element;
-    }
-    Ok(key)
+    key_from_slice(slice)
 }
 
 pub(crate) fn key192(slice: &[u8]) -> ClientResult<Key192> {
-    if slice.len() != 24 {
-        return Err(crypto::Error::invalid_key_size(slice.len(), &[24]));
-    }
-    let mut key = [0u8; 24];
-    for (place, element) in key.iter_mut().zip(slice.iter()) {
-        *place = *element;
-    }
-    Ok(key)
+    key_from_slice(slice)
 }
 
 pub(crate) fn hmac_sha512(key: &[u8], data: &[u8]) -> [u8; 64] {

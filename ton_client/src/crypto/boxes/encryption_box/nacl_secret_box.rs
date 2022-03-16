@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use zeroize::ZeroizeOnDrop;
+use zeroize::Zeroize;
 
 use crate::ClientContext;
 use crate::crypto::{
@@ -9,7 +9,7 @@ use crate::crypto::{
 };
 use crate::error::ClientResult;
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, ZeroizeOnDrop)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, Zeroize, ZeroizeOnDrop)]
 pub struct NaclSecretBoxParamsEB {
     /// Secret key - unprefixed 0-padded to 64 symbols hex string
     pub key: String,
