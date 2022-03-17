@@ -2,10 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-### New
- - Update docs from gitbook
-
-
 ## [1.30.0] – 2022-02-04
 
 ### New
