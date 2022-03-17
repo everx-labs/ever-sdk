@@ -5,24 +5,27 @@
 To get account info use the following GraphQL query:
 
 ```graphql
-query{
-  accounts(
-  filter:{
-        id:{
-            eq:"-1:3333333333333333333333333333333333333333333333333333333333333333"
-      }
-  }){
-    acc_type
-    last_paid
-    due_payment
-    last_trans_lt
-    balance
-    data_hash
-    code_hash
-    library_hash
-    boc    
+query {
+  blockchain{
+   account(address:"0:653b9a6452c7a982c6dc92b2da9eba832ade1c467699ebb3b43dca6d77b780dd"){
+    info{
+      address
+      acc_type
+      balance
+    	last_paid
+      last_trans_lt
+      boc
+      data
+      code
+      library
+      data_hash
+      code_hash
+      library_hash
+    }
+  }
   }
 }
+
 ```
 
 Result:
@@ -30,39 +33,46 @@ Result:
 ```graphql
 {
   "data": {
-    "accounts": [
-      {
-        "acc_type": 1,
-        "last_paid": 0,
-        "due_payment": null,
-        "last_trans_lt": "0x4905d5a4a03",
-        "balance": "0x906201ebb43418",
-        "data_hash": "3a09512d6a5c469d1ea182d080761a01bac0897bc67a4cf510a1911020b96104",
-        "code_hash": "e48892fa8be43954a2923d668ff9e8d68931c82d8dc80be1c8848b8ae8fe366a",
-        "library_hash": null,
-        "boc": "<...>"
+    "blockchain": {
+      "account": {
+        "info": {
+          "address": "0:653b9a6452c7a982c6dc92b2da9eba832ade1c467699ebb3b43dca6d77b780dd",
+          "acc_type": 1,
+          "balance": "0x223e8b8cef379b",
+          "last_paid": 1647425518,
+          "last_trans_lt": "0x2a9059e77c4",
+          "boc": "te6ccgECDwEAApkAAnXABlO5pkUsepgsbckrLanrqDKt4cRnaZ67O0Pcptd7eA3SHoR9QxGNv3AAAAqkFnnfEciPouM7zebTQAIBAJNniOOihCJZNr2ArCaziee6VYr6JdmUdNs82Mlm2VJbMQAAAX+SNgQJwAJMlgo4O1jZEmyBymkHd/cTX5Y2hWW2OCWru/YnrscYSAIm/wD0pCAiwAGS9KDhiu1TWDD0oQUDAQr0pCD0oQQAAAIBIAgGAez/fyHtRNAg10nCAY4R0//TP9MA+Gp/+GH4Zvhj+GKOPvQFjQhgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE+GpwAYBA9A7yvdcL//hicPhjcPhmf/hh4tMAAZ+BAgDXGCD5AVj4QvkQ8qje0z8BBwBajh74QyG5IJ8wIPgjgQPoqIIIG3dAoLnekvhj4IA08jTY0x8B8AH4R26S8jzeAgEgDgkCAnULCgDVtF1VjXwgt0cKdqJoaf/pn+mAfDU//DD8M3wx/DFvfSBo/AB8JRDjgscSwQwLpDt0ABC4ZGfCwGUAOeegZwD9AUA056BnwOfA5Ln9gBB8NW+YfCFkZf/8IeeFn/wjZ4WAfCUA52T2qj/8M8ABCbRar5/ADAH++EFujlztRNAg10nCAY4R0//TP9MA+Gp/+GH4Zvhj+GKOPvQFjQhgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE+GpwAYBA9A7yvdcL//hicPhjcPhmf/hh4t74RvJzcfhm0fgA+ELIy//4Q88LP/hGzwsA+EoBzg0ADMntVH/4ZwBq3nAi0NYCMdIAMNwhxwCQ4CHXDR+S8jzhUxGQ4cEEIoIQ/////byxkvI84AHwAfhHbpLyPN4=",
+          "data": "te6ccgEBAQEATAAAk2eI46KEIlk2vYCsJrOJ57pVivol2ZR02zzYyWbZUlsxAAABf5I2BAnAAkyWCjg7WNkSbIHKaQd39xNfljaFZbY4Jau79ieuxxhI",
+          "code": "te6ccgECDQEAAg4AAib/APSkICLAAZL0oOGK7VNYMPShAwEBCvSkIPShAgAAAgEgBgQB7P9/Ie1E0CDXScIBjhHT/9M/0wD4an/4Yfhm+GP4Yo4+9AWNCGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAT4anABgED0DvK91wv/+GJw+GNw+GZ/+GHi0wABn4ECANcYIPkBWPhC+RDyqN7TPwEFAFqOHvhDIbkgnzAg+COBA+iogggbd0Cgud6S+GPggDTyNNjTHwHwAfhHbpLyPN4CASAMBwICdQkIANW0XVWNfCC3Rwp2omhp/+mf6YB8NT/8MPwzfDH8MW99IGj8AHwlEOOCxxLBDAukO3QAELhkZ8LAZQA556BnAP0BQDTnoGfA58Dkuf2AEHw1b5h8IWRl//wh54Wf/CNnhYB8JQDnZPaqP/wzwAEJtFqvn8AKAf74QW6OXO1E0CDXScIBjhHT/9M/0wD4an/4Yfhm+GP4Yo4+9AWNCGAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAT4anABgED0DvK91wv/+GJw+GNw+GZ/+GHi3vhG8nNx+GbR+AD4QsjL//hDzws/+EbPCwD4SgHOCwAMye1Uf/hnAGrecCLQ1gIx0gAw3CHHAJDgIdcNH5LyPOFTEZDhwQQighD////9vLGS8jzgAfAB+EdukvI83g==",
+          "library": null,
+          "data_hash": "a34d868df79e09b2c3af67c1a9e210c1afef27f2376ee4ea5b00d20e7e55c058",
+          "code_hash": "59ba6d164798169031c8ca18fa10c7038e7ad73b8d64f4c990e029a5dcfa59c3",
+          "library_hash": null
+        }
       }
-    ]
+    }
   }
 }
 ```
 
-where `id` (full address) consists of workchainID:address (Note: smart contract and an account are the same thing in the context of the Everscale Blockchain. A large smart-contract may employ several accounts lying in different shardchains of the same workchain for load balancing purposes.)
-
 fields:
 
-* acc\_type
+* `address` is full account address that consists of workchainID:address
+* `acc_type`
   * 0 – uninit (Account has balance but no code)
   * 1 – active (Account has balance and code)
   * 2 – frozen(Account has been frozen for some reasons)
-* last\_paid - unixtime of the most recent storage payment or
-* balance - tokens on account (Note: to deploy smart contract code you need to have non-zero balance)
-* last\_trans\_lt - logical time of last account transaction
-* data\_hash - data field hash
-* code\_hash - code field hash
-* library - If present, contains library code used in smart-contract.
-* library\_hash - library field hash
-* boc - Bag of cells with the account struct encoded as base64.
+  * 3 - nonExist (Account was deleted)
+* `last_paid` - unixtime of the most recent storage payment (happens each transaction execution)
+* `balance` - tokens on account (Note: to deploy smart contract code you need to have non-zero balance)
+* `last_trans_lt` - logical time of last account transaction
+* `boc` - Bag of cells with the account struct encoded as base64 (contains code, data, library and other header information).
+* `data` - bag of cells with the account's data
+* `code` - bag of cells with the account's code
+* `library` - If present, contains library code used in smart-contract.
+* `data_hash` - hash of account data&#x20;
+* `code_hash` - hash of account code
+* `library_hash` - library field hash
 
 ## Pagination of account transactions
 
@@ -71,21 +81,57 @@ fields:
 If you want to paginate all account transactions from the very first one, use this query
 
 ```graphql
-query{
-  account_transactions(
-    account_address:"0:27da7884e032ede0f7d5758bb58bcab9942dfb6c1b764a38bb6377a47a0822de"
-  ){
-    edges{
-      node{
-        id
-        lt
-        now
+query {
+  blockchain{
+   account(address:"0:653b9a6452c7a982c6dc92b2da9eba832ade1c467699ebb3b43dca6d77b780dd"){
+    transactions{
+      edges{
+        node{
+          id
+          hash
+          
+        }
       }
-      cursor
+      pageInfo{
+        endCursor
+        hasNextPage
+      }
     }
-    pageInfo{
-      endCursor
-      hasNextPage
+  }
+  }
+}
+
+```
+
+Result
+
+```graphql
+{
+  "data": {
+    "blockchain": {
+      "account": {
+        "transactions": {
+          "edges": [
+            {
+              "node": {
+                "id": "transaction/172880ec68742d85cbbae19cda7bf900d2701c65847b8e11158142fc4af89099",
+                "hash": "172880ec68742d85cbbae19cda7bf900d2701c65847b8e11158142fc4af89099"
+              }
+            },
+            {
+              "node": {
+                "id": "transaction/c5ec73599e55d9257ca9e072ce867ab996c579b81ebc003acca121f7fb4797f6",
+                "hash": "c5ec73599e55d9257ca9e072ce867ab996c579b81ebc003acca121f7fb4797f6"
+              }
+            },
+            ...
+          ],
+          "pageInfo": {
+            "endCursor": "5286af50052a33e50104",
+            "hasNextPage": true
+          }
+        }
+      }
     }
   }
 }
@@ -93,7 +139,7 @@ query{
 
 Use `endCursor` field for further pagination and `hasNextCursor` for identifying if more records exist.&#x20;
 
-If you want to paginate within some time range, you can use masterchain seq\_no or time range filter. Also you can use additional handy pagination parameters such as `after`, `first`, `before`, `last`. Read more about it in [blocks pagination section](blocks.md#about-cursor).
+If you want to paginate within some time range, you can use masterchain seq\_no or time range filter. You can paginate backwards as well.  Also you can use additional handy pagination parameters such as `after`, `first`, `before`, `last`. Read more about it in [blocks pagination section](blocks.md#about-cursor).&#x20;
 
 ## Get the list of account's counterparties
 

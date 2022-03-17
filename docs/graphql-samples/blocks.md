@@ -20,28 +20,30 @@ We specify **masterchain** blocks seq\_no range and that we want to paginate onl
 
 ```graphql
 query {
-workchain_blocks(
-	master_seq_no: {
-		start: 13928620
-		end: 13928625
-	}
-      workchain:0
-) {
-	edges {
-		node {
-         	 	workchain_id
-			id
-			shard
-			seq_no
-			hash
-			file_hash
-		}
-        cursor
-	}
-      pageInfo{
-        endCursor
+  blockchain{
+    blocks(
+      master_seq_no_range: {
+        start: 2660661
+        end: 2670661
       }
-}
+          workchain:0
+    ) {
+      edges {
+        node {
+          workchain_id
+          id
+          shard
+          seq_no
+          hash
+          file_hash
+        }
+            cursor
+      }
+          pageInfo{
+            endCursor
+          }
+    }
+  }
 }
 ```
 
@@ -52,34 +54,36 @@ You can see cursor field in each edge object, which can be passed over to the ne
 ```graphql
 {
   "data": {
-    "workchain_blocks": {
-      "edges": [
-        {
-          "node": {
-            "workchain_id": 0,
-            "id": "block/1a23b2d52c5030b98c685ab3fa400507e8f68454f34b17584b30e73f14fec445",
-            "shard": "1800000000000000",
-            "seq_no": 20272673,
-            "hash": "1a23b2d52c5030b98c685ab3fa400507e8f68454f34b17584b30e73f14fec445",
-            "file_hash": "f3b745078896e2457f828f0a8ed88c81ddf973cf0ec5f7e6f8605156646cbf9f"
+    "blockchain": {
+      "blocks": {
+        "edges": [
+          {
+            "node": {
+              "workchain_id": 0,
+              "id": "block/279dd285a1a73dfcdd0b3739751232be6d6669821e53dd1b450c67e8f59d651d",
+              "shard": "8000000000000000",
+              "seq_no": 2773451,
+              "hash": "279dd285a1a73dfcdd0b3739751232be6d6669821e53dd1b450c67e8f59d651d",
+              "file_hash": "f7d7f2a506413c736eb3cb6ca3b071c15dc953f6d5e1996244fca68a2594fecf"
+            },
+            "cursor": "52899360052a51cb01"
           },
-          "cursor": "5d488ac0061355621118"
-        },
-        {
-          "node": {
-            "workchain_id": 0,
-            "id": "block/1d1c37dc1f074f8a1e84b7e16f3517ba6fdae2fe92cb52de90cbafef17ce672b",
-            "shard": "1800000000000000",
-            "seq_no": 20272674,
-            "hash": "1d1c37dc1f074f8a1e84b7e16f3517ba6fdae2fe92cb52de90cbafef17ce672b",
-            "file_hash": "eba0d9ebe14b7205088b5c4ebdf6616e5724abf9649d87617e47b77f927f0489"
+          {
+            "node": {
+              "workchain_id": 0,
+              "id": "block/b146ba0ce2fd140b18f42199de57128d2a4de65e38676ca007b68ff0ab4f4b60",
+              "shard": "8000000000000000",
+              "seq_no": 2773452,
+              "hash": "b146ba0ce2fd140b18f42199de57128d2a4de65e38676ca007b68ff0ab4f4b60",
+              "file_hash": "c35b121b5edfa3389e64fb44d937553e6b3928877b14505559a168670953055c"
+            },
+            "cursor": "52899370052a51cc01"
           },
-          "cursor": "5d488ac0061355622118"
-        },
         ...
-      ],
-      "pageInfo": {
-        "endCursor": "5d488ad0061355625118"
+        ],
+        "pageInfo": {
+          "endCursor": "52899800052a51fc01"
+        }
       }
     }
   }
@@ -88,41 +92,47 @@ You can see cursor field in each edge object, which can be passed over to the ne
 
 Next page:
 
-Let's check some more available parameters for pagination.
+Let's check other available parameters for pagination.
 
-See `after`, `first` parameters, starting from `after` = `endCursor` from the previous page. Notice that we stay within the same seq\_no range - because we did not read it all yet.&#x20;
+`after/first` - Show `first` number of items `after` (not including) cursor.
 
-To check if the next page exist - we ask for `pageInfo.nextPage` parameter. If no `nextPage` exist, we can increase `seq_no` range.&#x20;
+`before/last`- Show `last` number of items `before` (not including) cursor. Used for backward pagination.
+
+To check if the next page exists - we ask for `pageInfo.hasNextPage` parameter. If no next page exists, we can move `seq_no` range forward.  If you implement backward pagination - use `pageInfo.hasPreviousPage.`
 
 Check other available parameters in GraphQL schema in playground.&#x20;
 
+Here we continue pagination within the same `seq_no` range, and ask for the next 10 blocks after the last cursor in the previous query.  We see that the next page exists so we can continue paginating whithin the same `seq_no` range.
+
 ```graphql
 query {
-workchain_blocks(
-	master_seq_no: {
-		start: 13928620
-		end: 13928625
-	}
-      after:"5d488ac00613657a3117"
-      first:10
-      workchain:0
-) {
-	edges {
-		node {
-          		workchain_id
-			id
-			shard
-			seq_no
-			hash
-			file_hash
-		}
-        cursor
-	}
-      pageInfo{
-        endCursor
-        hasNextPage
+  blockchain{
+    workchain_blocks(
+      master_seq_no: {
+        start: 2660661
+        end: 2670661
       }
-}
+          after:"52899800052a51fc01"
+          first:10
+          workchain:0
+    ) {
+      edges {
+        node {
+          workchain_id
+          id
+          shard
+          seq_no
+          hash
+          file_hash
+        }
+            cursor
+      }
+          pageInfo{
+            endCursor
+            hasNextPage
+          }
+    }
+  }
 }
 ```
 
@@ -131,35 +141,37 @@ Result:
 ```graphql
 {
   "data": {
-    "workchain_blocks": {
-      "edges": [
-        {
-          "node": {
-            "workchain_id": 0,
-            "id": "block/a7afaf3fb3300b14efbbc8c4b14c90905ec031df9b792d261d139ba046c4b62c",
-            "shard": "6800000000000000",
-            "seq_no": 20312063,
-            "hash": "a7afaf3fb3300b14efbbc8c4b14c90905ec031df9b792d261d139ba046c4b62c",
-            "file_hash": "0ff74ab2aac270efecf202fd15e7912aa0755eaf1fcd8db46261dd96268ec20e"
+    "blockchain": {
+      "blocks": {
+        "edges": [
+          {
+            "node": {
+              "workchain_id": 0,
+              "id": "block/279dd285a1a73dfcdd0b3739751232be6d6669821e53dd1b450c67e8f59d651d",
+              "shard": "8000000000000000",
+              "seq_no": 2773451,
+              "hash": "279dd285a1a73dfcdd0b3739751232be6d6669821e53dd1b450c67e8f59d651d",
+              "file_hash": "f7d7f2a506413c736eb3cb6ca3b071c15dc953f6d5e1996244fca68a2594fecf"
+            },
+            "cursor": "52899360052a51cb01"
           },
-          "cursor": "5d488ad006135efff116"
-        },
-        {
-          "node": {
-            "workchain_id": 0,
-            "id": "block/5e33bef24b0bf36a333592083e5622bc0b7e2940873815d7074b8066b8df262c",
-            "shard": "6800000000000000",
-            "seq_no": 20312064,
-            "hash": "5e33bef24b0bf36a333592083e5622bc0b7e2940873815d7074b8066b8df262c",
-            "file_hash": "88d780bf277a0ec073fe1b2457fab2ab1121eaac8f083cea6c74e28194106148"
+          {
+            "node": {
+              "workchain_id": 0,
+              "id": "block/b146ba0ce2fd140b18f42199de57128d2a4de65e38676ca007b68ff0ab4f4b60",
+              "shard": "8000000000000000",
+              "seq_no": 2773452,
+              "hash": "b146ba0ce2fd140b18f42199de57128d2a4de65e38676ca007b68ff0ab4f4b60",
+              "file_hash": "c35b121b5edfa3389e64fb44d937553e6b3928877b14505559a168670953055c"
+            },
+            "cursor": "52899370052a51cc01"
           },
-          "cursor": "5d488ad006135f000116"
-        },
       ..... other blocks
-      ],
-      "pageInfo": {
-        "endCursor": "5d488ad0061362a04110",
-        "hasNextPage": true
+        ],
+        "pageInfo": {
+          "endCursor": "52899800052a51fc01"
+          "hasNextPage": true
+        }
       }
     }
   }
@@ -174,23 +186,27 @@ To get the `seq_no` range by time rage do this query:
 
 ```graphql
 query{
-  master_seq_no_range(time_start: 1642144982 time_end: 1642145982){
-    start
-    end
+  blockchain{
+    master_seq_no_range(time_start: 1647421084 time_end: 1647422084){
+      start
+      end
+    }
   }
 }
 ```
 
 &#x20;In the result you will get the required seq\_no range.
 
-<mark style="color:purple;">Attention! Specifying timestamp range does not guarantee that there will be no thread blocks outside this range in the result set: this happens due to the fact that some thread blocks are commited to masterchain block generated within this time range but were generated outside of it. But anyway, this pagination allows us to get all blocks in a handy manner, these time deltas are very small and not significant.</mark>
+<mark style="color:orange;">**Attention! Specifying timestamp range does not mean that there will be no blocks outside this range in the result set: this happens due to the fact that some thread blocks that were generated outside this time range were committed to masterchain block generated within this time range. But anyway, this pagination allows us to get all blocks in a handy manner, these time deltas are very small and not significant and can be ignored.**</mark>
 
 ```graphql
 {
   "data": {
-    "master_seq_no_range": {
-      "start": 13928618,
-      "end": 13928913
+    "blockchain": {
+      "master_seq_no_range": {
+        "start": 2670769,
+        "end": 2671143
+      }
     }
   }
 }
@@ -204,28 +220,32 @@ Or you can get blockchain config with this simple query:
 
 ```graphql
 query {
+  blockchain{
    key_blocks( last:1){
           edges {
            node {
-                    workchain_id
-                    id
-                    shard
-                    seq_no
-                    hash
-                    file_hash
-                    gen_utime
-                    gen_utime_string
+                   workchain_id
+                   id
+                   shard
+                   hash
+                   file_hash
+                   gen_utime
+                   gen_utime_string
                     master{
                      config{
                        p34{
                          total_weight
                        }
+                       #...any other config params
+                       # check graphql schema for available fields
                      }
                     }
            }
           }
    }
+  }
 }
+
 ```
 
 Result:
@@ -233,28 +253,29 @@ Result:
 ```graphql
 {
   "data": {
-    "key_blocks": {
-      "edges": [
-        {
-          "node": {
-            "workchain_id": -1,
-            "id": "block/8c62ab1980161adcc59ff6932c375e25ff1119dc9bdd6d190eb994076d3efe83",
-            "shard": "8000000000000000",
-            "seq_no": 15418884,
-            "hash": "8c62ab1980161adcc59ff6932c375e25ff1119dc9bdd6d190eb994076d3efe83",
-            "file_hash": "d92a29245f368e4936e97e552e9b009bb8af8cd955d5e8b4da22dede28da8ee6",
-            "gen_utime": 1646810740,
-            "gen_utime_string": "2022-03-09 07:25:40.000",
-            "master": {
-              "config": {
-                "p34": {
-                  "total_weight": "0xfffffffffffffa2"
+    "blockchain": {
+      "key_blocks": {
+        "edges": [
+          {
+            "node": {
+              "workchain_id": -1,
+              "id": "block/45f416ea991e22ff01309ea517155e6ca61f13a7d367478ad8dce4a6af84692f",
+              "shard": "8000000000000000",
+              "hash": "45f416ea991e22ff01309ea517155e6ca61f13a7d367478ad8dce4a6af84692f",
+              "file_hash": "fe1c5cf34b2ab632431f21048e5b200b0a6690a1acf3882721319ef9cd01e0c6",
+              "gen_utime": 1647413431,
+              "gen_utime_string": "2022-03-16 06:50:31.000",
+              "master": {
+                "config": {
+                  "p34": {
+                    "total_weight": "0xfffffffffffffff"
+                  }
                 }
               }
             }
           }
-        }
-      ]
+        ]
+      }
     }
   }
 }
@@ -318,25 +339,18 @@ Masterchain has only 1 shard `8000000000000000`.
 So, to get its last block height we sort its blocks by `seq_no` in DESC order and get the newest one
 
 ```graphql
-query{
-  blocks(filter:{
-      workchain_id:{
-        eq:-1
-      }   
-    }
-    orderBy:{
-      path:"seq_no"
-      direction:DESC
-    }
-    limit: 1
-  )
-  {
-    id
-    workchain_id
-    shard
-    seq_no
+query {
+  blockchain{
+   blocks( workchain:-1  thread: "8000000000000000"  last:1){
+          edges {
+           node {
+            seq_no
+           }
+          }
+   }
   }
 }
+
 ```
 
 The the latest masterchain block height is `1418096`:
@@ -344,14 +358,17 @@ The the latest masterchain block height is `1418096`:
 ```graphql
 {
   "data": {
-    "blocks": [
-      {
-        "id": "8d2a104aeaf7ce6dc96859c6476d6977bf83af5cc1198fb78fd5efb48e52a8bf",
-        "workchain_id": -1,
-        "shard": "8000000000000000",
-        "seq_no": 1418096
+    "blockchain": {
+      "blocks": {
+        "edges": [
+          {
+            "node": {
+              "seq_no": 2671859
+            }
+          }
+        ]
       }
-    ]
+    }
   }
 }
 ```
@@ -365,26 +382,22 @@ Workchain shard list can change dynamically depending on the network load.
 To get the list of shards for Zero workchain for the current moment run this query. Here we sort the main workchain blocks by `seq_no`, get the newest one and extract the list of active shards of Zero workchain.
 
 ```graphql
-query{
-  blocks(filter:{
-      workchain_id:{
-        eq:-1
-      }   
-    }
-    orderBy:{
-      path:"seq_no"
-      direction:DESC
-    }
-    limit: 1
-  )
-  {
-    master{
-      shard_hashes{
-        shard
-      }
-    }
+query {
+  blockchain{
+   blocks( last:1){
+          edges {
+           node {
+              master{
+               shard_hashes{
+                shard
+              }
+              }
+           }
+          }
+   }
   }
 }
+
 ```
 
 Result:
@@ -392,62 +405,23 @@ Result:
 ```graphql
 {
   "data": {
-    "blocks": [
-      {
-        "master": {
-          "shard_hashes": [
-            {
-              "shard": "0800000000000000"
-            },
-            {
-              "shard": "1800000000000000"
-            },
-            {
-              "shard": "2800000000000000"
-            },
-            {
-              "shard": "3800000000000000"
-            },
-            {
-              "shard": "4800000000000000"
-            },
-            {
-              "shard": "5800000000000000"
-            },
-            {
-              "shard": "6800000000000000"
-            },
-            {
-              "shard": "7800000000000000"
-            },
-            {
-              "shard": "8800000000000000"
-            },
-            {
-              "shard": "9800000000000000"
-            },
-            {
-              "shard": "a800000000000000"
-            },
-            {
-              "shard": "b800000000000000"
-            },
-            {
-              "shard": "c800000000000000"
-            },
-            {
-              "shard": "d800000000000000"
-            },
-            {
-              "shard": "e800000000000000"
-            },
-            {
-              "shard": "f800000000000000"
+    "blockchain": {
+      "blocks": {
+        "edges": [
+          {
+            "node": {
+              "master": {
+                "shard_hashes": [
+                  {
+                    "shard": "8000000000000000"
+                  }
+                ]
+              }
             }
-          ]
-        }
+          }
+        ]
       }
-    ]
+    }
   }
 }
 ```
@@ -457,28 +431,19 @@ Result:
 Let's get the latest shardchain 0800000000000000 of zero workchain block height (see how to get the list of shardchains at the previous step).
 
 ```graphql
-query{
-  blocks(filter:{
-      workchain_id:{
-        eq:0
-      }   
-      shard:{
-        eq:"0800000000000000"
-      }
-    }
-    orderBy:{
-      path:"seq_no"
-      direction:DESC
-    }
-    limit: 1
-  )
-  {
-    id
-    workchain_id
-    shard
-    seq_no
+query {
+  blockchain{
+   blocks( workchain:0  thread: "8000000000000000"  last:1){
+          edges {
+           node {
+            seq_no
+           }
+          }
+   }
   }
 }
+
+
 ```
 
 The block height is `1948985`:
@@ -486,14 +451,17 @@ The block height is `1948985`:
 ```graphql
 {
   "data": {
-    "blocks": [
-      {
-        "id": "8c06adeebfab1491ec532f2c40785b04a16ef31085f7e1ed3015c7de424ea953",
-        "workchain_id": 0,
-        "shard": "0800000000000000",
-        "seq_no": 1948985
+    "blockchain": {
+      "blocks": {
+        "edges": [
+          {
+            "node": {
+              "seq_no": 2780615
+            }
+          }
+        ]
       }
-    ]
+    }
   }
 }
 ```
