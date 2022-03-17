@@ -20,12 +20,12 @@ api_derive = { path = '../api/derive' }
 api_info = { path = '../api/info' }
 ton_sdk = { default-features = false, path = '../ton_sdk' }
 
-ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.1.11' }
-ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.38' }
-ton_block_json = { git = 'https://github.com/tonlabs/ton-labs-block-json.git', tag = '0.7.3' }
-ton_executor = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-executor.git', tag = '1.15.54' }
+ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.1.14' }
+ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.39' }
+ton_block_json = { git = 'https://github.com/tonlabs/ton-labs-block-json.git', tag = '0.7.5' }
+ton_executor = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-executor.git', tag = '1.15.56' }
 ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.10.12' }
-ton_vm = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-vm.git', tag = '1.8.31' }
+ton_vm = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-vm.git', tag = '1.8.32' }
 
 lockfree = { git = 'https://github.com/tonlabs/lockfree.git', package = 'lockfree' }
 sodalite = { features = [ 'rand' ], git = 'https://github.com/tonlabs/sodalite.git' }
