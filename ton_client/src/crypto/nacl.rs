@@ -21,7 +21,7 @@ use crate::error::ClientResult;
 use ed25519_dalek::Verifier;
 use zeroize::Zeroize;
 
-use super::internal::{SecretBuf, SecretBufConst};
+use super::internal::{SecretBufConst, hex_decode_secret, hex_decode_secret_const};
 
 // Signing
 
@@ -48,7 +48,7 @@ pub fn nacl_sign_keypair_from_secret_key(
     let seed = key256(&secret)?;
     let mut sk = [0u8; 64];
     let mut pk = [0u8; 32];
-    sodalite::sign_keypair_seed(&mut pk, &mut sk, &seed);
+    sodalite::sign_keypair_seed(&mut pk, &mut sk, &seed.0);
     Ok(KeyPair::new(hex::encode(pk), hex::encode(sk.as_ref())))
 }
 
@@ -154,7 +154,7 @@ pub fn nacl_sign_open(
     let len = sodalite::sign_attached_open(
         &mut unsigned,
         &signed,
-        &key256(&hex_decode(&params.public)?)?,
+        &key256(&hex_decode(&params.public)?)?.0,
     )
     .map_err(|_| crypto::Error::nacl_sign_failed("box sign open failed"))?;
     unsigned.resize(len, 0);
@@ -210,7 +210,7 @@ fn prepare_to_convert(
     padded_input.extend(input);
     let mut padded_output = Vec::new();
     padded_output.resize(padded_input.len(), 0);
-    Ok((padded_output, padded_input, key192(&nonce)?, SecretBufConst(key256(&key)?)))
+    Ok((padded_output, padded_input, key192(&nonce)?.0, key256(&key)?))
 }
 
 //-------------------------------------------------------------------------------- nacl_box_keypair
@@ -243,7 +243,7 @@ pub fn nacl_box_keypair_from_secret_key(
     let seed = key256(&secret)?;
     let mut sk = [0u8; 32];
     let mut pk = [0u8; 32];
-    sodalite::box_keypair_seed(&mut pk, &mut sk, &seed);
+    sodalite::box_keypair_seed(&mut pk, &mut sk, &seed.0);
     Ok(KeyPair::new(hex::encode(pk), hex::encode(sk)))
 }
 
@@ -282,7 +282,7 @@ pub fn nacl_box(
     let (mut padded_output, padded_input, nonce, secret) = prepare_to_convert(
         &base64_decode(&params.decrypted)?,
         &hex_decode(&params.nonce)?,
-        &SecretBuf(hex_decode(&params.secret)?).0,
+        &hex_decode_secret(&params.secret)?,
         32,
     )?;
 
@@ -290,7 +290,7 @@ pub fn nacl_box(
         &mut padded_output,
         &padded_input,
         &nonce,
-        &key256(&hex_decode(&params.their_public)?)?,
+        &hex_decode_secret_const(&params.their_public)?.0,
         &secret.0,
     )
     .map_err(|_| crypto::Error::nacl_box_failed("box failed"))?;
@@ -333,8 +333,8 @@ pub fn nacl_box_open(
     let padded_output = nacl_box_open_internal(
         &base64_decode(&params.encrypted)?,
         &hex_decode(&params.nonce)?,
-        &key256(&hex_decode(&params.their_public)?)?,
-        &SecretBuf(hex_decode(&params.secret)?).0,
+        &hex_decode_secret_const(&params.their_public)?.0,
+        &hex_decode_secret(&params.secret)?,
     )?;
     Ok(ResultOfNaclBoxOpen {
         decrypted: base64::encode(&padded_output),
@@ -392,7 +392,7 @@ pub fn nacl_secret_box(
     let (mut padded_output, padded_input, nonce, key) = prepare_to_convert(
         &base64_decode(&params.decrypted)?,
         &hex_decode(&params.nonce)?,
-        &SecretBuf(hex_decode(&params.key)?).0,
+        &hex_decode_secret(&params.key)?,
         32,
     )?;
 
@@ -427,7 +427,7 @@ pub fn nacl_secret_box_open(
     let (mut padded_output, padded_input, nonce, key) = prepare_to_convert(
         &base64_decode(&params.encrypted)?,
         &hex_decode(&params.nonce)?,
-        &SecretBuf(hex_decode(&params.key)?).0,
+        &hex_decode_secret(&params.key)?,
         16,
     )?;
 
@@ -444,6 +444,6 @@ pub fn nacl_secret_box_open(
 fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ClientResult<Vec<u8>> {
     let mut signed: Vec<u8> = Vec::new();
     signed.resize(unsigned.len() + sodalite::SIGN_LEN, 0);
-    sodalite::sign_attached(&mut signed, &unsigned, &key512(&secret)?);
+    sodalite::sign_attached(&mut signed, &unsigned, &key512(&secret)?.0);
     Ok(signed)
 }

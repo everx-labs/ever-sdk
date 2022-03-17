@@ -14,13 +14,15 @@
 use crate::client::ClientContext;
 use crate::crypto;
 use crate::crypto::internal::{
-    decode_public_key, decode_secret_key, key256, sign_using_keys, ton_crc16,
+    decode_public_key, decode_secret_key, sign_using_keys, ton_crc16,
 };
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 use base64::URL_SAFE;
 use ed25519_dalek::Keypair;
 use std::fmt::{Debug, Formatter};
+
+use super::internal::hex_decode_secret_const;
 
 pub(crate) fn strip_secret(secret: &str) -> String {
     const SECRET_SHOW_LEN: usize = 8;
@@ -173,7 +175,7 @@ pub fn verify_signature(
     let len = sodalite::sign_attached_open(
         &mut unsigned,
         &signed,
-        &key256(&hex_decode(&params.public)?)?,
+        &hex_decode_secret_const(&params.public)?.0,
     )
     .map_err(|_| crypto::Error::nacl_sign_failed("verify signature failed"))?;
     unsigned.resize(len, 0);
