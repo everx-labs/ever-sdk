@@ -19,6 +19,7 @@ use serde_json::Value;
 use std::sync::atomic::{AtomicI64, AtomicU32, AtomicU64, Ordering};
 
 const V_0_39_0: u32 = 39000;
+const BOC_VERSION: &str = "2";
 
 pub(crate) struct Endpoint {
     pub query_url: String,
@@ -54,7 +55,10 @@ const HTTPS_PROTOCOL: &str = "https://";
 
 impl Endpoint {
     pub fn http_headers() -> Vec<(String, String)> {
-        vec![("tonclient-core-version".to_string(), core_version())]
+        vec![
+            ("tonclient-core-version".to_string(), core_version()),
+            ("X-Evernode-Expected-Account-Boc-Version".to_string(), BOC_VERSION.to_owned()),
+        ]
     }
 
     fn expand_address(base_url: &str) -> String {

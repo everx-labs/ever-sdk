@@ -289,7 +289,7 @@ pub async fn run_executor_internal(
     .await?;
 
     let mut out_messages = vec![];
-    for i in 0..transaction.outmsg_cnt {
+    for i in 0..transaction.msg_count() {
         let message = transaction
             .get_out_msg(i)
             .map_err(|err| Error::can_not_read_transaction(err))?

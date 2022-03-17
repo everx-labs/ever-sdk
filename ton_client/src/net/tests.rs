@@ -329,7 +329,7 @@ async fn subscribe_for_transactions_with_addresses() {
     client.get_tokens_from_giver_async(&msg.address, None).await;
 
     // give some time for subscription to receive all data
-    std::thread::sleep(std::time::Duration::from_millis(1000));
+    std::thread::sleep(std::time::Duration::from_millis(2000));
 
     {
         // check that transaction is received
