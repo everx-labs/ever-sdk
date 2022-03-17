@@ -4,22 +4,23 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 
 **Get quick help in our telegram channel:**
 
-[![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ever_sdk)
+[![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ever\_sdk)
 
 ## Content Table
-- [TON SDK](#ton-sdk)
-  - [Content Table](#content-table)
-  - [Useful links](#useful-links)
-  - [What is Core Everscale Client Library](#what-is-core-everscale-client-library)
-  - [SDKs in other languages (bindings over TON-SDK)](#sdks-in-other-languages-bindings-over-ton-sdk)
-    - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
-    - [Community bindings](#community-bindings)
-  - [How to use library](#how-to-use-library)
-  - [How to avoid Soft Breaking Problems](#how-to-avoid-soft-breaking-problems)
-  - [Build client library](#build-client-library)
-  - [Build artifacts](#build-artifacts)
-  - [Run tests](#run-tests)
-  - [Download precompiled binaries](#download-precompiled-binaries)
+
+* [TON SDK](./#ton-sdk)
+  * [Content Table](./#content-table)
+  * [Useful links](./#useful-links)
+  * [What is Core Everscale Client Library](./#what-is-core-everscale-client-library)
+  * [SDKs in other languages (bindings over TON-SDK)](./#sdks-in-other-languages-bindings-over-ton-sdk)
+    * [Official Javascript(Typescript) SDK](./#official-javascripttypescript-sdk)
+    * [Community bindings](./#community-bindings)
+  * [How to use library](./#how-to-use-library)
+  * [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
+  * [Build client library](./#build-client-library)
+  * [Build artifacts](./#build-artifacts)
+  * [Run tests](./#run-tests)
+  * [Download precompiled binaries](./#download-precompiled-binaries)
 
 ## Useful links
 
@@ -27,7 +28,7 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 
 [Error descriptions](docs/reference/error\_codes.md)
 
-[JavaScript SDK Types and Methods (API Reference)](https://tonlabs.github.io/ton-client-js/)
+[JavaScript SDK Types and Methods (API Reference)](https://tonlabs.github.io/ever-sdk-js/)
 
 [Core Types and Methods (API Reference)](docs/reference/types-and-methods/modules.md)
 
@@ -59,21 +60,21 @@ Repository: [JavaScript SDK](https://github.com/tonlabs/ton-client-js)
 
 ### Community bindings
 
-| Language   | Repository                                                                                                                                                                                                                                                                                                                                    |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Clojure    | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)                                                                                                                                                                                                                                                 |
-| Dart       | [freetonsurfer/ton\_client\_dart](https://github.com/freetonsurfer/ton\_client\_dart)                                                                                                                                                                                                                                                         |
-| Golang     | <p><a href="https://github.com/radianceteam/ton-client-go">radianceteam/ton-client-go</a><br><a href="https://github.com/move-ton/ever-client-go">move-ton/ever-client-go</a></p>                                                                                                                                                               |
-| Java       | [radianceteam/ton-client-java](https://github.com/radianceteam/ton-client-java)                                                                                                                                                                                                                                                               |
-| Kotlin     | [mdorofeev/ton-client-kotlin](https://github.com/mdorofeev/ton-client-kotlin)                                                                                                                                                                                                                                                                 |
-| Lua        | [serge-medvedev/tonos-client-lua](https://github.com/serge-medvedev/tonos-client-lua)                                                                                                                                                                                                                                                         |
+| Language   | Repository                                                                                                                                                                                                                                                                                                                                              |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Clojure    | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)                                                                                                                                                                                                                                                           |
+| Dart       | [freetonsurfer/ton\_client\_dart](https://github.com/freetonsurfer/ton\_client\_dart)                                                                                                                                                                                                                                                                   |
+| Golang     | <p><a href="https://github.com/radianceteam/ton-client-go">radianceteam/ton-client-go</a><br><a href="https://github.com/move-ton/ever-client-go">move-ton/ever-client-go</a></p>                                                                                                                                                                       |
+| Java       | [radianceteam/ton-client-java](https://github.com/radianceteam/ton-client-java)                                                                                                                                                                                                                                                                         |
+| Kotlin     | [mdorofeev/ton-client-kotlin](https://github.com/mdorofeev/ton-client-kotlin)                                                                                                                                                                                                                                                                           |
+| Lua        | [serge-medvedev/tonos-client-lua](https://github.com/serge-medvedev/tonos-client-lua)                                                                                                                                                                                                                                                                   |
 | .NET       | <p><a href="https://github.com/radianceteam/ton-client-dotnet">radianceteam/ton-client-dotnet</a><br><a href="https://github.com/everscale-actions/everscale-dotnet">everscale-actions/everscale-dotnet</a><br><a href="https://github.com/vcvetkovs/TonSdk">vcvetkovs/TonSdk</a><br><a href="https://github.com/staszx/Ton.Sdk">staszx/Ton.Sdk</a></p> |
-| PHP        | <p><a href="https://github.com/extraton/php-ton-client">extraton/php-ton-client</a><br><a href="https://github.com/radianceteam/ton-client-php">radianceteam/ton-client-php</a></p>                                                                                                                                                           |
-| Python     | [move-ton/ton-client-py](https://github.com/move-ton/ton-client-py)                                                                                                                                                                                                                                                                           |
-| Ruby       | <p><a href="https://github.com/radianceteam/ton-client-ruby">radianceteam/ton-client-ruby</a><br><a href="https://github.com/nerzh/ton-client-ruby">nerzh/ton-client-ruby</a></p>                                                                                                                                                             |
-| Scala      | <p><a href="https://github.com/slavaschmidt/ton-sdk-client-scala-binding/">slavaschmidt/ton-sdk-client-scala-binding/</a><br><a href="https://github.com/radianceteam/ton-client-scala">radianceteam/ton-client-scala</a></p>                                                                                                                 |
-| Swift      | [nerzh/ton-client-swift](https://github.com/nerzh/ton-client-swift)                                                                                                                                                                                                                                                                           |
-| Typescript | [RSquad/ton-client-ts](https://github.com/RSquad/ton-client-ts)                                                                                                                                                                                                                                                                               |
+| PHP        | <p><a href="https://github.com/extraton/php-ton-client">extraton/php-ton-client</a><br><a href="https://github.com/radianceteam/ton-client-php">radianceteam/ton-client-php</a></p>                                                                                                                                                                     |
+| Python     | [move-ton/ton-client-py](https://github.com/move-ton/ton-client-py)                                                                                                                                                                                                                                                                                     |
+| Ruby       | <p><a href="https://github.com/radianceteam/ton-client-ruby">radianceteam/ton-client-ruby</a><br><a href="https://github.com/nerzh/ton-client-ruby">nerzh/ton-client-ruby</a></p>                                                                                                                                                                       |
+| Scala      | <p><a href="https://github.com/slavaschmidt/ton-sdk-client-scala-binding/">slavaschmidt/ton-sdk-client-scala-binding/</a><br><a href="https://github.com/radianceteam/ton-client-scala">radianceteam/ton-client-scala</a></p>                                                                                                                           |
+| Swift      | [nerzh/ton-client-swift](https://github.com/nerzh/ton-client-swift)                                                                                                                                                                                                                                                                                     |
+| Typescript | [RSquad/ton-client-ts](https://github.com/RSquad/ton-client-ts)                                                                                                                                                                                                                                                                                         |
 
 ## How to use library
 
