@@ -4,9 +4,10 @@ use std::sync::Arc;
 use ed25519_dalek::{Keypair, PublicKey, SecretKey};
 use lockfree::map::ReadGuard;
 use tokio::sync::RwLock;
-use zeroize::ZeroizeOnDrop;
+use zeroize::Zeroize;
 
 use crate::ClientContext;
+use crate::crypto::internal::{SecretString, SecretBuf};
 use crate::crypto::{
     CryptoConfig, EncryptionBox, EncryptionBoxInfo, Error, register_encryption_box,
     register_signing_box, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox,
@@ -35,13 +36,7 @@ pub struct RegisteredCryptoBox {
     pub handle: CryptoBoxHandle,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, ZeroizeOnDrop)]
-pub(crate) struct SecretString(pub String);
-
-#[derive(Debug, Default, Clone, ZeroizeOnDrop)]
-pub(crate) struct SecretBuf(pub Vec<u8>);
-
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, ZeroizeOnDrop)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Zeroize, ZeroizeOnDrop)]
 pub struct ResultOfGetPassword {
     /// User's password hash.
     /// Crypto box uses this password to decrypt its secret (seed phrase).
@@ -85,7 +80,7 @@ pub(crate) struct CryptoBox {
 }
 
 /// Crypto Box Secret.
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq, ZeroizeOnDrop)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq, Zeroize, ZeroizeOnDrop)]
 #[serde(tag="type")]
 pub enum CryptoBoxSecret {
     /// Creates Crypto Box from a random seed phrase.
@@ -140,7 +135,7 @@ impl Default for CryptoBoxSecret {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, ApiType, PartialEq, ZeroizeOnDrop)]
+#[derive(Serialize, Deserialize, Default, Clone, Debug, ApiType, PartialEq, Zeroize, ZeroizeOnDrop)]
 pub struct ParamsOfCreateCryptoBox {
     /// Salt used for secret encryption.
     /// For example, a mobile device can use device ID as salt.
@@ -222,7 +217,7 @@ pub async fn remove_crypto_box(
     Ok(())
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, ZeroizeOnDrop)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, Zeroize, ZeroizeOnDrop)]
 pub struct ResultOfGetCryptoBoxSeedPhrase {
     pub phrase: String,
     pub dictionary: u8,

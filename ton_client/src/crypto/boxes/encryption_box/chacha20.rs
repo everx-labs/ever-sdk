@@ -2,14 +2,15 @@ use std::sync::Arc;
 use chacha20::cipher::{NewStreamCipher, SyncStreamCipher};
 use chacha20::{Key, Nonce};
 
-use zeroize::ZeroizeOnDrop;
+use zeroize::Zeroize;
 
 use crate::ClientContext;
+use crate::crypto::internal::SecretBuf;
 use crate::crypto::{EncryptionBox, EncryptionBoxInfo};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, ZeroizeOnDrop)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, Zeroize, ZeroizeOnDrop)]
 pub struct ChaCha20ParamsEB {
     /// 256-bit key. Must be encoded with `hex`.
     pub key: String,
@@ -17,7 +18,7 @@ pub struct ChaCha20ParamsEB {
     pub nonce: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Zeroize, ZeroizeOnDrop)]
 pub struct ChaCha20EncryptionBox {
     key: Key,
     nonce: Nonce,
@@ -34,10 +35,10 @@ impl ChaCha20EncryptionBox {
 
     fn chacha20(&self, data: &str) -> ClientResult<String> {
         let mut cipher = chacha20::ChaCha20::new(&self.key, &self.nonce);
-        let mut data = base64_decode(data)?;
-        cipher.apply_keystream(&mut data);
+        let mut data = SecretBuf(base64_decode(data)?);
+        cipher.apply_keystream(&mut data.0);
 
-        Ok(base64::encode(&data))
+        Ok(base64::encode(&data.0))
     }
 }
 
