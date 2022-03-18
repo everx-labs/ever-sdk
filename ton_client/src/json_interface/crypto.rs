@@ -18,8 +18,8 @@ use crate::client::{AppObject, ClientContext, Error};
 use crate::crypto::{EncryptionBoxInfo, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox};
 use crate::crypto::boxes::crypto_box::{AppPasswordProvider, ParamsOfCreateCryptoBox, RegisteredCryptoBox, ResultOfGetPassword};
 use crate::crypto::boxes::encryption_box::EncryptionBox;
-use crate::crypto::internal::key256;
-use crate::encoding::{base64_decode, hex_decode};
+use crate::crypto::internal::hex_decode_secret_const;
+use crate::encoding::base64_decode;
 use crate::error::ClientResult;
 
 /// Signing box callbacks.
@@ -243,7 +243,7 @@ impl AppPasswordProvider for ExternalPasswordProvider {
 
         Ok(ResultOfGetPassword {
             encrypted_password: base64_decode(&encrypted_password)?,
-            app_encryption_pubkey: key256(&hex_decode(&app_encryption_pubkey)?)?,
+            app_encryption_pubkey: hex_decode_secret_const(&app_encryption_pubkey)?.0,
         })
     }
 }

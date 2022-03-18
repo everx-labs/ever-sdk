@@ -78,7 +78,7 @@ pub fn hdkey_secret_from_xprv(
     params: ParamsOfHDKeySecretFromXPrv,
 ) -> ClientResult<ResultOfHDKeySecretFromXPrv> {
     Ok(ResultOfHDKeySecretFromXPrv {
-        secret: hex::encode(HDPrivateKey::from_serialized_string(&params.xprv)?.secret()),
+        secret: hex::encode(&HDPrivateKey::from_serialized_string(&params.xprv)?.secret().0),
     })
 }
 
@@ -195,8 +195,8 @@ impl HDPrivateKey {
             depth: 0,
             parent_fingerprint: [0; 4],
             child_number: [0; 4],
-            child_chain: *child_chain,
-            key: *key,
+            child_chain: child_chain.clone(),
+            key: key.clone(),
         }
     }
 
@@ -214,13 +214,13 @@ impl HDPrivateKey {
     }
 
     pub(crate) fn secret(&self) -> Key256 {
-        self.key
+        self.key.clone()
     }
 
     fn public(&self) -> Key264 {
-        let secret_key = SecretKey::parse(&self.key).unwrap();
+        let secret_key = SecretKey::parse(&self.key.0).unwrap();
         let public_key = PublicKey::from_secret_key(&secret_key);
-        public_key.serialize_compressed()
+        public_key.serialize_compressed().into()
     }
 
     fn map_secp_error(error: libsecp256k1::Error) -> ClientError {
@@ -259,7 +259,7 @@ impl HDPrivateKey {
         let public = self.public();
         let mut sha_hasher = sha2::Sha256::new();
         sha_hasher.update(&public.as_ref());
-        let sha: Key256 = sha_hasher.finalize().into();
+        let sha: Key256 = <[u8; 32]>::from(sha_hasher.finalize()).into();
         let fingerprint = Ripemd160::new().update(&sha).digest();
 
         child.parent_fingerprint.copy_from_slice(&fingerprint[0..4]);
@@ -274,7 +274,7 @@ impl HDPrivateKey {
         let mut hmac: Hmac<Sha512> = Hmac::new_from_slice(&self.child_chain)
             .map_err(|err| crypto::Error::bip32_invalid_key(err))?;
 
-        let secret_key = SecretKey::parse(&self.key).unwrap();
+        let secret_key = SecretKey::parse(&self.key.0).unwrap();
         if hardened && !compliant {
             // The private key serialization in this case will not be exactly 32 bytes and can be
             // any smaller value, and the value is not zero-padded.
@@ -294,13 +294,13 @@ impl HDPrivateKey {
         let mut child_secret_key =
             SecretKey::parse_slice(&child_key_bytes).map_err(|err| Self::map_secp_error(err))?;
         let self_secret_key =
-            SecretKey::parse(&self.key).map_err(|err| Self::map_secp_error(err))?;
+            SecretKey::parse(&self.key.0).map_err(|err| Self::map_secp_error(err))?;
         child_secret_key
             .tweak_add_assign(&self_secret_key)
             .map_err(|err| Self::map_secp_error(err))?;
 
-        child.child_chain.copy_from_slice(&chain_code);
-        child.key.copy_from_slice(&child_secret_key.serialize());
+        child.child_chain.0.copy_from_slice(&chain_code);
+        child.key.0.copy_from_slice(&child_secret_key.serialize());
         Ok(child)
     }
 
@@ -338,11 +338,11 @@ impl HDPrivateKey {
         xprv.depth = bytes[4];
         xprv.parent_fingerprint.copy_from_slice(&bytes[5..9]);
         xprv.child_number.copy_from_slice(&bytes[9..13]);
-        xprv.child_chain.copy_from_slice(&bytes[13..45]);
+        xprv.child_chain.0.copy_from_slice(&bytes[13..45]);
         if bytes[45] != 0 {
             return Err(crypto::Error::bip32_invalid_key(bytes.to_base58()));
         }
-        xprv.key.copy_from_slice(&bytes[46..78]);
+        xprv.key.0.copy_from_slice(&bytes[46..78]);
         Ok(xprv)
     }
 
@@ -352,9 +352,9 @@ impl HDPrivateKey {
         bytes.push(self.depth);
         bytes.extend(&self.parent_fingerprint);
         bytes.extend(&self.child_number);
-        bytes.extend(&self.child_chain);
+        bytes.extend(&self.child_chain.0);
         bytes.push(0);
-        bytes.extend(&self.key);
+        bytes.extend(&self.key.0);
         bytes.extend(&sha256(&sha256(&bytes))[0..4]);
         bytes
     }

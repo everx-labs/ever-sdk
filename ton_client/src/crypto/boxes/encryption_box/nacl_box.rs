@@ -1,12 +1,12 @@
 use std::sync::Arc;
 
-use zeroize::ZeroizeOnDrop;
+use zeroize::Zeroize;
 
 use crate::ClientContext;
 use crate::crypto::{EncryptionBox, EncryptionBoxInfo, nacl_box, nacl_box_open, ParamsOfNaclBox, ParamsOfNaclBoxOpen};
 use crate::error::ClientResult;
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, ZeroizeOnDrop)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, Zeroize, ZeroizeOnDrop)]
 pub struct NaclBoxParamsEB {
     /// 256-bit key. Must be encoded with `hex`.
     pub their_public: String,

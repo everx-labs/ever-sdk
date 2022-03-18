@@ -1,17 +1,17 @@
 use chacha20::cipher::{NewStreamCipher, SyncStreamCipher};
 use rand::RngCore;
 use sodalite::{BOX_NONCE_LEN, BOX_PUBLIC_KEY_LEN, BOX_SECRET_KEY_LEN};
-use zeroize::ZeroizeOnDrop;
+use zeroize::Zeroize;
 
-use crate::crypto::boxes::crypto_box::SecretInternal;
+use crate::crypto::{boxes::crypto_box::SecretInternal, internal::SecretBuf};
 use crate::crypto::nacl::nacl_box_open_internal;
 use crate::error::ClientResult;
 
-use super::{Error, PasswordProvider, SecretBuf};
+use super::{Error, PasswordProvider};
 
 const NONCE_LEN: usize = 12;
 
-#[derive(Default, ZeroizeOnDrop)]
+#[derive(Default, Zeroize, ZeroizeOnDrop)]
 struct SecretKey(sodalite::BoxSecretKey);
 
 fn generate_nonce() -> SecretBuf {

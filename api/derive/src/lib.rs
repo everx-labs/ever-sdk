@@ -23,6 +23,11 @@ pub fn api_function(attr: TokenStream, input: TokenStream) -> TokenStream {
     crate::derive_function::impl_api_function(attr, input)
 }
 
+#[proc_macro_derive(ZeroizeOnDrop)]
+pub fn zeroize_on_drop(input: TokenStream) -> TokenStream {
+    crate::derive_type::impl_zeroize_on_drop(input)
+}
+
 #[macro_use]
 extern crate quote;
 

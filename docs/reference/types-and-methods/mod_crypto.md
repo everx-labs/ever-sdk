@@ -899,7 +899,7 @@ function nacl_box_open(
 ### Parameters
 - `encrypted`: _string_ – Data that must be decrypted.
 <br>Encoded with `base64`.
-- `nonce`: _string_
+- `nonce`: _string_ – Nonce
 - `their_public`: _string_ – Sender's public key - unprefixed 0-padded to 64 symbols hex string
 - `secret`: _string_ – Receiver's private key - unprefixed 0-padded to 64 symbols hex string
 
@@ -2489,7 +2489,7 @@ type ParamsOfNaclBoxOpen = {
 ```
 - `encrypted`: _string_ – Data that must be decrypted.
 <br>Encoded with `base64`.
-- `nonce`: _string_
+- `nonce`: _string_ – Nonce
 - `their_public`: _string_ – Sender's public key - unprefixed 0-padded to 64 symbols hex string
 - `secret`: _string_ – Receiver's private key - unprefixed 0-padded to 64 symbols hex string
 
