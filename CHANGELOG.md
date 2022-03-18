@@ -17,7 +17,10 @@ All notable changes to this project will be documented in this file.
   [`get_signing_box_from_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#get_signing_box_from_crypto_box) - derives signing box from secret  
   [`get_encryption_box_from_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#get_encryption_box_from_crypto_box) - derives encryption box from secret  
   [`clear_crypto_box_secret_cache`](./docs/reference/types-and-methods/mod_crypto.md#clear_crypto_box_secret_cache) - forces secret cache (signing and encryption) clean up (overwrites all secrets with zeroes). 
+  
+- Support of `initCodeHash` in tvm: `X-Evernode-Expected-Account-Boc-Version`=2 http header added to graphql requests. value=2 means that SDK requests the latest account boc version with initCodeHash support from API. This was done because new boc version is not compatible with old transaction executor, i.e. with previous SDK versions. New transaction executor is compatible with new and old boc formats. New SDK asks for new boc format if it exists,if it does not - old boc version is returned. Previous version of SDK will fetch only old version without initCodeHash support. 
 
+**Attention! Migrate your applications to the new SDK version ASAP because in some period of time we will stop supporting old boc version in API and default value of X-Evernode-Expected-Account-Boc-Version on backend side will become 2, missing value will cause an error. Now default value on API side is Null which means that API returns the old version. This is done to avoid breaking changes in existing applications and give time to migrate to the new SDK**. 
 
 ### Fixed
 - Documentation generator for app object interface fills documentation from
