@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+### New
+ - Version 1.31.0
+
+
 ## [1.30.0] – 2022-02-04
 
 ### New
