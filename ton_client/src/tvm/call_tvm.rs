@@ -17,11 +17,11 @@ use crate::error::ClientResult;
 use crate::tvm::Error;
 use std::sync::Arc;
 use ton_block::{
-    Account, CommonMsgInfo, ConfigParams, CurrencyCollection, Deserializable, Message,
-    MsgAddressInt, OutAction, OutActions, Serializable,
+    Account, CommonMsgInfo, ConfigParams, CurrencyCollection, Deserializable, GlobalCapabilities,
+    Message, MsgAddressInt, OutAction, OutActions, Serializable,
 };
 use ton_types::dictionary::HashmapType;
-use ton_types::{Cell, SliceData};
+use ton_types::{Cell, SliceData, UInt256};
 use ton_vm::executor::gas::gas_state::Gas;
 use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
 
@@ -54,6 +54,7 @@ pub(crate) fn call_tvm(
         options.block_lt,
         options.transaction_lt,
         code.clone(),
+        account.init_code_hash(),
     );
     ctrls
         .put(7, &mut sci.into_temp_data())
@@ -62,7 +63,12 @@ pub(crate) fn call_tvm(
     let gas_limit = 1_000_000_000;
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
-    let mut engine = ton_vm::executor::Engine::new().setup(
+    let mut engine = ton_vm::executor::Engine::with_capabilities(
+        // TODO: use specific blockchain configs when they will be available 
+        // TODO: for now use maximum available capabilities 
+        // options.blockchain_config.capabilites()
+        (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapInitCodeHash as u64)
+    ).setup(
         SliceData::from(code),
         Some(ctrls),
         Some(stack),
@@ -157,6 +163,7 @@ fn build_contract_info(
     block_lt: u64,
     tr_lt: u64,
     code: Cell,
+    init_code_hash: Option<&UInt256>,
 ) -> ton_vm::SmartContractInfo {
     let mut info =
         ton_vm::SmartContractInfo::with_myself(address.serialize().unwrap_or_default().into());
@@ -167,6 +174,9 @@ fn build_contract_info(
     *info.balance_remaining_other_mut() = balance.other_as_hashmap();
     if let Some(data) = config_params.config_params.data() {
         info.set_config_params(data.clone());
+    }
+    if let Some(hash) = init_code_hash {
+        info.set_init_code_hash(hash.clone());
     }
     info.set_mycode(code);
     info

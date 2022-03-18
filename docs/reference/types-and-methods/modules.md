@@ -89,6 +89,20 @@ Where:
 
 [chacha20](mod_crypto.md#chacha20) – Performs symmetric `chacha20` encryption.
 
+[create_crypto_box](mod_crypto.md#create_crypto_box) – Creates a Crypto Box instance.
+
+[remove_crypto_box](mod_crypto.md#remove_crypto_box) – Removes Crypto Box. Clears all secret data.
+
+[get_crypto_box_info](mod_crypto.md#get_crypto_box_info) – Get Crypto Box Info. Used to get `encrypted_secret` that should be used for all the cryptobox initializations except the first one.
+
+[get_crypto_box_seed_phrase](mod_crypto.md#get_crypto_box_seed_phrase) – Get Crypto Box Seed Phrase.
+
+[get_signing_box_from_crypto_box](mod_crypto.md#get_signing_box_from_crypto_box) – Get handle of Signing Box derived from Crypto Box.
+
+[get_encryption_box_from_crypto_box](mod_crypto.md#get_encryption_box_from_crypto_box) – Gets Encryption Box from Crypto Box.
+
+[clear_crypto_box_secret_cache](mod_crypto.md#clear_crypto_box_secret_cache) – Removes cached secrets (overwrites with zeroes) from all signing and encryption boxes, derived from crypto box.
+
 [register_signing_box](mod_crypto.md#register_signing_box) – Register an application implemented signing box.
 
 [get_signing_box](mod_crypto.md#get_signing_box) – Creates a default signing box implementation.

@@ -1,5 +1,5 @@
 {
-  "version": "1.30.0",
+  "version": "1.31.0",
   "modules": [
     {
       "name": "client",
@@ -1119,6 +1119,34 @@
               "value": "129",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "CryptoBoxNotRegistered",
+              "type": "Number",
+              "value": "130",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidCryptoBoxType",
+              "type": "Number",
+              "value": "131",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CryptoBoxSecretSerializationError",
+              "type": "Number",
+              "value": "132",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "CryptoBoxSecretDeserializationError",
+              "type": "Number",
+              "value": "133",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -1183,7 +1211,7 @@
               "description": null
             }
           ],
-          "summary": "Encryption box information",
+          "summary": "Encryption box information.",
           "description": null
         },
         {
@@ -1193,7 +1221,28 @@
             {
               "name": "AES",
               "type": "Ref",
-              "ref_name": "crypto.AesParams",
+              "ref_name": "crypto.AesParamsEB",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "ChaCha20",
+              "type": "Ref",
+              "ref_name": "crypto.ChaCha20ParamsEB",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclBox",
+              "type": "Ref",
+              "ref_name": "crypto.NaclBoxParamsEB",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclSecretBox",
+              "type": "Ref",
+              "ref_name": "crypto.NaclSecretBoxParamsEB",
               "summary": null,
               "description": null
             }
@@ -1240,7 +1289,7 @@
           "description": null
         },
         {
-          "name": "AesParams",
+          "name": "AesParamsEB",
           "type": "Struct",
           "struct_fields": [
             {
@@ -1287,6 +1336,233 @@
                 "type": "String"
               },
               "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ChaCha20ParamsEB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "key",
+              "type": "String",
+              "summary": "256-bit key.",
+              "description": "Must be encoded with `hex`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "96-bit nonce.",
+              "description": "Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "NaclBoxParamsEB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "their_public",
+              "type": "String",
+              "summary": "256-bit key.",
+              "description": "Must be encoded with `hex`."
+            },
+            {
+              "name": "secret",
+              "type": "String",
+              "summary": "256-bit key.",
+              "description": "Must be encoded with `hex`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "96-bit nonce.",
+              "description": "Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "NaclSecretBoxParamsEB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "key",
+              "type": "String",
+              "summary": "Secret key - unprefixed 0-padded to 64 symbols hex string",
+              "description": null
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "Nonce in `hex`",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "CryptoBoxSecret",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "RandomSeedPhrase",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "dictionary",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "wordcount",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": "Creates Crypto Box from a random seed phrase. This option can be used if a developer doesn't want the seed phrase to leave the core library's memory, where it is stored encrypted.",
+              "description": "This type should be used upon the first wallet initialization, all further initializations\nshould use `EncryptedSecret` type instead.\n\nGet `encrypted_secret` with `get_crypto_box_info` function and store it on your side."
+            },
+            {
+              "name": "PredefinedSeedPhrase",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "phrase",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "dictionary",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "wordcount",
+                  "type": "Number",
+                  "number_type": "UInt",
+                  "number_size": 8,
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": "Restores crypto box instance from an existing seed phrase. This type should be used when Crypto Box is initialized from a seed phrase, entered by a user.",
+              "description": "This type should be used only upon the first wallet initialization, all further\ninitializations should use `EncryptedSecret` type instead.\n\nGet `encrypted_secret` with `get_crypto_box_info` function and store it on your side."
+            },
+            {
+              "name": "EncryptedSecret",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "encrypted_secret",
+                  "type": "String",
+                  "summary": "It is an object, containing encrypted seed phrase or private key (now we support only seed phrase).",
+                  "description": null
+                }
+              ],
+              "summary": "Use this type for wallet reinitializations, when you already have `encrypted_secret` on hands. To get `encrypted_secret`, use `get_crypto_box_info` function after you initialized your crypto box for the first time.",
+              "description": "It is an object, containing seed phrase or private key, encrypted with\n`secret_encryption_salt` and password from `password_provider`.\n\nNote that if you want to change salt or password provider, then you need to reinitialize\nthe wallet with `PredefinedSeedPhrase`, then get `EncryptedSecret` via `get_crypto_box_info`,\nstore it somewhere, and only after that initialize the wallet with `EncryptedSecret` type."
+            }
+          ],
+          "summary": "Crypto Box Secret.",
+          "description": null
+        },
+        {
+          "name": "CryptoBoxHandle",
+          "type": "Number",
+          "number_type": "UInt",
+          "number_size": 32,
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "BoxEncryptionAlgorithm",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "ChaCha20",
+              "type": "Ref",
+              "ref_name": "crypto.ChaCha20ParamsCB",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclBox",
+              "type": "Ref",
+              "ref_name": "crypto.NaclBoxParamsCB",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NaclSecretBox",
+              "type": "Ref",
+              "ref_name": "crypto.NaclSecretBoxParamsCB",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ChaCha20ParamsCB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "96-bit nonce.",
+              "description": "Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "NaclBoxParamsCB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "their_public",
+              "type": "String",
+              "summary": "256-bit key.",
+              "description": "Must be encoded with `hex`."
+            },
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "96-bit nonce.",
+              "description": "Must be encoded with `hex`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "NaclSecretBoxParamsCB",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "nonce",
+              "type": "String",
+              "summary": "Nonce in `hex`",
               "description": null
             }
           ],
@@ -1850,7 +2126,7 @@
             {
               "name": "nonce",
               "type": "String",
-              "summary": null,
+              "summary": "Nonce",
               "description": null
             },
             {
@@ -1928,7 +2204,7 @@
             {
               "name": "key",
               "type": "String",
-              "summary": "Public key - unprefixed 0-padded to 64 symbols hex string",
+              "summary": "Secret key - unprefixed 0-padded to 64 symbols hex string",
               "description": null
             }
           ],
@@ -2380,6 +2656,172 @@
           "description": null
         },
         {
+          "name": "ParamsOfCreateCryptoBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "secret_encryption_salt",
+              "type": "String",
+              "summary": "Salt used for secret encryption. For example, a mobile device can use device ID as salt.",
+              "description": null
+            },
+            {
+              "name": "secret",
+              "type": "Ref",
+              "ref_name": "crypto.CryptoBoxSecret",
+              "summary": "Cryptobox secret",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "RegisteredCryptoBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "handle",
+              "type": "Ref",
+              "ref_name": "crypto.CryptoBoxHandle",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfAppPasswordProvider",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "GetPassword",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "encryption_public_key",
+                  "type": "String",
+                  "summary": "Temporary library pubkey, that is used on application side for password encryption, along with application temporary private key and nonce. Used for password decryption on library side.",
+                  "description": null
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": "Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption",
+          "description": "To secure the password while passing it from application to the library,\nthe library generates a temporary key pair, passes the pubkey\nto the passwordProvider, decrypts the received password with private key,\nand deletes the key pair right away.\n\nApplication should generate a temporary nacl_box_keypair\nand encrypt the password with naclbox function using nacl_box_keypair.secret\nand encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key."
+        },
+        {
+          "name": "ResultOfAppPasswordProvider",
+          "type": "EnumOfTypes",
+          "enum_types": [
+            {
+              "name": "GetPassword",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "encrypted_password",
+                  "type": "String",
+                  "summary": "Password, encrypted and encoded to base64. Crypto box uses this password to decrypt its secret (seed phrase).",
+                  "description": null
+                },
+                {
+                  "name": "app_encryption_pubkey",
+                  "type": "String",
+                  "summary": "Hex encoded public key of a temporary key pair, used for password encryption on application side.",
+                  "description": "Used together with `encryption_public_key` to decode `encrypted_password`."
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetCryptoBoxInfo",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "encrypted_secret",
+              "type": "String",
+              "summary": "Secret (seed phrase) encrypted with salt and password.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetCryptoBoxSeedPhrase",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "phrase",
+              "type": "String",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "dictionary",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 8,
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "wordcount",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 8,
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfGetSigningBoxFromCryptoBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "handle",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "Crypto Box Handle.",
+              "description": null
+            },
+            {
+              "name": "hdpath",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "HD key derivation path.",
+              "description": "By default, Everscale HD path is used."
+            },
+            {
+              "name": "secret_lifetime",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Store derived secret for this lifetime (in ms). The timer starts after each signing box operation. Secrets will be deleted immediately after each signing box operation, if this value is not set.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "RegisteredSigningBox",
           "type": "Struct",
           "struct_fields": [
@@ -2388,6 +2830,64 @@
               "type": "Ref",
               "ref_name": "crypto.SigningBoxHandle",
               "summary": "Handle of the signing box.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfGetEncryptionBoxFromCryptoBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "handle",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "Crypto Box Handle.",
+              "description": null
+            },
+            {
+              "name": "hdpath",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "HD key derivation path.",
+              "description": "By default, Everscale HD path is used."
+            },
+            {
+              "name": "algorithm",
+              "type": "Ref",
+              "ref_name": "crypto.BoxEncryptionAlgorithm",
+              "summary": "Encryption algorithm.",
+              "description": null
+            },
+            {
+              "name": "secret_lifetime",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Store derived secret for encryption algorithm for this lifetime (in ms). The timer starts after each encryption box operation. Secrets will be deleted (overwritten with zeroes) after each encryption operation, if this value is not set.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "RegisteredEncryptionBox",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "handle",
+              "type": "Ref",
+              "ref_name": "crypto.EncryptionBoxHandle",
+              "summary": "Handle of the encryption box.",
               "description": null
             }
           ],
@@ -2509,21 +3009,6 @@
           "description": null
         },
         {
-          "name": "RegisteredEncryptionBox",
-          "type": "Struct",
-          "struct_fields": [
-            {
-              "name": "handle",
-              "type": "Ref",
-              "ref_name": "crypto.EncryptionBoxHandle",
-              "summary": "Handle of the encryption box",
-              "description": null
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
-        {
           "name": "ParamsOfAppEncryptionBox",
           "type": "EnumOfTypes",
           "enum_types": [
@@ -2563,7 +3048,7 @@
               "description": null
             }
           ],
-          "summary": "Encryption box callbacks.",
+          "summary": "Interface for data encryption/decryption",
           "description": null
         },
         {
@@ -3969,6 +4454,287 @@
               {
                 "type": "Ref",
                 "ref_name": "crypto.ResultOfChaCha20"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "create_crypto_box",
+          "summary": "Creates a Crypto Box instance.",
+          "description": "Crypto Box is a root crypto object, that encapsulates some secret (seed phrase usually)\nin encrypted form and acts as a factory for all crypto primitives used in SDK:\nkeys for signing and encryption, derived from this secret.\n\nCrypto Box encrypts original Seed Phrase with salt and password that is retrieved\nfrom `password_provider` callback, implemented on Application side.\n\nWhen used, decrypted secret shows up in core library's memory for a very short period\nof time and then is immediately overwritten with zeroes.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.ParamsOfCreateCryptoBox",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "password_provider",
+              "type": "Generic",
+              "generic_name": "AppObject",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "crypto.ParamsOfAppPasswordProvider"
+                },
+                {
+                  "type": "Ref",
+                  "ref_name": "crypto.ResultOfAppPasswordProvider"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.RegisteredCryptoBox"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "remove_crypto_box",
+          "summary": "Removes Crypto Box. Clears all secret data.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.RegisteredCryptoBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_crypto_box_info",
+          "summary": "Get Crypto Box Info. Used to get `encrypted_secret` that should be used for all the cryptobox initializations except the first one.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.RegisteredCryptoBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfGetCryptoBoxInfo"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_crypto_box_seed_phrase",
+          "summary": "Get Crypto Box Seed Phrase.",
+          "description": "Attention! Store this data in your application for a very short period of time and overwrite it with zeroes ASAP.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.RegisteredCryptoBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.ResultOfGetCryptoBoxSeedPhrase"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_signing_box_from_crypto_box",
+          "summary": "Get handle of Signing Box derived from Crypto Box.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.ParamsOfGetSigningBoxFromCryptoBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.RegisteredSigningBox"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_encryption_box_from_crypto_box",
+          "summary": "Gets Encryption Box from Crypto Box.",
+          "description": "Derives encryption keypair from cryptobox secret and hdpath and\nstores it in cache for `secret_lifetime`\nor until explicitly cleared by `clear_crypto_box_secret_cache` method.\nIf `secret_lifetime` is not specified - overwrites encryption secret with zeroes immediately after\nencryption operation.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.ParamsOfGetEncryptionBoxFromCryptoBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "crypto.RegisteredEncryptionBox"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "clear_crypto_box_secret_cache",
+          "summary": "Removes cached secrets (overwrites with zeroes) from all signing and encryption boxes, derived from crypto box.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "crypto.RegisteredCryptoBox",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
               }
             ]
           },
@@ -12957,7 +13723,7 @@
         {
           "name": "proof_block_data",
           "summary": "Proves that a given block's data, which is queried from TONOS API, can be trusted.",
-          "description": "This function checks block proofs and compares given data with the proven.\nIf the given data differs from the proven, the exception will be thrown.\nThe input param is a single block's JSON object, which was queried from DApp server using\nfunctions such as `net.query`, `net.query_collection` or `net.wait_for_collection`.\nIf block's BOC is not provided in the JSON, it will be queried from DApp server\n(in this case it is required to provide at least `id` of block).\n\nPlease note, that joins (like `signatures` in `Block`) are separated entities and not supported,\nso function will throw an exception in a case if JSON being checked has such entities in it.\n\nIf `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and\nmaster-chain BOCs are saved into the persistent local storage (e.g. file system for native\nenvironments or browser's IndexedDB for the web); otherwise all the data is cached only in\nmemory in current client's context and will be lost after destruction of the client.\n\n**Why Proofs are needed**\n\nProofs are needed to ensure that the data downloaded from a DApp server is real blockchain\ndata. Checking proofs can protect from the malicious DApp server which can potentially provide\nfake data, or also from \"Man in the Middle\" attacks class.\n\n**What Proofs are**\n\nSimply, proof is a list of signatures of validators', which have signed this particular master-\nblock.\n\nThe very first validator set's public keys are included in the zero-state. Whe know a root hash\nof the zero-state, because it is stored in the network configuration file, it is our authority\nroot. For proving zero-state it is enough to calculate and compare its root hash.\n\nIn each new validator cycle the validator set is changed. The new one is stored in a key-block,\nwhich is signed by the validator set, which we already trust, the next validator set will be\nstored to the new key-block and signed by the current validator set, and so on.\n\nIn order to prove any block in the master-chain we need to check, that it has been signed by\na trusted validator set. So we need to check all key-blocks' proofs, started from the zero-state\nand until the block, which we want to prove. But it can take a lot of time and traffic to\ndownload and prove all key-blocks on a client. For solving this, special trusted blocks are used\nin TON-SDK.\n\nThe trusted block is the authority root, as well, as the zero-state. Each trusted block is the\n`id` (e.g. `root_hash`) of the already proven key-block. There can be plenty of trusted\nblocks, so there can be a lot of authority roots. The hashes of trusted blocks for MainNet\nand DevNet are hardcoded in SDK in a separated binary file (trusted_key_blocks.bin) and can\nbe updated for each release.\nIn future SDK releases, one will also be able to provide their hashes of trusted blocks for\nother networks, besides for MainNet and DevNet.\nBy using trusted key-blocks, in order to prove any block, we can prove chain of key-blocks to\nthe closest previous trusted key-block, not only to the zero-state.\n\nBut shard-blocks don't have proofs on DApp server. In this case, in order to prove any shard-\nblock data, we search for a corresponding master-block, which contains the root hash of this\nshard-block, or some shard block which is linked to that block in shard-chain. After proving\nthis master-block, we traverse through each link and calculate and compare hashes with links,\none-by-one. After that we can ensure that this shard-block has also been proven.",
+          "description": "This function checks block proofs and compares given data with the proven.\nIf the given data differs from the proven, the exception will be thrown.\nThe input param is a single block's JSON object, which was queried from DApp server using\nfunctions such as `net.query`, `net.query_collection` or `net.wait_for_collection`.\nIf block's BOC is not provided in the JSON, it will be queried from DApp server\n(in this case it is required to provide at least `id` of block).\n\nPlease note, that joins (like `signatures` in `Block`) are separated entities and not supported,\nso function will throw an exception in a case if JSON being checked has such entities in it.\n\nIf `cache_in_local_storage` in config is set to `true` (default), downloaded proofs and\nmaster-chain BOCs are saved into the persistent local storage (e.g. file system for native\nenvironments or browser's IndexedDB for the web); otherwise all the data is cached only in\nmemory in current client's context and will be lost after destruction of the client.\n\n**Why Proofs are needed**\n\nProofs are needed to ensure that the data downloaded from a DApp server is real blockchain\ndata. Checking proofs can protect from the malicious DApp server which can potentially provide\nfake data, or also from \"Man in the Middle\" attacks class.\n\n**What Proofs are**\n\nSimply, proof is a list of signatures of validators', which have signed this particular master-\nblock.\n\nThe very first validator set's public keys are included in the zero-state. Whe know a root hash\nof the zero-state, because it is stored in the network configuration file, it is our authority\nroot. For proving zero-state it is enough to calculate and compare its root hash.\n\nIn each new validator cycle the validator set is changed. The new one is stored in a key-block,\nwhich is signed by the validator set, which we already trust, the next validator set will be\nstored to the new key-block and signed by the current validator set, and so on.\n\nIn order to prove any block in the master-chain we need to check, that it has been signed by\na trusted validator set. So we need to check all key-blocks' proofs, started from the zero-state\nand until the block, which we want to prove. But it can take a lot of time and traffic to\ndownload and prove all key-blocks on a client. For solving this, special trusted blocks are used\nin TON-SDK.\n\nThe trusted block is the authority root, as well, as the zero-state. Each trusted block is the\n`id` (e.g. `root_hash`) of the already proven key-block. There can be plenty of trusted\nblocks, so there can be a lot of authority roots. The hashes of trusted blocks for MainNet\nand DevNet are hardcoded in SDK in a separated binary file (trusted_key_blocks.bin) and is\nbeing updated for each release by using `update_trusted_blocks` utility.\n\nSee [update_trusted_blocks](../../../tools/update_trusted_blocks) directory for more info.\n\nIn future SDK releases, one will also be able to provide their hashes of trusted blocks for\nother networks, besides for MainNet and DevNet.\nBy using trusted key-blocks, in order to prove any block, we can prove chain of key-blocks to\nthe closest previous trusted key-block, not only to the zero-state.\n\nBut shard-blocks don't have proofs on DApp server. In this case, in order to prove any shard-\nblock data, we search for a corresponding master-block, which contains the root hash of this\nshard-block, or some shard block which is linked to that block in shard-chain. After proving\nthis master-block, we traverse through each link and calculate and compare hashes with links,\none-by-one. After that we can ensure that this shard-block has also been proven.",
           "params": [
             {
               "name": "context",

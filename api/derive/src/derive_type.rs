@@ -86,3 +86,16 @@ fn value_from_lit(lit: &Lit) -> api_info::ConstValue {
         _ => panic!("Invalid enum const."),
     }
 }
+
+pub fn impl_zeroize_on_drop(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
+    let input = syn::parse::<DeriveInput>(input).expect("Derive input");
+    let type_name = &input.ident;
+    let tokens = quote! {
+        impl Drop for #type_name {
+            fn drop(&mut self) {
+                self.zeroize();
+            }
+        }
+    };
+    tokens.into()
+}
