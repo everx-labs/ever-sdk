@@ -191,7 +191,8 @@ impl LinkHandler {
                         Error::network_module_resumed()
                             .add_network_url_from_state(&self.state)
                             .await,
-                    ).await;
+                    )
+                    .await;
                 }
                 ws
             }
@@ -413,9 +414,7 @@ impl LinkHandler {
         }
         let result = self.state.refresh_query_endpoint().await;
         match result {
-            Ok(_) if current.latency() <= self.config.max_latency as u64 => {
-                None
-            }
+            Ok(_) if current.latency() <= self.config.max_latency as u64 => None,
             Ok(_) => Some(
                 self.handle_network_error(
                     Error::websocket_disconnected("Current endpoint has a critical sync latency."),
@@ -456,11 +455,8 @@ impl LinkHandler {
     }
 
     async fn handle_network_error(&mut self, err: ClientError, suspended: bool) -> Phase {
-        self.send_error_to_running_operations(
-            err
-                .add_network_url_from_state(&self.state)
-                .await,
-        ).await;
+        self.send_error_to_running_operations(err.add_network_url_from_state(&self.state).await)
+            .await;
         if !suspended {
             self.send_error_to_running_operations(Error::network_module_suspended())
                 .await;

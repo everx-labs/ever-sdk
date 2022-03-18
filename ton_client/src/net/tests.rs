@@ -1283,6 +1283,7 @@ async fn low_level_subscribe() {
         .get_tokens_from_giver_async(&client.giver_address().await, None)
         .await;
 
+    std::thread::sleep(std::time::Duration::from_millis(1000));
     assert_ne!(messages.lock().await.len(), 0);
 
     let _: () = client
