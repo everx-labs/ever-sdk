@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.31.0] – 2022-03-09
+## [1.32.0] – 2022-03-22
 
 ### New 
 
@@ -11,6 +11,10 @@ All notable changes to this project will be documented in this file.
   - `HTTP` – SDK performs single HTTP-request for each query.
   - `WS` – SDK uses single WebSocket connection to send all requests. This protocol is a preferable
     way when the application sends many GraphQL queries in parallel. 
+
+## [1.31.0] – 2022-03-09
+
+### New 
 
 **crypto module:**
 - `Cryptobox` introduced: root crypto object that stores encrypted secret and acts as a factory for all crypto primitives used in SDK. 
