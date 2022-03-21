@@ -15,6 +15,7 @@ use crate::MessageType;
 use serde::de::Error;
 use std::fmt;
 use std::str::FromStr;
+use std::io::Cursor;
 use ton_block::{
     AccStatusChange, AccountStatus, ComputeSkipReason, MsgAddressInt, TransactionProcessingStatus,
 };
@@ -124,7 +125,7 @@ where
     let bytes = base64::decode(&b64)
         .map_err(|err| D::Error::custom(format!("error decode base64: {}", err)))?;
 
-    ton_types::cells_serialization::deserialize_tree_of_cells(&mut bytes.as_slice())
+    ton_types::cells_serialization::deserialize_tree_of_cells(&mut Cursor::new(&bytes))
         .map_err(|err| D::Error::custom(format!("BOC read error: {}", err)))
 }
 
