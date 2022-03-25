@@ -6,11 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### New 
 
-- `network.queries_protocol` config parameter allows selecting protocol the SDK uses to send queries 
-  to the GraphQL endpoint:
-  - `HTTP` – SDK performs single HTTP-request for each query.
+- `network.queries_protocol` config parameter allows selecting protocol the SDK uses to communicaite with GraphQL endpoint:
+  - `HTTP` – SDK performs single HTTP-request for each request.
   - `WS` – SDK uses single WebSocket connection to send all requests. This protocol is a preferable
-    way when the application sends many GraphQL queries in parallel. 
+    way when the application sends many GraphQL requests in parallel. 
 
 ## [1.31.0] – 2022-03-09
 
