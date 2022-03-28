@@ -21,6 +21,8 @@ Provides information about library.
 
 [NetworkConfig](#networkconfig)
 
+[NetworkQueriesProtocol](#networkqueriesprotocol) – Network protocol used to perform GraphQL queries.
+
 [CryptoConfig](#cryptoconfig) – Crypto config.
 
 [AbiConfig](#abiconfig)
@@ -248,6 +250,7 @@ type NetworkConfig = {
     latency_detection_interval?: number,
     max_latency?: number,
     query_timeout?: number,
+    queries_protocol?: NetworkQueriesProtocol,
     access_key?: string
 }
 ```
@@ -275,8 +278,25 @@ type NetworkConfig = {
 <br>Must be specified in milliseconds. Default is 60000 (1 min).
 - `query_timeout`?: _number_ – Default timeout for http requests.
 <br>Is is used when no timeout specified for the request to limit the answer waiting time. If no answer received during the timeout requests ends with<br>error.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
+- `queries_protocol`?: _[NetworkQueriesProtocol](mod_client.md#networkqueriesprotocol)_ – Queries protocol.
+<br>`HTTP` or `WS`. <br>Default is `HTTP`.
 - `access_key`?: _string_ – Access key to GraphQL API.
 <br>At the moment is not used in production.
+
+
+## NetworkQueriesProtocol
+Network protocol used to perform GraphQL queries.
+
+```ts
+enum NetworkQueriesProtocol {
+    HTTP = "HTTP",
+    WS = "WS"
+}
+```
+One of the following value:
+
+- `HTTP = "HTTP"` – Each GraphQL query uses separate HTTP request.
+- `WS = "WS"` – All GraphQL queries will be served using single web socket connection.
 
 
 ## CryptoConfig
