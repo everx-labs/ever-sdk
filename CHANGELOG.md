@@ -2,36 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.32.0] – 2022-03-22
+
+### New 
+
+- `network.queries_protocol` config parameter allows selecting protocol the SDK uses to communicaite with GraphQL endpoint:
+  - `HTTP` – SDK performs single HTTP-request for each request.
+  - `WS` – SDK uses single WebSocket connection to send all requests. This protocol is a preferable
+    way when the application sends many GraphQL requests in parallel. 
+
+### Fixed
+- **Debot module**:
+    - If DEngine received a non-zero exit_code while emulating a transaction while sending a message, DEngine will call onErrorId callback of the message.
+    
 ## [1.31.0] – 2022-03-09
 
 ### New 
+
 **crypto module:**
-- `Cryptobox` introduced: root crypto object that stores encrypted secret and acts as a factory for all crypto primitives used in SDK. 
+- `Cryptobox` introduced: root crypto object that stores encrypted secret and acts as a factory for all crypto primitives used in SDK.
   Crypto box provides signing and encryption boxes.
 
-  Functions:  
-  [`create_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#create_crypto_box) - initializes cryptobox with secret   
-  [`remove_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#remove_crypto_box) - removes cryptobox and overwrites all secrets with zeroes  
-  [`get_crypto_box_seed_phrase`](./docs/reference/types-and-methods/mod_crypto.md#get_crypto_box_seed_phrase) - returns decrypted seed phrase  
-  [`get_crypto_box_info`](./docs/reference/types-and-methods/mod_crypto.md#get_crypto_box_info) - returns encrypted cryptobox secret for next cryptobox initializations  
-  [`get_signing_box_from_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#get_signing_box_from_crypto_box) - derives signing box from secret  
-  [`get_encryption_box_from_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#get_encryption_box_from_crypto_box) - derives encryption box from secret  
-  [`clear_crypto_box_secret_cache`](./docs/reference/types-and-methods/mod_crypto.md#clear_crypto_box_secret_cache) - forces secret cache (signing and encryption) clean up (overwrites all secrets with zeroes). 
-  
-- Support of `initCodeHash` in tvm: `X-Evernode-Expected-Account-Boc-Version`=2 http header added to graphql requests. value=2 means that SDK requests the latest account boc version with initCodeHash support from API. This was done because new boc version is not compatible with old transaction executor, i.e. with previous SDK versions. New transaction executor is compatible with new and old boc formats. New SDK asks for new boc format if it exists,if it does not - old boc version is returned. Previous version of SDK will fetch only old version without initCodeHash support. 
+  Functions:
+  [`create_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#create_crypto_box) - initializes cryptobox with secret
+  [`remove_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#remove_crypto_box) - removes cryptobox and overwrites all secrets with zeroes
+  [`get_crypto_box_seed_phrase`](./docs/reference/types-and-methods/mod_crypto.md#get_crypto_box_seed_phrase) - returns decrypted seed phrase
+  [`get_crypto_box_info`](./docs/reference/types-and-methods/mod_crypto.md#get_crypto_box_info) - returns encrypted cryptobox secret for next cryptobox initializations
+  [`get_signing_box_from_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#get_signing_box_from_crypto_box) - derives signing box from secret
+  [`get_encryption_box_from_crypto_box`](./docs/reference/types-and-methods/mod_crypto.md#get_encryption_box_from_crypto_box) - derives encryption box from secret
+  [`clear_crypto_box_secret_cache`](./docs/reference/types-and-methods/mod_crypto.md#clear_crypto_box_secret_cache) - forces secret cache (signing and encryption) clean up (overwrites all secrets with zeroes).
 
-**Attention! Migrate your applications to the new SDK version ASAP because in some period of time we will stop supporting old boc version in API and default value of X-Evernode-Expected-Account-Boc-Version on backend side will become 2, missing value will cause an error. Now default value on API side is Null which means that API returns the old version. This is done to avoid breaking changes in existing applications and give time to migrate to the new SDK**. 
+- Support of `initCodeHash` in tvm: `X-Evernode-Expected-Account-Boc-Version`=2 http header added to graphql requests. value=2 means that SDK requests the latest account boc version with initCodeHash support from API. This was done because new boc version is not compatible with old transaction executor, i.e. with previous SDK versions. New transaction executor is compatible with new and old boc formats. New SDK asks for new boc format if it exists,if it does not - old boc version is returned. Previous version of SDK will fetch only old version without initCodeHash support.
+
+**Attention! Migrate your applications to the new SDK version ASAP because in some period of time we will stop supporting old boc version in API and default value of X-Evernode-Expected-Account-Boc-Version on backend side will become 2, missing value will cause an error. Now default value on API side is Null which means that API returns the old version. This is done to avoid breaking changes in existing applications and give time to migrate to the new SDK**.
 
 ### Fixed
 - Documentation generator for app object interface fills documentation from
   `ParamsOfXXXAppObject` enum.
-- Documentation generator for function with `obj` parameter add this parameter 
-  into parameters section with link to appropriate AppObject interface.  
+- Documentation generator for function with `obj` parameter add this parameter
+  into parameters section with link to appropriate AppObject interface.
 
 ## [1.30.0] – 2022-02-04
 
 ### New
-- Added `boc.encode_external_in_message` function to encode message BOC based on 
+- Added `boc.encode_external_in_message` function to encode message BOC based on
   a low level message parts such as a body, state init etc.
 - Added `net.subscribe` function to start a low level GraphQL subscription.
 - Added support for new MYCODE TVM command in `tvm.run_tvm` and `tvm.run_get` functions.
@@ -71,11 +85,11 @@ All notable changes to this project will be documented in this file.
 
 ### New
 - Function [`abi.encode_initial_data`](./docs/reference/types-and-methods/mod_abi.md#encode_initial_data) which
-  encodes initial account data with initial values for the contract's static variables and owner's public key. 
+  encodes initial account data with initial values for the contract's static variables and owner's public key.
   This function is analogue of `tvm.buildDataInit` function in Solidity.
 
 ### Fixed
-- Subscription for Counterparties failed with 'Unknown type "CounterpartieFilter"' error. 
+- Subscription for Counterparties failed with 'Unknown type "CounterpartieFilter"' error.
 
 ## [1.26.1] – 2021-12-01
 
@@ -86,28 +100,28 @@ All notable changes to this project will be documented in this file.
 
 ### New
 - **Debot module**:
-    - Аdded `allow_no_signature` parameter to `decode_and_fix_ext_msg()` and 
+    - Аdded `allow_no_signature` parameter to `decode_and_fix_ext_msg()` and
       `onerror_id` return value to `prepare_ext_in_message()` inner functions used in TS4.
     - Added support for async external calls.
     - `Query` interface extended with `waitForCollection` and `query` methods. `waitForCollection` allows to wait
      for completion of async external calls.
     - Added support for DeBots with ABI 2.2.
-- Function [`proofs.proof_message_data`](./docs/reference/types-and-methods/mod_proofs.md#proof_message_data) which proves message data, retrieved 
+- Function [`proofs.proof_message_data`](./docs/reference/types-and-methods/mod_proofs.md#proof_message_data) which proves message data, retrieved
   from Graphql API.
 
 ## [1.25.0] – 2021-11-08
 
 ### New
-- New module [`proofs`](./docs/mod_proofs.md) is introduced!  
-- Functions [`proofs.proof_block_data`](./docs/mod_proofs.md#proof_block_data) and [`proofs.proof_transaction_data`](./docs/mod_proofs.md#proof_transaction_data) 
-  which prove block data, retrieved from Graphql API. 
-  
-  These are the first functions from proofs series :) Wait for others(`proof_account_data`, `proof_message_data`) in the next releases. 
+- New module [`proofs`](./docs/mod_proofs.md) is introduced!
+- Functions [`proofs.proof_block_data`](./docs/mod_proofs.md#proof_block_data) and [`proofs.proof_transaction_data`](./docs/mod_proofs.md#proof_transaction_data)
+  which prove block data, retrieved from Graphql API.
 
-  Read about them more in the [documentation](./docs/mod_proofs.md#proof_block_data). 
+  These are the first functions from proofs series :) Wait for others(`proof_account_data`, `proof_message_data`) in the next releases.
+
+  Read about them more in the [documentation](./docs/mod_proofs.md#proof_block_data).
 
 - [`abi.decode_boc`](./docs/mod_abi.md#decode_boc) function to decode custom BOC data into JSON parameters.
-- `Ref(<ParamType>)` type was added to ABI.   
+- `Ref(<ParamType>)` type was added to ABI.
   Solidity functions use ABI types for builder encoding. The simplest way to decode such a BOC is to use ABI decoding. ABI has it own rules for fields layout in cells so manually encoded BOC can not be described in terms of ABI rules. To solve this problem we introduce a new ABI type `Ref(<ParamType>)` which allows to store `ParamType` ABI parameter in cell reference and, thus, decode manually encoded BOCs. This type is available only in `decode_boc` function and will not be available in ABI messages encoding until it is included into some ABI revision.
 
 ## [1.24.0] – 2021-10-18
@@ -132,7 +146,7 @@ All notable changes to this project will be documented in this file.
 ### New
 - ABI v2.2 with fixed message body layout supported. [See the specification](https://github.com/tonlabs/ton-labs-abi/blob/master/docs/ABI_2.2_spec.md).
 
-  Now, for contracts with ABI version < 2.2  compact layout will still be used for compatibility, for contracts with ABI version 2.2 and more - fixed layout will be used.  
+  Now, for contracts with ABI version < 2.2  compact layout will still be used for compatibility, for contracts with ABI version 2.2 and more - fixed layout will be used.
 **Please, make sure that you updated the ABI if you recompiled your contract with 2.2 ABI, or you may get an inconsistent contract behaviour**.
 - **Debot module**:
     - added `getEncryptionBoxInfo`, `getSigningBoxInfo` functions to Sdk interface.
@@ -168,7 +182,7 @@ All notable changes to this project will be documented in this file.
 ## [1.21.0] – 2021-08-18
 
 ### New
-- `crypto.create_encryption_box` function for creating SDK-defined encryption boxes. First supported 
+- `crypto.create_encryption_box` function for creating SDK-defined encryption boxes. First supported
 algorithm - AES with CBC mode.
 - **Debot module**:
     - Аdded public `prepare_ext_in_message` function.
@@ -182,7 +196,7 @@ is used as default.
 
 ### New
 - Added support of contract error messages. Error messages (for example, require(...) in Solidity) are now parsed by SDK
-  and returned in error message. New field `contract_error` was added to error's `data`. 
+  and returned in error message. New field `contract_error` was added to error's `data`.
 
 ### Fixed
 - Fixed problem with WASM binaries (https://github.com/tonlabs/ton-labs-types/pull/42)
@@ -190,12 +204,12 @@ is used as default.
 ## [1.20.0] – 2021-07-16
 
 ### New
-- ABI version `2.1` supported.  
+- ABI version `2.1` supported.
   **Attention!**
-  If you work with contracts, that contain String parameters, then during migration from ABI 2.0 to 2.1 you will need to remove all String type conversions to bytes and back and pass string to your contract as is.  
-  
+  If you work with contracts, that contain String parameters, then during migration from ABI 2.0 to 2.1 you will need to remove all String type conversions to bytes and back and pass string to your contract as is.
+
 - Now all requests to GraphQL are limited with timeout to react on unexpected server unavailability.
-Existing timeouts in waiting functions keep the same behaviour. All other requests timeout now can 
+Existing timeouts in waiting functions keep the same behaviour. All other requests timeout now can
 be set with `net.query_timeout` config parameter. Its default value is 60000 ms
 - **Debot module**:
     - added `encrypt`, `decrypt` functions to Sdk interface which accept encryption box handles.
@@ -209,7 +223,7 @@ be set with `net.query_timeout` config parameter. Its default value is 60000 ms
 - `get_address_type` function in `utils` module, which validates address and returns its type. See the documentation.
 - `decode_account_data` function in `abi` module that converts account data BOC into JSON representation according to ABI 2.1. See the documentation.
 - Diagnostic fields `filter` and `timestamp` added to `wait_for_collection` error
-- `main.ton.dev` and `net.ton.dev` endpoints that will be deprecated on 12.07.21 are now replaced with [proper endpoints list](https://docs.ton.dev/86757ecb2/p/85c869-networks), if they were specified in network `endpoints` config 
+- `main.ton.dev` and `net.ton.dev` endpoints that will be deprecated on 12.07.21 are now replaced with [proper endpoints list](https://docs.ton.dev/86757ecb2/p/85c869-networks), if they were specified in network `endpoints` config
 
 ### Fixed
 - Search of the first master blocks during the network start period was fixed in blocks and transactions iterators
@@ -217,11 +231,11 @@ be set with `net.query_timeout` config parameter. Its default value is 60000 ms
 ## [1.18.0] – 2021-06-26
 
 ### New
-- Iterators in `net` module: robust way to iterate blockchain items (blocks, transactions) 
-  in specified range. See documentation for `create_block_iterator` , `create_transaction_iterator`, 
-  `resume_block_iterator`, `resume_transaction_iterator`, `iterator_next`, `iterator_remove` 
+- Iterators in `net` module: robust way to iterate blockchain items (blocks, transactions)
+  in specified range. See documentation for `create_block_iterator` , `create_transaction_iterator`,
+  `resume_block_iterator`, `resume_transaction_iterator`, `iterator_next`, `iterator_remove`
   functions.
-- Library adds `http://` protocol to endpoints `localhost`, `127.0.0.1`, `0.0.0.0` if protocol 
+- Library adds `http://` protocol to endpoints `localhost`, `127.0.0.1`, `0.0.0.0` if protocol
   isn't specified in config.
 - **Debot module**:
     - added tests for Json interface.
@@ -236,11 +250,11 @@ be set with `net.query_timeout` config parameter. Its default value is 60000 ms
 ## [1.16.1] – 2021-06-16
 
 ### New
-- `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the next 
+- `timeout` option to `query_transaction_tree` – timeout used to limit waiting time for the next
   message and transaction in the transaction tree.
-  
+
 ### Improved
-- Improved error messages regarding ABI and JSON interface. SDK now shows additional tips for the user in cases of 
+- Improved error messages regarding ABI and JSON interface. SDK now shows additional tips for the user in cases of
   errors.
 
 ### Fixed
@@ -251,7 +265,7 @@ be set with `net.query_timeout` config parameter. Its default value is 60000 ms
 ## [1.16.0] – 2021-05-25
 
 ### New
-- `query_transaction_tree` function that returns messages and transactions tree produced 
+- `query_transaction_tree` function that returns messages and transactions tree produced
   by the specified message was added to `net` module. [See the documentation](docs/mod_net.md#query_transaction_tree)
 
 ### Fixed
@@ -261,11 +275,11 @@ be set with `net.query_timeout` config parameter. Its default value is 60000 ms
 ## [1.15.0] – 2021-05-18
 
 ### New
-- Sync latency detection increases connection reliability. Library will change the current endpoint 
+- Sync latency detection increases connection reliability. Library will change the current endpoint
   when it detects data sync latency on it.
-  
-- Configuration parameters: `latency_detection_interval`, 
-  `max_latency`. See client documentation for details. 
+
+- Configuration parameters: `latency_detection_interval`,
+  `max_latency`. See client documentation for details.
 
 - **Debot module**:
     - signing messages with signing box handles returned from debots.
@@ -292,25 +306,25 @@ be set with `net.query_timeout` config parameter. Its default value is 60000 ms
 ## [1.13.0] – 2021-04-23
 
 ### New
-- [`net.query_counterparties`](docs/mod_net.md#query_counterparties) - allows to query and paginate through the list of accounts that the specified account 
- has interacted with, sorted by the time of the last internal message between accounts.   
+- [`net.query_counterparties`](docs/mod_net.md#query_counterparties) - allows to query and paginate through the list of accounts that the specified account
+ has interacted with, sorted by the time of the last internal message between accounts.
   Subscription to counterparties collection is available via `net.subscribe_collection` function.
 
-- Blockchain interaction reliability improvement (broadcast): library sends external inbound messages simultaneously 
-  to the N randomly chosen endpoints. If all N endpoints failed to responce then library repeats 
-  sending to another random N endpoints (except the failed one). 
+- Blockchain interaction reliability improvement (broadcast): library sends external inbound messages simultaneously
+  to the N randomly chosen endpoints. If all N endpoints failed to responce then library repeats
+  sending to another random N endpoints (except the failed one).
   If all the available endpoints fail to respond then library throws error.
   The N parameter is taken from `config.network.sending_endpoint_count` (default is 2).
 
-- Blockchain interaction reliability improvement (bad delivery list): library tracks endpoints 
-  with bad message delivery (expired messages). These endpoints have lower priority when library chooses endpoints 
+- Blockchain interaction reliability improvement (bad delivery list): library tracks endpoints
+  with bad message delivery (expired messages). These endpoints have lower priority when library chooses endpoints
   to send message.
-  
+
 - **Debot module**:
     - Implementation of `Json` DeBot interface in DEngine.
 
 ### Fixed
-- `BuilderOp::Integer.size` type has changed from `u8` to `u32`.  
+- `BuilderOp::Integer.size` type has changed from `u8` to `u32`.
 - **Debot Module**:
     - `Sdk` interface function `getAccountsDataByHash` didn't find accounts by `code_hash` with leading zero.
 

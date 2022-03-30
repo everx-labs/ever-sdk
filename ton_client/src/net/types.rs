@@ -62,6 +62,10 @@ pub fn default_query_timeout() -> u32 {
     60000
 }
 
+pub fn default_queries_protocol() -> NetworkQueriesProtocol {
+    NetworkQueriesProtocol::HTTP
+}
+
 fn deserialize_network_retries_count<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<i8, D::Error> {
@@ -128,6 +132,12 @@ fn deserialize_query_timeout<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_query_timeout()))
 }
 
+fn deserialize_queries_protocol<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<NetworkQueriesProtocol, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_queries_protocol()))
+}
+
 #[derive(Debug, Clone, PartialEq, ApiType)]
 pub struct TrustedMcBlockId {
     /// Trusted key-block sequence number
@@ -135,6 +145,16 @@ pub struct TrustedMcBlockId {
 
     /// Trusted key-block root hash, encoded as HEX
     pub root_hash: String,
+}
+
+/// Network protocol used to perform GraphQL queries.
+#[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
+pub enum NetworkQueriesProtocol {
+    /// Each GraphQL query uses separate HTTP request.
+    HTTP,
+
+    /// All GraphQL queries will be served using single web socket connection.
+    WS
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
@@ -247,7 +267,7 @@ pub struct NetworkConfig {
     )]
     pub max_latency: u32,
 
-    /// Default timeout for http requests. Is is used when no timeout specified for the request to 
+    /// Default timeout for http requests. Is is used when no timeout specified for the request to
     /// limit the answer waiting time. If no answer received during the timeout requests ends with
     /// error.
     ///
@@ -257,6 +277,15 @@ pub struct NetworkConfig {
         deserialize_with = "deserialize_query_timeout"
     )]
     pub query_timeout: u32,
+
+    /// Queries protocol. `HTTP` or `WS`.
+    ///
+    /// Default is `HTTP`.
+    #[serde(
+        default = "default_queries_protocol",
+        deserialize_with = "deserialize_queries_protocol"
+    )]
+    pub queries_protocol: NetworkQueriesProtocol,
 
     /// Access key to GraphQL API. At the moment is not used in production.
     pub access_key: Option<String>,
@@ -278,6 +307,7 @@ impl Default for NetworkConfig {
             latency_detection_interval: default_latency_detection_frequency(),
             max_latency: default_max_latency(),
             query_timeout: default_query_timeout(),
+            queries_protocol: default_queries_protocol(),
             access_key: None,
         }
     }

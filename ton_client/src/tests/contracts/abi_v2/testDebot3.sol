@@ -2,12 +2,14 @@ pragma ton-solidity >=0.40.0;
 pragma AbiHeader expire;
 pragma AbiHeader time;
 pragma AbiHeader pubkey;
-import "../Debot.sol";
-import "../Sdk.sol";
-import "../Base64.sol";
-import "../Hex.sol";
-import "../Terminal.sol";
-import "../SigningBoxInput.sol";
+import "https://raw.githubusercontent.com/tonlabs/tonos-cli/master/tests/samples/Debot.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Base64/Base64.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Hex/Hex.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
+import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/SigningBoxInput/SigningBoxInput.sol";
+
+// compiled with ton-solidity 0.47.0
 
 contract testDebot3 is Debot {
 
@@ -139,15 +141,18 @@ contract testDebot3 is Debot {
         Terminal.print(0, "test substring2 passed");
     }
 
+    /* NOTICE: The address 0xd61cea39e63d30aa1ac31594d5b287a448231319930b8343c7d3adff3ed699
+       was randomly generated and should not contain any balances */
+
     function testAccount() public {
         Sdk.getBalance(tvm.functionId(setBalance), address(this));
-        Sdk.getBalance(tvm.functionId(setBalance2), address.makeAddrStd(0, 1));
+        Sdk.getBalance(tvm.functionId(setBalance2), address.makeAddrStd(0, 0xd61cea39e63d30aa1ac31594d5b287a448231319930b8343c7d3adff3ed699));
     }
 
     function setBalance(uint128 nanotokens) public {
         require(nanotokens > 0, 130);
         Sdk.getAccountType(tvm.functionId(setAccountType), address(this));
-        Sdk.getAccountType(tvm.functionId(setAccountType2), address.makeAddrStd(0, 1));
+        Sdk.getAccountType(tvm.functionId(setAccountType2), address.makeAddrStd(0, 0xd61cea39e63d30aa1ac31594d5b287a448231319930b8343c7d3adff3ed699));
     }
 
     function setBalance2(uint128 nanotokens) public pure {
@@ -157,7 +162,7 @@ contract testDebot3 is Debot {
     function setAccountType(int8 acc_type) public {
         require(acc_type == 1, 132);
         Sdk.getAccountCodeHash(tvm.functionId(setCodeHash), address(this));
-        Sdk.getAccountCodeHash(tvm.functionId(setCodeHash2), address.makeAddrStd(0, 1));
+        Sdk.getAccountCodeHash(tvm.functionId(setCodeHash2), address.makeAddrStd(0, 0xd61cea39e63d30aa1ac31594d5b287a448231319930b8343c7d3adff3ed699));
     }
 
     function setAccountType2(int8 acc_type) public pure {

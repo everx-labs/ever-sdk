@@ -1,5 +1,5 @@
 {
-  "version": "1.31.0",
+  "version": "1.32.0",
   "modules": [
     {
       "name": "client",
@@ -502,6 +502,16 @@
               "description": "Is is used when no timeout specified for the request to limit the answer waiting time. If no answer received during the timeout requests ends with\nerror.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
+              "name": "queries_protocol",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "client.NetworkQueriesProtocol"
+              },
+              "summary": "Queries protocol.",
+              "description": "`HTTP` or `WS`. \nDefault is `HTTP`."
+            },
+            {
               "name": "access_key",
               "type": "Optional",
               "optional_inner": {
@@ -512,6 +522,26 @@
             }
           ],
           "summary": null,
+          "description": null
+        },
+        {
+          "name": "NetworkQueriesProtocol",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "HTTP",
+              "type": "None",
+              "summary": "Each GraphQL query uses separate HTTP request.",
+              "description": null
+            },
+            {
+              "name": "WS",
+              "type": "None",
+              "summary": "All GraphQL queries will be served using single web socket connection.",
+              "description": null
+            }
+          ],
+          "summary": "Network protocol used to perform GraphQL queries.",
           "description": null
         },
         {

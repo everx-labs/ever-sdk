@@ -27,6 +27,7 @@ fn register_client(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::error::ClientError>();
     module.register_type::<crate::client::ClientConfig>();
     module.register_type::<crate::net::NetworkConfig>();
+    module.register_type::<crate::net::NetworkQueriesProtocol>();
     module.register_type::<crate::crypto::CryptoConfig>();
     module.register_type::<crate::abi::AbiConfig>();
     module.register_type::<crate::boc::BocConfig>();
