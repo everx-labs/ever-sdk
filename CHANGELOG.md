@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.0] – 2022-04-01
+
+### New 
+
+- `allow_partial` flag in all `abi.decode_*` functions. This flag controls decoder behaviour whether return error or not in case of incomplete BOC decoding
+
 ## [1.32.0] – 2022-03-22
 
 ### New 
