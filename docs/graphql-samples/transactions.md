@@ -1,5 +1,41 @@
 # Transactions
 
+## Get transaction info by hash
+
+```graphql
+query{
+  blockchain{
+    transaction(hash:"b0e26c42164ec0137913fdcd754aa819323a6a4b9ef5188863b021c3801e7ae4"){
+      id
+      hash
+      balance_delta
+      aborted
+      lt
+      now
+    }
+  }
+}
+```
+
+Result:&#x20;
+
+```graphql
+{
+  "data": {
+    "blockchain": {
+      "transaction": {
+        "id": "transaction/b0e26c42164ec0137913fdcd754aa819323a6a4b9ef5188863b021c3801e7ae4",
+        "hash": "b0e26c42164ec0137913fdcd754aa819323a6a4b9ef5188863b021c3801e7ae4",
+        "balance_delta": "0x0",
+        "aborted": false,
+        "lt": "0x15bb39a23783",
+        "now": 1645453010
+      }
+    }
+  }
+}
+```
+
 ## Paginate blockchain transactions
 
 Sometimes it is needed to  paginate all the network transactions. &#x20;

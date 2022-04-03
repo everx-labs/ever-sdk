@@ -12,7 +12,7 @@ query {
       address
       acc_type
       balance
-    	last_paid
+      last_paid
       last_trans_lt
       boc
       data
@@ -145,7 +145,7 @@ If you want to paginate within some time range, you can use masterchain seq\_no 
 
 Returns the paginable list of accounts the account has ever interacted with, with the last message info attached, sorted by the last message time. Useful for applications that want to show a screen with dialog list sorted by the last interaction time.
 
-<mark style="color:orange;">**Attention! Available only in public API. Is not available in Evernode-DS**</mark>**.**[ **See functionality comparison section.** ](https://tonlabs.gitbook.io/evernode-platform/products/functionality-comparison)****
+<mark style="color:orange;">**Attention! Available only in public API. Not available in Evernode-DS**</mark>**.**[ **See functionality comparison section.** ](https://tonlabs.gitbook.io/evernode-platform/products/functionality-comparison)****
 
 ```graphql
 query{
