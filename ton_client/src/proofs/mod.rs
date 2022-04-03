@@ -6,7 +6,11 @@ use std::sync::Arc;
 use failure::{bail, err_msg};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use ton_block::{Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable, HashmapAugType, MerkleProof, Message, ShardIdent, ShardStateUnsplit, Transaction, ValidatorDescr};
+use ton_block::{
+    Block, BlockIdExt, BlockInfo, CryptoSignature, CryptoSignaturePair, Deserializable,
+    HashmapAugType, MerkleProof, Message, ShardIdent, ShardStateUnsplit, Transaction,
+    ValidatorDescr,
+};
 use ton_types::{Cell, UInt256};
 use ton_types::Result;
 
@@ -116,8 +120,11 @@ pub struct ParamsOfProofBlockData {
 /// The trusted block is the authority root, as well, as the zero-state. Each trusted block is the
 /// `id` (e.g. `root_hash`) of the already proven key-block. There can be plenty of trusted
 /// blocks, so there can be a lot of authority roots. The hashes of trusted blocks for MainNet
-/// and DevNet are hardcoded in SDK in a separated binary file (trusted_key_blocks.bin) and can 
-/// be updated for each release.
+/// and DevNet are hardcoded in SDK in a separated binary file (trusted_key_blocks.bin) and is
+/// being updated for each release by using `update_trusted_blocks` utility.
+///
+/// See [update_trusted_blocks](../../../tools/update_trusted_blocks) directory for more info.
+///
 /// In future SDK releases, one will also be able to provide their hashes of trusted blocks for
 /// other networks, besides for MainNet and DevNet.
 /// By using trusted key-blocks, in order to prove any block, we can prove chain of key-blocks to

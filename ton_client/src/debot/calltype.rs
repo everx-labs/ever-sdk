@@ -430,6 +430,7 @@ fn build_onerror_body(onerror_id: u32, e: ClientError) -> ClientResult<SliceData
         .data
         .pointer("/local_error/data/exit_code")
         .or(e.data.pointer("/exit_code"))
+        .or(e.data.pointer("/compute/exit_code"))
         .and_then(|val| val.as_i64())
         .unwrap_or(0);
     new_body.append_u32(error_code as u32).map_err(msg_err)?;
@@ -517,6 +518,22 @@ async fn emulate_transaction(
         },
     )
     .await?;
+
+    let exit_code = result
+        .transaction
+        .pointer("/compute/exit_code")
+        .and_then(|val| val.as_i64())
+        .unwrap_or(0);
+
+    if exit_code != 0 {
+        let err = ClientError{
+            code: 0,
+            message: String::from(""),
+            data: result.transaction,
+        };
+        return Err(err);
+    }
+
     let mut out = vec![];
     for out_msg in result.out_messages {
         let parsed = parse_message(client.clone(), ParamsOfParse { boc: out_msg })

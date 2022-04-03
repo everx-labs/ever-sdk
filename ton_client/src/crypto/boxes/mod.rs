@@ -13,3 +13,4 @@
 
 pub(crate) mod signing_box;
 pub(crate) mod encryption_box;
+pub(crate) mod crypto_box;

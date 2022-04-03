@@ -15,6 +15,7 @@ use crate::client::{ClientEnv, FetchMethod};
 use crate::error::{AddNetworkUrl, ClientError, ClientResult};
 use crate::net::endpoint::Endpoint;
 use crate::net::ton_gql::GraphQLQuery;
+use crate::net::types::NetworkQueriesProtocol;
 use crate::net::websocket_link::WebsocketLink;
 use crate::net::{
     Error, GraphQLQueryEvent, NetworkConfig, ParamsOfAggregateCollection, ParamsOfQueryCollection,
@@ -88,7 +89,12 @@ pub(crate) struct NetworkState {
     time_checked: AtomicBool,
 }
 
-async fn query_by_url(client_env: &ClientEnv, address: &str, query: &str, timeout: u32) -> ClientResult<Value> {
+async fn query_by_url(
+    client_env: &ClientEnv,
+    address: &str,
+    query: &str,
+    timeout: u32,
+) -> ClientResult<Value> {
     let response = client_env
         .fetch(
             &format!("{}?query={}", address, query),
@@ -340,7 +346,11 @@ pub(crate) struct ServerLink {
 }
 
 fn strip_endpoint(endpoint: &str) -> &str {
-    endpoint.trim_start_matches("https://").trim_start_matches("http://").trim_end_matches("/").trim_end_matches("\\")
+    endpoint
+        .trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .trim_end_matches("/")
+        .trim_end_matches("\\")
 }
 
 fn replace_endpoints(mut endpoints: Vec<String>) -> Vec<String> {
@@ -348,14 +358,23 @@ fn replace_endpoints(mut endpoints: Vec<String>) -> Vec<String> {
         let len = endpoints.len();
         endpoints.retain(|endpoint| strip_endpoint(&endpoint) != entry.url);
         if len != endpoints.len() {
-            endpoints.extend_from_slice(&entry.aliases.iter().map(|val| (*val).to_owned()).collect::<Vec<String>>());
+            endpoints.extend_from_slice(
+                &entry
+                    .aliases
+                    .iter()
+                    .map(|val| (*val).to_owned())
+                    .collect::<Vec<String>>(),
+            );
         }
     }
 
     let mut result: Vec<String> = vec![];
 
     for endpoint in endpoints {
-        if !result.iter().any(|val| strip_endpoint(val) == strip_endpoint(&endpoint)) {
+        if !result
+            .iter()
+            .any(|val| strip_endpoint(val) == strip_endpoint(&endpoint))
+        {
             result.push(endpoint);
         }
     }
@@ -410,7 +429,9 @@ impl ServerLink {
     ) -> ClientResult<Subscription> {
         let event_receiver = self
             .websocket_link
-            .start_operation(GraphQLQuery::with_collection_subscription(table, filter, fields))
+            .start_operation(GraphQLQuery::with_collection_subscription(
+                table, filter, fields,
+            ))
             .await?;
 
         let operation_id = Arc::new(Mutex::new(0u32));
@@ -500,7 +521,7 @@ impl ServerLink {
         return None;
     }
 
-    pub(crate) async fn query(
+    pub(crate) async fn query_http(
         &self,
         query: &GraphQLQuery,
         endpoint: Option<&Endpoint>,
@@ -544,9 +565,9 @@ impl ServerLink {
                     Err(err) => Err(err),
                     Ok(value) => match Self::try_extract_error(&value) {
                         Some(err) => Err(err),
-                        None => Ok(value)
-                    }
-                }
+                        None => Ok(value),
+                    },
+                },
             };
 
             if let Err(err) = &result {
@@ -562,6 +583,42 @@ impl ServerLink {
             }
 
             return result;
+        }
+    }
+
+    pub(crate) async fn query_ws(&self, query: &GraphQLQuery) -> ClientResult<Value> {
+        let mut receiver = self.websocket_link.start_operation(query.clone()).await?;
+        let mut id = None::<u32>;
+        let mut result = Ok(Value::Null);
+        loop {
+            match receiver.recv().await {
+                Some(GraphQLQueryEvent::Id(received_id)) => id = Some(received_id),
+                Some(GraphQLQueryEvent::Data(data)) => {
+                    result = Ok(json!({ "data": data }));
+                    break;
+                }
+                Some(GraphQLQueryEvent::Complete) => break,
+                Some(GraphQLQueryEvent::Error(err)) => {
+                    result = Err(err);
+                    break;
+                }
+                None => break,
+            }
+        }
+        if let Some(id) = id {
+            self.websocket_link.stop_operation(id).await;
+        }
+        result
+    }
+
+    pub(crate) async fn query(
+        &self,
+        query: &GraphQLQuery,
+        endpoint: Option<&Endpoint>,
+    ) -> ClientResult<Value> {
+        match self.config.queries_protocol {
+            NetworkQueriesProtocol::HTTP => self.query_http(query, endpoint).await,
+            NetworkQueriesProtocol::WS => self.query_ws(query).await,
         }
     }
 

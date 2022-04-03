@@ -70,6 +70,20 @@ Crypto functions.
 
 [chacha20](#chacha20) – Performs symmetric `chacha20` encryption.
 
+[create_crypto_box](#create_crypto_box) – Creates a Crypto Box instance.
+
+[remove_crypto_box](#remove_crypto_box) – Removes Crypto Box. Clears all secret data.
+
+[get_crypto_box_info](#get_crypto_box_info) – Get Crypto Box Info. Used to get `encrypted_secret` that should be used for all the cryptobox initializations except the first one.
+
+[get_crypto_box_seed_phrase](#get_crypto_box_seed_phrase) – Get Crypto Box Seed Phrase.
+
+[get_signing_box_from_crypto_box](#get_signing_box_from_crypto_box) – Get handle of Signing Box derived from Crypto Box.
+
+[get_encryption_box_from_crypto_box](#get_encryption_box_from_crypto_box) – Gets Encryption Box from Crypto Box.
+
+[clear_crypto_box_secret_cache](#clear_crypto_box_secret_cache) – Removes cached secrets (overwrites with zeroes) from all signing and encryption boxes, derived from crypto box.
+
 [register_signing_box](#register_signing_box) – Register an application implemented signing box.
 
 [get_signing_box](#get_signing_box) – Creates a default signing box implementation.
@@ -99,15 +113,33 @@ Crypto functions.
 
 [EncryptionBoxHandle](#encryptionboxhandle)
 
-[EncryptionBoxInfo](#encryptionboxinfo) – Encryption box information
+[EncryptionBoxInfo](#encryptionboxinfo) – Encryption box information.
 
 [EncryptionAlgorithm](#encryptionalgorithm)
 
 [CipherMode](#ciphermode)
 
-[AesParams](#aesparams)
+[AesParamsEB](#aesparamseb)
 
 [AesInfo](#aesinfo)
+
+[ChaCha20ParamsEB](#chacha20paramseb)
+
+[NaclBoxParamsEB](#naclboxparamseb)
+
+[NaclSecretBoxParamsEB](#naclsecretboxparamseb)
+
+[CryptoBoxSecret](#cryptoboxsecret) – Crypto Box Secret.
+
+[CryptoBoxHandle](#cryptoboxhandle)
+
+[BoxEncryptionAlgorithm](#boxencryptionalgorithm)
+
+[ChaCha20ParamsCB](#chacha20paramscb)
+
+[NaclBoxParamsCB](#naclboxparamscb)
+
+[NaclSecretBoxParamsCB](#naclsecretboxparamscb)
 
 [ParamsOfFactorize](#paramsoffactorize)
 
@@ -219,7 +251,25 @@ Crypto functions.
 
 [ResultOfChaCha20](#resultofchacha20)
 
+[ParamsOfCreateCryptoBox](#paramsofcreatecryptobox)
+
+[RegisteredCryptoBox](#registeredcryptobox)
+
+[ParamsOfAppPasswordProvider](#paramsofapppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
+
+[ResultOfAppPasswordProvider](#resultofapppasswordprovider)
+
+[ResultOfGetCryptoBoxInfo](#resultofgetcryptoboxinfo)
+
+[ResultOfGetCryptoBoxSeedPhrase](#resultofgetcryptoboxseedphrase)
+
+[ParamsOfGetSigningBoxFromCryptoBox](#paramsofgetsigningboxfromcryptobox)
+
 [RegisteredSigningBox](#registeredsigningbox)
+
+[ParamsOfGetEncryptionBoxFromCryptoBox](#paramsofgetencryptionboxfromcryptobox)
+
+[RegisteredEncryptionBox](#registeredencryptionbox)
 
 [ParamsOfAppSigningBox](#paramsofappsigningbox) – Signing box callbacks.
 
@@ -231,9 +281,7 @@ Crypto functions.
 
 [ResultOfSigningBoxSign](#resultofsigningboxsign)
 
-[RegisteredEncryptionBox](#registeredencryptionbox)
-
-[ParamsOfAppEncryptionBox](#paramsofappencryptionbox) – Encryption box callbacks.
+[ParamsOfAppEncryptionBox](#paramsofappencryptionbox) – Interface for data encryption/decryption
 
 [ResultOfAppEncryptionBox](#resultofappencryptionbox) – Returning values from signing box callbacks.
 
@@ -251,9 +299,11 @@ Crypto functions.
 
 [ParamsOfCreateEncryptionBox](#paramsofcreateencryptionbox)
 
-[AppSigningBox](#appsigningbox)
+[AppPasswordProvider](#apppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
 
-[AppEncryptionBox](#appencryptionbox)
+[AppSigningBox](#appsigningbox) – Signing box callbacks.
+
+[AppEncryptionBox](#appencryptionbox) – Interface for data encryption/decryption
 
 
 # Functions
@@ -849,7 +899,7 @@ function nacl_box_open(
 ### Parameters
 - `encrypted`: _string_ – Data that must be decrypted.
 <br>Encoded with `base64`.
-- `nonce`: _string_
+- `nonce`: _string_ – Nonce
 - `their_public`: _string_ – Sender's public key - unprefixed 0-padded to 64 symbols hex string
 - `secret`: _string_ – Receiver's private key - unprefixed 0-padded to 64 symbols hex string
 
@@ -913,7 +963,7 @@ function nacl_secret_box_open(
 - `encrypted`: _string_ – Data that must be decrypted.
 <br>Encoded with `base64`.
 - `nonce`: _string_ – Nonce in `hex`
-- `key`: _string_ – Public key - unprefixed 0-padded to 64 symbols hex string
+- `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
 
 ### Result
@@ -1252,6 +1302,209 @@ function chacha20(
 <br>Encoded with `base64`.
 
 
+## create_crypto_box
+
+Creates a Crypto Box instance.
+
+Crypto Box is a root crypto object, that encapsulates some secret (seed phrase usually)
+in encrypted form and acts as a factory for all crypto primitives used in SDK:
+keys for signing and encryption, derived from this secret.
+
+Crypto Box encrypts original Seed Phrase with salt and password that is retrieved
+from `password_provider` callback, implemented on Application side.
+
+When used, decrypted secret shows up in core library's memory for a very short period
+of time and then is immediately overwritten with zeroes.
+
+```ts
+type ParamsOfCreateCryptoBox = {
+    secret_encryption_salt: string,
+    secret: CryptoBoxSecret
+}
+
+type RegisteredCryptoBox = {
+    handle: CryptoBoxHandle
+}
+
+function create_crypto_box(
+    params: ParamsOfCreateCryptoBox,
+    obj: AppPasswordProvider,
+): Promise<RegisteredCryptoBox>;
+```
+### Parameters
+- `secret_encryption_salt`: _string_ – Salt used for secret encryption. For example, a mobile device can use device ID as salt.
+- `secret`: _[CryptoBoxSecret](mod_crypto.md#cryptoboxsecret)_ – Cryptobox secret
+- `obj`: [AppPasswordProvider](#apppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
+
+
+
+### Result
+
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+
+
+## remove_crypto_box
+
+Removes Crypto Box. Clears all secret data.
+
+```ts
+type RegisteredCryptoBox = {
+    handle: CryptoBoxHandle
+}
+
+function remove_crypto_box(
+    params: RegisteredCryptoBox,
+): Promise<void>;
+```
+### Parameters
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+
+
+## get_crypto_box_info
+
+Get Crypto Box Info. Used to get `encrypted_secret` that should be used for all the cryptobox initializations except the first one.
+
+```ts
+type RegisteredCryptoBox = {
+    handle: CryptoBoxHandle
+}
+
+type ResultOfGetCryptoBoxInfo = {
+    encrypted_secret: string
+}
+
+function get_crypto_box_info(
+    params: RegisteredCryptoBox,
+): Promise<ResultOfGetCryptoBoxInfo>;
+```
+### Parameters
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+
+
+### Result
+
+- `encrypted_secret`: _string_ – Secret (seed phrase) encrypted with salt and password.
+
+
+## get_crypto_box_seed_phrase
+
+Get Crypto Box Seed Phrase.
+
+Attention! Store this data in your application for a very short period of time and overwrite it with zeroes ASAP.
+
+```ts
+type RegisteredCryptoBox = {
+    handle: CryptoBoxHandle
+}
+
+type ResultOfGetCryptoBoxSeedPhrase = {
+    phrase: string,
+    dictionary: number,
+    wordcount: number
+}
+
+function get_crypto_box_seed_phrase(
+    params: RegisteredCryptoBox,
+): Promise<ResultOfGetCryptoBoxSeedPhrase>;
+```
+### Parameters
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+
+
+### Result
+
+- `phrase`: _string_
+- `dictionary`: _number_
+- `wordcount`: _number_
+
+
+## get_signing_box_from_crypto_box
+
+Get handle of Signing Box derived from Crypto Box.
+
+```ts
+type ParamsOfGetSigningBoxFromCryptoBox = {
+    handle: number,
+    hdpath?: string,
+    secret_lifetime?: number
+}
+
+type RegisteredSigningBox = {
+    handle: SigningBoxHandle
+}
+
+function get_signing_box_from_crypto_box(
+    params: ParamsOfGetSigningBoxFromCryptoBox,
+): Promise<RegisteredSigningBox>;
+```
+### Parameters
+- `handle`: _number_ – Crypto Box Handle.
+- `hdpath`?: _string_ – HD key derivation path.
+<br>By default, Everscale HD path is used.
+- `secret_lifetime`?: _number_ – Store derived secret for this lifetime (in ms). The timer starts after each signing box operation. Secrets will be deleted immediately after each signing box operation, if this value is not set.
+
+
+### Result
+
+- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
+
+
+## get_encryption_box_from_crypto_box
+
+Gets Encryption Box from Crypto Box.
+
+Derives encryption keypair from cryptobox secret and hdpath and
+stores it in cache for `secret_lifetime`
+or until explicitly cleared by `clear_crypto_box_secret_cache` method.
+If `secret_lifetime` is not specified - overwrites encryption secret with zeroes immediately after
+encryption operation.
+
+```ts
+type ParamsOfGetEncryptionBoxFromCryptoBox = {
+    handle: number,
+    hdpath?: string,
+    algorithm: BoxEncryptionAlgorithm,
+    secret_lifetime?: number
+}
+
+type RegisteredEncryptionBox = {
+    handle: EncryptionBoxHandle
+}
+
+function get_encryption_box_from_crypto_box(
+    params: ParamsOfGetEncryptionBoxFromCryptoBox,
+): Promise<RegisteredEncryptionBox>;
+```
+### Parameters
+- `handle`: _number_ – Crypto Box Handle.
+- `hdpath`?: _string_ – HD key derivation path.
+<br>By default, Everscale HD path is used.
+- `algorithm`: _[BoxEncryptionAlgorithm](mod_crypto.md#boxencryptionalgorithm)_ – Encryption algorithm.
+- `secret_lifetime`?: _number_ – Store derived secret for encryption algorithm for this lifetime (in ms). The timer starts after each encryption box operation. Secrets will be deleted (overwritten with zeroes) after each encryption operation, if this value is not set.
+
+
+### Result
+
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
+
+
+## clear_crypto_box_secret_cache
+
+Removes cached secrets (overwrites with zeroes) from all signing and encryption boxes, derived from crypto box.
+
+```ts
+type RegisteredCryptoBox = {
+    handle: CryptoBoxHandle
+}
+
+function clear_crypto_box_secret_cache(
+    params: RegisteredCryptoBox,
+): Promise<void>;
+```
+### Parameters
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+
+
 ## register_signing_box
 
 Register an application implemented signing box.
@@ -1265,6 +1518,9 @@ function register_signing_box(
     obj: AppSigningBox,
 ): Promise<RegisteredSigningBox>;
 ```
+### Parameters
+- `obj`: [AppSigningBox](#appsigningbox) – Signing box callbacks.
+
 
 
 ### Result
@@ -1387,11 +1643,14 @@ function register_encryption_box(
     obj: AppEncryptionBox,
 ): Promise<RegisteredEncryptionBox>;
 ```
+### Parameters
+- `obj`: [AppEncryptionBox](#appencryptionbox) – Interface for data encryption/decryption
+
 
 
 ### Result
 
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
 
 ## remove_encryption_box
@@ -1408,7 +1667,7 @@ function remove_encryption_box(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
 
 ## encryption_box_get_info
@@ -1523,7 +1782,7 @@ function create_encryption_box(
 
 ### Result
 
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
 
 # Types
@@ -1556,7 +1815,11 @@ enum CryptoErrorCode {
     CannotCreateCipher = 126,
     EncryptDataError = 127,
     DecryptDataError = 128,
-    IvRequired = 129
+    IvRequired = 129,
+    CryptoBoxNotRegistered = 130,
+    InvalidCryptoBoxType = 131,
+    CryptoBoxSecretSerializationError = 132,
+    CryptoBoxSecretDeserializationError = 133
 }
 ```
 One of the following value:
@@ -1588,6 +1851,10 @@ One of the following value:
 - `EncryptDataError = 127`
 - `DecryptDataError = 128`
 - `IvRequired = 129`
+- `CryptoBoxNotRegistered = 130`
+- `InvalidCryptoBoxType = 131`
+- `CryptoBoxSecretSerializationError = 132`
+- `CryptoBoxSecretDeserializationError = 133`
 
 
 ## SigningBoxHandle
@@ -1603,7 +1870,7 @@ type EncryptionBoxHandle = number
 
 
 ## EncryptionBoxInfo
-Encryption box information
+Encryption box information.
 
 ```ts
 type EncryptionBoxInfo = {
@@ -1623,7 +1890,13 @@ type EncryptionBoxInfo = {
 ```ts
 type EncryptionAlgorithm = ({
     type: 'AES'
-} & AesParams)
+} & AesParamsEB) | ({
+    type: 'ChaCha20'
+} & ChaCha20ParamsEB) | ({
+    type: 'NaclBox'
+} & NaclBoxParamsEB) | ({
+    type: 'NaclSecretBox'
+} & NaclSecretBoxParamsEB)
 ```
 Depends on value of the  `type` field.
 
@@ -1633,11 +1906,35 @@ When _type_ is _'AES'_
 - `key`: _string_
 - `iv`?: _string_
 
+When _type_ is _'ChaCha20'_
+
+- `key`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+When _type_ is _'NaclBox'_
+
+- `their_public`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `secret`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+When _type_ is _'NaclSecretBox'_
+
+- `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
+- `nonce`: _string_ – Nonce in `hex`
+
 
 Variant constructors:
 
 ```ts
-function encryptionAlgorithmAES(params: AesParams): EncryptionAlgorithm;
+function encryptionAlgorithmAES(params: AesParamsEB): EncryptionAlgorithm;
+function encryptionAlgorithmChaCha20(params: ChaCha20ParamsEB): EncryptionAlgorithm;
+function encryptionAlgorithmNaclBox(params: NaclBoxParamsEB): EncryptionAlgorithm;
+function encryptionAlgorithmNaclSecretBox(params: NaclSecretBoxParamsEB): EncryptionAlgorithm;
 ```
 
 ## CipherMode
@@ -1659,9 +1956,9 @@ One of the following value:
 - `OFB = "OFB"`
 
 
-## AesParams
+## AesParamsEB
 ```ts
-type AesParams = {
+type AesParamsEB = {
     mode: CipherMode,
     key: string,
     iv?: string
@@ -1681,6 +1978,191 @@ type AesInfo = {
 ```
 - `mode`: _[CipherMode](mod_crypto.md#ciphermode)_
 - `iv`?: _string_
+
+
+## ChaCha20ParamsEB
+```ts
+type ChaCha20ParamsEB = {
+    key: string,
+    nonce: string
+}
+```
+- `key`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+
+## NaclBoxParamsEB
+```ts
+type NaclBoxParamsEB = {
+    their_public: string,
+    secret: string,
+    nonce: string
+}
+```
+- `their_public`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `secret`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+
+## NaclSecretBoxParamsEB
+```ts
+type NaclSecretBoxParamsEB = {
+    key: string,
+    nonce: string
+}
+```
+- `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
+- `nonce`: _string_ – Nonce in `hex`
+
+
+## CryptoBoxSecret
+Crypto Box Secret.
+
+```ts
+type CryptoBoxSecret = {
+    type: 'RandomSeedPhrase'
+    dictionary: number,
+    wordcount: number
+} | {
+    type: 'PredefinedSeedPhrase'
+    phrase: string,
+    dictionary: number,
+    wordcount: number
+} | {
+    type: 'EncryptedSecret'
+    encrypted_secret: string
+}
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'RandomSeedPhrase'_
+
+Creates Crypto Box from a random seed phrase. This option can be used if a developer doesn't want the seed phrase to leave the core library's memory, where it is stored encrypted.
+
+This type should be used upon the first wallet initialization, all further initializations
+should use `EncryptedSecret` type instead.
+
+Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
+
+
+- `dictionary`: _number_
+- `wordcount`: _number_
+
+When _type_ is _'PredefinedSeedPhrase'_
+
+Restores crypto box instance from an existing seed phrase. This type should be used when Crypto Box is initialized from a seed phrase, entered by a user.
+
+This type should be used only upon the first wallet initialization, all further
+initializations should use `EncryptedSecret` type instead.
+
+Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
+
+
+- `phrase`: _string_
+- `dictionary`: _number_
+- `wordcount`: _number_
+
+When _type_ is _'EncryptedSecret'_
+
+Use this type for wallet reinitializations, when you already have `encrypted_secret` on hands. To get `encrypted_secret`, use `get_crypto_box_info` function after you initialized your crypto box for the first time.
+
+It is an object, containing seed phrase or private key, encrypted with
+`secret_encryption_salt` and password from `password_provider`.
+
+Note that if you want to change salt or password provider, then you need to reinitialize
+the wallet with `PredefinedSeedPhrase`, then get `EncryptedSecret` via `get_crypto_box_info`,
+store it somewhere, and only after that initialize the wallet with `EncryptedSecret` type.
+
+
+- `encrypted_secret`: _string_ – It is an object, containing encrypted seed phrase or private key (now we support only seed phrase).
+
+
+Variant constructors:
+
+```ts
+function cryptoBoxSecretRandomSeedPhrase(dictionary: number, wordcount: number): CryptoBoxSecret;
+function cryptoBoxSecretPredefinedSeedPhrase(phrase: string, dictionary: number, wordcount: number): CryptoBoxSecret;
+function cryptoBoxSecretEncryptedSecret(encrypted_secret: string): CryptoBoxSecret;
+```
+
+## CryptoBoxHandle
+```ts
+type CryptoBoxHandle = number
+```
+
+
+## BoxEncryptionAlgorithm
+```ts
+type BoxEncryptionAlgorithm = ({
+    type: 'ChaCha20'
+} & ChaCha20ParamsCB) | ({
+    type: 'NaclBox'
+} & NaclBoxParamsCB) | ({
+    type: 'NaclSecretBox'
+} & NaclSecretBoxParamsCB)
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'ChaCha20'_
+
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+When _type_ is _'NaclBox'_
+
+- `their_public`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+When _type_ is _'NaclSecretBox'_
+
+- `nonce`: _string_ – Nonce in `hex`
+
+
+Variant constructors:
+
+```ts
+function boxEncryptionAlgorithmChaCha20(params: ChaCha20ParamsCB): BoxEncryptionAlgorithm;
+function boxEncryptionAlgorithmNaclBox(params: NaclBoxParamsCB): BoxEncryptionAlgorithm;
+function boxEncryptionAlgorithmNaclSecretBox(params: NaclSecretBoxParamsCB): BoxEncryptionAlgorithm;
+```
+
+## ChaCha20ParamsCB
+```ts
+type ChaCha20ParamsCB = {
+    nonce: string
+}
+```
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+
+## NaclBoxParamsCB
+```ts
+type NaclBoxParamsCB = {
+    their_public: string,
+    nonce: string
+}
+```
+- `their_public`: _string_ – 256-bit key.
+<br>Must be encoded with `hex`.
+- `nonce`: _string_ – 96-bit nonce.
+<br>Must be encoded with `hex`.
+
+
+## NaclSecretBoxParamsCB
+```ts
+type NaclSecretBoxParamsCB = {
+    nonce: string
+}
+```
+- `nonce`: _string_ – Nonce in `hex`
 
 
 ## ParamsOfFactorize
@@ -2007,7 +2489,7 @@ type ParamsOfNaclBoxOpen = {
 ```
 - `encrypted`: _string_ – Data that must be decrypted.
 <br>Encoded with `base64`.
-- `nonce`: _string_
+- `nonce`: _string_ – Nonce
 - `their_public`: _string_ – Sender's public key - unprefixed 0-padded to 64 symbols hex string
 - `secret`: _string_ – Receiver's private key - unprefixed 0-padded to 64 symbols hex string
 
@@ -2046,7 +2528,7 @@ type ParamsOfNaclSecretBoxOpen = {
 - `encrypted`: _string_ – Data that must be decrypted.
 <br>Encoded with `base64`.
 - `nonce`: _string_ – Nonce in `hex`
-- `key`: _string_ – Public key - unprefixed 0-padded to 64 symbols hex string
+- `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
 
 ## ParamsOfMnemonicWords
@@ -2273,6 +2755,118 @@ type ResultOfChaCha20 = {
 <br>Encoded with `base64`.
 
 
+## ParamsOfCreateCryptoBox
+```ts
+type ParamsOfCreateCryptoBox = {
+    secret_encryption_salt: string,
+    secret: CryptoBoxSecret
+}
+```
+- `secret_encryption_salt`: _string_ – Salt used for secret encryption. For example, a mobile device can use device ID as salt.
+- `secret`: _[CryptoBoxSecret](mod_crypto.md#cryptoboxsecret)_ – Cryptobox secret
+
+
+## RegisteredCryptoBox
+```ts
+type RegisteredCryptoBox = {
+    handle: CryptoBoxHandle
+}
+```
+- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+
+
+## ParamsOfAppPasswordProvider
+Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
+
+To secure the password while passing it from application to the library,
+the library generates a temporary key pair, passes the pubkey
+to the passwordProvider, decrypts the received password with private key,
+and deletes the key pair right away.
+
+Application should generate a temporary nacl_box_keypair
+and encrypt the password with naclbox function using nacl_box_keypair.secret
+and encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key.
+
+```ts
+type ParamsOfAppPasswordProvider = {
+    type: 'GetPassword'
+    encryption_public_key: string
+}
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'GetPassword'_
+
+
+- `encryption_public_key`: _string_ – Temporary library pubkey, that is used on application side for password encryption, along with application temporary private key and nonce. Used for password decryption on library side.
+
+
+Variant constructors:
+
+```ts
+function paramsOfAppPasswordProviderGetPassword(encryption_public_key: string): ParamsOfAppPasswordProvider;
+```
+
+## ResultOfAppPasswordProvider
+```ts
+type ResultOfAppPasswordProvider = {
+    type: 'GetPassword'
+    encrypted_password: string,
+    app_encryption_pubkey: string
+}
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'GetPassword'_
+
+
+- `encrypted_password`: _string_ – Password, encrypted and encoded to base64. Crypto box uses this password to decrypt its secret (seed phrase).
+- `app_encryption_pubkey`: _string_ – Hex encoded public key of a temporary key pair, used for password encryption on application side.
+<br>Used together with `encryption_public_key` to decode `encrypted_password`.
+
+
+Variant constructors:
+
+```ts
+function resultOfAppPasswordProviderGetPassword(encrypted_password: string, app_encryption_pubkey: string): ResultOfAppPasswordProvider;
+```
+
+## ResultOfGetCryptoBoxInfo
+```ts
+type ResultOfGetCryptoBoxInfo = {
+    encrypted_secret: string
+}
+```
+- `encrypted_secret`: _string_ – Secret (seed phrase) encrypted with salt and password.
+
+
+## ResultOfGetCryptoBoxSeedPhrase
+```ts
+type ResultOfGetCryptoBoxSeedPhrase = {
+    phrase: string,
+    dictionary: number,
+    wordcount: number
+}
+```
+- `phrase`: _string_
+- `dictionary`: _number_
+- `wordcount`: _number_
+
+
+## ParamsOfGetSigningBoxFromCryptoBox
+```ts
+type ParamsOfGetSigningBoxFromCryptoBox = {
+    handle: number,
+    hdpath?: string,
+    secret_lifetime?: number
+}
+```
+- `handle`: _number_ – Crypto Box Handle.
+- `hdpath`?: _string_ – HD key derivation path.
+<br>By default, Everscale HD path is used.
+- `secret_lifetime`?: _number_ – Store derived secret for this lifetime (in ms). The timer starts after each signing box operation. Secrets will be deleted immediately after each signing box operation, if this value is not set.
+
+
 ## RegisteredSigningBox
 ```ts
 type RegisteredSigningBox = {
@@ -2280,6 +2874,31 @@ type RegisteredSigningBox = {
 }
 ```
 - `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
+
+
+## ParamsOfGetEncryptionBoxFromCryptoBox
+```ts
+type ParamsOfGetEncryptionBoxFromCryptoBox = {
+    handle: number,
+    hdpath?: string,
+    algorithm: BoxEncryptionAlgorithm,
+    secret_lifetime?: number
+}
+```
+- `handle`: _number_ – Crypto Box Handle.
+- `hdpath`?: _string_ – HD key derivation path.
+<br>By default, Everscale HD path is used.
+- `algorithm`: _[BoxEncryptionAlgorithm](mod_crypto.md#boxencryptionalgorithm)_ – Encryption algorithm.
+- `secret_lifetime`?: _number_ – Store derived secret for encryption algorithm for this lifetime (in ms). The timer starts after each encryption box operation. Secrets will be deleted (overwritten with zeroes) after each encryption operation, if this value is not set.
+
+
+## RegisteredEncryptionBox
+```ts
+type RegisteredEncryptionBox = {
+    handle: EncryptionBoxHandle
+}
+```
+- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
 
 ## ParamsOfAppSigningBox
@@ -2383,17 +3002,8 @@ type ResultOfSigningBoxSign = {
 <br>Encoded with `hex`.
 
 
-## RegisteredEncryptionBox
-```ts
-type RegisteredEncryptionBox = {
-    handle: EncryptionBoxHandle
-}
-```
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box
-
-
 ## ParamsOfAppEncryptionBox
-Encryption box callbacks.
+Interface for data encryption/decryption
 
 ```ts
 type ParamsOfAppEncryptionBox = {
@@ -2551,7 +3161,65 @@ type ParamsOfCreateEncryptionBox = {
 - `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#encryptionalgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
 
 
+## AppPasswordProvider
+Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
+
+To secure the password while passing it from application to the library,
+the library generates a temporary key pair, passes the pubkey
+to the passwordProvider, decrypts the received password with private key,
+and deletes the key pair right away.
+
+Application should generate a temporary nacl_box_keypair
+and encrypt the password with naclbox function using nacl_box_keypair.secret
+and encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key.
+
+
+```ts
+
+type ParamsOfAppPasswordProviderGetPassword = {
+    encryption_public_key: string
+}
+
+type ResultOfAppPasswordProviderGetPassword = {
+    encrypted_password: string,
+    app_encryption_pubkey: string
+}
+
+export interface AppPasswordProvider {
+    get_password(params: ParamsOfAppPasswordProviderGetPassword): Promise<ResultOfAppPasswordProviderGetPassword>,
+}
+```
+
+## get_password
+
+```ts
+type ParamsOfAppPasswordProviderGetPassword = {
+    encryption_public_key: string
+}
+
+type ResultOfAppPasswordProviderGetPassword = {
+    encrypted_password: string,
+    app_encryption_pubkey: string
+}
+
+function get_password(
+    params: ParamsOfAppPasswordProviderGetPassword,
+): Promise<ResultOfAppPasswordProviderGetPassword>;
+```
+### Parameters
+- `encryption_public_key`: _string_ – Temporary library pubkey, that is used on application side for password encryption, along with application temporary private key and nonce. Used for password decryption on library side.
+
+
+### Result
+
+- `encrypted_password`: _string_ – Password, encrypted and encoded to base64. Crypto box uses this password to decrypt its secret (seed phrase).
+- `app_encryption_pubkey`: _string_ – Hex encoded public key of a temporary key pair, used for password encryption on application side.
+<br>Used together with `encryption_public_key` to decode `encrypted_password`.
+
+
 ## AppSigningBox
+Signing box callbacks.
+
 
 ```ts
 
@@ -2618,6 +3286,8 @@ function sign(
 
 
 ## AppEncryptionBox
+Interface for data encryption/decryption
+
 
 ```ts
 
