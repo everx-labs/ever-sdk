@@ -25,7 +25,7 @@
   * [Networks](reference/ton-os-api/networks.md)
   * [Web Playground](reference/ton-os-api/web\_playground.md)
   * [Schema](reference/ton-os-api/schema.md)
-  * [Query Language](reference/ton-os-api/query\_language.md)
+  * [OLD: Collection Query Language](reference/ton-os-api/query\_language.md)
   * [Field Descriptions](reference/ton-os-api/field\_descriptions.md)
   * [Samples](reference/ton-os-api/samples.md)
 
@@ -65,9 +65,9 @@
 * [Crypto](guides/crypto/README.md)
   * [Mnemonics and Keys](guides/crypto/mnemonics\_and\_keys.md)
 * [Queries and subscriptions](guides/queries\_and\_subscriptions/README.md)
+  * [Raw Query](guides/queries\_and\_subscriptions/raw\_query.md)
   * [Query Collection](guides/queries\_and\_subscriptions/query\_collection.md)
   * [Aggregate Collection](guides/queries\_and\_subscriptions/aggregate\_collection.md)
-  * [Raw Query](guides/queries\_and\_subscriptions/raw\_query.md)
   * [Batch Query](guides/queries\_and\_subscriptions/batch\_query.md)
   * [Subscribe to Updates](guides/queries\_and\_subscriptions/subscribe\_to\_updates.md)
 
