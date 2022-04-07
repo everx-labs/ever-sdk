@@ -437,7 +437,7 @@ query{
 
 
 
-## Transaction count
+## Account transactions count
 
 To get count of account transactions use `aggregateTransactions`:
 
@@ -470,117 +470,7 @@ query {
 }
 ```
 
-## Get all messages of a specified account
-
-<mark style="color:orange;">**Attention! At the moment we are developing a handy method for account messages pagination. Please use the approach below as temporary, it will be deprecated soon.**</mark>&#x20;
-
-By default query result is limited to 50 records. To get next 50 records, you need to use created\_lt (creation logical time) of the last record in the next query.
-
-In the next example we limit the number of results returned to 2.
-
-**Query**:
-
-```graphql
-{
-  messages(
-      filter:{ 
-        src:{eq:"0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"}
-        created_lt:{gt:"0x0"}
-        OR:{
-            dst:{eq:"0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"}
-            created_lt:{gt:"0x0"}
-        }
-        }
-      limit:2
-        orderBy:[{path:"created_at",direction:ASC},{path:"created_lt"}]
-  )
-  {
-    id
-    src
-    dst
-    created_at
-    created_lt
-  }
-}
-```
-
-**Result**:
-
-```graphql
-{
-  "data": {
-    "messages": [
-      {
-        "id": "2e80b1b06a8a5340d06627dd3e37f6b2b8436af643c24ff80a2f7840899d8e0e",
-        "src": "-1:7777777777777777777777777777777777777777777777777777777777777777",
-        "dst": "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13",
-        "created_at": 1593681809,
-        "created_lt": "0x451307782"
-      },
-      {
-        "id": "2a0d4e79d8f2d22fc6f3226cf1c972202b5ce8cb709a7d5539b3e7a0e90729ea",
-        "src": "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13",
-        "dst": "-1:7777777777777777777777777777777777777777777777777777777777777777",
-        "created_at": 1593681814,
-        "created_lt": "0x4514efc02"
-      }
-    ]
-  }
-}
-```
-
-There are two records returned and that may mean that there is another page. We take last record `created_lt` and repeat query with "greater than created\_lt" condition:
-
-**Query**:
-
-```graphql
-{
-  messages(
-      filter:{ 
-            src:{eq:"0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"}
-            created_lt:{gt:"0x4514efc02"}
-        OR:{
-            dst:{eq:"0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"}
-            created_lt:{gt:"0x4514efc02"}
-        }
-      }
-      limit:2
-        orderBy:[{path:"created_at",direction:ASC},{path:"created_lt"}]
-  )
-  {
-    id
-    src
-    dst
-    created_at
-    created_lt
-  }
-}
-```
-
-**Result**:
-
-```graphql
-{
-  "data": {
-    "messages": [
-      {
-        "id": "b0989c38a1b3be613be6dab1c78072fc915737be771445bb9f718db000727532",
-        "src": "-1:7777777777777777777777777777777777777777777777777777777777777777",
-        "dst": "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13",
-        "created_at": 1593682159,
-        "created_lt": "0x458948e82"
-      },
-      {
-        "id": "57df11539055f8bd1f4fddcb794fa6af66aa2e3f1c3daca934c4e6c1d684c5fd",
-        "src": "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13",
-        "dst": "0:d259a644903ead3ea5d8124d47b3c28a9e1bdebbf576402503798477ace117d0",
-        "created_at": 1593682274,
-        "created_lt": "0x45ac921c2"
-      }
-    ]
-  }
-}
-```
+## Account messages count
 
 To receive count of all account messages (both in and out) use `aggregateMessages`.
 
@@ -601,47 +491,6 @@ Result:
   "data": {
     "aggregateMessages": [
       "24772"
-    ]
-  }
-}
-```
-
-## Aggregate transfers between 2 accounts
-
-Determine min, max and sum values of transferred tokens and number of transfers between two accounts
-
-```graphql
-query{
-  aggregateMessages(
-    filter:{
-        src:{eq:"0:797f32a15bbe5213a07cafe4c80e5e28f2662e865e95b23694f4bd36f2b42ff8"}
-        dst:{eq:"0:7d667fed88b9edb82eb6a116b48052b6a7765577ad341b35acb118451c7aa625"}
-
-          OR:{
-        src:{eq:"0:7d667fed88b9edb82eb6a116b48052b6a7765577ad341b35acb118451c7aa625"}
-        dst:{eq:"0:797f32a15bbe5213a07cafe4c80e5e28f2662e865e95b23694f4bd36f2b42ff8"}
-        }
-    }
-    fields:[
-        { field: "value", fn: MIN},
-        { field: "value", fn: MAX },
-        { field: "value", fn: SUM },
-          { fn: COUNT}
-    ]
-  )
-}
-```
-
-Result:
-
-```graphql
-{
-  "data": {
-    "aggregateMessages": [
-      "10000000",
-      "10000000",
-      "30000000",
-      "3"
     ]
   }
 }
