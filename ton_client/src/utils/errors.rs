@@ -28,10 +28,16 @@ fn error(code: ErrorCode, message: String) -> ClientError {
 
 impl Error {
     pub fn compression_error<E: Display>(err: E) -> ClientError {
-        error(ErrorCode::CompressionError, format!("Compression error: {}", err))
+        error(
+            ErrorCode::CompressionError,
+            format!("Compression error: {}", err),
+        )
     }
 
     pub fn decompression_error<E: Display>(err: E) -> ClientError {
-        error(ErrorCode::CompressionError, format!("Decompression error: {}", err))
+        error(
+            ErrorCode::CompressionError,
+            format!("Decompression error: {}", err),
+        )
     }
 }

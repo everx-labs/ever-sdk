@@ -1,10 +1,9 @@
-
-use crate::tests::{TestClient};
+use crate::tests::TestClient;
 
 use super::*;
+use crate::net::ResultOfQueryCollection;
 use serde_json::Value;
 use std::collections::HashSet;
-use crate::net::ResultOfQueryCollection;
 
 async fn query_ids_in_range(
     client: &TestClient,
@@ -43,13 +42,7 @@ async fn query_block_ids_in_range(
     start_time: u32,
     end_time: u32,
 ) -> HashSet<String> {
-    query_ids_in_range(
-        client,
-        "blocks",
-        "gen_utime",
-        start_time,
-        end_time,
-    ).await
+    query_ids_in_range(client, "blocks", "gen_utime", start_time, end_time).await
 }
 
 async fn query_transaction_ids_in_range(
@@ -57,13 +50,7 @@ async fn query_transaction_ids_in_range(
     start_time: u32,
     end_time: u32,
 ) -> HashSet<String> {
-    query_ids_in_range(
-        client,
-        "transactions",
-        "now",
-        start_time,
-        end_time,
-    ).await
+    query_ids_in_range(client, "transactions", "now", start_time, end_time).await
 }
 
 async fn iterate(

@@ -21,7 +21,7 @@ use crate::error::ClientResult;
 use ed25519_dalek::Verifier;
 use zeroize::Zeroize;
 
-use super::internal::{SecretBufConst, hex_decode_secret, hex_decode_secret_const};
+use super::internal::{hex_decode_secret, hex_decode_secret_const, SecretBufConst};
 
 // Signing
 
@@ -34,8 +34,8 @@ pub struct ParamsOfNaclSignKeyPairFromSecret {
 }
 
 /// Generates a key pair for signing from the secret key
-/// 
-/// **NOTE:** In the result the secret key is actually the concatenation 
+///
+/// **NOTE:** In the result the secret key is actually the concatenation
 /// of secret and public keys (128 symbols hex string) by design of [NaCL](http://nacl.cr.yp.to/sign.html).
 /// See also [the stackexchange question](https://crypto.stackexchange.com/questions/54353/).
 #[api_function]
@@ -210,7 +210,12 @@ fn prepare_to_convert(
     padded_input.extend(input);
     let mut padded_output = Vec::new();
     padded_output.resize(padded_input.len(), 0);
-    Ok((padded_output, padded_input, key192(&nonce)?.0, key256(&key)?))
+    Ok((
+        padded_output,
+        padded_input,
+        key192(&nonce)?.0,
+        key256(&key)?,
+    ))
 }
 
 //-------------------------------------------------------------------------------- nacl_box_keypair
@@ -347,12 +352,8 @@ pub fn nacl_box_open_internal(
     their_public: &sodalite::BoxPublicKey,
     secret: &[u8],
 ) -> ClientResult<Vec<u8>> {
-    let (mut padded_output, padded_input, nonce, secret) = prepare_to_convert(
-        encrypted,
-        nonce,
-        secret,
-        16,
-    )?;
+    let (mut padded_output, padded_input, nonce, secret) =
+        prepare_to_convert(encrypted, nonce, secret, 16)?;
     sodalite::box_open(
         &mut padded_output,
         &padded_input,
@@ -360,12 +361,11 @@ pub fn nacl_box_open_internal(
         their_public,
         &secret.0,
     )
-        .map_err(|_| crypto::Error::nacl_box_failed("box open failed"))?;
+    .map_err(|_| crypto::Error::nacl_box_failed("box open failed"))?;
     padded_output.drain(..32);
 
     Ok(padded_output)
 }
-
 
 // Secret Box
 

@@ -42,7 +42,8 @@ pub(crate) async fn decode_output(
                 message,
                 abi: abi.clone(),
             },
-        ).await;
+        )
+        .await;
         let decoded = match decode_result {
             Ok(decoded) => {
                 if decoded.body_type == MessageBodyType::Output {

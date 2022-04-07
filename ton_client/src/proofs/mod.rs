@@ -11,29 +11,29 @@ use ton_block::{
     HashmapAugType, MerkleProof, Message, ShardIdent, ShardStateUnsplit, Transaction,
     ValidatorDescr,
 };
-use ton_types::{Cell, UInt256};
 use ton_types::Result;
+use ton_types::{Cell, UInt256};
 
 pub(crate) use errors::ErrorCode;
 
 use crate::boc::internal::{deserialize_object_from_base64, deserialize_object_from_boc_bin};
 use crate::client::NetworkUID;
-use crate::ClientContext;
 use crate::encoding::base64_decode;
 use crate::error::ClientResult;
-use crate::net::{ParamsOfQueryCollection, query_collection};
+use crate::net::{query_collection, ParamsOfQueryCollection};
 use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::errors::Error;
 use crate::proofs::validators::{calc_subset_for_workchain, check_crypto_signatures};
 use crate::utils::json::JsonHelper;
+use crate::ClientContext;
 
-pub mod errors;
 mod engine;
+pub mod errors;
 mod validators;
 
+mod json;
 #[cfg(test)]
 mod tests;
-mod json;
 
 #[derive(Deserialize, Debug, Clone, ApiType)]
 pub struct ProofsConfig {
@@ -76,7 +76,7 @@ pub struct ParamsOfProofBlockData {
 }
 
 /// Proves that a given block's data, which is queried from TONOS API, can be trusted.
-/// 
+///
 /// This function checks block proofs and compares given data with the proven.
 /// If the given data differs from the proven, the exception will be thrown.
 /// The input param is a single block's JSON object, which was queried from DApp server using
@@ -140,7 +140,8 @@ pub async fn proof_block_data(
     context: Arc<ClientContext>,
     params: ParamsOfProofBlockData,
 ) -> ClientResult<()> {
-    let engine = ProofHelperEngineImpl::new(context).await
+    let engine = ProofHelperEngineImpl::new(context)
+        .await
         .map_err(|err| Error::proof_check_failed(err))?;
 
     let id_opt = params.block["id"].as_str();
@@ -148,7 +149,9 @@ pub async fn proof_block_data(
     let boc = if let Some(boc) = params.block["boc"].as_str() {
         base64_decode(boc)?
     } else if let Some(id) = id_opt {
-        engine.download_block_boc(id).await
+        engine
+            .download_block_boc(id)
+            .await
             .map_err(|err| Error::proof_check_failed(err))?
     } else {
         return Err(Error::invalid_data("Block's BOC or id are required"));
@@ -158,8 +161,8 @@ pub async fn proof_block_data(
 
     engine.proof_block_boc(&root_hash, &block, &boc).await?;
 
-    let block_json = json::serialize_block(root_hash, block, boc)
-        .map_err(|err| Error::invalid_data(err))?;
+    let block_json =
+        json::serialize_block(root_hash, block, boc).map_err(|err| Error::invalid_data(err))?;
 
     json::compare_blocks(&params.block, &block_json)
 }
@@ -178,10 +181,10 @@ pub struct ParamsOfProofTransactionData {
 /// This function requests the corresponding block, checks block proofs, ensures that given
 /// transaction exists in the proven block and compares given data with the proven.
 /// If the given data differs from the proven, the exception will be thrown.
-/// The input parameter is a single transaction's JSON object (see params description), 
-/// which was queried from TONOS API using functions such as `net.query`, `net.query_collection` 
+/// The input parameter is a single transaction's JSON object (see params description),
+/// which was queried from TONOS API using functions such as `net.query`, `net.query_collection`
 /// or `net.wait_for_collection`.
-/// 
+///
 /// If transaction's BOC and/or `block_id` are not provided in the JSON, they will be queried from
 /// TONOS API.
 ///
@@ -195,46 +198,49 @@ pub async fn proof_transaction_data(
     context: Arc<ClientContext>,
     params: ParamsOfProofTransactionData,
 ) -> ClientResult<()> {
-    let engine = ProofHelperEngineImpl::new(context).await
+    let engine = ProofHelperEngineImpl::new(context)
+        .await
         .map_err(|err| Error::proof_check_failed(err))?;
 
     let (root_hash, block_id, boc, transaction) =
         transaction_get_required_data(&engine, &params.transaction).await?;
 
-    let block_boc = engine.download_block_boc(&block_id).await
+    let block_boc = engine
+        .download_block_boc(&block_id)
+        .await
         .map_err(|err| Error::invalid_data(err))?;
 
     let (block, block_id) = deserialize_object_from_boc_bin(&block_boc)?;
 
-    engine.proof_block_boc(&block_id, &block, &block_boc).await?;
+    engine
+        .proof_block_boc(&block_id, &block, &block_boc)
+        .await?;
 
-    let block_info = block.read_info()
-        .map_err(|err| Error::invalid_data(err))?;
-    let block_extra = block.read_extra()
-        .map_err(|err| Error::invalid_data(err))?;
-    let account_blocks = block_extra.read_account_blocks()
+    let block_info = block.read_info().map_err(|err| Error::invalid_data(err))?;
+    let block_extra = block.read_extra().map_err(|err| Error::invalid_data(err))?;
+    let account_blocks = block_extra
+        .read_account_blocks()
         .map_err(|err| Error::invalid_data(err))?;
 
     let mut transaction_found_in_block = false;
-    account_blocks.iterate_objects(|account_block| {
-        account_block.transaction_iterate_full(|_key, cell, _cc| {
-            if root_hash == cell.repr_hash() {
-                transaction_found_in_block = true;
-                return Ok(false);
-            }
-            Ok(true)
+    account_blocks
+        .iterate_objects(|account_block| {
+            account_block.transaction_iterate_full(|_key, cell, _cc| {
+                if root_hash == cell.repr_hash() {
+                    transaction_found_in_block = true;
+                    return Ok(false);
+                }
+                Ok(true)
+            })
         })
-    })
         .map_err(|err| Error::internal_error(err))?;
 
     if !transaction_found_in_block {
-        return Err(Error::proof_check_failed(
-            format!(
-                "Transaction with `id`: {} not found in block with `id`: {}",
-                root_hash.as_hex_string(),
-                block_id.as_hex_string(),
-            )
-        ));
+        return Err(Error::proof_check_failed(format!(
+            "Transaction with `id`: {} not found in block with `id`: {}",
+            root_hash.as_hex_string(),
+            block_id.as_hex_string(),
+        )));
     }
 
     let transaction_json = json::serialize_transaction(
@@ -243,7 +249,8 @@ pub async fn proof_transaction_data(
         block_id,
         block_info.shard().workchain_id(),
         boc,
-    ).map_err(|err| Error::invalid_data(err))?;
+    )
+    .map_err(|err| Error::invalid_data(err))?;
 
     json::compare_transactions(&params.transaction, &transaction_json)
 }
@@ -279,22 +286,25 @@ pub async fn proof_message_data(
     context: Arc<ClientContext>,
     params: ParamsOfProofMessageData,
 ) -> ClientResult<()> {
-    let engine = ProofHelperEngineImpl::new(Arc::clone(&context)).await
+    let engine = ProofHelperEngineImpl::new(Arc::clone(&context))
+        .await
         .map_err(|err| Error::proof_check_failed(err))?;
 
     let (root_hash, transaction_id, boc, message) =
         message_get_required_data(&engine, &params.message).await?;
 
-    let transaction_json = engine.query_transaction_data(
-        &transaction_id, "id boc in_msg out_msgs"
-    ).await
+    let transaction_json = engine
+        .query_transaction_data(&transaction_id, "id boc in_msg out_msgs")
+        .await
         .map_err(|err| Error::proof_check_failed(err))?;
 
-    if !is_transaction_refers_to_message(&transaction_json, &Value::String(root_hash.as_hex_string())) {
+    if !is_transaction_refers_to_message(
+        &transaction_json,
+        &Value::String(root_hash.as_hex_string()),
+    ) {
         return Err(Error::proof_check_failed(format!(
             "Message with `id` = {} not found in transaction with `id` = {}",
-            root_hash,
-            transaction_id,
+            root_hash, transaction_id,
         )));
     }
 
@@ -302,14 +312,12 @@ pub async fn proof_message_data(
         context,
         ParamsOfProofTransactionData {
             transaction: transaction_json,
-        }
-    ).await?;
+        },
+    )
+    .await?;
 
-    let message_json = json::serialize_message(
-        root_hash,
-        message,
-        boc,
-    ).map_err(|err| Error::invalid_data(err))?;
+    let message_json =
+        json::serialize_message(root_hash, message, boc).map_err(|err| Error::invalid_data(err))?;
 
     json::compare_messages(&params.message, &message_json)
 }
@@ -319,12 +327,15 @@ pub(crate) async fn transaction_get_required_data<'trans>(
     transaction_json: &'trans Value,
 ) -> ClientResult<(UInt256, Cow<'trans, str>, Vec<u8>, Transaction)> {
     let id_opt = Cow::Borrowed(&transaction_json["id"]);
-    let mut block_id_opt = transaction_json["block_id"].as_str()
+    let mut block_id_opt = transaction_json["block_id"]
+        .as_str()
         .map(|str| Cow::Borrowed(str));
     let mut boc_opt = Cow::Borrowed(&transaction_json["boc"]);
 
     if id_opt.is_null() && boc_opt.is_null() {
-        return Err(Error::invalid_data("Transaction's `boc` or id are required"));
+        return Err(Error::invalid_data(
+            "Transaction's `boc` or id are required",
+        ));
     }
 
     if let Some(id) = id_opt.as_str() {
@@ -344,7 +355,8 @@ pub(crate) async fn transaction_get_required_data<'trans>(
         &root_hash.as_hex_string(),
         &mut boc_opt,
         &mut block_id_opt,
-    ).await?;
+    )
+    .await?;
 
     Ok((
         root_hash,
@@ -369,13 +381,16 @@ async fn transaction_query_required_fields<'trans>(
     }
 
     if fields.len() > 0 {
-        let mut transaction_json = engine.query_transaction_data(id, &fields.join(" ")).await
+        let mut transaction_json = engine
+            .query_transaction_data(id, &fields.join(" "))
+            .await
             .map_err(|err| Error::proof_check_failed(err))?;
         if boc_opt.is_null() {
             *boc_opt = Cow::Owned(transaction_json["boc"].take());
         }
         if block_id_opt.is_none() {
-            *block_id_opt = transaction_json["block_id"].take_string()
+            *block_id_opt = transaction_json["block_id"]
+                .take_string()
                 .map(|string| Cow::Owned(string));
         }
     }
@@ -388,7 +403,8 @@ async fn message_get_required_data<'msg>(
     message_json: &'msg Value,
 ) -> ClientResult<(UInt256, Cow<'msg, str>, Vec<u8>, Message)> {
     let id_opt = Cow::Borrowed(&message_json["id"]);
-    let mut trans_id_opt = if let Some(dst_id_str) = message_json["dst_transaction"]["id"].as_str() {
+    let mut trans_id_opt = if let Some(dst_id_str) = message_json["dst_transaction"]["id"].as_str()
+    {
         Some(Cow::Borrowed(dst_id_str))
     } else if let Some(src_id_str) = message_json["src_transaction"]["id"].as_str() {
         Some(Cow::Borrowed(src_id_str))
@@ -413,7 +429,13 @@ async fn message_get_required_data<'msg>(
 
     let root_hash = message_stuff.cell.repr_hash();
 
-    message_query_required_fields(engine, &root_hash.as_hex_string(), &mut boc_opt, &mut trans_id_opt).await?;
+    message_query_required_fields(
+        engine,
+        &root_hash.as_hex_string(),
+        &mut boc_opt,
+        &mut trans_id_opt,
+    )
+    .await?;
 
     Ok((
         root_hash,
@@ -439,19 +461,23 @@ async fn message_query_required_fields<'msg>(
     }
 
     if fields.len() > 0 {
-        let mut message_json = engine.query_message_data(id, &fields.join(" ")).await
+        let mut message_json = engine
+            .query_message_data(id, &fields.join(" "))
+            .await
             .map_err(|err| Error::proof_check_failed(err))?;
         if boc_opt.is_null() {
             *boc_opt = Cow::Owned(message_json["boc"].take());
         }
         if trans_id_opt.is_none() {
-            *trans_id_opt = if let Some(dst_id_str) = message_json["dst_transaction"]["id"].take_string() {
+            *trans_id_opt = if let Some(dst_id_str) =
+                message_json["dst_transaction"]["id"].take_string()
+            {
                 Some(Cow::Owned(dst_id_str))
             } else if let Some(src_id_str) = message_json["src_transaction"]["id"].take_string() {
                 Some(Cow::Owned(src_id_str))
             } else {
                 return Err(Error::proof_check_failed(
-                    "Unable to get `src_transaction.id` or `dst_transaction.id` from DApp server"
+                    "Unable to get `src_transaction.id` or `dst_transaction.id` from DApp server",
                 ));
             };
         }
@@ -460,7 +486,10 @@ async fn message_query_required_fields<'msg>(
     Ok(())
 }
 
-pub(crate) fn is_transaction_refers_to_message(transaction_json: &Value, message_id: &Value) -> bool {
+pub(crate) fn is_transaction_refers_to_message(
+    transaction_json: &Value,
+    message_id: &Value,
+) -> bool {
     if transaction_json["in_msg"] == *message_id {
         return true;
     }
@@ -532,10 +561,8 @@ impl BlockProof {
         let signatures_json_vec = signatures_json.get_array("signatures")?;
         for signature in signatures_json_vec {
             let node_id_short = UInt256::from_str(signature.get_str("node_id")?)?;
-            let sign = CryptoSignature::from_r_s_str(
-                signature.get_str("r")?,
-                signature.get_str("s")?,
-            )?;
+            let sign =
+                CryptoSignature::from_r_s_str(signature.get_str("r")?, signature.get_str("s")?)?;
 
             pure_signatures.push(CryptoSignaturePair::with_params(node_id_short, sign))
         }
@@ -544,28 +571,36 @@ impl BlockProof {
             validator_list_hash_short: signatures_json.get_u32("validator_list_hash_short")?,
             catchain_seqno: signatures_json.get_u32("catchain_seqno")?,
             sig_weight: u64::from_str_radix(
-                signatures_json.get_str("sig_weight")?
+                signatures_json
+                    .get_str("sig_weight")?
                     .trim_start_matches("0x"),
                 16,
             )?,
             pure_signatures,
         };
 
-        Ok(Self { id, root, signatures })
+        Ok(Self {
+            id,
+            root,
+            signatures,
+        })
     }
 
     #[cfg(test)]
     pub fn deserialize(data: &[u8]) -> Result<Self> {
         let proof = ton_block::BlockProof::construct_from_bytes(data)?;
-        let signatures = proof.signatures
+        let signatures = proof
+            .signatures
             .ok_or_else(|| err_msg("Signatures must be filled"))?;
 
         let mut pure_signatures = Vec::new();
-        ton_types::HashmapType::iterate_slices(signatures.pure_signatures.signatures(),
+        ton_types::HashmapType::iterate_slices(
+            signatures.pure_signatures.signatures(),
             |ref mut _key, ref mut slice| {
                 pure_signatures.push(CryptoSignaturePair::construct_from(slice)?);
                 Ok(true)
-            })?;
+            },
+        )?;
 
         Ok(Self {
             id: proof.proof_for,
@@ -575,7 +610,7 @@ impl BlockProof {
                 catchain_seqno: signatures.validator_info.catchain_seqno,
                 sig_weight: signatures.pure_signatures.weight(),
                 pure_signatures,
-            }
+            },
         })
     }
 
@@ -607,7 +642,10 @@ impl BlockProof {
                 block_virt_root.repr_hash()
             )
         }
-        Ok((Block::construct_from_cell(block_virt_root.clone())?, block_virt_root))
+        Ok((
+            Block::construct_from_cell(block_virt_root.clone())?,
+            block_virt_root,
+        ))
     }
 
     pub async fn check_proof(&self, engine: &impl ProofHelperEngine) -> Result<(Block, BlockInfo)> {
@@ -620,15 +658,15 @@ impl BlockProof {
 
         if prev_key_block_seqno == 0 {
             let zerostate = engine.load_zerostate().await?;
-            self.check_with_zerostate(
-                &zerostate,
-                &virt_block,
-                &virt_block_info,
-            )?;
+            self.check_with_zerostate(&zerostate, &virt_block, &virt_block_info)?;
         } else {
             let prev_key_block_proof = engine.load_key_block_proof(prev_key_block_seqno).await?;
 
-            self.check_with_prev_key_block_proof(&prev_key_block_proof, &virt_block, &virt_block_info)?;
+            self.check_with_prev_key_block_proof(
+                &prev_key_block_proof,
+                &virt_block,
+                &virt_block_info,
+            )?;
         }
 
         Ok((virt_block, virt_block_info))
@@ -638,7 +676,7 @@ impl BlockProof {
         &self,
         prev_key_block_proof: &BlockProof,
         virt_block: &Block,
-        virt_block_info: &BlockInfo
+        virt_block_info: &BlockInfo,
     ) -> Result<()> {
         if !self.id().shard().is_masterchain() {
             bail!(
@@ -736,7 +774,9 @@ impl BlockProof {
             )
         }
 
-        if self.id().shard().is_masterchain() && (info.after_merge() || info.before_split() || info.after_split()) {
+        if self.id().shard().is_masterchain()
+            && (info.after_merge() || info.before_split() || info.after_split())
+        {
             bail!(
                 "proof for block {} contains a Merkle proof with a block info which declares \
                     split/merge for a masterchain block",
@@ -781,22 +821,25 @@ impl BlockProof {
 
     fn pre_check_key_block_proof(&self, virt_block: &Block) -> Result<()> {
         let extra = virt_block.read_extra()?;
-        let mc_extra = extra.read_custom()?
-            .ok_or_else(|| Error::invalid_data(format!(
+        let mc_extra = extra.read_custom()?.ok_or_else(|| {
+            Error::invalid_data(format!(
                 "proof for key block {} contains a Merkle proof without masterchain block extra",
                 self.id(),
-            )))?;
-        let config = mc_extra.config()
-            .ok_or_else(|| Error::invalid_data(format!(
+            ))
+        })?;
+        let config = mc_extra.config().ok_or_else(|| {
+            Error::invalid_data(format!(
                 "proof for key block {} contains a Merkle proof without config params",
                 self.id(),
-            )))?;
-        let _cur_validator_set = config.config(34)?
-            .ok_or_else(|| Error::invalid_data(format!(
+            ))
+        })?;
+        let _cur_validator_set = config.config(34)?.ok_or_else(|| {
+            Error::invalid_data(format!(
                 "proof for key block {} contains a Merkle proof without current validators config \
                     param (34)",
                 self.id(),
-            )))?;
+            ))
+        })?;
         for i_config in 32..=38 {
             let _val_set = config.config(i_config)?;
         }
@@ -808,7 +851,7 @@ impl BlockProof {
     fn process_prev_key_block_proof(
         &self,
         prev_key_block_proof: &BlockProof,
-        gen_utime: u32
+        gen_utime: u32,
     ) -> Result<(Vec<ValidatorDescr>, u32)> {
         let (virt_key_block, prev_key_block_info) = prev_key_block_proof.pre_check_block_proof()?;
 
@@ -819,7 +862,8 @@ impl BlockProof {
             )
         }
 
-        let (validator_set, cc_config) = virt_key_block.read_cur_validator_set_and_cc_conf()
+        let (validator_set, cc_config) = virt_key_block
+            .read_cur_validator_set_and_cc_conf()
             .map_err(|err| {
                 Error::invalid_data(format!(
                     "While checking proof for {}: can't extract config params from key block's \
@@ -842,11 +886,15 @@ impl BlockProof {
             self.id().shard().shard_prefix_with_tag(),
             self.id().shard().workchain_id(),
             self.signatures.catchain_seqno(),
-            gen_utime.into()
+            gen_utime.into(),
         )
     }
 
-    fn check_signatures(&self, validators_list: Vec<ValidatorDescr>, list_hash_short: u32) -> Result<()> {
+    fn check_signatures(
+        &self,
+        validators_list: Vec<ValidatorDescr>,
+        list_hash_short: u32,
+    ) -> Result<()> {
         // Pre checks
         if self.signatures.validator_list_hash_short() != list_hash_short {
             bail!(
@@ -857,20 +905,16 @@ impl BlockProof {
             );
         }
         // Check signatures
-        let checked_data = ton_block::Block::build_data_for_sign(
-            &self.id().root_hash(),
-            &self.id().file_hash()
-        );
+        let checked_data =
+            ton_block::Block::build_data_for_sign(&self.id().root_hash(), &self.id().file_hash());
         let total_weight: u64 = validators_list.iter().map(|v| v.weight).sum();
-        let weight = check_crypto_signatures(
-            &self.signatures,
-            &validators_list,
-            &checked_data,
-        )
+        let weight = check_crypto_signatures(&self.signatures, &validators_list, &checked_data)
             .map_err(|err| {
-                Error::invalid_data(
-                    format!("Proof for {}: error while check signatures: {}", self.id(), err)
-                )
+                Error::invalid_data(format!(
+                    "Proof for {}: error while check signatures: {}",
+                    self.id(),
+                    err
+                ))
             })?;
 
         // Check weight
@@ -884,10 +928,7 @@ impl BlockProof {
         }
 
         if weight * 3 <= total_weight * 2 {
-            bail!(
-                "Proof for {}: too small signatures weight",
-                self.id(),
-            );
+            bail!("Proof for {}: too small signatures weight", self.id(),);
         }
 
         Ok(())
@@ -914,7 +955,8 @@ impl BlockProof {
         }
 
         let (cur_validator_set, cc_config) = zerostate.read_cur_validator_set_and_cc_conf()?;
-        let mc_state_extra = zerostate.read_custom()?
+        let mc_state_extra = zerostate
+            .read_custom()?
             .ok_or_else(|| err_msg("Can't read custom field from the zerostate"))?;
 
         let (validators, hash_short) = calc_subset_for_workchain(
@@ -924,16 +966,14 @@ impl BlockProof {
             self.id().shard().shard_prefix_with_tag(),
             self.id().shard().workchain_id(),
             self.signatures.catchain_seqno(),
-            block_info.gen_utime()
+            block_info.gen_utime(),
         )?;
 
         Ok((validators, hash_short))
     }
 }
 
-async fn get_current_network_uid(
-    context: &Arc<ClientContext>,
-) -> Result<Arc<NetworkUID>> {
+async fn get_current_network_uid(context: &Arc<ClientContext>) -> Result<Arc<NetworkUID>> {
     if let Some(ref uid) = *context.net.network_uid.read().await {
         return Ok(Arc::clone(uid));
     }
@@ -950,23 +990,26 @@ async fn get_current_network_uid(
     Ok(queried_uid)
 }
 
-async fn query_current_network_uid(
-    context: Arc<ClientContext>,
-) -> Result<Arc<NetworkUID>> {
-    let blocks = query_collection(context, ParamsOfQueryCollection {
-        collection: "blocks".to_string(),
-        filter: Some(json!({
-            "workchain_id": {
-                "eq": -1
-            },
-            "seq_no": {
-                "eq": 1
-            },
-        })),
-        result: "id, prev_ref{root_hash}".to_string(),
-        limit: Some(1),
-        ..Default::default()
-    }).await?.result;
+async fn query_current_network_uid(context: Arc<ClientContext>) -> Result<Arc<NetworkUID>> {
+    let blocks = query_collection(
+        context,
+        ParamsOfQueryCollection {
+            collection: "blocks".to_string(),
+            filter: Some(json!({
+                "workchain_id": {
+                    "eq": -1
+                },
+                "seq_no": {
+                    "eq": 1
+                },
+            })),
+            result: "id, prev_ref{root_hash}".to_string(),
+            limit: Some(1),
+            ..Default::default()
+        },
+    )
+    .await?
+    .result;
 
     if blocks.is_empty() {
         bail!("Unable to resolve zerostate's root hash: can't get masterchain block #1");
@@ -980,7 +1023,10 @@ async fn query_current_network_uid(
     let first_master_block_root_hash = UInt256::from_str(blocks[0].get_str("id")?)?;
     let zerostate_root_hash = UInt256::from_str(prev_ref.get_str("root_hash")?)?;
 
-    Ok(Arc::new(NetworkUID { zerostate_root_hash, first_master_block_root_hash }))
+    Ok(Arc::new(NetworkUID {
+        zerostate_root_hash,
+        first_master_block_root_hash,
+    }))
 }
 
 async fn resolve_initial_trusted_key_block(
@@ -992,15 +1038,17 @@ async fn resolve_initial_trusted_key_block(
     if let Some(hardcoded_mc_blocks) =
         INITIAL_TRUSTED_KEY_BLOCKS.get(network_uid.zerostate_root_hash.as_array())
     {
-        let index = match hardcoded_mc_blocks.binary_search_by_key(
-            &mc_seq_no, |(seq_no, _root_hash)| *seq_no,
-        ) {
+        let index = match hardcoded_mc_blocks
+            .binary_search_by_key(&mc_seq_no, |(seq_no, _root_hash)| *seq_no)
+        {
             Ok(seq_no) => seq_no,
-            Err(seq_no) => if seq_no >= hardcoded_mc_blocks.len() {
-                seq_no - 1
-            } else {
-                seq_no
-            },
+            Err(seq_no) => {
+                if seq_no >= hardcoded_mc_blocks.len() {
+                    seq_no - 1
+                } else {
+                    seq_no
+                }
+            }
         };
 
         let (seq_no, ref root_hash) = hardcoded_mc_blocks[index];

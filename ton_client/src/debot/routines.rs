@@ -1,4 +1,4 @@
-use chrono::{Local, TimeZone};
+use super::TonClient;
 use crate::boc::{parse_account, ParamsOfParse};
 use crate::crypto::{
     generate_random_bytes, nacl_box_keypair_from_secret_key, signing_box_sign, KeyPair,
@@ -7,7 +7,7 @@ use crate::crypto::{
 };
 use crate::encoding::{decode_abi_bigint, decode_abi_number};
 use crate::net::{query_collection, ParamsOfQueryCollection};
-use super::TonClient;
+use chrono::{Local, TimeZone};
 
 #[derive(Serialize, Deserialize, Clone)]
 pub(super) struct ResultOfGetAccountState {
@@ -33,7 +33,6 @@ impl Default for ResultOfGetAccountState {
             data: String::new(),
             lib: String::new(),
         }
-
     }
 }
 
@@ -264,19 +263,17 @@ pub(super) async fn get_account_state(
     args: &serde_json::Value,
 ) -> ResultOfGetAccountState {
     match get_account(ton, args).await {
-        Ok(acc) => {
-            serde_json::from_value(acc)
-                .map_err(|e| {
-                    debug!("failed to deserialize account json: {}", e);
-                    e
-                })
-                .unwrap_or_default()
-        },
+        Ok(acc) => serde_json::from_value(acc)
+            .map_err(|e| {
+                debug!("failed to deserialize account json: {}", e);
+                e
+            })
+            .unwrap_or_default(),
         Err(e) => {
             debug!("getAccountState failed: {}", e);
             let def = ResultOfGetAccountState::default();
             def
-        },
+        }
     }
 }
 

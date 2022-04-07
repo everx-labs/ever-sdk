@@ -296,7 +296,11 @@ fn generic_type_from(
 }
 
 fn replace_tabs(s: &str) -> String {
-    s.split("\t").collect::<Vec<&str>>().join("    ").trim_end().into()
+    s.split("\t")
+        .collect::<Vec<&str>>()
+        .join("    ")
+        .trim_end()
+        .into()
 }
 
 fn get_leading_spaces(s: &str) -> usize {
@@ -333,7 +337,6 @@ fn reduce_lines(lines: Vec<String>) -> Vec<String> {
     reduced
 }
 
-
 fn get_doc(element_summary: String, element_description: String) -> (String, String) {
     if element_description.trim().is_empty() {
         return (element_summary, String::new());
@@ -368,7 +371,6 @@ fn get_doc(element_summary: String, element_description: String) -> (String, Str
     }
     (summary, description.trim().into())
 }
-
 
 pub(crate) fn doc_from(attrs: &Vec<Attribute>) -> (Option<String>, Option<String>) {
     let mut summary = String::new();

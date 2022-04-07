@@ -1,7 +1,10 @@
 use crate::abi;
-use crate::abi::internal::{add_sign_to_message, add_sign_to_message_body, create_tvc_image, try_to_sign_message, update_pubkey};
+use crate::abi::internal::{
+    add_sign_to_message, add_sign_to_message_body, create_tvc_image, try_to_sign_message,
+    update_pubkey,
+};
 use crate::abi::{Abi, Error, FunctionHeader, Signer};
-use crate::boc::internal::{get_boc_hash, deserialize_cell_from_boc};
+use crate::boc::internal::{deserialize_cell_from_boc, get_boc_hash};
 use crate::client::ClientContext;
 use crate::encoding::{account_decode, account_encode, decode_abi_number, hex_decode};
 use crate::error::ClientResult;
@@ -9,7 +12,7 @@ use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
 use ton_abi::Contract;
-use ton_block::{MsgAddressInt, CurrencyCollection};
+use ton_block::{CurrencyCollection, MsgAddressInt};
 use ton_sdk::{ContractImage, FunctionCallSet};
 
 //--------------------------------------------------------------------------- encode_deploy_message
@@ -270,17 +273,31 @@ fn encode_deploy(
     Ok(match signer {
         Signer::None => {
             let message = ton_sdk::Contract::construct_deploy_message_json(
-                call_set.to_function_call_set(pubkey, processing_try_index, &context, abi, false)?,
-                image, 
+                call_set.to_function_call_set(
+                    pubkey,
+                    processing_try_index,
+                    &context,
+                    abi,
+                    false,
+                )?,
+                image,
                 None,
                 workchain,
             )
-            .map_err(|err| abi::Error::encode_run_message_failed(err, Some(&call_set.function_name)))?;
+            .map_err(|err| {
+                abi::Error::encode_run_message_failed(err, Some(&call_set.function_name))
+            })?;
             (message.serialized_message, None, address)
         }
         _ => {
             let unsigned = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
-                call_set.to_function_call_set(pubkey, processing_try_index, &context, &abi, false)?,
+                call_set.to_function_call_set(
+                    pubkey,
+                    processing_try_index,
+                    &context,
+                    &abi,
+                    false,
+                )?,
                 image,
                 workchain,
             )
@@ -309,11 +326,11 @@ fn encode_int_deploy(
         workchain_id,
         ihr_disabled,
         bounce,
-    ).map_err(|err| abi::Error::encode_deploy_message_failed(err))?;
+    )
+    .map_err(|err| abi::Error::encode_deploy_message_failed(err))?;
 
     Ok((message, address))
 }
-
 
 fn encode_empty_deploy(
     image: ContractImage,
@@ -345,8 +362,9 @@ fn encode_empty_int_deploy(
         image,
         workchain_id,
         ihr_disabled,
-        bounce
-    ).map_err(|x| abi::Error::encode_deploy_message_failed(x))?;
+        bounce,
+    )
+    .map_err(|x| abi::Error::encode_deploy_message_failed(x))?;
 
     Ok((
         ton_sdk::Contract::serialize_message(&message)
@@ -373,18 +391,34 @@ fn encode_run(
         Signer::None => {
             let message = ton_sdk::Contract::construct_call_ext_in_message_json(
                 address.clone(),
-                call_set.to_function_call_set(pubkey, processing_try_index, &context, abi, false)?,
+                call_set.to_function_call_set(
+                    pubkey,
+                    processing_try_index,
+                    &context,
+                    abi,
+                    false,
+                )?,
                 None,
             )
-            .map_err(|err| abi::Error::encode_run_message_failed(err, Some(&call_set.function_name)))?;
+            .map_err(|err| {
+                abi::Error::encode_run_message_failed(err, Some(&call_set.function_name))
+            })?;
             (message.serialized_message, None, address)
         }
         _ => {
             let unsigned = ton_sdk::Contract::get_call_message_bytes_for_signing(
                 address.clone(),
-                call_set.to_function_call_set(pubkey, processing_try_index, &context, abi, false)?,
+                call_set.to_function_call_set(
+                    pubkey,
+                    processing_try_index,
+                    &context,
+                    abi,
+                    false,
+                )?,
             )
-            .map_err(|err| abi::Error::encode_run_message_failed(err, Some(&call_set.function_name)))?;
+            .map_err(|err| {
+                abi::Error::encode_run_message_failed(err, Some(&call_set.function_name))
+            })?;
 
             (unsigned.message, Some(unsigned.data_to_sign), address)
         }
@@ -441,7 +475,8 @@ pub async fn encode_message(
             &abi,
             deploy_set.initial_data.as_ref(),
             &deploy_set.tvc,
-        ).await?;
+        )
+        .await?;
 
         required_public_key(update_pubkey(&deploy_set, &mut image, &public)?)?;
 
@@ -472,9 +507,8 @@ pub async fn encode_message(
         return Err(abi::Error::missing_required_call_set_for_encode_message());
     };
 
-    let (message, data_to_sign) = try_to_sign_message(
-        context, &abi, message, data_to_sign, &params.signer
-    ).await?;
+    let (message, data_to_sign) =
+        try_to_sign_message(context, &abi, message, data_to_sign, &params.signer).await?;
 
     Ok(ResultOfEncodeMessage {
         message: base64::encode(&message),
@@ -552,7 +586,7 @@ pub struct ResultOfEncodeInternalMessage {
 /// 2. Public key, specified in TVM file.
 
 #[api_function]
-pub async  fn encode_internal_message(
+pub async fn encode_internal_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {
@@ -564,7 +598,8 @@ pub async  fn encode_internal_message(
     let bounce = params.bounce.unwrap_or(true);
 
     let (message, address) = if let Some(deploy_set) = params.deploy_set {
-        let abi = params.abi
+        let abi = params
+            .abi
             .ok_or_else(|| Error::invalid_abi("abi is undefined"))?
             .json_string()?;
 
@@ -576,7 +611,8 @@ pub async  fn encode_internal_message(
             &abi,
             deploy_set.initial_data.as_ref(),
             &deploy_set.tvc,
-        ).await?;
+        )
+        .await?;
 
         let public = update_pubkey(&deploy_set, &mut image, &None)?;
         let public = required_public_key(public)?;
@@ -601,16 +637,19 @@ pub async  fn encode_internal_message(
             .as_ref()
             .ok_or(abi::Error::required_address_missing_for_encode_message())?;
         let address = account_decode(address)?;
-        let value = CurrencyCollection::with_grams(
-            u64::from_str(&params.value)
-                .map_err(|err| abi::Error::encode_run_message_failed(
+        let value =
+            CurrencyCollection::with_grams(u64::from_str(&params.value).map_err(|err| {
+                abi::Error::encode_run_message_failed(
                     err,
-                    params.call_set.as_ref()
+                    params
+                        .call_set
+                        .as_ref()
                         .map(|call_set| call_set.function_name.as_str()),
-                ))?
-        );
+                )
+            })?);
         if let Some(call_set) = &params.call_set {
-            let abi = params.abi
+            let abi = params
+                .abi
                 .ok_or_else(|| Error::invalid_abi("abi is undefined"))?
                 .json_string()?;
             let message = ton_sdk::Contract::construct_call_int_message_json(
@@ -621,7 +660,9 @@ pub async  fn encode_internal_message(
                 value,
                 call_set.to_function_call_set(None, None, &context, &abi, true)?,
             )
-            .map_err(|err| abi::Error::encode_run_message_failed(err, Some(&call_set.function_name)))?;
+            .map_err(|err| {
+                abi::Error::encode_run_message_failed(err, Some(&call_set.function_name))
+            })?;
 
             (message.serialized_message, address)
         } else {
@@ -721,25 +762,19 @@ pub async fn encode_message_body(
             .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?;
             (body, None)
         }
-        _ => {
-            if params.is_internal {
-                ton_abi::encode_function_call(
-                    abi.clone(),
-                    func.clone(),
-                    None,
-                    call.input,
-                    true,
-                    None,
-                ).map(|body| (body, None))
-            } else {
-                ton_abi::prepare_function_call_for_sign(
-                    abi.clone(),
-                    func.clone(),
-                    call.header,
-                    call.input,
-                ).map(|(body, data_to_sign)| (body, Some(data_to_sign)))
-            }.map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?
+        _ => if params.is_internal {
+            ton_abi::encode_function_call(abi.clone(), func.clone(), None, call.input, true, None)
+                .map(|body| (body, None))
+        } else {
+            ton_abi::prepare_function_call_for_sign(
+                abi.clone(),
+                func.clone(),
+                call.header,
+                call.input,
+            )
+            .map(|(body, data_to_sign)| (body, Some(data_to_sign)))
         }
+        .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?,
     };
     let body: Vec<u8> = ton_types::serialize_toc(
         &body
@@ -750,9 +785,7 @@ pub async fn encode_message_body(
     .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?;
     if let Some(unsigned) = &data_to_sign {
         if let Some(signature) = params.signer.sign(context.clone(), unsigned).await? {
-            let pubkey = public
-                .map(|string| hex_decode(&string))
-                .transpose()?;
+            let pubkey = public.map(|string| hex_decode(&string)).transpose()?;
             let body = add_sign_to_message_body(
                 &abi,
                 &signature,

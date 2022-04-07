@@ -1,5 +1,5 @@
 use super::dinterface::{
-    decode_answer_id, get_array_strings, get_arg, DebotInterface, InterfaceResult,
+    decode_answer_id, get_arg, get_array_strings, DebotInterface, InterfaceResult,
 };
 use super::TonClient;
 use crate::abi::Abi;

@@ -62,8 +62,7 @@ impl Error {
             || error.code == ErrorCode::HttpRequestSendError as u32
             || (error.code == crate::net::ErrorCode::GraphqlError as u32
                 && error.data["server_code"].as_i64() >= Some(500)
-                && error.data["server_code"].as_i64() <= Some(599)
-            )
+                && error.data["server_code"].as_i64() <= Some(599))
     }
 
     pub fn internal_error<E: Display>(message: E) -> ClientError {
@@ -317,10 +316,7 @@ impl Error {
     pub fn local_storage_error(err: impl Display) -> ClientError {
         error(
             ErrorCode::LocalStorageError,
-            format!(
-                "Local storage error: {}",
-                err,
-            ),
+            format!("Local storage error: {}", err,),
         )
     }
 }

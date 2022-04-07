@@ -38,9 +38,7 @@ pub use decode_message::{
 pub use encode_account::{
     encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,
 };
-pub use encode_boc::{
-    encode_boc, ParamsOfAbiEncodeBoc, ResultOfAbiEncodeBoc,
-};
+pub use encode_boc::{encode_boc, ParamsOfAbiEncodeBoc, ResultOfAbiEncodeBoc};
 pub use encode_message::{
     attach_signature, attach_signature_to_message_body, encode_internal_message, encode_message,
     encode_message_body, CallSet, DeploySet, ParamsOfAttachSignature,
@@ -50,9 +48,9 @@ pub use encode_message::{
 };
 pub use errors::{Error, ErrorCode};
 pub use init_data::{
-    encode_initial_data, decode_initial_data, update_initial_data,
-    ParamsOfEncodeInitialData, ParamsOfDecodeInitialData, ParamsOfUpdateInitialData,
-    ResultOfEncodeInitialData, ResultOfDecodeInitialData, ResultOfUpdateInitialData,
+    decode_initial_data, encode_initial_data, update_initial_data, ParamsOfDecodeInitialData,
+    ParamsOfEncodeInitialData, ParamsOfUpdateInitialData, ResultOfDecodeInitialData,
+    ResultOfEncodeInitialData, ResultOfUpdateInitialData,
 };
 pub use signing::Signer;
 pub use types::{

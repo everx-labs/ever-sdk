@@ -1,6 +1,6 @@
-use crate::ClientContext;
 use crate::crypto::{KeyPair, SigningBoxHandle};
 use crate::error::ClientResult;
+use crate::ClientContext;
 use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
@@ -35,44 +35,49 @@ impl Signer {
 }
 
 impl Signer {
-    pub async fn sign(&self, context: Arc<ClientContext>, data_to_sign: &[u8]) -> ClientResult<Option<Vec<u8>>> {
+    pub async fn sign(
+        &self,
+        context: Arc<ClientContext>,
+        data_to_sign: &[u8],
+    ) -> ClientResult<Option<Vec<u8>>> {
         match self {
             Signer::None => Ok(None),
             Signer::Keys { keys } => {
                 crate::crypto::internal::sign_using_keys(data_to_sign, &keys.decode()?)
                     .map(|(_, sign)| Some(sign))
-            },
+            }
             Signer::External { .. } => Ok(None),
             Signer::SigningBox { handle } => {
                 let result = crate::crypto::signing_box_sign(
                     context,
                     crate::crypto::ParamsOfSigningBoxSign {
                         signing_box: handle.clone(),
-                        unsigned: base64::encode(data_to_sign)
-                    }
-                ).await?;
+                        unsigned: base64::encode(data_to_sign),
+                    },
+                )
+                .await?;
 
-                Some(crate::encoding::hex_decode(&result.signature))
-                    .transpose()
-            },
+                Some(crate::encoding::hex_decode(&result.signature)).transpose()
+            }
         }
     }
 
-    pub async fn resolve_public_key(&self, context: Arc<ClientContext>) -> ClientResult<Option<String>> {
+    pub async fn resolve_public_key(
+        &self,
+        context: Arc<ClientContext>,
+    ) -> ClientResult<Option<String>> {
         match self {
             Signer::None => Ok(None),
             Signer::Keys { keys } => Ok(Some(keys.public.clone())),
             Signer::External { public_key } => Ok(Some(public_key.clone())),
-            Signer::SigningBox { handle } => {
-                crate::crypto::signing_box_get_public_key(
-                    context,
-                    crate::crypto::RegisteredSigningBox {
-                        handle: handle.clone()
-                    }
-                )
-                    .await
-                    .map(|result| Some(result.pubkey))
-            },
+            Signer::SigningBox { handle } => crate::crypto::signing_box_get_public_key(
+                context,
+                crate::crypto::RegisteredSigningBox {
+                    handle: handle.clone(),
+                },
+            )
+            .await
+            .map(|result| Some(result.pubkey)),
         }
     }
 }

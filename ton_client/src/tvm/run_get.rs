@@ -35,7 +35,7 @@ pub struct ParamsOfRunGet {
     pub execution_options: Option<ExecutionOptions>,
     /// Convert lists based on nested tuples in the **result** into plain arrays. Default is `false`.
     /// Input parameters may use any of lists representations
-    /// If you receive this error on Web: "Runtime error. Unreachable code should not be executed...", 
+    /// If you receive this error on Web: "Runtime error. Unreachable code should not be executed...",
     /// set this flag to true.
     /// This may happen, for example, when elector contract contains too many participants
     pub tuple_list_as_array: Option<bool>,
@@ -48,8 +48,8 @@ pub struct ResultOfRunGet {
     pub output: Value,
 }
 
-/// Executes a get-method of FIFT contract 
-/// 
+/// Executes a get-method of FIFT contract
+///
 /// Executes a get-method of FIFT contract that fulfills the smc-guidelines https://test.ton.org/smc-guidelines.txt
 /// and returns the result data from TVM's stack
 
@@ -59,11 +59,14 @@ pub async fn run_get(
     params: ParamsOfRunGet,
 ) -> ClientResult<ResultOfRunGet> {
     let mut account: ton_block::Account =
-        deserialize_object_from_boc(&context, &params.account, "account").await?.object;
-    let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
+        deserialize_object_from_boc(&context, &params.account, "account")
+            .await?
+            .object;
+    let options =
+        ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
     if account.is_none() {
-        return Err(Error::invalid_account_boc("Account is None"))
+        return Err(Error::invalid_account_boc("Account is None"));
     }
 
     let mut crc = crc_any::CRC::crc16xmodem();

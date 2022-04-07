@@ -16,7 +16,7 @@ use crate::error::ClientError;
 use serde_json::Value;
 use std::fmt::Display;
 use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
-use ton_types::{ExceptionCode, Cell};
+use ton_types::{Cell, ExceptionCode};
 
 #[derive(ApiType)]
 pub enum ErrorCode {
@@ -114,7 +114,9 @@ impl Error {
         );
 
         if show_tips && !error.message.to_lowercase().contains("exit code") {
-            error.message.push_str(&format!(", exit code: {}", exit_code));
+            error
+                .message
+                .push_str(&format!(", exit code: {}", exit_code));
 
             let tip = match exit_code {
                 0 => Some(
@@ -171,7 +173,9 @@ impl Error {
             }
         } else if let Some(ref exit_arg) = exit_arg {
             if let Some(error_message) = Self::read_error_message(exit_arg) {
-                error.message.push_str(&format!(", contract error: \"{}\"", error_message));
+                error
+                    .message
+                    .push_str(&format!(", contract error: \"{}\"", error_message));
                 error.data["contract_error"] = error_message.into();
             }
         }
@@ -180,7 +184,8 @@ impl Error {
             error.message = error.message.trim_end_matches('.').to_string();
             error.message.push_str(
                 ".\nTip: For more information about exit code check the contract source code \
-                or ask the contract developer");
+                or ask the contract developer",
+            );
         }
 
         error
@@ -220,7 +225,8 @@ impl Error {
                 "Transaction failed at action phase".to_owned(),
             );
             if !valid {
-                error.data["description"] = "Contract tried to send invalid outbound message".into();
+                error.data["description"] =
+                    "Contract tried to send invalid outbound message".into();
             }
             error
         };
@@ -315,17 +321,15 @@ impl Error {
 
         if let Some(arg_type) = map.get("type") {
             match arg_type {
-                Value::String(arg_type) if arg_type == "Cell" => {},
+                Value::String(arg_type) if arg_type == "Cell" => {}
                 _ => return None,
             }
         }
 
         let base64_value = match map.get("value") {
-            Some(value) => {
-                match value {
-                    Value::String(base64_value) => base64_value,
-                    _ => return None,
-                }
+            Some(value) => match value {
+                Value::String(base64_value) => base64_value,
+                _ => return None,
             },
             None => return None,
         };

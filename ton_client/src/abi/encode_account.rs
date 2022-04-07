@@ -1,18 +1,16 @@
-use crate::{abi::types::MessageSource, boc::{BocCacheType, internal::serialize_object_to_boc}};
 use crate::abi::{Abi, Error};
-use crate::boc::internal::{
-    deserialize_cell_from_boc, deserialize_object_from_boc,
-};
+use crate::boc::internal::{deserialize_cell_from_boc, deserialize_object_from_boc};
 use crate::client::ClientContext;
 use crate::crypto::internal::decode_public_key;
 use crate::error::ClientResult;
+use crate::{
+    abi::types::MessageSource,
+    boc::{internal::serialize_object_to_boc, BocCacheType},
+};
 use serde_json::Value;
 use std::sync::Arc;
 use ton_block::GetRepresentationHash;
-use ton_block::{
-    Account, CurrencyCollection, MsgAddressInt,
-    StateInit, StateInitLib,
-};
+use ton_block::{Account, CurrencyCollection, MsgAddressInt, StateInit, StateInitLib};
 use ton_sdk::ContractImage;
 
 //--------------------------------------------------------------------------------- encode_account
@@ -47,7 +45,7 @@ pub enum StateInitSource {
 
 impl Default for StateInitSource {
     fn default() -> Self {
-        StateInitSource::Tvc { 
+        StateInitSource::Tvc {
             tvc: Default::default(),
             public_key: Default::default(),
             init_params: Default::default(),
@@ -82,9 +80,9 @@ async fn state_init_from_message(
     message: &MessageSource,
 ) -> ClientResult<StateInit> {
     let (message, _) = message.encode(context).await?;
-    let message = deserialize_object_from_boc::<ton_block::Message>(
-        context, &message, "message"
-    ).await?.object;
+    let message = deserialize_object_from_boc::<ton_block::Message>(context, &message, "message")
+        .await?
+        .object;
     message
         .state_init()
         .map(|x| x.clone())
@@ -98,12 +96,22 @@ async fn state_init_from_bocs(
     library: &Option<String>,
 ) -> ClientResult<StateInit> {
     Ok(StateInit {
-        code: Some(deserialize_cell_from_boc(context, code, "account code").await?.1),
-        data: Some(deserialize_cell_from_boc(context, data, "account data").await?.1),
+        code: Some(
+            deserialize_cell_from_boc(context, code, "account code")
+                .await?
+                .1,
+        ),
+        data: Some(
+            deserialize_cell_from_boc(context, data, "account data")
+                .await?
+                .1,
+        ),
         library: if let Some(library) = library {
-            StateInitLib::with_hashmap(
-                Some(deserialize_cell_from_boc(context, library, "library").await?.1)
-            )
+            StateInitLib::with_hashmap(Some(
+                deserialize_cell_from_boc(context, library, "library")
+                    .await?
+                    .1,
+            ))
         } else {
             StateInitLib::default()
         },
@@ -124,8 +132,7 @@ async fn state_init_from_tvc(
         .map(|x| decode_public_key(x))
         .transpose()?;
 
-    let mut image = ContractImage::from_cell(cell)
-        .map_err(|err| Error::invalid_tvc_image(err))?;
+    let mut image = ContractImage::from_cell(cell).map_err(|err| Error::invalid_tvc_image(err))?;
     if let Some(key) = public_key {
         image
             .set_public_key(&key)
@@ -167,11 +174,16 @@ pub async fn encode_account(
             init_params,
         } => state_init_from_tvc(&context, tvc, public_key, init_params).await,
     }?;
-    let id = state_init.hash().map_err(|err| Error::invalid_tvc_image(err))?;
+    let id = state_init
+        .hash()
+        .map_err(|err| Error::invalid_tvc_image(err))?;
     let address = MsgAddressInt::with_standart(None, 0, id.clone().into()).unwrap();
     let mut account = Account::with_address(address);
-    account.set_balance(CurrencyCollection::from(params.balance.unwrap_or(100000000000)));
-    account.try_activate_by_init_code_hash(&state_init, false)
+    account.set_balance(CurrencyCollection::from(
+        params.balance.unwrap_or(100000000000),
+    ));
+    account
+        .try_activate_by_init_code_hash(&state_init, false)
         .map_err(|err| Error::invalid_tvc_image(err))?;
     account.set_last_tr_time(params.last_trans_lt.unwrap_or(0));
     Ok(ResultOfEncodeAccount {

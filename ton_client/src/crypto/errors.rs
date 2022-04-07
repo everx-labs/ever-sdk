@@ -75,7 +75,11 @@ impl Error {
             format!(
                 "Invalid key size {}. Expected {}.",
                 actual,
-                expected.iter().map(|val| val.to_string()).collect::<Vec<String>>().join(" or ")
+                expected
+                    .iter()
+                    .map(|val| val.to_string())
+                    .collect::<Vec<String>>()
+                    .join(" or ")
             ),
         )
     }
@@ -231,7 +235,10 @@ impl Error {
     pub fn iv_required(mode: &CipherMode) -> ClientError {
         error(
             ErrorCode::DecryptDataError,
-            format!("initialization vector is required for {:?} cipher mode", mode),
+            format!(
+                "initialization vector is required for {:?} cipher mode",
+                mode
+            ),
         )
     }
 

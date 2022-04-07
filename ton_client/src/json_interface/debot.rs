@@ -13,24 +13,26 @@
  */
 
 use crate::client::{AppObject, ClientContext};
-use crate::error::ClientResult;
-use crate::debot::Error;
-use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfInit, RegisteredDebot, DebotActivity};
 use crate::crypto::SigningBoxHandle;
+use crate::debot::Error;
+use crate::debot::{
+    BrowserCallbacks, DAction, DebotAction, DebotActivity, ParamsOfInit, RegisteredDebot,
+};
+use crate::error::ClientResult;
 
 /// [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum ResultOfAppDebotBrowser {
     /// Result of user input.
     Input {
         /// String entered by user.
-        value: String
+        value: String,
     },
     /// Result of getting signing box.
     GetSigningBox {
         /// Signing box for signing data requested by debot engine. Signing box is owned and disposed by debot engine
-        signing_box: SigningBoxHandle
+        signing_box: SigningBoxHandle,
     },
     /// Result of debot invoking.
     InvokeDebot,
@@ -38,24 +40,24 @@ pub enum ResultOfAppDebotBrowser {
     Approve {
         /// Indicates whether the DeBot is allowed to perform the specified operation.
         approved: bool,
-    }
+    },
 }
 
 /// [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
 ///
 /// Called by debot engine to communicate with debot browser.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum ParamsOfAppDebotBrowser {
     /// Print message to user.
     Log {
         /// A string that must be printed to user.
-        msg: String
+        msg: String,
     },
     /// Switch debot to another context (menu).
     Switch {
         /// Debot context ID to which debot is switched.
-        context_id: u8
+        context_id: u8,
     },
     /// Notify browser that all context actions are shown.
     SwitchCompleted,
@@ -64,12 +66,12 @@ pub enum ParamsOfAppDebotBrowser {
     ShowAction {
         /// Debot action that must be shown to user as menu item.
         /// At least `description` property must be shown from [DebotAction] structure.
-        action: DebotAction
+        action: DebotAction,
     },
     /// Request user input.
     Input {
         /// A prompt string that must be printed to user before input request.
-        prompt: String
+        prompt: String,
     },
     /// Get signing box to sign data. Signing box returned is owned and disposed by debot engine
     GetSigningBox,
@@ -78,7 +80,7 @@ pub enum ParamsOfAppDebotBrowser {
         /// Address of debot in blockchain.
         debot_addr: String,
         /// Debot action to execute.
-        action: DebotAction
+        action: DebotAction,
     },
     /// Used by Debot to call DInterface implemented by Debot Browser.
     Send {
@@ -106,79 +108,91 @@ impl DebotBrowserAdapter {
     }
 }
 
- #[async_trait::async_trait]
- impl BrowserCallbacks for DebotBrowserAdapter {
-
-     async fn log(&self, msg: String) {
-         self.app_object.notify(ParamsOfAppDebotBrowser::Log { msg });
-     }
-
-    async fn switch(&self, ctx_id: u8) {
-         self.app_object.notify(ParamsOfAppDebotBrowser::Switch { context_id: ctx_id });
-     }
-
-    async fn switch_completed(&self) {
-        self.app_object.notify(ParamsOfAppDebotBrowser::SwitchCompleted);
+#[async_trait::async_trait]
+impl BrowserCallbacks for DebotBrowserAdapter {
+    async fn log(&self, msg: String) {
+        self.app_object.notify(ParamsOfAppDebotBrowser::Log { msg });
     }
 
-     async fn show_action(&self, act: DAction) {
-         self.app_object.notify(ParamsOfAppDebotBrowser::ShowAction { action: act.into() });
-     }
+    async fn switch(&self, ctx_id: u8) {
+        self.app_object
+            .notify(ParamsOfAppDebotBrowser::Switch { context_id: ctx_id });
+    }
 
-     async fn input(&self, prompt: &str, value: &mut String) {
-         let response = self.app_object.call(ParamsOfAppDebotBrowser::Input {
-                 prompt: prompt.to_owned(),
-             })
-             .await;
-         match response {
-             Ok(r) => match r {
-                 ResultOfAppDebotBrowser::Input { value: v } => *value = v,
-                 _ => error!("unexpected debot browser response: {:?}", r),
-             },
-             Err(e) => error!("debot browser failed to show action: {}", e),
-         }
-     }
+    async fn switch_completed(&self) {
+        self.app_object
+            .notify(ParamsOfAppDebotBrowser::SwitchCompleted);
+    }
 
-     async fn get_signing_box(&self) -> Result<SigningBoxHandle, String> {
-         let response = self.app_object.call(ParamsOfAppDebotBrowser::GetSigningBox)
-             .await
-             .map_err(|err| format!("debot browser failed to load keys: {}", err))?;
+    async fn show_action(&self, act: DAction) {
+        self.app_object
+            .notify(ParamsOfAppDebotBrowser::ShowAction { action: act.into() });
+    }
+
+    async fn input(&self, prompt: &str, value: &mut String) {
+        let response = self
+            .app_object
+            .call(ParamsOfAppDebotBrowser::Input {
+                prompt: prompt.to_owned(),
+            })
+            .await;
+        match response {
+            Ok(r) => match r {
+                ResultOfAppDebotBrowser::Input { value: v } => *value = v,
+                _ => error!("unexpected debot browser response: {:?}", r),
+            },
+            Err(e) => error!("debot browser failed to show action: {}", e),
+        }
+    }
+
+    async fn get_signing_box(&self) -> Result<SigningBoxHandle, String> {
+        let response = self
+            .app_object
+            .call(ParamsOfAppDebotBrowser::GetSigningBox)
+            .await
+            .map_err(|err| format!("debot browser failed to load keys: {}", err))?;
 
         match response {
             ResultOfAppDebotBrowser::GetSigningBox { signing_box } => Ok(signing_box),
-            _ => Err(crate::client::Error::unexpected_callback_response(
-                "GetSigningBox", response).to_string()),
+            _ => Err(
+                crate::client::Error::unexpected_callback_response("GetSigningBox", response)
+                    .to_string(),
+            ),
         }
-     }
+    }
 
-     async fn invoke_debot(&self, debot: String, action: DAction) -> Result<(), String> {
-         let response = self.app_object.call(ParamsOfAppDebotBrowser::InvokeDebot {
-             debot_addr: debot,
-             action: action.into(),
-         })
-         .await
-         .map_err(|e| {
-             format!("debot browser failed to invoke debot: {}", e)
-         })?;
+    async fn invoke_debot(&self, debot: String, action: DAction) -> Result<(), String> {
+        let response = self
+            .app_object
+            .call(ParamsOfAppDebotBrowser::InvokeDebot {
+                debot_addr: debot,
+                action: action.into(),
+            })
+            .await
+            .map_err(|e| format!("debot browser failed to invoke debot: {}", e))?;
 
-         match response {
-             ResultOfAppDebotBrowser::InvokeDebot => Ok(()),
-             _ => {
-                 error!("unexpected debot browser response: {:?}", response);
-                 Err(format!("unexpected debot browser response: {:?}", response))
-             },
-         }
-     }
+        match response {
+            ResultOfAppDebotBrowser::InvokeDebot => Ok(()),
+            _ => {
+                error!("unexpected debot browser response: {:?}", response);
+                Err(format!("unexpected debot browser response: {:?}", response))
+            }
+        }
+    }
 
     async fn send(&self, message: String) {
-        self.app_object.notify(ParamsOfAppDebotBrowser::Send { message });
+        self.app_object
+            .notify(ParamsOfAppDebotBrowser::Send { message });
     }
 
     async fn approve(&self, activity: DebotActivity) -> ClientResult<bool> {
-        let response = self.app_object.call(ParamsOfAppDebotBrowser::Approve { activity }).await?;
+        let response = self
+            .app_object
+            .call(ParamsOfAppDebotBrowser::Approve { activity })
+            .await?;
 
         match response {
-            ResultOfAppDebotBrowser::Approve{approved} => Ok(approved),
+            ResultOfAppDebotBrowser::Approve { approved } => Ok(approved),
             _ => Err(Error::browser_callback_failed("unexpected response")),
         }
     }

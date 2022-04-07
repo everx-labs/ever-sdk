@@ -18,7 +18,10 @@ use crate::abi::{
     encode_account::{ParamsOfEncodeAccount, StateInitSource},
     Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
-use crate::boc::{internal::{deserialize_object_from_base64, serialize_cell_to_base64}, BocCacheType};
+use crate::boc::{
+    internal::{deserialize_object_from_base64, serialize_cell_to_base64},
+    BocCacheType,
+};
 use crate::error::ClientResult;
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};

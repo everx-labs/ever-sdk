@@ -8,10 +8,10 @@ use ton_types::{BuilderData, Cell, IBitstring};
 use super::{internal::serialize_cell_to_boc, Error};
 use crate::boc::internal::deserialize_cell_from_boc;
 use crate::boc::BocCacheType;
+use crate::encoding::account_decode;
 use num_bigint::{BigInt, BigUint, Sign};
 use num_traits::Num;
 use std::ops::ShlAssign;
-use crate::encoding::account_decode;
 
 /// Cell builder operation.
 #[derive(Serialize, Deserialize, Clone, ApiType)]
@@ -61,7 +61,7 @@ pub enum BuilderOp {
     Address {
         /// Address in a common `workchain:account` or base64 format.
         address: String,
-    }
+    },
 }
 
 impl Default for BuilderOp {
@@ -90,7 +90,7 @@ pub struct ResultOfEncodeBoc {
 
 /// Encodes bag of cells (BOC) with builder operations.
 /// This method provides the same functionality as Solidity TvmBuilder.
-/// Resulting BOC of this method can be passed into 
+/// Resulting BOC of this method can be passed into
 /// Solidity and C++ contracts as TvmCell type.
 #[api_function]
 pub async fn encode_boc(
@@ -111,8 +111,13 @@ pub async fn encode_boc(
                     builder.result.append_reference_cell(cell);
                 } else {
                     return Ok(ResultOfEncodeBoc {
-                        boc: serialize_cell_to_boc(&context, cell, "encoded cell", params.boc_cache)
-                            .await?,
+                        boc: serialize_cell_to_boc(
+                            &context,
+                            cell,
+                            "encoded cell",
+                            params.boc_cache,
+                        )
+                        .await?,
                     });
                 }
             }
@@ -157,9 +162,7 @@ impl<'a> Builder<'a> {
                 }
                 BuilderOp::CellBoc { boc } => {
                     self.result.append_reference_cell(
-                        deserialize_cell_from_boc(context, boc, "CellBoc")
-                            .await?
-                            .1,
+                        deserialize_cell_from_boc(context, boc, "CellBoc").await?.1,
                     );
                 }
                 BuilderOp::Cell { ref builder } => {

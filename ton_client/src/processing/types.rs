@@ -45,7 +45,7 @@ pub enum ProcessingResponseType {
 pub enum ProcessingEvent {
     /// Notifies the application that the account's current shard block will be fetched
     /// from the network.
-    /// This step is performed before the message sending so that sdk knows starting 
+    /// This step is performed before the message sending so that sdk knows starting
     /// from which block it will search for the transaction.
     ///
     /// Fetched block will be used later in waiting phase.
@@ -53,7 +53,7 @@ pub enum ProcessingEvent {
 
     /// Notifies the app that the client has failed to fetch the account's current
     /// shard block. This may happen due to the network issues.
-    /// Receiving this event means that message processing will not proceed - 
+    /// Receiving this event means that message processing will not proceed -
     /// message was not sent, and Developer can try to run `process_message` again,
     /// in the hope that the connection is restored.
     FetchFirstBlockFailed { error: ClientError },
@@ -68,7 +68,7 @@ pub enum ProcessingEvent {
     },
 
     /// Notifies the app that the message was sent to the network, i.e `processing.send_message` was successfuly executed.
-    /// Now, the message is in the blockchain. 
+    /// Now, the message is in the blockchain.
     /// If Application exits at this phase, Developer needs to proceed with processing
     /// after the application is restored with `wait_for_transaction` function, passing
     /// shard_block_id and message from this event. Do not forget to specify abi of your contract
@@ -114,11 +114,11 @@ pub enum ProcessingEvent {
     /// Notifies the app that the next block can't be fetched.
     ///
     /// If no block was fetched within `NetworkConfig.wait_for_timeout` then processing stops.
-    /// This may happen when the shard stops, or there are other network issues. 
+    /// This may happen when the shard stops, or there are other network issues.
     /// In this case Developer should resume message processing with `wait_for_transaction`, passing shard_block_id,
     /// message and contract abi to it. Note that passing ABI is crucial, because it will influence the processing strategy.
-    /// 
-    /// Another way to tune this is to specify long timeout in `NetworkConfig.wait_for_timeout` 
+    ///
+    /// Another way to tune this is to specify long timeout in `NetworkConfig.wait_for_timeout`
     FetchNextBlockFailed {
         shard_block_id: String,
         message_id: String,
@@ -126,15 +126,15 @@ pub enum ProcessingEvent {
         error: ClientError,
     },
 
-    /// Notifies the app that the message was not executed within expire timeout on-chain and will 
+    /// Notifies the app that the message was not executed within expire timeout on-chain and will
     /// never be because it is already expired.
-    /// The expiration timeout can be configured with `AbiConfig` parameters. 
+    /// The expiration timeout can be configured with `AbiConfig` parameters.
     ///
-    /// This event occurs only for the contracts which ABI includes "expire" header. 
+    /// This event occurs only for the contracts which ABI includes "expire" header.
     ///
     /// If Application specifies `NetworkConfig.message_retries_count` > 0, then `process_message`
     /// will perform retries: will create a new message and send it again and repeat it untill it reaches
-    /// the maximum retries count or receives a successful result.  All the processing 
+    /// the maximum retries count or receives a successful result.  All the processing
     /// events will be repeated.
     MessageExpired {
         message_id: String,

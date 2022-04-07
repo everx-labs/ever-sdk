@@ -18,10 +18,7 @@ fn error(code: ErrorCode, message: String) -> ClientError {
 
 impl Error {
     pub fn invalid_data(err: impl Display) -> ClientError {
-        error(
-            ErrorCode::InvalidData,
-            format!("Invalid data: {}", err),
-        )
+        error(ErrorCode::InvalidData, format!("Invalid data: {}", err))
     }
 
     pub fn proof_check_failed(err: impl Display) -> ClientError {

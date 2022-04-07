@@ -57,7 +57,10 @@ impl Endpoint {
     pub fn http_headers() -> Vec<(String, String)> {
         vec![
             ("tonclient-core-version".to_string(), core_version()),
-            ("X-Evernode-Expected-Account-Boc-Version".to_string(), BOC_VERSION.to_owned()),
+            (
+                "X-Evernode-Expected-Account-Boc-Version".to_string(),
+                BOC_VERSION.to_owned(),
+            ),
         ]
     }
 
@@ -104,8 +107,13 @@ impl Endpoint {
     ) -> ClientResult<Self> {
         let address = Self::expand_address(address);
         let info_request_time = client_env.now_ms();
-        let (info, query_url, ip_address) =
-            Self::fetch_info_with_url(client_env, &address, QUERY_INFO_SCHEMA, config.query_timeout).await?;
+        let (info, query_url, ip_address) = Self::fetch_info_with_url(
+            client_env,
+            &address,
+            QUERY_INFO_SCHEMA,
+            config.query_timeout,
+        )
+        .await?;
         let subscription_url = query_url
             .replace("https://", "wss://")
             .replace("http://", "ws://");
@@ -130,8 +138,13 @@ impl Endpoint {
     ) -> ClientResult<()> {
         if self.version() >= V_0_39_0 {
             let info_request_time = client_env.now_ms();
-            let (info, _, _) =
-                Self::fetch_info_with_url(client_env, &self.query_url, QUERY_INFO_METRICS, config.query_timeout).await?;
+            let (info, _, _) = Self::fetch_info_with_url(
+                client_env,
+                &self.query_url,
+                QUERY_INFO_METRICS,
+                config.query_timeout,
+            )
+            .await?;
             self.apply_server_info(client_env, config, info_request_time, &info)?;
         }
         Ok(())

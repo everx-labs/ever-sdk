@@ -13,16 +13,16 @@
 
 use crate::client::ClientContext;
 use crate::crypto;
+use crate::crypto::default_hdkey_compliant;
 use crate::crypto::internal::{key256, key512, sha256, Key256, Key264};
 use crate::crypto::mnemonic::{check_phrase, mnemonics};
 use crate::error::{ClientError, ClientResult};
 use base58::*;
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
 use hmac::*;
+use libsecp256k1::{PublicKey, SecretKey};
 use pbkdf2::pbkdf2;
-use libsecp256k1::{SecretKey, PublicKey};
 use sha2::{Digest, Sha512};
-use crate::crypto::default_hdkey_compliant;
 
 //----------------------------------------------------------------- crypto.hdkey_xprv_from_mnemonic
 
@@ -78,7 +78,11 @@ pub fn hdkey_secret_from_xprv(
     params: ParamsOfHDKeySecretFromXPrv,
 ) -> ClientResult<ResultOfHDKeySecretFromXPrv> {
     Ok(ResultOfHDKeySecretFromXPrv {
-        secret: hex::encode(&HDPrivateKey::from_serialized_string(&params.xprv)?.secret().0),
+        secret: hex::encode(
+            &HDPrivateKey::from_serialized_string(&params.xprv)?
+                .secret()
+                .0,
+        ),
     })
 }
 
@@ -237,7 +241,9 @@ impl HDPrivateKey {
             libsecp256k1::Error::InvalidRecoveryId => {
                 crypto::Error::bip32_invalid_key("InvalidRecoveryId")
             }
-            libsecp256k1::Error::InvalidMessage => crypto::Error::bip32_invalid_key("InvalidMessage"),
+            libsecp256k1::Error::InvalidMessage => {
+                crypto::Error::bip32_invalid_key("InvalidMessage")
+            }
             libsecp256k1::Error::InvalidInputLength => {
                 crypto::Error::bip32_invalid_key("InvalidInputLength")
             }

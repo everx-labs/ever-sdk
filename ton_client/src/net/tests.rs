@@ -1330,4 +1330,3 @@ async fn query_using_ws() {
 
     assert!(messages.result.len() > 0);
 }
-

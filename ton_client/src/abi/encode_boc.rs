@@ -7,10 +7,10 @@ use ton_abi::token::Tokenizer;
 use ton_abi::TokenValue;
 
 use crate::abi::{AbiParam, Error};
-use crate::boc::BocCacheType;
 use crate::boc::internal::serialize_cell_to_boc;
-use crate::ClientContext;
+use crate::boc::BocCacheType;
 use crate::error::ClientResult;
+use crate::ClientContext;
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfAbiEncodeBoc {
@@ -19,7 +19,7 @@ pub struct ParamsOfAbiEncodeBoc {
     /// Parameters and values as a JSON structure
     pub data: Value,
     /// Cache type to put the result. The BOC itself returned if no cache type provided
-    pub boc_cache: Option<BocCacheType>
+    pub boc_cache: Option<BocCacheType>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
@@ -45,8 +45,7 @@ pub async fn encode_boc(
     let builder = TokenValue::pack_values_into_chain(&tokens, Vec::new(), &MAX_SUPPORTED_VERSION)
         .map_err(|err| Error::invalid_abi(err))?;
 
-    let cell = builder.into_cell()
-        .map_err(|err| Error::invalid_abi(err))?;
+    let cell = builder.into_cell().map_err(|err| Error::invalid_abi(err))?;
 
     Ok(ResultOfAbiEncodeBoc {
         boc: serialize_cell_to_boc(&context, cell, "ABI params", params.boc_cache).await?,

@@ -64,16 +64,12 @@ pub(crate) fn call_tvm(
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
     let mut engine = ton_vm::executor::Engine::with_capabilities(
-        // TODO: use specific blockchain configs when they will be available 
-        // TODO: for now use maximum available capabilities 
+        // TODO: use specific blockchain configs when they will be available
+        // TODO: for now use maximum available capabilities
         // options.blockchain_config.capabilites()
-        (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapInitCodeHash as u64)
-    ).setup(
-        SliceData::from(code),
-        Some(ctrls),
-        Some(stack),
-        Some(gas),
-    );
+        (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapInitCodeHash as u64),
+    )
+    .setup(SliceData::from(code), Some(ctrls), Some(stack), Some(gas));
 
     match engine.execute() {
         Err(err) => {

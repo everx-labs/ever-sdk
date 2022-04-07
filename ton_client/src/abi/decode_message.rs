@@ -1,8 +1,8 @@
-use crate::{abi::types::Abi, boc::internal::deserialize_cell_from_boc};
 use crate::abi::{Error, FunctionHeader};
 use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
+use crate::{abi::types::Abi, boc::internal::deserialize_cell_from_boc};
 use serde_json::Value;
 use std::sync::Arc;
 use ton_abi::contract::DecodedMessage;
@@ -137,14 +137,15 @@ fn decode_body(
             DecodedMessageBody::new(MessageBodyType::Output, output, None)
         }
     } else if let Ok(input) = abi.decode_input(body.clone(), is_internal) {
-        let (header, _, _) =
-            ton_abi::Function::decode_header(abi.version(), body.clone(), abi.header(), is_internal)
-                .map_err(|err| {
-                    Error::invalid_message_for_decode(format!(
-                        "Can't decode function header: {}",
-                        err
-                    ))
-                })?;
+        let (header, _, _) = ton_abi::Function::decode_header(
+            abi.version(),
+            body.clone(),
+            abi.header(),
+            is_internal,
+        )
+        .map_err(|err| {
+            Error::invalid_message_for_decode(format!("Can't decode function header: {}", err))
+        })?;
         DecodedMessageBody::new(
             MessageBodyType::Input,
             input,

@@ -1,4 +1,3 @@
-
 /// [UNSTABLE](UNSTABLE.md) Describes how much funds will be debited from the target
 ///  contract balance as a result of the transaction.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
@@ -11,7 +10,7 @@ pub struct Spending {
 
 /// [UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum DebotActivity {
     /// DeBot wants to create new transaction in blockchain.
     Transaction {
@@ -29,5 +28,5 @@ pub enum DebotActivity {
         signkey: String,
         /// Signing box handle used to sign external message.
         signing_box_handle: u32,
-    }
+    },
 }

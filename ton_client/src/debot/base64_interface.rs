@@ -1,6 +1,4 @@
-use super::dinterface::{
-    decode_answer_id, get_arg, DebotInterface, InterfaceResult,
-};
+use super::dinterface::{decode_answer_id, get_arg, DebotInterface, InterfaceResult};
 use crate::abi::Abi;
 use serde_json::Value;
 
@@ -65,10 +63,7 @@ impl Base64Interface {
         let answer_id = decode_answer_id(args)?;
         let data_to_encode = hex::decode(&get_arg(args, "data")?).map_err(|e| format!("{}", e))?;
         let encoded = base64::encode(&data_to_encode);
-        Ok((
-            answer_id,
-            json!({ "base64": encoded }),
-        ))
+        Ok((answer_id, json!({ "base64": encoded })))
     }
 
     fn decode(&self, args: &Value) -> InterfaceResult {
