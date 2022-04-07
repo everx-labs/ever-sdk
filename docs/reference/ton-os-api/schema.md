@@ -33,16 +33,16 @@ See non-root type descriptions in [Field descriptions](field\_descriptions.md) s
 
 **Collection type queries:**
 
-| name                                                   | description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [blocks](field\_descriptions.md#block-type)            | Query blocks data. Blocks include masterchain and shardchain blocks.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| [accounts](field\_descriptions.md#account-type)        | Query the latest account data: includes such information as address, balance, code, data, etc.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| [messages](field\_descriptions.md#message-type)        | Query messages data.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| [transaction](field\_descriptions.md#transaction-type) | Query transactions data.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| blocks\_signatures                                     | Query data about block signatures.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| statistics                                             | <p>General Everscale Network statistics related to accounts, transactions, messages and blocks. And also some essential statistics about validators and depools.<br><br>Available only in Cloud API.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| blockchain                                             | UNSTABLE. New API that includes a set of functions for pagination of `blocks`, `key_blocks`, `transactions` and account’s transactions via blockchain-based cursor that stays the same for all the endpoints, compared to an approach with an artificial database cursor - like timestamp or sequential index - that may vary from instance to instance. May be useful for Integrators and DApps who needs to sequentially read all blocks or transactions from API, due to inefficiency of simple collection pagination by timestamps or `seq_no` in multithreaded Everscale environment, also such simple pagination may not work when there are too many objects with the same timestamp. |
-| counterparties                                         | <p>Returns a list of addresses the specified account interacted with, sorted by the latest interaction time (the latest message time between 2 accounts) DESC. Feature may be useful for wallet applications or for chat-based DApps to show the list of counterparties in descending order.<br><br>Available only in Cloud API.</p>                                                                                                                                                                                                                                                                                                                                                         |
+| name                                                   | description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| blockchain                                             | New API that includes a set of functions for pagination of `blocks`, `key_blocks`, `transactions` and account’s transactions via blockchain-based cursor that stays the same for all the endpoints, compared to an approach with an artificial database cursor - like timestamp or sequential index - that may vary from instance to instance. May be useful for Integrators and DApps who needs to sequentially read all blocks or transactions from API, due to inefficiency of simple collection pagination by timestamps or `seq_no` in multithreaded Everscale environment, also such simple pagination may not work when there are too many objects with the same timestamp. |
+| [blocks](field\_descriptions.md#block-type)            | Query blocks data. Blocks include masterchain and shardchain blocks.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| [accounts](field\_descriptions.md#account-type)        | Query the latest account data: includes such information as address, balance, code, data, etc.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| [messages](field\_descriptions.md#message-type)        | Query messages data.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| [transaction](field\_descriptions.md#transaction-type) | Query transactions data.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| blocks\_signatures                                     | Query data about block signatures.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| statistics                                             | <p>General Everscale Network statistics related to accounts, transactions, messages and blocks. And also some essential statistics about validators and depools.<br><br>Available only in Cloud API.</p>                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| counterparties                                         | <p>Returns a list of addresses the specified account interacted with, sorted by the latest interaction time (the latest message time between 2 accounts) DESC. Feature may be useful for wallet applications or for chat-based DApps to show the list of counterparties in descending order.<br><br>Available only in Cloud API.</p>                                                                                                                                                                                                                                                                                                                                               |
 
 **Aggregation queries:**
 
@@ -72,43 +72,37 @@ See non-root type descriptions in [Field descriptions](field\_descriptions.md) s
 
 ## Mutation types
 
-* postRequests - used to send messages in SDK libraries.
+* postRequests - used to send messages to blockchain.
 
 ## Syntax
 
-Below you can see an example of a query for 5 random accounts filtered by balance range from 50 to 100 coins (in hex) and ordered in descending direction.
+Read about GraphQL syntax in its [`official documentation`](https://graphql.org). In this example we query account info:
 
 ```graphql
 query {
-  accounts(
-    filter:{
-      balance:{
-        gt: "0xBA43B7400" 
-        lt: "0x174876E800"
-      }
+  blockchain{
+   account(address:"0:653b9a6452c7a982c6dc92b2da9eba832ade1c467699ebb3b43dca6d77b780dd"){
+    info{
+      address
+      acc_type
+      balance
+      last_paid
+      last_trans_lt
+      boc
+      data
+      code
+      library
+      data_hash
+      code_hash
+      library_hash
     }
-    limit: 5
-    orderBy:{
-      path:"balance"
-      direction:DESC
-    }
-  ) {
-    id,
-    last_trans_lt,
-    last_paid
-    balance
+  }
   }
 }
 ```
 
-Here you can see a request for accounts with the fields
+Here you can see a request for account's  fields `address`, `acc_type`, etc, forming a selection set (also called a 'projection').
 
-`id`, `last_trans_lt` , `last_paid` and `balance`
-
-forming a selection set (also called a 'projection').
-
-`Filter`, `Orderby` and `Limit` arguments are used.
-
-A selection set must contain only scalar fields, otherwise you will get an error. A scalar field describes one discrete piece of information available to a request within a selection set.
+A selection set must contain only scalar fields, otherwise you will get an error. A scalar field describes one discrete piece of information available to a request within a selection set. If field is an object, you need to specify the fields of this object.
 
 Read more in the next sections.
