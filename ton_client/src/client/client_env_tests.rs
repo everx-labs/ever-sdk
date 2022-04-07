@@ -1,7 +1,7 @@
 use ton_types::Result;
 
-use crate::client::LocalStorage;
 use crate::client::storage::KeyValueStorage;
+use crate::client::LocalStorage;
 
 #[cfg(not(feature = "wasm"))]
 mod env {
@@ -15,11 +15,10 @@ mod env {
         pub fn new() -> Self {
             let temp_dir = std::env::temp_dir();
             loop {
-                let path = temp_dir
-                    .join(format!("tonclient-{}", rand::random::<u32>()));
+                let path = temp_dir.join(format!("tonclient-{}", rand::random::<u32>()));
                 if !path.exists() {
                     return Self {
-                        path: Some(path.to_string_lossy().to_string())
+                        path: Some(path.to_string_lossy().to_string()),
                     };
                 }
             }
@@ -51,8 +50,12 @@ mod env {
         assert!(LocalStorage::is_storage_key_correct("a1"));
         assert!(LocalStorage::is_storage_key_correct("1a"));
         assert!(LocalStorage::is_storage_key_correct("a_"));
-        assert!(LocalStorage::is_storage_key_correct("very_long_ident_232352"));
-        assert!(!LocalStorage::is_storage_key_correct("directory/filename_123"));
+        assert!(LocalStorage::is_storage_key_correct(
+            "very_long_ident_232352"
+        ));
+        assert!(!LocalStorage::is_storage_key_correct(
+            "directory/filename_123"
+        ));
     }
 }
 

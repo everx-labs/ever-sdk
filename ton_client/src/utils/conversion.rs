@@ -13,7 +13,9 @@
 
 use crate::client;
 use crate::client::ClientContext;
-use crate::encoding::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams, decode_std_base64};
+use crate::encoding::{
+    account_decode, account_encode_ex, decode_std_base64, AccountAddressType, Base64AddressParams,
+};
 use crate::error::ClientResult;
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
@@ -85,14 +87,14 @@ lazy_static! {
 }
 
 /// Validates and returns the type of any TON address.
-/// 
+///
 /// Address types are the following
-/// 
+///
 /// `0:919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - standard TON address most
 /// commonly used in all cases. Also called as hex address
-/// `919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - account ID. A part of full 
+/// `919db8e740d50bf349df2eea03fa30c385d846b991ff5542e67098ee833fc7f7` - account ID. A part of full
 /// address. Identifies account inside particular workchain
-/// `EQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H9wam` - base64 address. Also called "user-friendly". 
+/// `EQCRnbjnQNUL80nfLuoD+jDDhdhGuZH/VULmcJjugz/H9wam` - base64 address. Also called "user-friendly".
 /// Was used at the beginning of TON. Now it is supported for compatibility
 #[api_function]
 pub fn get_address_type(
@@ -105,10 +107,12 @@ pub fn get_address_type(
         } else {
             AccountAddressType::Hex
         }),
-        Err(_err) if params.address.len() == 48 => decode_std_base64(&params.address)
-            .map(|_addr| AccountAddressType::Base64),
+        Err(_err) if params.address.len() == 48 => {
+            decode_std_base64(&params.address).map(|_addr| AccountAddressType::Base64)
+        }
         Err(err) => Err(client::Error::invalid_address(err, &params.address)),
-    }.map(|address_type| ResultOfGetAddressType { address_type })
+    }
+    .map(|address_type| ResultOfGetAddressType { address_type })
 }
 
 #[cfg(test)]

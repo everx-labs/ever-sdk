@@ -12,9 +12,9 @@
  *
  */
 
-use ton_block::{Grams, MsgAddressInt};
 use crate::native::abi::message_body_encoder::MessageBodyEncoder;
 use crate::native::abi::state_init_encoder::StateInitEncoder;
+use ton_block::{Grams, MsgAddressInt};
 
 pub struct InternalMessageEncoder {
     /// Target address the message will be sent to.
@@ -47,4 +47,3 @@ pub struct InternalMessageEncoder {
     /// Enable Instant Hypercube Routing for the message. Default is false.
     pub enable_ihr: Option<bool>,
 }
-

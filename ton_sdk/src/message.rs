@@ -12,7 +12,7 @@
 */
 
 use crate::json_helper;
-use crate::types::{StringId, grams_to_u64};
+use crate::types::{grams_to_u64, StringId};
 use ton_types::Result;
 
 use ton_block::GetRepresentationHash;
@@ -68,7 +68,7 @@ impl Message {
             id,
             body,
             msg_type,
-            value
+            value,
         })
     }
 

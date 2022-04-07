@@ -38,11 +38,14 @@ pub fn try_calc_subset_for_workchain(
     _time: UnixTime32,
 ) -> Result<Option<(Vec<ValidatorDescr>, u32)>> {
     // In a case of old block proof it doesn't contain workchains in config, so 1 workchain by default
-    let workchains = config.workchains()
+    let workchains = config
+        .workchains()
         .unwrap_or_else(|_| SINGLE_WORKCHAIN.clone());
     match workchains.len()? as i32 {
         0 => bail!("workchain's description is empty"),
-        1 => vset.calc_subset(cc_config, shard_pfx, workchain_id, cc_seqno, _time).map(|e| Some(e)),
+        1 => vset
+            .calc_subset(cc_config, shard_pfx, workchain_id, cc_seqno, _time)
+            .map(|e| Some(e)),
         count => {
             let mut list = Vec::new();
             for descr in vset.list() {
@@ -52,13 +55,10 @@ pub fn try_calc_subset_for_workchain(
                 }
             }
             if list.len() >= cc_config.shard_validators_num as usize {
-                let vset = ValidatorSet::new(
-                    vset.utime_since(),
-                    vset.utime_until(),
-                    vset.main(),
-                    list
-                )?;
-                vset.calc_subset(cc_config, shard_pfx, workchain_id, cc_seqno, _time).map(|e| Some(e))
+                let vset =
+                    ValidatorSet::new(vset.utime_since(), vset.utime_until(), vset.main(), list)?;
+                vset.calc_subset(cc_config, shard_pfx, workchain_id, cc_seqno, _time)
+                    .map(|e| Some(e))
             } else {
                 // Not enough validators -- config is ok, but we can't validate the shard at the moment
                 Ok(None)
@@ -76,16 +76,23 @@ pub fn calc_subset_for_workchain(
     cc_seqno: u32,
     time: UnixTime32,
 ) -> Result<(Vec<ValidatorDescr>, u32)> {
-    match try_calc_subset_for_workchain(vset, config, cc_config, shard_pfx, workchain_id, cc_seqno, time)? {
+    match try_calc_subset_for_workchain(
+        vset,
+        config,
+        cc_config,
+        shard_pfx,
+        workchain_id,
+        cc_seqno,
+        time,
+    )? {
         Some(x) => Ok(x),
-        None =>
-            bail!(
-                "Not enough validators from total {} for workchain {}:{:016X} cc_seqno: {}",
-                vset.list().len(),
-                workchain_id,
-                shard_pfx,
-                cc_seqno,
-            )
+        None => bail!(
+            "Not enough validators from total {} for workchain {}:{:016X} cc_seqno: {}",
+            vset.list().len(),
+            workchain_id,
+            shard_pfx,
+            cc_seqno,
+        ),
     }
 }
 
@@ -128,10 +135,16 @@ pub(crate) fn check_crypto_signatures(
     data: &[u8],
 ) -> Result<u64> {
     // Calc validators short ids
-    let validators_map = validators_list.iter().map(|desc| {
-        let key = AdnlKeyId::from_type_and_public_key(AdnlKeyId::KEY_ED25519, desc.public_key.as_slice());
-        (key, desc)
-    }).collect::<HashMap<_, _>>();
+    let validators_map = validators_list
+        .iter()
+        .map(|desc| {
+            let key = AdnlKeyId::from_type_and_public_key(
+                AdnlKeyId::KEY_ED25519,
+                desc.public_key.as_slice(),
+            );
+            (key, desc)
+        })
+        .collect::<HashMap<_, _>>();
     // Check signatures
     let mut weight = 0;
     for sign in signatures.pure_signatures() {

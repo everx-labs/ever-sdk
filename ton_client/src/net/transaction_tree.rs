@@ -270,27 +270,27 @@ async fn query_next_portion(
 /// in_msg -> dst_transaction -> out_messages -> dst_transaction -> ...
 /// If the chain of transactions execution is in progress while the function is running,
 /// it will wait for the next transactions to appear until the full tree or more than 50 transactions
-/// are received. 
+/// are received.
 ///
 /// All the retrieved messages and transactions are included
 /// into `result.messages` and `result.transactions` respectively.
 ///
-/// Function reads transactions layer by layer, by pages of 20 transactions. 
-/// 
-/// The retrieval prosess goes like this: 
+/// Function reads transactions layer by layer, by pages of 20 transactions.
+///
+/// The retrieval prosess goes like this:
 /// Let's assume we have an infinite chain of transactions and each transaction generates 5 messages.
 /// 1. Retrieve 1st message (input parameter) and corresponding transaction - put it into result.
-/// It is the first level of the tree of transactions - its root. 
+/// It is the first level of the tree of transactions - its root.
 /// Retrieve 5 out message ids from the transaction for next steps.
-/// 2. Retrieve 5 messages and corresponding transactions on the 2nd layer. Put them into result. 
+/// 2. Retrieve 5 messages and corresponding transactions on the 2nd layer. Put them into result.
 /// Retrieve 5*5 out message ids from these transactions for next steps
 /// 3. Retrieve 20 (size of the page) messages and transactions (3rd layer) and 20*5=100 message ids (4th layer).
 /// 4. Retrieve the last 5 messages and 5 transactions on the 3rd layer + 15 messages and transactions (of 100) from the 4th layer
 /// + 25 message ids of the 4th layer + 75 message ids of the 5th layer.
-/// 5. Retrieve 20 more messages and 20 more transactions of the 4th layer + 100 more message ids of the 5th layer. 
+/// 5. Retrieve 20 more messages and 20 more transactions of the 4th layer + 100 more message ids of the 5th layer.
 /// 6. Now we have 1+5+20+20+20 = 66 transactions, which is more than 50. Function exits with the tree of
-/// 1m->1t->5m->5t->25m->25t->35m->35t. If we see any message ids in the last transactions out_msgs, which don't have 
-/// corresponding messages in the function result, it means that the full tree was not received and we need to continue iteration. 
+/// 1m->1t->5m->5t->25m->25t->35m->35t. If we see any message ids in the last transactions out_msgs, which don't have
+/// corresponding messages in the function result, it means that the full tree was not received and we need to continue iteration.
 ///
 /// To summarize, it is guaranteed that each message in `result.messages` has the corresponding transaction
 /// in the `result.transactions`.

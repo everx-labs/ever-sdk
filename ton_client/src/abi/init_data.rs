@@ -1,8 +1,8 @@
 use crate::abi::types::Abi;
 use crate::abi::Error;
-use crate::client::ClientContext;
 use crate::boc::internal::{deserialize_cell_from_boc, serialize_cell_to_boc};
 use crate::boc::BocCacheType;
+use crate::client::ClientContext;
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use serde_json;
@@ -11,7 +11,7 @@ use std::sync::Arc;
 use ton_types::Cell;
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
-pub struct ParamsOfUpdateInitialData  {
+pub struct ParamsOfUpdateInitialData {
     /// Contract ABI
     pub abi: Option<Abi>,
     /// Data BOC or BOC handle
@@ -33,7 +33,7 @@ pub struct ResultOfUpdateInitialData {
 }
 
 /// Updates initial account data with initial values for the contract's static variables and owner's public key.
-/// This operation is applicable only for initial account data (before deploy). 
+/// This operation is applicable only for initial account data (before deploy).
 /// If the contract is already deployed, its data doesn't contain this data section any more.
 #[api_function]
 pub async fn update_initial_data(
@@ -42,10 +42,15 @@ pub async fn update_initial_data(
 ) -> ClientResult<ResultOfUpdateInitialData> {
     let (_, mut data) = deserialize_cell_from_boc(&context, &params.data, "contract data").await?;
 
-    data = update_initial_data_internal(&params.initial_data, &params.abi, &params.initial_pubkey, data)?;
+    data = update_initial_data_internal(
+        &params.initial_data,
+        &params.abi,
+        &params.initial_pubkey,
+        data,
+    )?;
 
     Ok(ResultOfUpdateInitialData {
-        data: serialize_cell_to_boc(&context, data, "contract data", params.boc_cache).await?
+        data: serialize_cell_to_boc(&context, data, "contract data", params.boc_cache).await?,
     })
 }
 
@@ -57,23 +62,26 @@ fn update_initial_data_internal(
 ) -> ClientResult<Cell> {
     let data = match initial_data {
         Some(init_data) => {
-            let abi = abi.as_ref()
-                .ok_or_else(|| Error::encode_init_data_failed("contract ABI required to set initial data"))?
+            let abi = abi
+                .as_ref()
+                .ok_or_else(|| {
+                    Error::encode_init_data_failed("contract ABI required to set initial data")
+                })?
                 .json_string()?;
             ton_abi::json_abi::update_contract_data(&abi, &init_data.to_string(), data.into())
                 .map_err(|err| Error::encode_init_data_failed(err))?
                 .into_cell()
         }
-        _ => data
+        _ => data,
     };
 
     match initial_pubkey {
-        Some(pubkey) => {
-            Ok(ton_abi::Contract::insert_pubkey(data.into(), &hex_decode(&pubkey)?)
+        Some(pubkey) => Ok(
+            ton_abi::Contract::insert_pubkey(data.into(), &hex_decode(&pubkey)?)
                 .map_err(|err| Error::encode_init_data_failed(err))?
-                .into_cell())
-        }
-        _ => Ok(data)
+                .into_cell(),
+        ),
+        _ => Ok(data),
     }
 }
 
@@ -114,12 +122,12 @@ pub async fn encode_initial_data(
     )?;
 
     Ok(ResultOfEncodeInitialData {
-        data: serialize_cell_to_boc(&context, data, "contract data", params.boc_cache).await?
+        data: serialize_cell_to_boc(&context, data, "contract data", params.boc_cache).await?,
     })
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
-pub struct ParamsOfDecodeInitialData  {
+pub struct ParamsOfDecodeInitialData {
     /// Contract ABI. Initial data is decoded if this parameter is provided
     pub abi: Option<Abi>,
     /// Data BOC or BOC handle
@@ -141,7 +149,7 @@ pub struct ResultOfDecodeInitialData {
 }
 
 /// Decodes initial values of a contract's static variables and owner's public key from account initial data
-/// This operation is applicable only for initial account data (before deploy). 
+/// This operation is applicable only for initial account data (before deploy).
 /// If the contract is already deployed, its data doesn't contain this data section any more.
 #[api_function]
 pub async fn decode_initial_data(
@@ -158,7 +166,8 @@ pub async fn decode_initial_data(
     let initial_data = if let Some(abi) = params.abi {
         let abi = abi.abi()?;
 
-        let tokens = abi.decode_data(data, params.allow_partial)
+        let tokens = abi
+            .decode_data(data, params.allow_partial)
             .map_err(|e| Error::invalid_data_for_decode(e))?;
 
         let initial_data = ton_abi::token::Detokenizer::detokenize_to_json_value(&tokens)
@@ -169,8 +178,8 @@ pub async fn decode_initial_data(
         None
     };
 
-    Ok(ResultOfDecodeInitialData { 
+    Ok(ResultOfDecodeInitialData {
         initial_data,
-        initial_pubkey: hex::encode(&initial_pubkey)
+        initial_pubkey: hex::encode(&initial_pubkey),
     })
 }

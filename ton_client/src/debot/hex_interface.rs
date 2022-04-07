@@ -1,6 +1,4 @@
-use super::dinterface::{
-    decode_answer_id, get_arg, DebotInterface, InterfaceResult,
-};
+use super::dinterface::{decode_answer_id, get_arg, DebotInterface, InterfaceResult};
 use crate::abi::Abi;
 use serde_json::Value;
 
@@ -47,18 +45,14 @@ impl HexInterface {
 
     fn encode(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-		let encoded = get_arg(args, "data")?;
-        Ok((
-            answer_id,
-            json!({ "hexstr": encoded }),
-        ))
+        let encoded = get_arg(args, "data")?;
+        Ok((answer_id, json!({ "hexstr": encoded })))
     }
 
     fn decode(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let str_to_decode = get_arg(args, "hexstr")?;
-        let decoded =
-            hex::decode(&str_to_decode).map_err(|e| format!("invalid hex: {}", e))?;
+        let decoded = hex::decode(&str_to_decode).map_err(|e| format!("invalid hex: {}", e))?;
         Ok((answer_id, json!({ "data": hex::encode(&decoded) })))
     }
 }

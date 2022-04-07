@@ -12,7 +12,7 @@
  *
  */
 
-use crate::error::{ClientError, format_time};
+use crate::error::{format_time, ClientError};
 use serde_json::Value;
 use ton_block::MsgAddressInt;
 

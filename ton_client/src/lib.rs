@@ -37,9 +37,9 @@ pub mod proofs;
 pub mod tvm;
 pub mod utils;
 
+pub mod native;
 #[cfg(test)]
 mod tests;
-pub mod native;
 
 pub use self::json_interface::interop::*;
 pub use client::{ClientConfig, ClientContext};

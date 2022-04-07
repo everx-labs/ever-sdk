@@ -56,7 +56,9 @@ pub(crate) fn hex_decode_secret(hex: &str) -> ClientResult<SecretBuf> {
     crate::encoding::hex_decode(hex).map(|data| SecretBuf(data))
 }
 
-pub(crate) fn hex_decode_secret_const<const N: usize>(hex: &str) -> ClientResult<SecretBufConst<N>> {
+pub(crate) fn hex_decode_secret_const<const N: usize>(
+    hex: &str,
+) -> ClientResult<SecretBufConst<N>> {
     key_from_slice(&hex_decode_secret(hex)?)
 }
 

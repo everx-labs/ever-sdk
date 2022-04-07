@@ -853,18 +853,24 @@ fn encode_external_in_message() {
         )
         .unwrap()
         .parsed;
-    let init = client.request::<ParamsOfEncodeTvc, ResultOfEncodeTvc>("boc.encode_tvc", ParamsOfEncodeTvc {
-        code: abi_parsed["code"].as_str().map(|x|x.to_string()),
-        data: abi_parsed["data"].as_str().map(|x|x.to_string()),
-        library: abi_parsed["library"].as_str().map(|x|x.to_string()),
-        ..Default::default()
-    }).unwrap().tvc;
+    let init = client
+        .request::<ParamsOfEncodeTvc, ResultOfEncodeTvc>(
+            "boc.encode_tvc",
+            ParamsOfEncodeTvc {
+                code: abi_parsed["code"].as_str().map(|x| x.to_string()),
+                data: abi_parsed["data"].as_str().map(|x| x.to_string()),
+                library: abi_parsed["library"].as_str().map(|x| x.to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .tvc;
     let boc_encoded: ResultOfEncodeExternalInMessage = client
         .request(
             "boc.encode_external_in_message",
             ParamsOfEncodeExternalInMessage {
                 dst: abi_encoded.address.clone(),
-                body: abi_parsed["body"].as_str().map(|x|x.to_string()),
+                body: abi_parsed["body"].as_str().map(|x| x.to_string()),
                 init: Some(init),
                 ..Default::default()
             },

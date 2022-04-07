@@ -16,18 +16,16 @@
 mod tests;
 
 pub(crate) mod calc_storage_fee;
-pub(crate) mod conversion;
 pub(crate) mod compression;
-pub(crate) mod json;
+pub(crate) mod conversion;
 mod errors;
+pub(crate) mod json;
 
-pub use calc_storage_fee::{
-    calc_storage_fee, ParamsOfCalcStorageFee, ResultOfCalcStorageFee
-};
-pub use conversion::{
-    convert_address, AddressStringFormat, ParamsOfConvertAddress, ResultOfConvertAddress,
-    get_address_type, ParamsOfGetAddressType, ResultOfGetAddressType,
-};
-pub use compression::{compress_zstd, decompress_zstd};
-pub use errors::{Error, ErrorCode};
 pub use crate::encoding::AccountAddressType;
+pub use calc_storage_fee::{calc_storage_fee, ParamsOfCalcStorageFee, ResultOfCalcStorageFee};
+pub use compression::{compress_zstd, decompress_zstd};
+pub use conversion::{
+    convert_address, get_address_type, AddressStringFormat, ParamsOfConvertAddress,
+    ParamsOfGetAddressType, ResultOfConvertAddress, ResultOfGetAddressType,
+};
+pub use errors::{Error, ErrorCode};

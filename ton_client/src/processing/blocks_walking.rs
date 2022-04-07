@@ -14,7 +14,10 @@
 use super::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
-use crate::net::{OrderBy, ParamsOfQueryCollection, ParamsOfWaitForCollection, SortDirection, BLOCKS_COLLECTION, Endpoint};
+use crate::net::{
+    Endpoint, OrderBy, ParamsOfQueryCollection, ParamsOfWaitForCollection, SortDirection,
+    BLOCKS_COLLECTION,
+};
 use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_block::MASTERCHAIN_ID;
@@ -41,19 +44,23 @@ pub(crate) async fn find_last_shard_block(
 
     // if account resides in masterchain, then starting point is last masterchain block
     // generated before message was sent
-    let blocks = server_link.query_collection(ParamsOfQueryCollection {
-            collection: BLOCKS_COLLECTION.to_string(),
-            filter: Some(json!({
-                "workchain_id": { "eq": MASTERCHAIN_ID }
-            })),
-            result: "id master { shard_hashes { workchain_id shard descr { root_hash } } }"
-                .to_string(),
-            order: Some(vec![OrderBy {
-                path: "seq_no".to_owned(),
-                direction: SortDirection::DESC,
-            }]),
-            limit: Some(1),
-        }, endpoint.clone())
+    let blocks = server_link
+        .query_collection(
+            ParamsOfQueryCollection {
+                collection: BLOCKS_COLLECTION.to_string(),
+                filter: Some(json!({
+                    "workchain_id": { "eq": MASTERCHAIN_ID }
+                })),
+                result: "id master { shard_hashes { workchain_id shard descr { root_hash } } }"
+                    .to_string(),
+                order: Some(vec![OrderBy {
+                    path: "seq_no".to_owned(),
+                    direction: SortDirection::DESC,
+                }]),
+                limit: Some(1),
+            },
+            endpoint.clone(),
+        )
         .await?;
     debug!("Last block {}", blocks[0]["id"]);
 
@@ -70,18 +77,22 @@ pub(crate) async fn find_last_shard_block(
         // To obtain it we take masterchain block to get shards configuration and select matching shard
         if blocks[0].is_null() {
             // TON OS SE case - no masterchain, no sharding. Check that only one shard
-            let blocks = server_link.query_collection(ParamsOfQueryCollection {
-                    collection: BLOCKS_COLLECTION.to_string(),
-                    filter: Some(json!({
-                    "workchain_id": { "eq": workchain },
-                    })),
-                    result: "after_merge shard".to_string(),
-                    order: Some(vec![OrderBy {
-                        path: "seq_no".to_owned(),
-                        direction: SortDirection::DESC,
-                    }]),
-                    limit: Some(1),
-                }, endpoint.clone())
+            let blocks = server_link
+                .query_collection(
+                    ParamsOfQueryCollection {
+                        collection: BLOCKS_COLLECTION.to_string(),
+                        filter: Some(json!({
+                        "workchain_id": { "eq": workchain },
+                        })),
+                        result: "after_merge shard".to_string(),
+                        order: Some(vec![OrderBy {
+                            path: "seq_no".to_owned(),
+                            direction: SortDirection::DESC,
+                        }]),
+                        limit: Some(1),
+                    },
+                    endpoint.clone(),
+                )
                 .await?;
 
             if blocks[0].is_null() {
@@ -98,19 +109,23 @@ pub(crate) async fn find_last_shard_block(
             }
 
             // Take last block by seq_no
-            let blocks = server_link.query_collection(ParamsOfQueryCollection {
-                    collection: BLOCKS_COLLECTION.to_string(),
-                    filter: Some(json!({
-                    "workchain_id": { "eq": workchain },
-                    "shard": { "eq": "8000000000000000" },
-                    })),
-                    result: "id".to_string(),
-                    order: Some(vec![OrderBy {
-                        path: "seq_no".to_owned(),
-                        direction: SortDirection::DESC,
-                    }]),
-                    limit: Some(1),
-                }, endpoint)
+            let blocks = server_link
+                .query_collection(
+                    ParamsOfQueryCollection {
+                        collection: BLOCKS_COLLECTION.to_string(),
+                        filter: Some(json!({
+                        "workchain_id": { "eq": workchain },
+                        "shard": { "eq": "8000000000000000" },
+                        })),
+                        result: "id".to_string(),
+                        order: Some(vec![OrderBy {
+                            path: "seq_no".to_owned(),
+                            direction: SortDirection::DESC,
+                        }]),
+                        limit: Some(1),
+                    },
+                    endpoint,
+                )
                 .await?;
             blocks[0]["id"]
                 .as_str()
@@ -154,21 +169,24 @@ pub async fn wait_next_block(
     let client = context.get_server_link()?;
 
     let block = client
-        .wait_for_collection(ParamsOfWaitForCollection {
-            collection: BLOCKS_COLLECTION.to_string(),
-            filter: Some(json!({
-                "prev_ref": {
-                    "root_hash": { "eq": current.to_string() }
-                },
-                "OR": {
-                    "prev_alt_ref": {
+        .wait_for_collection(
+            ParamsOfWaitForCollection {
+                collection: BLOCKS_COLLECTION.to_string(),
+                filter: Some(json!({
+                    "prev_ref": {
                         "root_hash": { "eq": current.to_string() }
+                    },
+                    "OR": {
+                        "prev_alt_ref": {
+                            "root_hash": { "eq": current.to_string() }
+                        }
                     }
-                }
-            })),
-            result: BLOCK_FIELDS.to_string(),
-            timeout,
-        }, None)
+                })),
+                result: BLOCK_FIELDS.to_string(),
+                timeout,
+            },
+            None,
+        )
         .await?;
     debug!(
         "{}: block received {:#}",
@@ -178,17 +196,20 @@ pub async fn wait_next_block(
 
     if block["after_split"] == true && !check_shard_match(block.clone(), address)? {
         client
-            .wait_for_collection(ParamsOfWaitForCollection {
-                collection: BLOCKS_COLLECTION.to_string(),
-                filter: Some(json!({
-                    "id": { "ne": block["id"]},
-                    "prev_ref": {
-                        "root_hash": { "eq": current.to_string() }
-                    }
-                })),
-                result: BLOCK_FIELDS.to_string(),
-                timeout,
-            }, None)
+            .wait_for_collection(
+                ParamsOfWaitForCollection {
+                    collection: BLOCKS_COLLECTION.to_string(),
+                    filter: Some(json!({
+                        "id": { "ne": block["id"]},
+                        "prev_ref": {
+                            "root_hash": { "eq": current.to_string() }
+                        }
+                    })),
+                    result: BLOCK_FIELDS.to_string(),
+                    timeout,
+                },
+                None,
+            )
             .await
             .and_then(|val| {
                 serde_json::from_value(val)

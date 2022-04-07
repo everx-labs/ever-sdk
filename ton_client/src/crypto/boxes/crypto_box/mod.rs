@@ -6,20 +6,20 @@ use lockfree::map::ReadGuard;
 use tokio::sync::RwLock;
 use zeroize::Zeroize;
 
-use crate::ClientContext;
-use crate::crypto::internal::{SecretString, SecretBuf};
-use crate::crypto::{
-    CryptoConfig, EncryptionBox, EncryptionBoxInfo, Error, register_encryption_box,
-    register_signing_box, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox,
-};
 use crate::crypto::boxes::crypto_box::encryption::{decrypt_secret, encrypt_secret};
 use crate::crypto::boxes::encryption_box::chacha20::ChaCha20EncryptionBox;
 use crate::crypto::boxes::encryption_box::nacl_box::NaclEncryptionBox;
 use crate::crypto::boxes::encryption_box::nacl_secret_box::NaclSecretEncryptionBox;
 use crate::crypto::boxes::signing_box::KeysSigningBox;
+use crate::crypto::internal::{SecretBuf, SecretString};
 use crate::crypto::mnemonic::mnemonics;
+use crate::crypto::{
+    register_encryption_box, register_signing_box, CryptoConfig, EncryptionBox, EncryptionBoxInfo,
+    Error, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox,
+};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
+use crate::ClientContext;
 
 mod encryption;
 
@@ -81,7 +81,7 @@ pub(crate) struct CryptoBox {
 
 /// Crypto Box Secret.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq, Zeroize, ZeroizeOnDrop)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum CryptoBoxSecret {
     /// Creates Crypto Box from a random seed phrase.
     /// This option can be used if a developer doesn't want the seed phrase to leave the core
@@ -91,10 +91,7 @@ pub enum CryptoBoxSecret {
     /// should use `EncryptedSecret` type instead.
     ///
     /// Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
-    RandomSeedPhrase {
-        dictionary: u8,
-        wordcount: u8,
-    },
+    RandomSeedPhrase { dictionary: u8, wordcount: u8 },
 
     /// Restores crypto box instance from an existing seed phrase.
     /// This type should be used when Crypto Box is initialized from a seed phrase, entered by a user.
@@ -135,7 +132,9 @@ impl Default for CryptoBoxSecret {
     }
 }
 
-#[derive(Serialize, Deserialize, Default, Clone, Debug, ApiType, PartialEq, Zeroize, ZeroizeOnDrop)]
+#[derive(
+    Serialize, Deserialize, Default, Clone, Debug, ApiType, PartialEq, Zeroize, ZeroizeOnDrop,
+)]
 pub struct ParamsOfCreateCryptoBox {
     /// Salt used for secret encryption.
     /// For example, a mobile device can use device ID as salt.
@@ -162,7 +161,10 @@ pub async fn create_crypto_box(
     password_provider: PasswordProvider,
 ) -> ClientResult<RegisteredCryptoBox> {
     let encrypted_secret = match &params.secret {
-        CryptoBoxSecret::RandomSeedPhrase { dictionary, wordcount } => {
+        CryptoBoxSecret::RandomSeedPhrase {
+            dictionary,
+            wordcount,
+        } => {
             let config = CryptoConfig::default();
             let phrase = {
                 let mnemonics = mnemonics(&config, Some(*dictionary), Some(*wordcount))?;
@@ -172,14 +174,14 @@ pub async fn create_crypto_box(
                     wordcount: *wordcount,
                 }
             };
-            encrypt_secret(
-                &phrase,
-                &password_provider,
-                &params.secret_encryption_salt,
-            ).await?
-        },
+            encrypt_secret(&phrase, &password_provider, &params.secret_encryption_salt).await?
+        }
 
-        CryptoBoxSecret::PredefinedSeedPhrase { phrase, dictionary, wordcount } => {
+        CryptoBoxSecret::PredefinedSeedPhrase {
+            phrase,
+            dictionary,
+            wordcount,
+        } => {
             encrypt_secret(
                 &SecretInternal::SeedPhrase {
                     phrase: SecretString(phrase.clone()),
@@ -188,11 +190,13 @@ pub async fn create_crypto_box(
                 },
                 &password_provider,
                 &params.secret_encryption_salt,
-            ).await?
-        },
+            )
+            .await?
+        }
 
-        CryptoBoxSecret::EncryptedSecret { encrypted_secret } =>
-            SecretBuf(base64_decode(&encrypted_secret)?),
+        CryptoBoxSecret::EncryptedSecret { encrypted_secret } => {
+            SecretBuf(base64_decode(&encrypted_secret)?)
+        }
     };
 
     let crypto_box = CryptoBox {
@@ -203,11 +207,13 @@ pub async fn create_crypto_box(
     let id = context.get_next_id();
     assert!(context.boxes.crypto_boxes.insert(id, crypto_box).is_none());
 
-    Ok(RegisteredCryptoBox { handle: CryptoBoxHandle(id) })
+    Ok(RegisteredCryptoBox {
+        handle: CryptoBoxHandle(id),
+    })
 }
 
 /// Removes Crypto Box.
-/// Clears all secret data. 
+/// Clears all secret data.
 #[api_function]
 pub async fn remove_crypto_box(
     context: Arc<ClientContext>,
@@ -217,7 +223,9 @@ pub async fn remove_crypto_box(
     Ok(())
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, Zeroize, ZeroizeOnDrop)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, Zeroize, ZeroizeOnDrop,
+)]
 pub struct ResultOfGetCryptoBoxSeedPhrase {
     pub phrase: String,
     pub dictionary: u8,
@@ -232,17 +240,26 @@ pub async fn get_crypto_box_seed_phrase(
     context: Arc<ClientContext>,
     params: RegisteredCryptoBox,
 ) -> ClientResult<ResultOfGetCryptoBoxSeedPhrase> {
-    let SecretInternal::SeedPhrase { phrase, dictionary, wordcount } = {
+    let SecretInternal::SeedPhrase {
+        phrase,
+        dictionary,
+        wordcount,
+    } = {
         let guard = get_crypto_box(&context, &params.handle)?;
         let crypto_box = guard.val();
         decrypt_secret(
             &crypto_box.encrypted_secret.0,
             &crypto_box.password_provider,
             &crypto_box.secret_encryption_salt.0,
-        ).await?
+        )
+        .await?
     };
 
-    Ok(ResultOfGetCryptoBoxSeedPhrase { phrase: phrase.0.clone(), dictionary, wordcount })
+    Ok(ResultOfGetCryptoBoxSeedPhrase {
+        phrase: phrase.0.clone(),
+        dictionary,
+        wordcount,
+    })
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
@@ -253,21 +270,30 @@ pub struct ResultOfGetCryptoBoxInfo {
 
 /// Get Crypto Box Info.
 /// Used to get `encrypted_secret` that should be used
-/// for all the cryptobox initializations except the first one. 
+/// for all the cryptobox initializations except the first one.
 #[api_function]
 pub async fn get_crypto_box_info(
     context: Arc<ClientContext>,
     params: RegisteredCryptoBox,
 ) -> ClientResult<ResultOfGetCryptoBoxInfo> {
     Ok(ResultOfGetCryptoBoxInfo {
-        encrypted_secret: base64::encode(&get_crypto_box(&context, &params.handle)?.val().encrypted_secret.0),
+        encrypted_secret: base64::encode(
+            &get_crypto_box(&context, &params.handle)?
+                .val()
+                .encrypted_secret
+                .0,
+        ),
     })
 }
 
-fn get_crypto_box<'context>(context: &'context Arc<ClientContext>, handle: &CryptoBoxHandle)
-    -> ClientResult<ReadGuard<'context, u32, CryptoBox>>
-{
-    context.boxes.crypto_boxes.get(&handle.0)
+fn get_crypto_box<'context>(
+    context: &'context Arc<ClientContext>,
+    handle: &CryptoBoxHandle,
+) -> ClientResult<ReadGuard<'context, u32, CryptoBox>> {
+    context
+        .boxes
+        .crypto_boxes
+        .get(&handle.0)
         .ok_or_else(|| Error::crypto_box_not_registered(handle.0))
 }
 
@@ -304,8 +330,9 @@ pub async fn get_signing_box_from_crypto_box(
                 secret_lifetime: params.secret_lifetime,
             },
             internal_box: Default::default(),
-        }
-    ).await
+        },
+    )
+    .await
 }
 
 struct BoxFromCryptoBoxLifeCycleManager<T> {
@@ -322,7 +349,7 @@ impl<T: Send + Sync + 'static> BoxFromCryptoBoxLifeCycleManager<T> {
     ) -> ClientResult<Ret>
     where
         Cb: Fn(Arc<T>) -> Fut,
-        Fut: Future<Output=ClientResult<Ret>>,
+        Fut: Future<Output = ClientResult<Ret>>,
     {
         if let Some(internal_box) = self.internal_box.read().await.as_ref() {
             return callback(Arc::clone(internal_box)).await;
@@ -334,10 +361,16 @@ impl<T: Send + Sync + 'static> BoxFromCryptoBoxLifeCycleManager<T> {
 
         let seed_phrase = get_crypto_box_seed_phrase(
             Arc::clone(&context),
-            RegisteredCryptoBox { handle: CryptoBoxHandle(self.params.handle) },
-        ).await?;
+            RegisteredCryptoBox {
+                handle: CryptoBoxHandle(self.params.handle),
+            },
+        )
+        .await?;
 
-        let hdpath = self.params.hdpath.as_ref()
+        let hdpath = self
+            .params
+            .hdpath
+            .as_ref()
             .unwrap_or(&context.config.crypto.hdkey_derivation_path);
 
         let keypair = {
@@ -347,13 +380,20 @@ impl<T: Send + Sync + 'static> BoxFromCryptoBoxLifeCycleManager<T> {
                 Some(seed_phrase.wordcount),
             )?;
 
-            mnemonic.derive_ed25519_keys_from_phrase(&context.config.crypto, &seed_phrase.phrase, hdpath)
-                .map::<ClientResult<Keypair>, _>(|keypair| Ok(Keypair {
-                    public: PublicKey::from_bytes(&hex_decode(&keypair.public)?)
-                        .map_err(|err| Error::invalid_public_key(err, &keypair.public))?,
-                    secret: SecretKey::from_bytes(&hex_decode(&keypair.secret)?)
-                        .map_err(|err| Error::invalid_secret_key(err, &keypair.secret))?,
-                }))??
+            mnemonic
+                .derive_ed25519_keys_from_phrase(
+                    &context.config.crypto,
+                    &seed_phrase.phrase,
+                    hdpath,
+                )
+                .map::<ClientResult<Keypair>, _>(|keypair| {
+                    Ok(Keypair {
+                        public: PublicKey::from_bytes(&hex_decode(&keypair.public)?)
+                            .map_err(|err| Error::invalid_public_key(err, &keypair.public))?,
+                        secret: SecretKey::from_bytes(&hex_decode(&keypair.secret)?)
+                            .map_err(|err| Error::invalid_secret_key(err, &keypair.secret))?,
+                    })
+                })??
         };
 
         let lifetime = self.params.secret_lifetime.unwrap_or(0) as u64;
@@ -385,12 +425,11 @@ impl SigningBox for BoxFromCryptoBoxLifeCycleManager<KeysSigningBox> {
             Arc::clone(&context),
             move |signing_box| {
                 let context = Arc::clone(&context);
-                async move {
-                    signing_box.get_public_key(Arc::clone(&context)).await
-                }
+                async move { signing_box.get_public_key(Arc::clone(&context)).await }
             },
             |key_pair| Ok(KeysSigningBox::new(key_pair)),
-        ).await
+        )
+        .await
     }
 
     async fn sign(&self, context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
@@ -398,12 +437,11 @@ impl SigningBox for BoxFromCryptoBoxLifeCycleManager<KeysSigningBox> {
             Arc::clone(&context),
             move |signing_box| {
                 let context = Arc::clone(&context);
-                async move {
-                    signing_box.sign(Arc::clone(&context), unsigned).await
-                }
+                async move { signing_box.sign(Arc::clone(&context), unsigned).await }
             },
             |key_pair| Ok(KeysSigningBox::new(key_pair)),
-        ).await
+        )
+        .await
     }
 
     async fn drop_secret(&self, crypto_box_handle: CryptoBoxHandle) {
@@ -501,10 +539,10 @@ pub struct ParamsOfGetEncryptionBoxFromCryptoBox {
 /// Gets Encryption Box from Crypto Box.
 ///
 /// Derives encryption keypair from cryptobox secret and hdpath and
-/// stores it in cache for `secret_lifetime` 
+/// stores it in cache for `secret_lifetime`
 /// or until explicitly cleared by `clear_crypto_box_secret_cache` method.
 /// If `secret_lifetime` is not specified - overwrites encryption secret with zeroes immediately after
-/// encryption operation. 
+/// encryption operation.
 #[api_function]
 pub async fn get_encryption_box_from_crypto_box(
     context: Arc<ClientContext>,
@@ -538,23 +576,22 @@ impl EncryptionBoxFromCryptoBox {
     fn factory(&self, key_pair: Keypair) -> ClientResult<Box<dyn EncryptionBox + 'static>> {
         let secret = SecretString(hex::encode(key_pair.secret));
         Ok(match &self.algorithm {
-            BoxEncryptionAlgorithm::ChaCha20(params) =>
-                Box::new(ChaCha20EncryptionBox::new(
-                    params.to_encryption_box_params(secret),
-                    self.manager.params.hdpath.clone(),
-                )?),
+            BoxEncryptionAlgorithm::ChaCha20(params) => Box::new(ChaCha20EncryptionBox::new(
+                params.to_encryption_box_params(secret),
+                self.manager.params.hdpath.clone(),
+            )?),
 
-            BoxEncryptionAlgorithm::NaclBox(params) =>
-                Box::new(NaclEncryptionBox::new(
-                    params.to_encryption_box_params(secret),
-                    self.manager.params.hdpath.clone(),
-                )),
+            BoxEncryptionAlgorithm::NaclBox(params) => Box::new(NaclEncryptionBox::new(
+                params.to_encryption_box_params(secret),
+                self.manager.params.hdpath.clone(),
+            )),
 
-            BoxEncryptionAlgorithm::NaclSecretBox(params) =>
+            BoxEncryptionAlgorithm::NaclSecretBox(params) => {
                 Box::new(NaclSecretEncryptionBox::new(
                     params.to_encryption_box_params(secret),
                     self.manager.params.hdpath.clone(),
-                )),
+                ))
+            }
         })
     }
 }
@@ -562,42 +599,42 @@ impl EncryptionBoxFromCryptoBox {
 #[async_trait::async_trait]
 impl EncryptionBox for EncryptionBoxFromCryptoBox {
     async fn get_info(&self, context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
-        self.manager.with_internal_box(
-            Arc::clone(&context),
-            move |encryption_box| {
-                let context = Arc::clone(&context);
-                async move {
-                    encryption_box.get_info(Arc::clone(&context)).await
-                }
-            },
-            |key_pair| self.factory(key_pair),
-        ).await
+        self.manager
+            .with_internal_box(
+                Arc::clone(&context),
+                move |encryption_box| {
+                    let context = Arc::clone(&context);
+                    async move { encryption_box.get_info(Arc::clone(&context)).await }
+                },
+                |key_pair| self.factory(key_pair),
+            )
+            .await
     }
 
     async fn encrypt(&self, context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
-        self.manager.with_internal_box(
-            Arc::clone(&context),
-            move |encryption_box| {
-                let context = Arc::clone(&context);
-                async move {
-                    encryption_box.encrypt(Arc::clone(&context), data).await
-                }
-            },
-            |key_pair| self.factory(key_pair),
-        ).await
+        self.manager
+            .with_internal_box(
+                Arc::clone(&context),
+                move |encryption_box| {
+                    let context = Arc::clone(&context);
+                    async move { encryption_box.encrypt(Arc::clone(&context), data).await }
+                },
+                |key_pair| self.factory(key_pair),
+            )
+            .await
     }
 
     async fn decrypt(&self, context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
-        self.manager.with_internal_box(
-            Arc::clone(&context),
-            move |encryption_box| {
-                let context = Arc::clone(&context);
-                async move {
-                    encryption_box.decrypt(Arc::clone(&context), data).await
-                }
-            },
-            |key_pair| self.factory(key_pair),
-        ).await
+        self.manager
+            .with_internal_box(
+                Arc::clone(&context),
+                move |encryption_box| {
+                    let context = Arc::clone(&context);
+                    async move { encryption_box.decrypt(Arc::clone(&context), data).await }
+                },
+                |key_pair| self.factory(key_pair),
+            )
+            .await
     }
 
     async fn drop_secret(&self, crypto_box_handle: CryptoBoxHandle) {
@@ -607,7 +644,7 @@ impl EncryptionBox for EncryptionBoxFromCryptoBox {
     }
 }
 
-/// Removes cached secrets (overwrites with zeroes) from all signing and encryption boxes, 
+/// Removes cached secrets (overwrites with zeroes) from all signing and encryption boxes,
 /// derived from crypto box.
 #[api_function]
 pub async fn clear_crypto_box_secret_cache(

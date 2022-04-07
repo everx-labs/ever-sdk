@@ -2,14 +2,16 @@ use std::sync::Arc;
 
 use zeroize::Zeroize;
 
-use crate::ClientContext;
 use crate::crypto::{
-    EncryptionBox, EncryptionBoxInfo, nacl_secret_box, nacl_secret_box_open,
-    ParamsOfNaclSecretBox, ParamsOfNaclSecretBoxOpen,
+    nacl_secret_box, nacl_secret_box_open, EncryptionBox, EncryptionBoxInfo, ParamsOfNaclSecretBox,
+    ParamsOfNaclSecretBoxOpen,
 };
 use crate::error::ClientResult;
+use crate::ClientContext;
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, Zeroize, ZeroizeOnDrop)]
+#[derive(
+    Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, Zeroize, ZeroizeOnDrop,
+)]
 pub struct NaclSecretBoxParamsEB {
     /// Secret key - unprefixed 0-padded to 64 symbols hex string
     pub key: String,
@@ -41,18 +43,26 @@ impl EncryptionBox for NaclSecretEncryptionBox {
     }
 
     async fn encrypt(&self, context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
-        nacl_secret_box(context, ParamsOfNaclSecretBox {
-            decrypted: data.clone(),
-            nonce: self.params.nonce.clone(),
-            key: self.params.key.clone(),
-        }).map(|result| result.encrypted)
+        nacl_secret_box(
+            context,
+            ParamsOfNaclSecretBox {
+                decrypted: data.clone(),
+                nonce: self.params.nonce.clone(),
+                key: self.params.key.clone(),
+            },
+        )
+        .map(|result| result.encrypted)
     }
 
     async fn decrypt(&self, context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
-        nacl_secret_box_open(context, ParamsOfNaclSecretBoxOpen {
-            encrypted: data.clone(),
-            nonce: self.params.nonce.clone(),
-            key: self.params.key.to_string(),
-        }).map(|result| result.decrypted)
+        nacl_secret_box_open(
+            context,
+            ParamsOfNaclSecretBoxOpen {
+                encrypted: data.clone(),
+                nonce: self.params.nonce.clone(),
+                key: self.params.key.to_string(),
+            },
+        )
+        .map(|result| result.decrypted)
     }
 }

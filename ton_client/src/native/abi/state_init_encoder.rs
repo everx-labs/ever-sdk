@@ -33,4 +33,3 @@ pub struct StateInitEncoder {
     /// 3. Public key, provided by Signer.
     pub initial_pubkey: Option<String>,
 }
-

@@ -114,9 +114,7 @@ fn deserialize_reconnect_timeout<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_reconnect_timeout()))
 }
 
-fn deserialize_max_latency<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<u32, D::Error> {
+fn deserialize_max_latency<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u32, D::Error> {
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_max_latency()))
 }
 
@@ -126,9 +124,7 @@ fn deserialize_latency_detection_frequency<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_latency_detection_frequency()))
 }
 
-fn deserialize_query_timeout<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<u32, D::Error> {
+fn deserialize_query_timeout<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u32, D::Error> {
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_query_timeout()))
 }
 
@@ -154,7 +150,7 @@ pub enum NetworkQueriesProtocol {
     HTTP,
 
     /// All GraphQL queries will be served using single web socket connection.
-    WS
+    WS,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]

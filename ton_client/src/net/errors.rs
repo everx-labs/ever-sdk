@@ -1,4 +1,4 @@
-use crate::error::{ClientError, format_time};
+use crate::error::{format_time, ClientError};
 use serde_json::Value;
 use std::fmt::Display;
 
@@ -38,7 +38,11 @@ impl Error {
         )
     }
 
-    pub fn queries_wait_for_failed<E: Display>(err: E, filter: Option<Value>, timestamp: u32) -> ClientError {
+    pub fn queries_wait_for_failed<E: Display>(
+        err: E,
+        filter: Option<Value>,
+        timestamp: u32,
+    ) -> ClientError {
         let mut err = error(ErrorCode::WaitForFailed, format!("WaitFor failed: {}", err));
         err.data = json!({
             "filter": filter,
@@ -84,7 +88,10 @@ impl Error {
     fn try_get_message_and_code(server_errors: &[Value]) -> (Option<String>, Option<i64>) {
         for error in server_errors.iter() {
             if let Some(message) = error["message"].as_str() {
-                return (Some(message.to_string()), error["extensions"]["exception"]["code"].as_i64());
+                return (
+                    Some(message.to_string()),
+                    error["extensions"]["exception"]["code"].as_i64(),
+                );
             }
         }
         (None, None)

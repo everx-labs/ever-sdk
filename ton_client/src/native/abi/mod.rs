@@ -12,6 +12,6 @@
  *
  */
 
-pub mod state_init_encoder;
-pub mod message_encoder;
 pub mod message_body_encoder;
+pub mod message_encoder;
+pub mod state_init_encoder;

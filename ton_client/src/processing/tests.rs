@@ -2,16 +2,16 @@ use crate::abi::{
     CallSet, DecodedMessageBody, DeploySet, FunctionHeader, MessageBodyType, ParamsOfEncodeMessage,
     Signer,
 };
-use crate::tests::GIVER_V2;
-use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor, ResultOfRunExecutor};
 use crate::json_interface::modules::ProcessingModule;
 use crate::processing::types::DecodedOutput;
 use crate::processing::{
     ErrorCode, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
     ProcessingEvent, ProcessingResponseType,
 };
+use crate::tests::GIVER_V2;
 use crate::tests::{TestClient, EVENTS, HELLO};
 use crate::tvm::ErrorCode as TvmErrorCode;
+use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor, ResultOfRunExecutor};
 use crate::utils::conversion::abi_uint;
 use api_info::ApiModule;
 
@@ -554,7 +554,7 @@ async fn test_fees() {
                 "dest": address.to_string(),
                 "value": 100_000_000u64,
                 "bounce": false
-            })
+            }),
         ),
         deploy_set: None,
         processing_try_index: None,
@@ -566,22 +566,22 @@ async fn test_fees() {
         .unwrap()
         .into();
 
-    let message = client
-        .encode_message(params.clone())
+    let message = client.encode_message(params.clone()).await.unwrap();
+
+    let local_result: ResultOfRunExecutor = client
+        .request_async(
+            "tvm.run_executor",
+            ParamsOfRunExecutor {
+                account: AccountForExecutor::Account {
+                    boc: account,
+                    unlimited_balance: None,
+                },
+                message: message.message,
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
-
-    let local_result: ResultOfRunExecutor = client.request_async(
-        "tvm.run_executor",
-        ParamsOfRunExecutor {
-            account: AccountForExecutor::Account { 
-                boc: account,
-                unlimited_balance: None
-            },
-            message: message.message,
-            ..Default::default()
-        }
-    ).await.unwrap();
 
     let run_result = client
         .net_process_message(
@@ -590,16 +590,25 @@ async fn test_fees() {
                 send_events: false,
             },
             TestClient::default_callback,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
     assert_eq!(local_result.fees.gas_fee, run_result.fees.gas_fee);
-    assert_eq!(local_result.fees.out_msgs_fwd_fee, run_result.fees.out_msgs_fwd_fee);
-    assert_eq!(local_result.fees.in_msg_fwd_fee, run_result.fees.in_msg_fwd_fee);
+    assert_eq!(
+        local_result.fees.out_msgs_fwd_fee,
+        run_result.fees.out_msgs_fwd_fee
+    );
+    assert_eq!(
+        local_result.fees.in_msg_fwd_fee,
+        run_result.fees.in_msg_fwd_fee
+    );
     assert_eq!(local_result.fees.total_output, run_result.fees.total_output);
     assert_eq!(local_result.fees.total_output, 100_000_000u64);
     assert_eq!(
         local_result.fees.total_account_fees - local_result.fees.storage_fee,
-        run_result.fees.total_account_fees - run_result.fees.storage_fee);
+        run_result.fees.total_account_fees - run_result.fees.storage_fee
+    );
     assert!(run_result.fees.storage_fee >= local_result.fees.storage_fee);
 
     assert!(local_result.fees.gas_fee > 0);

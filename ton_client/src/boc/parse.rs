@@ -47,7 +47,8 @@ pub async fn parse_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ClientResult<ResultOfParse> {
-    let object = deserialize_object_from_boc::<ton_block::Message>(&context, &params.boc, "message").await?;
+    let object =
+        deserialize_object_from_boc::<ton_block::Message>(&context, &params.boc, "message").await?;
 
     let set = ton_block_json::MessageSerializationSet {
         block_id: None,
@@ -82,7 +83,8 @@ pub async fn parse_transaction(
     params: ParamsOfParse,
 ) -> ClientResult<ResultOfParse> {
     let object =
-        deserialize_object_from_boc::<ton_block::Transaction>(&context, &params.boc, "transaction").await?;
+        deserialize_object_from_boc::<ton_block::Transaction>(&context, &params.boc, "transaction")
+            .await?;
 
     let set = ton_block_json::TransactionSerializationSetEx {
         block_id: None,
@@ -91,7 +93,7 @@ pub async fn parse_transaction(
         transaction: &object.object,
         proof: None,
         status: ton_block::TransactionProcessingStatus::Finalized,
-        workchain_id: None
+        workchain_id: None,
     };
 
     let parsed = ton_block_json::db_serialize_transaction_ex(
@@ -114,7 +116,8 @@ pub async fn parse_account(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ClientResult<ResultOfParse> {
-    let object = deserialize_object_from_boc::<ton_block::Account>(&context, &params.boc, "account").await?;
+    let object =
+        deserialize_object_from_boc::<ton_block::Account>(&context, &params.boc, "account").await?;
 
     let set = ton_block_json::AccountSerializationSet {
         boc: object.boc.bytes("account")?,
@@ -143,7 +146,8 @@ pub async fn parse_block(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ClientResult<ResultOfParse> {
-    let object = deserialize_object_from_boc::<ton_block::Block>(&context, &params.boc, "block").await?;
+    let object =
+        deserialize_object_from_boc::<ton_block::Block>(&context, &params.boc, "block").await?;
 
     let set = ton_block_json::BlockSerializationSet {
         boc: object.boc.bytes("block")?,
@@ -173,8 +177,12 @@ pub async fn parse_shardstate(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfParseShardstate,
 ) -> ClientResult<ResultOfParse> {
-    let object =
-        deserialize_object_from_boc::<ton_block::ShardStateUnsplit>(&context, &params.boc, "shardstate").await?;
+    let object = deserialize_object_from_boc::<ton_block::ShardStateUnsplit>(
+        &context,
+        &params.boc,
+        "shardstate",
+    )
+    .await?;
 
     let set = ton_block_json::ShardStateSerializationSet {
         boc: object.boc.bytes("shardstate")?,

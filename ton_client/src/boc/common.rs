@@ -57,7 +57,7 @@ pub async fn get_boc_depth(
     params: ParamsOfGetBocDepth,
 ) -> ClientResult<ResultOfGetBocDepth> {
     let (_, cell) = deserialize_cell_from_boc(&context, &params.boc, "").await?;
-    Ok(ResultOfGetBocDepth { 
-        depth: cell.repr_depth() as u32
+    Ok(ResultOfGetBocDepth {
+        depth: cell.repr_depth() as u32,
     })
 }

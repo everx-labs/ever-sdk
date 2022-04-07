@@ -1,7 +1,7 @@
 use crate::client::core_version;
+use chrono::TimeZone;
 use serde_json::Value;
 use std::fmt::Display;
-use chrono::TimeZone;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, ApiType)]
 pub struct ClientError {
@@ -27,7 +27,8 @@ pub(crate) trait AddNetworkUrl: Sized {
     }
 
     async fn add_network_url(self, client: &crate::net::ServerLink) -> Self {
-        self.add_network_url_from_state(client.state().await.as_ref()).await
+        self.add_network_url_from_state(client.state().await.as_ref())
+            .await
     }
 
     async fn add_network_url_from_context(self, client: &crate::ClientContext) -> Self {
@@ -55,18 +56,14 @@ impl<T: Send> AddNetworkUrl for ClientResult<T> {
         endpoint: &crate::net::Endpoint,
     ) -> Self {
         match self {
-            Err(err) => {
-                Err(err.add_endpoint(link, endpoint).await)
-            }
+            Err(err) => Err(err.add_endpoint(link, endpoint).await),
             _ => self,
         }
     }
 
     async fn add_network_url_from_state(self, state: &crate::net::NetworkState) -> Self {
         match self {
-            Err(err) => {
-                Err(err.add_network_url_from_state(state).await)
-            }
+            Err(err) => Err(err.add_network_url_from_state(state).await),
             _ => self,
         }
     }

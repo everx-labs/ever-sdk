@@ -18,8 +18,8 @@ use crate::types::StringId;
 use crate::{Message, MessageId};
 
 use ton_block::{
-    AccStatusChange, ComputeSkipReason, GetRepresentationHash,
-    TrComputePhase, TransactionDescr, TransactionProcessingStatus,
+    AccStatusChange, ComputeSkipReason, GetRepresentationHash, TrComputePhase, TransactionDescr,
+    TransactionProcessingStatus,
 };
 use ton_types::Result;
 
@@ -134,10 +134,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
             None
         };
 
-        let in_msg = transaction
-            .in_msg
-            .as_ref()
-            .map(|msg| msg.hash().into());
+        let in_msg = transaction.in_msg.as_ref().map(|msg| msg.hash().into());
         let mut out_msgs = vec![];
         transaction.out_msgs.iterate_slices(|slice| {
             if let Ok(cell) = slice.reference(0) {

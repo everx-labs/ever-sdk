@@ -50,10 +50,9 @@ fn test_invalid_params_error_secret_stripped() {
             r#"{{"address":"0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
             "public":"{}",
             "secret":"{}"}}"#,
-            public,
-            secret
+            public, secret
         ),
-        "error"
+        "error",
     );
     assert!(!error.message.contains(secret));
 }

@@ -3,10 +3,11 @@ use super::helpers::build_internal_message;
 use super::{BrowserCallbacks, DebotActivity, Spending, TonClient};
 use crate::abi::Signer;
 use crate::boc::internal::{deserialize_object_from_base64, serialize_object_to_base64};
-use crate::boc::{get_boc_hash, parse_message, ParamsOfParse, ParamsOfGetBocHash};
-use crate::crypto::{KeyPair, SigningBoxHandle, get_signing_box};
+use crate::boc::{get_boc_hash, parse_message, ParamsOfGetBocHash, ParamsOfParse};
+use crate::crypto::{get_signing_box, KeyPair, SigningBoxHandle};
 use crate::encoding::decode_abi_number;
 use crate::error::{ClientError, ClientResult};
+use crate::net::{query_transaction_tree, ParamsOfQueryTransactionTree};
 use crate::processing::{
     send_message, wait_for_transaction, ParamsOfSendMessage, ParamsOfWaitForTransaction,
     ProcessingEvent,
@@ -17,7 +18,6 @@ use std::fmt::Display;
 use std::sync::Arc;
 use ton_block::{Message, MsgAddressExt, MsgAddressInt};
 use ton_types::{BuilderData, IBitstring, SliceData};
-use crate::net::{query_transaction_tree, ParamsOfQueryTransactionTree};
 
 const SUPPORTED_ABI_VERSION: u8 = 2;
 
@@ -107,8 +107,7 @@ pub fn prepare_ext_in_message(
     let dst_addr: MsgAddressInt = hdr.dst.clone();
     let meta = Metadata::try_from(hdr.src.clone()).unwrap();
 
-    let future =
-        decode_and_fix_ext_msg(msg, now_ms, &signer, true, &meta, &ton_client);
+    let future = decode_and_fix_ext_msg(msg, now_ms, &signer, true, &meta, &ton_client);
 
     let result = ton_client.env.block_on(future);
 
@@ -123,7 +122,7 @@ async fn decode_and_fix_ext_msg(
     signer: &Signer,
     allow_no_signature: bool,
     meta: &Metadata,
-    ton: &TonClient
+    ton: &TonClient,
 ) -> ClientResult<(u32, Message)> {
     // find function id in message body: parse signature, pubkey and abi headers
     let mut message = msg.clone();
@@ -187,7 +186,13 @@ async fn decode_and_fix_ext_msg(
     let mut signed_body = BuilderData::new();
     match signer {
         Signer::SigningBox { handle: _ } => {
-            let hash = new_body.clone().into_cell().map_err(msg_err)?.repr_hash().as_slice().to_vec();
+            let hash = new_body
+                .clone()
+                .into_cell()
+                .map_err(msg_err)?
+                .repr_hash()
+                .as_slice()
+                .to_vec();
             let signature = signer.sign(ton.clone(), &hash).await?;
             if let Some(signature) = signature {
                 signed_body
@@ -197,7 +202,7 @@ async fn decode_and_fix_ext_msg(
             } else {
                 signed_body.append_bit_zero().map_err(msg_err)?;
             }
-        },
+        }
         _ => {
             signed_body.append_bit_zero().map_err(msg_err)?;
         }
@@ -238,18 +243,30 @@ impl ContractCall {
             !local_run,
             signer,
             meta.signing_box_handle.clone(),
-            browser.clone()
-        ).await?;
+            browser.clone(),
+        )
+        .await?;
         let dest_addr = msg
             .header()
             .get_dst_address()
             .map(|x| x.to_string())
             .unwrap_or_default();
-        Ok(Self { browser, ton, msg, signer, target_state, debot_addr, dest_addr, local_run, meta })
+        Ok(Self {
+            browser,
+            ton,
+            msg,
+            signer,
+            target_state,
+            debot_addr,
+            dest_addr,
+            local_run,
+            meta,
+        })
     }
 
     pub async fn execute(&self, wait_tx: bool) -> ClientResult<String> {
-        let result = self.decode_and_fix_ext_msg()
+        let result = self
+            .decode_and_fix_ext_msg()
             .await
             .map_err(|e| Error::external_call_failed(e));
         if let Err(e) = result {
@@ -294,27 +311,39 @@ impl ContractCall {
             ));
         }
         let out_msg = messages.pop().unwrap();
-        build_answer_msg(&out_msg, self.meta.answer_id, func_id, &self.dest_addr, &self.debot_addr)
-            .ok_or(Error::get_method_failed("failed to build answer message"))
+        build_answer_msg(
+            &out_msg,
+            self.meta.answer_id,
+            func_id,
+            &self.dest_addr,
+            &self.debot_addr,
+        )
+        .ok_or(Error::get_method_failed("failed to build answer message"))
     }
 
-    async fn send_ext_msg(&self, func_id: u32, fixed_msg: String, wait_tx: bool) -> ClientResult<String> {
+    async fn send_ext_msg(
+        &self,
+        func_id: u32,
+        fixed_msg: String,
+        wait_tx: bool,
+    ) -> ClientResult<String> {
         let activity = emulate_transaction(
             self.ton.clone(),
             self.dest_addr.clone(),
             fixed_msg.clone(),
             self.target_state.clone(),
             self.signer.clone(),
-        ).await;
+        )
+        .await;
         match activity {
             Ok(activity) => {
                 if !self.browser.approve(activity).await? {
                     return self.build_error_answer_msg(Error::operation_rejected());
                 }
-            },
+            }
             Err(e) => {
                 return self.build_error_answer_msg(e);
-            },
+            }
         }
 
         let browser = self.browser.clone();
@@ -345,8 +374,18 @@ impl ContractCall {
             callback.clone(),
         )
         .await
-        .map(|e| { error!("{:?}", e); e })?;
-        let msg_id = get_boc_hash(self.ton.clone(), ParamsOfGetBocHash { boc: fixed_msg.clone() }).await?.hash;
+        .map(|e| {
+            error!("{:?}", e);
+            e
+        })?;
+        let msg_id = get_boc_hash(
+            self.ton.clone(),
+            ParamsOfGetBocHash {
+                boc: fixed_msg.clone(),
+            },
+        )
+        .await?
+        .hash;
 
         if wait_tx {
             let result = wait_for_transaction(
@@ -369,7 +408,8 @@ impl ContractCall {
                             in_msg: msg_id,
                             ..Default::default()
                         },
-                    ).await;
+                    )
+                    .await;
                     if let Err(e) = result {
                         return self.build_error_answer_msg(e);
                     }
@@ -379,7 +419,7 @@ impl ContractCall {
                             self.meta.answer_id,
                             func_id,
                             &self.dest_addr,
-                            &self.debot_addr
+                            &self.debot_addr,
                         );
                         if let Some(answer_msg) = res {
                             return Ok(answer_msg);
@@ -390,7 +430,11 @@ impl ContractCall {
                     // answer message not found, build empty answer.
                     let mut new_body = BuilderData::new();
                     new_body.append_u32(self.meta.answer_id).map_err(msg_err)?;
-                    build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into_cell().map_err(msg_err)?.into())
+                    build_internal_message(
+                        &self.dest_addr,
+                        &self.debot_addr,
+                        new_body.into_cell().map_err(msg_err)?.into(),
+                    )
                 }
                 Err(e) => {
                     debug!("Transaction failed: {:?}", e);
@@ -404,15 +448,28 @@ impl ContractCall {
                 .append_u32(self.meta.answer_id)
                 .and_then(|b| b.append_raw(&msg_id, 256))
                 .map_err(msg_err)?;
-            build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into_cell().map_err(msg_err)?.into())
+            build_internal_message(
+                &self.dest_addr,
+                &self.debot_addr,
+                new_body.into_cell().map_err(msg_err)?.into(),
+            )
         }
     }
 
     async fn decode_and_fix_ext_msg(&self) -> ClientResult<(u32, String)> {
         let now_ms = self.ton.env.now_ms();
-        let result: (u32, Message) = decode_and_fix_ext_msg(&self.msg, now_ms, &self.signer, false, &self.meta, &self.ton).await?;
+        let result: (u32, Message) = decode_and_fix_ext_msg(
+            &self.msg,
+            now_ms,
+            &self.signer,
+            false,
+            &self.meta,
+            &self.ton,
+        )
+        .await?;
         let (func_id, message) = result;
-        let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
+        let msg =
+            serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
         Ok((func_id, msg))
     }
 
@@ -444,7 +501,9 @@ fn build_answer_msg(
     dest_addr: &String,
     debot_addr: &String,
 ) -> Option<String> {
-    let out_message: Message = deserialize_object_from_base64(out_msg, "message").ok()?.object;
+    let out_message: Message = deserialize_object_from_base64(out_msg, "message")
+        .ok()?
+        .object;
     if out_message.is_internal() {
         return None;
     }
@@ -469,15 +528,17 @@ async fn resolve_signer(
     sign: bool,
     signer: Signer,
     msg_signing_box: Option<SigningBoxHandle>,
-    browser: Arc<dyn BrowserCallbacks + Send + Sync>
+    browser: Arc<dyn BrowserCallbacks + Send + Sync>,
 ) -> ClientResult<Signer> {
     let new_signer = if sign {
         match signer {
-            Signer::SigningBox {handle: _} => signer,
+            Signer::SigningBox { handle: _ } => signer,
             _ => Signer::SigningBox {
                 handle: match msg_signing_box {
                     Some(signing_box_handle) => signing_box_handle,
-                    None => browser.get_signing_box().await
+                    None => browser
+                        .get_signing_box()
+                        .await
                         .map_err(|e| Error::external_call_failed(e))?,
                 },
             },
@@ -526,7 +587,7 @@ async fn emulate_transaction(
         .unwrap_or(0);
 
     if exit_code != 0 {
-        let err = ClientError{
+        let err = ClientError {
             code: 0,
             message: String::from(""),
             data: result.transaction,
@@ -552,7 +613,13 @@ async fn emulate_transaction(
     }
 
     let (signing_box_handle, signkey) = if let Signer::SigningBox { ref handle } = signer {
-        (handle.0, signer.resolve_public_key(client.clone()).await?.unwrap_or_default())
+        (
+            handle.0,
+            signer
+                .resolve_public_key(client.clone())
+                .await?
+                .unwrap_or_default(),
+        )
     } else {
         (0, String::new())
     };

@@ -131,8 +131,8 @@ pub(crate) async fn resolve_error(
             }
 
             if without_transaction {
-                original_error.data["local_error"] =
-                    serde_json::to_value(&err).map_err(crate::client::Error::cannot_serialize_result)?;
+                original_error.data["local_error"] = serde_json::to_value(&err)
+                    .map_err(crate::client::Error::cannot_serialize_result)?;
             } else {
                 original_error.data[EXIT_ARG_FIELD] = err.data[EXIT_ARG_FIELD].clone();
                 original_error.data[CONTRACT_ERROR_FIELD] = err.data[CONTRACT_ERROR_FIELD].clone();
@@ -142,16 +142,20 @@ pub(crate) async fn resolve_error(
                 Some(insert_position) => {
                     original_error.message = format!(
                         "{}.\nPossible reason: {}.{}",
-                        &original_error.message[..insert_position].trim_end().trim_end_matches("."),
+                        &original_error.message[..insert_position]
+                            .trim_end()
+                            .trim_end_matches("."),
                         remove_exit_code(&exit_code, err.message.trim_end_matches(".")),
                         &original_error.message[insert_position..],
                     )
-                },
-                None => original_error.message = format!(
-                    "{}.\nPossible reason: {}",
-                    original_error.message.trim_end_matches("."),
-                    remove_exit_code(&exit_code, &err.message),
-                )
+                }
+                None => {
+                    original_error.message = format!(
+                        "{}.\nPossible reason: {}",
+                        original_error.message.trim_end_matches("."),
+                        remove_exit_code(&exit_code, &err.message),
+                    )
+                }
             }
 
             Err(original_error)
@@ -169,8 +173,13 @@ pub(crate) async fn resolve_error(
 /// Removes exit code from internal error only if it matches exit code of original error
 fn remove_exit_code(exit_code: &Option<i64>, internal_error: &str) -> String {
     if let Some(exit_code) = exit_code {
-        regex::Regex::new(&format!(r#"(?i)([,\.]\s*)?exit\s+code(:\s*|\s+){}"#, exit_code)).unwrap()
-            .replace(internal_error, "").to_string()
+        regex::Regex::new(&format!(
+            r#"(?i)([,\.]\s*)?exit\s+code(:\s*|\s+){}"#,
+            exit_code
+        ))
+        .unwrap()
+        .replace(internal_error, "")
+        .to_string()
     } else {
         internal_error.to_string()
     }

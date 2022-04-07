@@ -33,7 +33,7 @@ pub struct ParamsOfWaitForTransaction {
 
     /// The list of endpoints to which the message was sent.
     ///
-    /// Use this field to get more informative errors. 
+    /// Use this field to get more informative errors.
     /// Provide the same value as the `send_message` has returned.
     /// If the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending.
     pub sending_endpoints: Option<Vec<String>>,
@@ -53,7 +53,8 @@ pub async fn wait_for_transaction<F: futures::Future<Output = ()> + Send>(
     let message_id = message.cell.repr_hash().as_hex_string();
     let address = message
         .object
-        .dst_ref().cloned()
+        .dst_ref()
+        .cloned()
         .ok_or(Error::message_has_not_destination_address())?;
     let message_expiration_time =
         get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message).await?;

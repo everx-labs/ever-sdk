@@ -38,8 +38,7 @@ impl Abi {
     }
 
     pub(crate) fn abi(&self) -> ClientResult<ton_abi::Contract> {
-        ton_abi::Contract::load(self.json_string()?.as_bytes())
-            .map_err(|x| Error::invalid_json(x))
+        ton_abi::Contract::load(self.json_string()?.as_bytes()).map_err(|x| Error::invalid_json(x))
     }
 }
 
@@ -107,10 +106,8 @@ impl TryInto<ton_abi::Param> for AbiParam {
     type Error = ClientError;
 
     fn try_into(self) -> ClientResult<ton_abi::Param> {
-        serde_json::from_value(
-            serde_json::to_value(&self)
-                .map_err(|err| Error::invalid_json(err))?
-        ).map_err(|err| Error::invalid_json(err))
+        serde_json::from_value(serde_json::to_value(&self).map_err(|err| Error::invalid_json(err))?)
+            .map_err(|err| Error::invalid_json(err))
     }
 }
 

@@ -16,7 +16,7 @@ use crate::crypto;
 use crate::crypto::hdkey::HDPrivateKey;
 use crate::crypto::internal::{hmac_sha512, key256, pbkdf2_hmac_sha512};
 use crate::crypto::keys::KeyPair;
-use crate::crypto::{CryptoConfig, default_hdkey_compliant};
+use crate::crypto::{default_hdkey_compliant, CryptoConfig};
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use bip39::{Language, Mnemonic, MnemonicType};
@@ -174,7 +174,7 @@ pub struct ParamsOfMnemonicDeriveSignKeys {
 }
 
 /// Derives a key pair for signing from the seed phrase
-/// 
+///
 /// Validates the seed phrase, generates master key and then derives
 /// the key pair from the master key and the specified path
 #[api_function]

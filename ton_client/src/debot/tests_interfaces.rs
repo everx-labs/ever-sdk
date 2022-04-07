@@ -10,19 +10,20 @@
 * See the License for the specific TON DEV software governing permissions and
 * limitations under the License.
 */
-use crate::crypto::{KeyPair, SigningBoxHandle, EncryptionBoxHandle, RegisteredSigningBox,
-    RegisteredEncryptionBox, EncryptionBoxInfo,boxes::encryption_box::EncryptionBox};
-use crate::encoding::decode_abi_number;
-use std::sync::Arc;
-use crate::tests::TestClient;
 use crate::client::ParamsOfAppRequest;
-use serde_json::Value;
-use crate::ClientContext;
+use crate::crypto::{
+    boxes::encryption_box::EncryptionBox, EncryptionBoxHandle, EncryptionBoxInfo, KeyPair,
+    RegisteredEncryptionBox, RegisteredSigningBox, SigningBoxHandle,
+};
+use crate::encoding::decode_abi_number;
 use crate::error::ClientResult;
 use crate::json_interface::crypto::*;
 use crate::json_interface::interop::ResponseType;
+use crate::tests::TestClient;
+use crate::ClientContext;
+use serde_json::Value;
+use std::sync::Arc;
 //use super::*;
-
 
 pub const SUPPORTED_INTERFACES: &[&str] = &[
     "f6927c0d4bdb69e1b52d27f018d156ff04152f00558042ff674f0fec32e4369d", // echo
@@ -31,7 +32,8 @@ pub const SUPPORTED_INTERFACES: &[&str] = &[
     "5b5f76b54d976d72f1ada3063d1af2e5352edaf1ba86b3b311170d4d81056d61", // encryption box input
 ];
 
-pub const MY_TEST_PUBKEY: &str = "0xb7cb10668eb106f91293014f6f47657f2f6b1b47332b4c865a874905271e95b3";
+pub const MY_TEST_PUBKEY: &str =
+    "0xb7cb10668eb106f91293014f6f47657f2f6b1b47332b4c865a874905271e95b3";
 
 pub const ECHO_ABI: &str = r#"
 {
@@ -118,7 +120,6 @@ pub const SIGNING_BOX_ABI: &str = r#"
 }
 "#;
 
-
 pub const ENCRYPTION_BOX_ABI: &str = r#"{
 	"ABI version": 2,
 	"header": ["time"],
@@ -167,13 +168,14 @@ pub(crate) struct EncryptionBoxInput {
 
 impl EncryptionBoxInput {
     pub(crate) async fn new(client: Arc<TestClient>) -> Self {
-        Self{  client }
+        Self { client }
     }
 
     pub async fn call(&self, func: &str, args: &Value) -> (u32, Value) {
         match func {
             "getNaclBox" => {
-                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                let answer_id =
+                    u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
                 let nonce = args["nonce"].as_str().unwrap().to_owned();
                 let their_key = args["theirPubkey"].as_str().unwrap().to_owned();
                 let client_copy = Arc::clone(&self.client);
@@ -187,37 +189,42 @@ impl EncryptionBoxInput {
                         match response_type {
                             ResponseType::AppRequest => {
                                 tokio::spawn(async move {
-                                    let request: ParamsOfAppRequest = serde_json::from_value(params).unwrap();
+                                    let request: ParamsOfAppRequest =
+                                        serde_json::from_value(params).unwrap();
                                     let result = Self::process_call(
                                         context,
                                         NaclBoxEncryption::new(nonce, their_key),
-                                        serde_json::from_value(request.request_data).unwrap()
-                                    ).await;
-                                    client.resolve_app_request(request.app_request_id, result).await;
+                                        serde_json::from_value(request.request_data).unwrap(),
+                                    )
+                                    .await;
+                                    client
+                                        .resolve_app_request(request.app_request_id, result)
+                                        .await;
                                 });
-                            },
+                            }
                             _ => panic!("Wrong response type"),
                         }
                     }
                 };
-                let box_handle: EncryptionBoxHandle = self.client.request_async_callback(
-                    "crypto.register_encryption_box",
-                    json!({}),
-                    callback,
-                )
-                .await
-                .map(|x: RegisteredEncryptionBox| x.handle).unwrap_or(EncryptionBoxHandle(0));
+                let box_handle: EncryptionBoxHandle = self
+                    .client
+                    .request_async_callback("crypto.register_encryption_box", json!({}), callback)
+                    .await
+                    .map(|x: RegisteredEncryptionBox| x.handle)
+                    .unwrap_or(EncryptionBoxHandle(0));
 
-                ( answer_id, json!({ "handle": box_handle.clone() }) )
-            },
+                (answer_id, json!({ "handle": box_handle.clone() }))
+            }
             "getSupportedInterfaces" => {
-                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
-                ( answer_id, json!({ "names": vec![hex::encode("NaclBox")] }) )
-            },
+                let answer_id =
+                    u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                (answer_id, json!({ "names": vec![hex::encode("NaclBox")] }))
+            }
             "remove" => {
-                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
-                ( answer_id, json!({ "removed": true }) )
-            },
+                let answer_id =
+                    u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                (answer_id, json!({ "removed": true }))
+            }
             _ => panic!("interface function not found"),
         }
     }
@@ -228,14 +235,14 @@ impl EncryptionBoxInput {
         params: ParamsOfAppEncryptionBox,
     ) -> ResultOfAppEncryptionBox {
         match params {
-            ParamsOfAppEncryptionBox::GetInfo => {
-                ResultOfAppEncryptionBox::GetInfo { info: enbox.get_info(context).await.unwrap() }
+            ParamsOfAppEncryptionBox::GetInfo => ResultOfAppEncryptionBox::GetInfo {
+                info: enbox.get_info(context).await.unwrap(),
             },
-            ParamsOfAppEncryptionBox::Encrypt {data} => {
-                ResultOfAppEncryptionBox::Encrypt { data: enbox.encrypt(context, &data).await.unwrap() }
+            ParamsOfAppEncryptionBox::Encrypt { data } => ResultOfAppEncryptionBox::Encrypt {
+                data: enbox.encrypt(context, &data).await.unwrap(),
             },
-            ParamsOfAppEncryptionBox::Decrypt {data} => {
-                ResultOfAppEncryptionBox::Decrypt { data: enbox.decrypt(context, &data).await.unwrap() }
+            ParamsOfAppEncryptionBox::Decrypt { data } => ResultOfAppEncryptionBox::Decrypt {
+                data: enbox.decrypt(context, &data).await.unwrap(),
             },
         }
     }
@@ -248,7 +255,7 @@ struct NaclBoxEncryption {
 
 impl NaclBoxEncryption {
     fn new(nonce: String, their_key: String) -> Self {
-        Self{ nonce, their_key }
+        Self { nonce, their_key }
     }
 }
 
@@ -260,7 +267,7 @@ impl EncryptionBox for NaclBoxEncryption {
             hdpath: Some(format!("m/44'/396'/0'/0/1")),
             algorithm: Some(format!("NaclBox")),
             options: Some(json!({"nonce": self.nonce, "theirPubkey": self.their_key })),
-            public: Some(json!({"key": MY_TEST_PUBKEY})),
+            public: Some(json!({ "key": MY_TEST_PUBKEY })),
         })
     }
 
@@ -281,19 +288,21 @@ pub(crate) struct SingingBoxInput {
 
 impl SingingBoxInput {
     pub(crate) async fn new(client: Arc<TestClient>, keys: KeyPair) -> Self {
-        let box_handle = client.request_async::<_, RegisteredSigningBox>(
-            "crypto.get_signing_box",
-            keys,
-        ).await.map(|x| x.handle).unwrap_or(SigningBoxHandle(0));
-        Self{  box_handle }
+        let box_handle = client
+            .request_async::<_, RegisteredSigningBox>("crypto.get_signing_box", keys)
+            .await
+            .map(|x| x.handle)
+            .unwrap_or(SigningBoxHandle(0));
+        Self { box_handle }
     }
 
     pub fn call(&self, func: &str, args: &Value) -> (u32, Value) {
         match func {
             "get" => {
-                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
-                ( answer_id, json!({ "handle": self.box_handle.clone() }) )
-            },
+                let answer_id =
+                    u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                (answer_id, json!({ "handle": self.box_handle.clone() }))
+            }
             _ => panic!("interface function not found"),
         }
     }
@@ -302,16 +311,20 @@ impl SingingBoxInput {
 pub struct Echo {}
 impl Echo {
     pub fn new() -> Self {
-        Self{}
+        Self {}
     }
     pub fn call(&self, func: &str, args: &Value) -> (u32, Value) {
         match func {
             "echo" => {
-                let answer_id = u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
+                let answer_id =
+                    u32::from_str_radix(args["answerId"].as_str().unwrap(), 10).unwrap();
                 let request_vec = hex::decode(args["request"].as_str().unwrap()).unwrap();
                 let request = std::str::from_utf8(&request_vec).unwrap();
-                ( answer_id, json!({ "response": hex::encode(request.as_bytes()) }) )
-            },
+                (
+                    answer_id,
+                    json!({ "response": hex::encode(request.as_bytes()) }),
+                )
+            }
             _ => panic!("interface function not found"),
         }
     }
@@ -335,34 +348,37 @@ impl Terminal {
             message,
             "Terminal message assert failed"
         );
-        ( answer_id, json!({ }) )
+        (answer_id, json!({}))
     }
 
     pub fn call(&mut self, func: &str, args: &Value) -> (u32, Value) {
         match func {
             "print" => {
-                let answer_id = decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
+                let answer_id =
+                    decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
                 let message = hex::decode(args["message"].as_str().unwrap()).unwrap();
                 let message = std::str::from_utf8(&message).unwrap();
                 self.print(answer_id, message)
-            },
+            }
             "inputInt" => {
-                let answer_id = decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
+                let answer_id =
+                    decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
                 let prompt = hex::decode(args["prompt"].as_str().unwrap()).unwrap();
                 let prompt = std::str::from_utf8(&prompt).unwrap();
                 let _ = self.print(answer_id, prompt);
                 // use test return value here.
                 (answer_id, json!({"value": 1}))
-            },
+            }
             "input" => {
-                let answer_id = decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
+                let answer_id =
+                    decode_abi_number::<u32>(args["answerId"].as_str().unwrap()).unwrap();
                 let prompt = hex::decode(args["prompt"].as_str().unwrap()).unwrap();
                 let message = std::str::from_utf8(&prompt).unwrap();
                 let _ = args["multiline"].as_bool().unwrap();
                 self.print(answer_id, message);
                 let value = "testinput";
-                (answer_id, json!({ "value": hex::encode(value.as_bytes()) }) )
-            },
+                (answer_id, json!({ "value": hex::encode(value.as_bytes()) }))
+            }
             _ => panic!("interface function not found"),
         }
     }

@@ -14,7 +14,7 @@
 
 use serde_json::Value;
 
-use crate::error::{ClientResult};
+use crate::error::ClientResult;
 use crate::net::Error;
 
 const GQL_CONNECTION_INIT: &str = "connection_init";
@@ -132,4 +132,3 @@ impl GraphQLMessageFromServer {
         })
     }
 }
-

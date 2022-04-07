@@ -1,4 +1,5 @@
-use crate::abi::{Abi, ParamsOfDecodeMessage, DecodedMessageBody};
+use crate::abi::decode_message::ResponsibleCall;
+use crate::abi::{Abi, DecodedMessageBody, ParamsOfDecodeMessage};
 use crate::boc::{parse_transaction, ParamsOfParse};
 use crate::client::ClientContext;
 use crate::error::ClientResult;
@@ -6,7 +7,6 @@ use crate::processing::fetching::TransactionBoc;
 use crate::processing::types::DecodedOutput;
 use serde_json::Value;
 use std::sync::Arc;
-use crate::abi::decode_message::ResponsibleCall;
 
 pub(crate) async fn parse_transaction_boc(
     context: Arc<ClientContext>,
@@ -45,8 +45,9 @@ pub(crate) async fn decode_output<'a>(
                 abi: abi.clone(),
                 allow_partial: false,
             },
-            responsible
-        ).await;
+            responsible,
+        )
+        .await;
         let decoded = match decode_result {
             Ok(decoded) => {
                 if decoded.body_type.is_output() {

@@ -15,6 +15,7 @@ use serde_json::{Map, Value};
 use ton_abi::{Contract, ParamType};
 
 use super::types::{ExecutionOptions, ResolvedExecutionOptions};
+use crate::abi::decode_message::ResponsibleCall;
 use crate::abi::{encode_internal_message, Abi, CallSet, ParamsOfEncodeInternalMessage};
 use crate::boc::internal::{deserialize_object_from_boc, serialize_object_to_boc};
 use crate::boc::BocCacheType;
@@ -22,9 +23,8 @@ use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::processing::parsing::decode_output;
 use crate::tvm::{Error, ResultOfRunTvm};
-use ton_block::{Account, MsgAddressInt};
-use crate::abi::decode_message::ResponsibleCall;
 use std::str::FromStr;
+use ton_block::{Account, MsgAddressInt};
 
 const DEFAULT_ANSWER_ID: u32 = 0x12345678;
 
@@ -79,7 +79,8 @@ pub async fn run_responsible(
         .ok_or_else(|| Error::invalid_account_boc("Missing account address"))?
         .to_string();
     let src_address = params.src_address.unwrap_or_else(|| address.clone());
-    let src = MsgAddressInt::from_str(&src_address).map_err(|err|Error::invalid_account_boc(err))?;
+    let src =
+        MsgAddressInt::from_str(&src_address).map_err(|err| Error::invalid_account_boc(err))?;
     let mut input = params.input;
     let responsible = get_responsible(&src, &abi, &params.function_name, &mut input)?;
     let message = encode_internal_message(
@@ -113,7 +114,15 @@ pub async fn run_responsible(
     }
 
     // TODO decode Message object without converting to string
-    let decoded = Some(decode_output(&context, &params.abi, out_messages.clone(), Some(&responsible)).await?);
+    let decoded = Some(
+        decode_output(
+            &context,
+            &params.abi,
+            out_messages.clone(),
+            Some(&responsible),
+        )
+        .await?,
+    );
 
     let account = if params.return_updated_account.unwrap_or_default() {
         serialize_object_to_boc(&context, &account.object, "account", params.boc_cache).await?
@@ -178,6 +187,6 @@ fn get_responsible<'abi>(
     Ok(ResponsibleCall {
         src,
         function,
-        answer_id
+        answer_id,
     })
 }

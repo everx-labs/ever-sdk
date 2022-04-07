@@ -14,8 +14,8 @@
 use std::sync::Arc;
 
 use crate::client::ClientContext;
-use crate::crypto::{CryptoBoxHandle, Error};
 use crate::crypto::KeyPair;
+use crate::crypto::{CryptoBoxHandle, Error};
 use crate::error::ClientResult;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
@@ -41,14 +41,12 @@ pub trait SigningBox: Send + Sync {
 }
 
 pub(crate) struct KeysSigningBox {
-    key_pair: ed25519_dalek::Keypair
+    key_pair: ed25519_dalek::Keypair,
 }
 
 impl KeysSigningBox {
     pub fn new(key_pair: ed25519_dalek::Keypair) -> Self {
-        Self {
-            key_pair
-        }
+        Self { key_pair }
     }
 
     pub fn from_encoded(key_pair: KeyPair) -> ClientResult<Self> {
@@ -75,7 +73,10 @@ pub async fn get_signing_box(
 ) -> ClientResult<RegisteredSigningBox> {
     let id = context.get_next_id();
     let signing_box = KeysSigningBox::from_encoded(params)?;
-    context.boxes.signing_boxes.insert(id, Box::new(signing_box));
+    context
+        .boxes
+        .signing_boxes
+        .insert(id, Box::new(signing_box));
 
     Ok(RegisteredSigningBox {
         handle: SigningBoxHandle(id),
@@ -94,7 +95,10 @@ pub async fn register_signing_box(
     signing_box: impl SigningBox + Send + Sync + 'static,
 ) -> ClientResult<RegisteredSigningBox> {
     let id = context.get_next_id();
-    context.boxes.signing_boxes.insert(id, Box::new(signing_box));
+    context
+        .boxes
+        .signing_boxes
+        .insert(id, Box::new(signing_box));
 
     Ok(RegisteredSigningBox {
         handle: SigningBoxHandle(id),
@@ -113,17 +117,19 @@ pub async fn signing_box_get_public_key(
     context: Arc<ClientContext>,
     params: RegisteredSigningBox,
 ) -> ClientResult<ResultOfSigningBoxGetPublicKey> {
-    let signing_box = context.boxes.signing_boxes
+    let signing_box = context
+        .boxes
+        .signing_boxes
         .get(&params.handle.0)
         .ok_or(Error::signing_box_not_registered(params.handle.0))?;
 
     let key = signing_box.1.get_public_key(Arc::clone(&context)).await?;
 
     Ok(ResultOfSigningBoxGetPublicKey {
-        pubkey: hex::encode(&key)
+        pubkey: hex::encode(&key),
     })
 }
-    
+
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct ParamsOfSigningBoxSign {
     /// Signing Box handle.
@@ -144,7 +150,9 @@ pub async fn signing_box_sign(
     context: Arc<ClientContext>,
     params: ParamsOfSigningBoxSign,
 ) -> ClientResult<ResultOfSigningBoxSign> {
-    let signing_box = context.boxes.signing_boxes
+    let signing_box = context
+        .boxes
+        .signing_boxes
         .get(&params.signing_box.0)
         .ok_or(Error::signing_box_not_registered(params.signing_box.0))?;
 
@@ -153,7 +161,7 @@ pub async fn signing_box_sign(
     let signed = signing_box.1.sign(Arc::clone(&context), &unsigned).await?;
 
     Ok(ResultOfSigningBoxSign {
-        signature: hex::encode(&signed)
+        signature: hex::encode(&signed),
     })
 }
 

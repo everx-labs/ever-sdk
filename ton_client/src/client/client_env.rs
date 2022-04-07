@@ -52,8 +52,15 @@ impl FetchResult {
         if self.is_success() {
             Ok(())
         } else {
-            log::debug!("Server responded with code {}. Body \n{}", self.status, self.body);
-            Err(Error::http_request_send_error(format!("Server responded with code {}", self.status)))
+            log::debug!(
+                "Server responded with code {}. Body \n{}",
+                self.status,
+                self.body
+            );
+            Err(Error::http_request_send_error(format!(
+                "Server responded with code {}",
+                self.status
+            )))
         }
     }
 }

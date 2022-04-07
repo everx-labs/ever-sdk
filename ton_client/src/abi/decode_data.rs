@@ -1,7 +1,7 @@
 use crate::abi::types::Abi;
 use crate::abi::Error;
-use crate::client::ClientContext;
 use crate::boc::internal::deserialize_cell_from_boc;
+use crate::client::ClientContext;
 use crate::error::ClientResult;
 use serde_json;
 use serde_json::Value;
@@ -41,7 +41,8 @@ pub async fn decode_account_data(
     let (_, data) = deserialize_cell_from_boc(&context, &params.data, "contract data").await?;
     let abi = params.abi.abi()?;
 
-    let tokens = abi.decode_storage_fields(data.into(), params.allow_partial)
+    let tokens = abi
+        .decode_storage_fields(data.into(), params.allow_partial)
         .map_err(|e| Error::invalid_data_for_decode(e))?;
 
     let data = Detokenizer::detokenize_to_json_value(&tokens)

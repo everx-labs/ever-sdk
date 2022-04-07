@@ -94,10 +94,7 @@ impl Error {
     }
 
     pub fn invalid_msg(err: impl Display) -> ClientError {
-        error(
-            ErrorCode::DebotInvalidMsg,
-            format!("invalid msg ({})", err),
-        )
+        error(ErrorCode::DebotInvalidMsg, format!("invalid msg ({})", err))
     }
 
     pub fn external_call_failed(err: impl Display) -> ClientError {
@@ -122,9 +119,6 @@ impl Error {
     }
 
     pub fn debot_has_no_code() -> ClientError {
-        error(
-            ErrorCode::DebotNoCode,
-            format!("Debot has no code"),
-        )
+        error(ErrorCode::DebotNoCode, format!("Debot has no code"))
     }
 }
