@@ -1,23 +1,37 @@
-# Query Language
+# OLD: Collection Query Language
+
+## Warning
+
+{% hint style="warning" %}
+<mark style="color:red;">**Please avoid using collection queries as much as possible. Soon we will restrict their execution time by 5 seconds. Use**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**`net.query`**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**+ root**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**`blockchain`**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**API  instead.**</mark>&#x20;
+{% endhint %}
+
+`Collections` is the old API we had started providing when we didn't know what use-cases might be needed for developers and how to allow pagination of the sharded data the best way.&#x20;
+
+We created API that allowed to query basically anything which led to impossible data optimizations on our end to provide good quality of such functionality.
+
+Now we analyzed what use-cases users need and created a brand-new API called `blockchain`. You can find it in root `query` next to all collections. Use it with [net.query function](../../guides/queries\_and\_subscriptions/raw\_query.md).&#x20;
+
+## Docs
 
 This document provides query language syntax examples and documentation
 
-Check out (../mod_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
+Check out (../mod\_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
 
-* [Query a collection](query_language.md#query-a-collection)
-* [Aggregate a collection](query_language.md#aggregate-a-collection)
-* [Subscription](query_language.md#subscription)
-* [Filtration](query_language.md#filtration)
-  * [Scalar filters](query_language.md#scalar-filters)
-  * [Array filters](query_language.md#array-filters)
-  * [Structure filters](query_language.md#structure-filters)
-* [OR operator](query_language.md#or-operator)
-* [Joins](query_language.md#joins)
-* [Sorting and limiting](query_language.md#sorting-and-limiting)
-* [Working with u64 and u128 numbers](query_language.md#working-with-u64-and-u128-numbers)
-  * [U64String](query_language.md#u64string)
-  * [U1024String](query_language.md#u1024string)
-  * [GraphQL interaction](query_language.md#graphql-interaction)
+* [Query a collection](query\_language.md#query-a-collection)
+* [Aggregate a collection](query\_language.md#aggregate-a-collection)
+* [Subscription](query\_language.md#subscription)
+* [Filtration](query\_language.md#filtration)
+  * [Scalar filters](query\_language.md#scalar-filters)
+  * [Array filters](query\_language.md#array-filters)
+  * [Structure filters](query\_language.md#structure-filters)
+* [OR operator](query\_language.md#or-operator)
+* [Joins](query\_language.md#joins)
+* [Sorting and limiting](query\_language.md#sorting-and-limiting)
+* [Working with u64 and u128 numbers](query\_language.md#working-with-u64-and-u128-numbers)
+  * [U64String](query\_language.md#u64string)
+  * [U1024String](query\_language.md#u1024string)
+  * [GraphQL interaction](query\_language.md#graphql-interaction)
 
 ## Query a collection
 
@@ -154,7 +168,7 @@ Result:
 
 **Example 3**
 
-Determine `min`, `max` and `sum` value for the gas_used of a transactions compute phase (you can use a dot separated path as a field name to use fields resided deep in a JSON structure of a transaction record):
+Determine `min`, `max` and `sum` value for the gas\_used of a transactions compute phase (you can use a dot separated path as a field name to use fields resided deep in a JSON structure of a transaction record):
 
 ```graphql
 query{

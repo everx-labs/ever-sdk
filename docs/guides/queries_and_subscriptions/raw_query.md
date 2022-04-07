@@ -1,7 +1,7 @@
 # Raw Query
 
-Insert raw graphql query into SDK and execute it
+<mark style="color:green;">**This is the preferable function to use for all queries now.**</mark>&#x20;
 
-Use `net.query` function for that
+Write your graphql query in playground, copy it and insert into SDK's net.query function.  Define variables and execute it.
 
-[Reference](../../reference/types-and-methods/mod_net.md#query)
+[net.query reference](../../reference/types-and-methods/mod\_net.md#query)
