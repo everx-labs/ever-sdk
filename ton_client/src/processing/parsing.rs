@@ -1,4 +1,4 @@
-use crate::abi::{decode_message, Abi, MessageBodyType, ParamsOfDecodeMessage};
+use crate::abi::{Abi, ParamsOfDecodeMessage, DecodedMessageBody};
 use crate::boc::{parse_transaction, ParamsOfParse};
 use crate::client::ClientContext;
 use crate::error::ClientResult;
@@ -6,6 +6,7 @@ use crate::processing::fetching::TransactionBoc;
 use crate::processing::types::DecodedOutput;
 use serde_json::Value;
 use std::sync::Arc;
+use crate::abi::decode_message::ResponsibleCall;
 
 pub(crate) async fn parse_transaction_boc(
     context: Arc<ClientContext>,
@@ -28,25 +29,27 @@ pub(crate) async fn parse_transaction_boc(
     ))
 }
 
-pub(crate) async fn decode_output(
+pub(crate) async fn decode_output<'a>(
     context: &Arc<ClientContext>,
     abi: &Abi,
     messages: Vec<String>,
+    responsible: Option<&ResponsibleCall<'a>>,
 ) -> ClientResult<DecodedOutput> {
     let mut out_messages = Vec::new();
     let mut output = None;
     for message in messages {
-        let decode_result = decode_message(
+        let decode_result = DecodedMessageBody::decode_message(
             context.clone(),
             ParamsOfDecodeMessage {
                 message,
                 abi: abi.clone(),
                 allow_partial: false,
             },
+            responsible
         ).await;
         let decoded = match decode_result {
             Ok(decoded) => {
-                if decoded.body_type == MessageBodyType::Output {
+                if decoded.body_type.is_output() {
                     output = decoded.value.clone();
                 }
                 Some(decoded)

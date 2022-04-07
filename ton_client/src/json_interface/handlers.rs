@@ -12,6 +12,8 @@
  *
  */
 
+use super::request::Request;
+use super::runtime::{AsyncHandler, SyncHandler};
 use crate::client::{AppObject, ClientContext, Error};
 use crate::error::ClientResult;
 use crate::json_interface::runtime::Runtime;
@@ -22,8 +24,6 @@ use serde::Serialize;
 use serde_json::Value;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use super::request::Request;
-use super::runtime::{AsyncHandler, SyncHandler};
 
 const ENUM_TYPE_TAG: &str = "type";
 const ENUM_VALUE_FIELD: &str = "value";
@@ -49,13 +49,16 @@ fn parse_params<P: DeserializeOwned + ApiType>(params_json: &str) -> ClientResul
                 }
                 if suggest_use_helper_for.len() > 0 {
                     error.data["suggest_use_helper_for"] = Value::Array(
-                        suggest_use_helper_for.iter()
+                        suggest_use_helper_for
+                            .iter()
                             .map(|s| Value::String(s.to_string()))
-                            .collect()
+                            .collect(),
                     );
                 }
             } else {
-                error.message.push_str("\nTip: Fix syntax error in the JSON string.");
+                error
+                    .message
+                    .push_str("\nTip: Fix syntax error in the JSON string.");
             }
 
             Err(error)
@@ -81,7 +84,8 @@ impl ProcessingPath {
     }
 
     fn resolve_field_name(&self) -> &str {
-        self.path.last()
+        self.path
+            .last()
             .map(|string| string.as_str())
             .unwrap_or("<unresolved>")
     }
@@ -100,32 +104,42 @@ fn check_params_for_known_errors(
             field = field_ref;
             class_name = Some(name.as_str());
         }
-    };
+    }
 
     let value = match &field.value {
         Type::Optional { inner } => {
             if let Some(value) = value {
-                check_type(path, &class_name, &inner, value, errors, suggest_use_helper_for);
+                check_type(
+                    path,
+                    &class_name,
+                    &inner,
+                    value,
+                    errors,
+                    suggest_use_helper_for,
+                );
             }
             return;
         }
-        _ => {
-            match value {
-                Some(value) => value,
-                None => {
-                    errors.push(
-                        format!(
-                            r#"Field "{}" value is expected, but not provided."#,
-                            path.resolve_field_name(),
-                        )
-                    );
-                    return;
-                },
+        _ => match value {
+            Some(value) => value,
+            None => {
+                errors.push(format!(
+                    r#"Field "{}" value is expected, but not provided."#,
+                    path.resolve_field_name(),
+                ));
+                return;
             }
-        }
+        },
     };
 
-    check_type(path, &class_name, &field.value, value, errors, suggest_use_helper_for);
+    check_type(
+        path,
+        &class_name,
+        &field.value,
+        value,
+        errors,
+        suggest_use_helper_for,
+    );
 }
 
 fn check_type(
@@ -150,13 +164,11 @@ fn check_type(
                     );
                 }
             } else {
-                errors.push(
-                    format!(
-                        "Field \"{}\" is expected to be an array, but actual value is {:?}.",
-                        path.resolve_field_name(),
-                        value,
-                    )
-                );
+                errors.push(format!(
+                    "Field \"{}\" is expected to be an array, but actual value is {:?}.",
+                    path.resolve_field_name(),
+                    value,
+                ));
             }
         }
         Type::Struct { ref fields } => {
@@ -171,13 +183,11 @@ fn check_type(
                     )
                 }
             } else {
-                errors.push(
-                    format!(
-                        "Field \"{}\" is expected to be an object, but actual value is {:?}.",
-                        path.resolve_field_name(),
-                        value,
-                    )
-                );
+                errors.push(format!(
+                    "Field \"{}\" is expected to be an object, but actual value is {:?}.",
+                    path.resolve_field_name(),
+                    value,
+                ));
             }
         }
         Type::EnumOfTypes { types } => {
@@ -186,9 +196,10 @@ fn check_type(
                     let type_name = match type_name.as_str() {
                         Some(type_name) => type_name,
                         None => {
-                            errors.push(
-                                format!("Field \"{}\" is expected to be `String`.", ENUM_TYPE_TAG)
-                            );
+                            errors.push(format!(
+                                "Field \"{}\" is expected to be `String`.",
+                                ENUM_TYPE_TAG
+                            ));
                             return;
                         }
                     };
@@ -226,7 +237,8 @@ fn get_incorrect_enum_errors(
     errors: &mut Vec<String>,
     suggest_use_helper_for: &mut Vec<&'static str>,
 ) {
-    let types_str = types.iter()
+    let types_str = types
+        .iter()
         .map(|field| format!(r#""{}""#, field.name))
         .collect::<Vec<String>>()
         .join(", ");

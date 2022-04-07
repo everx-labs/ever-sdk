@@ -19,16 +19,18 @@ pub(crate) mod run_get;
 pub(crate) mod run_message;
 pub(crate) mod types;
 
+pub(crate) mod run_responsible;
 mod stack;
 #[cfg(test)]
 mod tests;
 
 pub use errors::{Error, ErrorCode, StdContractError};
 pub use run_get::{run_get, ParamsOfRunGet, ResultOfRunGet};
+pub(crate) use run_message::run_executor_internal;
 pub use run_message::{
     run_executor, run_tvm, AccountForExecutor, ParamsOfRunExecutor, ParamsOfRunTvm,
     ResultOfRunExecutor, ResultOfRunTvm,
 };
-pub(crate) use run_message::run_executor_internal;
+pub use run_responsible::{run_responsible, ParamsOfRunResponsible};
 pub use ton_sdk::TransactionFees;
 pub use types::ExecutionOptions;

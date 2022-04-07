@@ -15,8 +15,8 @@
 use super::request::Request;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
-use crate::net::{ParamsOfSubscribeCollection, ResultOfSubscribeCollection, ResultOfSubscription};
 use crate::net::subscriptions::ParamsOfSubscribe;
+use crate::net::{ParamsOfSubscribeCollection, ResultOfSubscribeCollection, ResultOfSubscription};
 
 /// Creates a collection subscription
 ///

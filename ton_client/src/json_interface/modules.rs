@@ -580,6 +580,10 @@ fn register_tvm(handlers: &mut RuntimeHandlers) {
     );
     module.register_async_fn(crate::tvm::run_tvm, crate::tvm::run_message::run_tvm_api);
     module.register_async_fn(crate::tvm::run_get, crate::tvm::run_get::run_get_api);
+    module.register_async_fn(
+        crate::tvm::run_responsible,
+        crate::tvm::run_responsible::run_responsible_api,
+    );
     module.register();
 }
 

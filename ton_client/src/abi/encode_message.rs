@@ -271,7 +271,7 @@ fn encode_deploy(
         Signer::None => {
             let message = ton_sdk::Contract::construct_deploy_message_json(
                 call_set.to_function_call_set(pubkey, processing_try_index, &context, abi, false)?,
-                image, 
+                image,
                 None,
                 workchain,
             )
@@ -552,7 +552,7 @@ pub struct ResultOfEncodeInternalMessage {
 /// 2. Public key, specified in TVM file.
 
 #[api_function]
-pub async  fn encode_internal_message(
+pub async fn encode_internal_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {

@@ -18,7 +18,10 @@ use crate::abi::{
     encode_account::{ParamsOfEncodeAccount, StateInitSource},
     Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
-use crate::boc::{internal::{deserialize_object_from_base64, serialize_cell_to_base64}, BocCacheType};
+use crate::boc::{
+    internal::{deserialize_object_from_base64, serialize_cell_to_base64},
+    BocCacheType,
+};
 use crate::error::ClientResult;
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
@@ -949,4 +952,67 @@ async fn test_my_code() {
         .unwrap();
 
     println!("{:?}", get_my_code);
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_run_responsible() {
+    TestClient::init_log();
+    let client = TestClient::new();
+    let run_responsible = client.wrap_async(
+        run_responsible,
+        TvmModule::api(),
+        crate::tvm::run_responsible::run_responsible_api(),
+    );
+    let run_executor = client.wrap_async(
+        run_executor,
+        TvmModule::api(),
+        run_message::run_executor_api(),
+    );
+    let (abi, tvc) = TestClient::package("Responsible", None);
+    let keys = client.generate_sign_keys();
+    let message = client
+        .encode_message(ParamsOfEncodeMessage {
+            abi: abi.clone(),
+            address: None,
+            call_set: Some(CallSet {
+                function_name: "constructor".to_owned(),
+                ..Default::default()
+            }),
+            deploy_set: DeploySet::some_with_tvc(tvc),
+            processing_try_index: None,
+            signer: Signer::Keys { keys: keys.clone() },
+        })
+        .await
+        .unwrap();
+
+    let account = (run_executor
+        .call(ParamsOfRunExecutor {
+            message: message.message.to_owned(),
+            account: AccountForExecutor::Uninit,
+            return_updated_account: Some(true),
+            ..Default::default()
+        })
+        .await
+        .unwrap())
+    .account;
+
+    let result = run_responsible
+        .call(ParamsOfRunResponsible {
+            abi: abi.clone(),
+            account: account.clone(),
+            function_name: "sum".into(),
+            input: Some(json!({
+                "a": 1,
+                "b": 2,
+            })),
+            execution_options: None,
+            ..Default::default()
+        })
+        .await
+        .unwrap()
+        .decoded
+        .unwrap()
+        .output
+        .unwrap();
+    assert_eq!(result.to_string(), r#"{"value0":"3"}"#);
 }

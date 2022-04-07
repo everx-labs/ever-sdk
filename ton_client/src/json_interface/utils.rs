@@ -11,8 +11,8 @@
 * limitations under the License.
 */
 
-use crate::ClientContext;
 use crate::error::ClientResult;
+use crate::ClientContext;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ParamsOfCompressZstd {
@@ -38,13 +38,12 @@ pub fn compress_zstd(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfCompressZstd,
 ) -> ClientResult<ResultOfCompressZstd> {
-    let uncompressed = base64::decode(&params.uncompressed)
-        .map_err(
-            |err|
-                crate::utils::Error::compression_error(format!("Unable to decode BASE64: {}", err))
-        )?;
+    let uncompressed = base64::decode(&params.uncompressed).map_err(|err| {
+        crate::utils::Error::compression_error(format!("Unable to decode BASE64: {}", err))
+    })?;
 
-    let compressed = crate::utils::compression::compress_zstd(uncompressed.as_slice(), params.level)?;
+    let compressed =
+        crate::utils::compression::compress_zstd(uncompressed.as_slice(), params.level)?;
 
     Ok(ResultOfCompressZstd {
         compressed: base64::encode(&compressed),
@@ -69,11 +68,9 @@ pub fn decompress_zstd(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfDecompressZstd,
 ) -> ClientResult<ResultOfDecompressZstd> {
-    let compressed = base64::decode(&params.compressed)
-        .map_err(
-            |err|
-                crate::utils::Error::decompression_error(format!("Unable to decode BASE64: {}", err))
-        )?;
+    let compressed = base64::decode(&params.compressed).map_err(|err| {
+        crate::utils::Error::decompression_error(format!("Unable to decode BASE64: {}", err))
+    })?;
 
     let decompressed = crate::utils::compression::decompress_zstd(compressed.as_slice())?;
 

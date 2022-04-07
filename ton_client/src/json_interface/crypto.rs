@@ -15,16 +15,18 @@
 use std::sync::Arc;
 
 use crate::client::{AppObject, ClientContext, Error};
-use crate::crypto::{EncryptionBoxInfo, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox};
-use crate::crypto::boxes::crypto_box::{AppPasswordProvider, ParamsOfCreateCryptoBox, RegisteredCryptoBox, ResultOfGetPassword};
+use crate::crypto::boxes::crypto_box::{
+    AppPasswordProvider, ParamsOfCreateCryptoBox, RegisteredCryptoBox, ResultOfGetPassword,
+};
 use crate::crypto::boxes::encryption_box::EncryptionBox;
 use crate::crypto::internal::hex_decode_secret_const;
+use crate::crypto::{EncryptionBoxInfo, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox};
 use crate::encoding::base64_decode;
 use crate::error::ClientResult;
 
 /// Signing box callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum ParamsOfAppSigningBox {
     /// Get signing box public key
     GetPublicKey,
@@ -37,7 +39,7 @@ pub enum ParamsOfAppSigningBox {
 
 /// Returning values from signing box callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum ResultOfAppSigningBox {
     /// Result of getting public key
     GetPublicKey {
@@ -64,28 +66,38 @@ impl ExternalSigningBox {
 #[async_trait::async_trait]
 impl SigningBox for ExternalSigningBox {
     async fn get_public_key(&self, _context: Arc<ClientContext>) -> ClientResult<Vec<u8>> {
-        let response = self.app_object.call(ParamsOfAppSigningBox::GetPublicKey).await?;
+        let response = self
+            .app_object
+            .call(ParamsOfAppSigningBox::GetPublicKey)
+            .await?;
 
         match response {
             ResultOfAppSigningBox::GetPublicKey { public_key } => {
-               crate::encoding::hex_decode(&public_key)
-            },
+                crate::encoding::hex_decode(&public_key)
+            }
             _ => Err(Error::unexpected_callback_response(
-                "SigningBoxGetPublicKey", &response))
+                "SigningBoxGetPublicKey",
+                &response,
+            )),
         }
     }
 
     async fn sign(&self, _context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
-        let response = self.app_object.call(ParamsOfAppSigningBox::Sign { 
-            unsigned: base64::encode(unsigned)
-        }).await?;
+        let response = self
+            .app_object
+            .call(ParamsOfAppSigningBox::Sign {
+                unsigned: base64::encode(unsigned),
+            })
+            .await?;
 
         match response {
             ResultOfAppSigningBox::Sign { signature: signed } => {
-               crate::encoding::hex_decode(&signed)
-            },
+                crate::encoding::hex_decode(&signed)
+            }
             _ => Err(Error::unexpected_callback_response(
-                "SigningBoxSign", &response))
+                "SigningBoxSign",
+                &response,
+            )),
         }
     }
 }
@@ -101,7 +113,7 @@ pub(crate) async fn register_signing_box(
 
 /// Interface for data encryption/decryption
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum ParamsOfAppEncryptionBox {
     /// Get encryption box info
     GetInfo,
@@ -114,17 +126,15 @@ pub enum ParamsOfAppEncryptionBox {
     Decrypt {
         /// Data, encoded in Base64
         data: String,
-    }
+    },
 }
 
 /// Returning values from signing box callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum ResultOfAppEncryptionBox {
     /// Result of getting encryption box info
-    GetInfo {
-        info: EncryptionBoxInfo,
-    },
+    GetInfo { info: EncryptionBoxInfo },
     /// Result of encrypting data
     Encrypt {
         /// Encrypted data, encoded in Base64
@@ -150,34 +160,47 @@ impl ExternalEncryptionBox {
 #[async_trait::async_trait]
 impl EncryptionBox for ExternalEncryptionBox {
     async fn get_info(&self, _context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
-        let response = self.app_object.call(ParamsOfAppEncryptionBox::GetInfo).await?;
+        let response = self
+            .app_object
+            .call(ParamsOfAppEncryptionBox::GetInfo)
+            .await?;
 
         match response {
             ResultOfAppEncryptionBox::GetInfo { info } => Ok(info),
             _ => Err(Error::unexpected_callback_response(
-                "EncryptionBoxGetInfo", &response))
+                "EncryptionBoxGetInfo",
+                &response,
+            )),
         }
     }
 
     async fn encrypt(&self, _context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
-        let response =
-            self.app_object.call(ParamsOfAppEncryptionBox::Encrypt { data: data.clone() }).await?;
+        let response = self
+            .app_object
+            .call(ParamsOfAppEncryptionBox::Encrypt { data: data.clone() })
+            .await?;
 
         match response {
             ResultOfAppEncryptionBox::Encrypt { data } => Ok(data),
             _ => Err(Error::unexpected_callback_response(
-                "EncryptionBoxEncrypt", &response))
+                "EncryptionBoxEncrypt",
+                &response,
+            )),
         }
     }
 
     async fn decrypt(&self, _context: Arc<ClientContext>, data: &String) -> ClientResult<String> {
-        let response =
-            self.app_object.call(ParamsOfAppEncryptionBox::Decrypt { data: data.clone() }).await?;
+        let response = self
+            .app_object
+            .call(ParamsOfAppEncryptionBox::Decrypt { data: data.clone() })
+            .await?;
 
         match response {
             ResultOfAppEncryptionBox::Decrypt { data } => Ok(data),
             _ => Err(Error::unexpected_callback_response(
-                "EncryptionBoxDecrypt", &response))
+                "EncryptionBoxDecrypt",
+                &response,
+            )),
         }
     }
 }
@@ -193,38 +216,38 @@ pub(crate) async fn register_encryption_box(
 
 /// Interface that provides a callback that returns an encrypted
 /// password, used for cryptobox secret encryption
-/// 
+///
 /// To secure the password while passing it from application to the library,
-/// the library generates a temporary key pair, passes the pubkey 
-/// to the passwordProvider, decrypts the received password with private key, 
-/// and deletes the key pair right away. 
+/// the library generates a temporary key pair, passes the pubkey
+/// to the passwordProvider, decrypts the received password with private key,
+/// and deletes the key pair right away.
 ///
 /// Application should generate a temporary nacl_box_keypair
-/// and encrypt the password with naclbox function using nacl_box_keypair.secret 
-/// and encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key. 
+/// and encrypt the password with naclbox function using nacl_box_keypair.secret
+/// and encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum ParamsOfAppPasswordProvider {
     GetPassword {
-        /// Temporary library pubkey, that is used on application side for 
+        /// Temporary library pubkey, that is used on application side for
         /// password encryption, along with application temporary private key and nonce.
         /// Used for password decryption on library side.
         encryption_public_key: String,
-    }
+    },
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum ResultOfAppPasswordProvider {
     GetPassword {
         /// Password, encrypted and encoded to base64.
         /// Crypto box uses this password to decrypt its secret (seed phrase).
         encrypted_password: String,
-        /// Hex encoded public key of a temporary key pair, used for password encryption 
-        /// on application side. Used together with `encryption_public_key` to decode 
+        /// Hex encoded public key of a temporary key pair, used for password encryption
+        /// on application side. Used together with `encryption_public_key` to decode
         /// `encrypted_password`.
         app_encryption_pubkey: String,
-    }
+    },
 }
 
 struct ExternalPasswordProvider {
@@ -233,13 +256,19 @@ struct ExternalPasswordProvider {
 
 #[async_trait::async_trait]
 impl AppPasswordProvider for ExternalPasswordProvider {
-    async fn get_password(&self, encryption_public_key: &sodalite::BoxPublicKey) -> ClientResult<ResultOfGetPassword> {
-        let ResultOfAppPasswordProvider::GetPassword { encrypted_password, app_encryption_pubkey } =
-            self.app_object.call(
-                ParamsOfAppPasswordProvider::GetPassword {
-                    encryption_public_key: hex::encode(encryption_public_key),
-                },
-            ).await?;
+    async fn get_password(
+        &self,
+        encryption_public_key: &sodalite::BoxPublicKey,
+    ) -> ClientResult<ResultOfGetPassword> {
+        let ResultOfAppPasswordProvider::GetPassword {
+            encrypted_password,
+            app_encryption_pubkey,
+        } = self
+            .app_object
+            .call(ParamsOfAppPasswordProvider::GetPassword {
+                encryption_public_key: hex::encode(encryption_public_key),
+            })
+            .await?;
 
         Ok(ResultOfGetPassword {
             encrypted_password: base64_decode(&encrypted_password)?,
@@ -268,6 +297,9 @@ pub(crate) async fn create_crypto_box(
     crate::crypto::boxes::crypto_box::create_crypto_box(
         context,
         params,
-        Arc::new(ExternalPasswordProvider { app_object: password_provider }),
-    ).await
+        Arc::new(ExternalPasswordProvider {
+            app_object: password_provider,
+        }),
+    )
+    .await
 }
