@@ -25,7 +25,7 @@
   * [Networks](reference/ton-os-api/networks.md)
   * [Web Playground](reference/ton-os-api/web\_playground.md)
   * [Schema](reference/ton-os-api/schema.md)
-  * [OLD: Collection Query Language](reference/ton-os-api/query\_language.md)
+  * [Deprecated: Collection Query Language](reference/ton-os-api/query\_language.md)
   * [Field Descriptions](reference/ton-os-api/field\_descriptions.md)
   * [Samples](reference/ton-os-api/samples.md)
 

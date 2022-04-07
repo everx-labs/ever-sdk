@@ -78,12 +78,19 @@ fields:
 
 <mark style="color:orange;">**Attention! Pagination with cursor functionality is new and not yet supported in Evernode-DS. But will be soon!**</mark>&#x20;
 
-If you want to paginate all account transactions from the very first one, use this query
+Use-cases:
+
+* Collect account operations with detailed fees information
+* Collect account balance history by pre-processing `balance_delta` changes on your side
+* Query new account transactions to trigger some logic on your side
+* Optionally filter transactions by `Aborted` type or `balance_delta` value
+
+Let's paginate some account transactions from the very first one:
 
 ```graphql
 query {
   blockchain{
-   account(address:"0:653b9a6452c7a982c6dc92b2da9eba832ade1c467699ebb3b43dca6d77b780dd"){
+   account(address:"0:653b9a6452c7a982c6dc92b2da9eba832ade1c467699ebb3b43dca6d77b780dd", first: 50){
     transactions{
       edges{
         node{
@@ -140,6 +147,274 @@ Result
 Use `endCursor` field for further pagination and `hasNextCursor` for identifying if more records exist.&#x20;
 
 If you want to paginate within some time range, you can use masterchain seq\_no or time range filter. You can paginate backwards as well.  Also you can use additional handy pagination parameters such as `after`, `first`, `before`, `last`. Read more about it in [blocks pagination section](blocks.md#about-cursor).&#x20;
+
+## Pagination of account's messages
+
+Use-cases:
+
+* see transfers that some account sent or received
+* monitor account's events
+* monitor external calls of an account
+* retrieve transfers between an account and some counterparty account
+* optionally filter messages by value amount
+
+In all these cases you need to paginate account messages with some filters applied. Lets see how to do it.
+
+### Account transfers&#x20;
+
+Lets get first 2  transfers some account received or sent. So we need to get incoming and outcoming internal messages. We separated `internal` message type into 2 types: `IntIn` and `IntOut` for search convenience. This way it is possible also to get only deposits, and only withdrawals.&#x20;
+
+```graphql
+query{
+  blockchain{
+    account(address:"-1:99392dea1c5035feddb1bb3db9e71138d82868f7460c6da3dca26f0520798ebd"){
+      messages(msg_type:[IntIn, IntOut],first:2){
+        edges{
+          node{
+            src
+            dst
+            id
+            hash
+            value(format:DEC)
+            msg_type
+            created_at_string
+          }
+          cursor
+        }
+        pageInfo{
+          hasNextPage
+        }
+      }
+    }
+  }
+}
+```
+
+Result. We see that the next page exists, we can continue pagination.
+
+```graphql
+{
+  "data": {
+    "blockchain": {
+      "account": {
+        "messages": {
+          "edges": [
+            {
+              "node": {
+                "src": "0:7db5e456a7c41306c23c588fb0561fe63443a6f17d7e2a08672369636980678f",
+                "dst": "-1:99392dea1c5035feddb1bb3db9e71138d82868f7460c6da3dca26f0520798ebd",
+                "id": "message/a74d826adf7f00153e034e1ee4de4f6e5a38843ee8d14c744bfcbf3c0df9f73d",
+                "hash": "a74d826adf7f00153e034e1ee4de4f6e5a38843ee8d14c744bfcbf3c0df9f73d",
+                "value": "1090000000",
+                "msg_type": 0,
+                "created_at_string": "2021-07-17 21:08:16.000"
+              },
+              "cursor": "59876bem0400"
+            },
+            {
+              "node": {
+                "src": "-1:99392dea1c5035feddb1bb3db9e71138d82868f7460c6da3dca26f0520798ebd",
+                "dst": "-1:3333333333333333333333333333333333333333333333333333333333333333",
+                "id": "message/ead06f194b988c1658215e178e68522f27cc018df1830bcfe779d9b9ce7fee93",
+                "hash": "ead06f194b988c1658215e178e68522f27cc018df1830bcfe779d9b9ce7fee93",
+                "value": "1000000000",
+                "msg_type": 0,
+                "created_at_string": "2021-07-17 21:08:24.000"
+              },
+              "cursor": "59876bem0401"
+            }
+          ],
+          "pageInfo": {
+            "hasNextPage": true
+          }
+        }
+      }
+    }
+  }
+}gra
+```
+
+### Account events
+
+To get account events, we need to get Account's external outbound message. Their type is `ExtOut.` `Body` field contains ABI-encoded information with Event data.  You can parse it with SDK function [`abi.decode_message_body`](../reference/types-and-methods/mod\_abi.md#decode\_message\_body).
+
+```graphql
+query{
+  blockchain{
+    account(address:"0:454abb3c7db044603a9fb0802d3c6507b08d6b04855baa9a60802d9ecd34edad"){
+      messages(msg_type:[ExtOut],first:2){
+        edges{
+          node{
+            hash
+            body
+            created_at_string
+          }
+          cursor
+        }
+        pageInfo{
+          hasNextPage
+        }
+      }
+    }
+  }
+}
+```
+
+Result
+
+```graphql
+{
+  "data": {
+    "blockchain": {
+      "account": {
+        "messages": {
+          "edges": [
+            {
+              "node": {
+                "hash": "315ca96ae9ded116b98692491d8accf1e01acd48e85b1db53b63615cd37f433b",
+                "body": "te6ccgEBAQEAeQAA7VuEb3wAAAAAAAAAyWDwxNxg8kTcAACAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABg78TcCAUAAT1bfCW7sAABPW5DHEo+AAAAAAAAAAAAAAAIs3ySDgAAAAEAAHA+pB7Z9IAAAAAAAAAAAAAAAAAAAABA",
+                "created_at_string": "2021-07-17 03:00:34.000"
+              },
+              "cursor": "59838dc005df77c11120003"
+            },
+            {
+              "node": {
+                "hash": "b54d2053c965cf2e41e265fd67a0b71a896fd06df8c305d1cb95da6780947113",
+                "body": "te6ccgEBAQEALAAAU0UWNxJg8sTcn/M7F8rhuMCstb3zywTdpGh9GrmjYzToX9gcm8mXZJpVcA==",
+                "created_at_string": "2021-07-17 03:00:34.000"
+              },
+              "cursor": "59838dc005df77c11120d01"
+            }
+          ],
+          "pageInfo": {
+            "hasNextPage": true
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+### Account external calls
+
+If you want to collect external calls of an account, filter by msg\_type = `ExtIn`. `Body` field contains ABI-encoded information with Event data.  You can parse it with SDK function [`abi.decode_message_body`](../reference/types-and-methods/mod\_abi.md#decode\_message\_body). Lets get the last external call:
+
+```graphql
+query{
+  blockchain{
+    account(address:"0:3d10c4d6dfc5d3cf6f8ac3d7468b792b91385c087da8f59669569493c7c0e28e"){
+      messages(msg_type:[ExtIn],last:1){
+        edges{
+          node{
+            hash
+            body
+            created_at_string
+          }
+          cursor
+        }
+        pageInfo{
+          hasPreviousPage
+        }
+      }
+    }
+  }
+}
+```
+
+Result
+
+```graphql
+{
+  "data": {
+    "blockchain": {
+      "account": {
+        "messages": {
+          "edges": [
+            {
+              "node": {
+                "hash": "3ebc5a30f598825a015b99048b3f9baeb1d60818aa77ec6ceb3b84254e649723",
+                "body": "te6ccgEBAQEAewAA8cb04wBQrr+dL/xBeDVKUIHJpF+ixQ9vsl7rIu8BtyRr72MIA9l87nY/maACAjMiwTkNeYlx+Vm3AtMvU000ZYXOo+U6Dh8fZKMrMO68do6VqlWYBXM3BEnQiVL3dDmtSMAAAGABANbS2JO2i4ap0DtYk7XgW5WzcGA=",
+                "created_at_string": "2022-04-07 12:32:53.000"
+              },
+              "cursor": "5f7bcee00615d8d7711c0000"
+            }
+          ],
+          "pageInfo": {
+            "hasPreviousPage": true
+          }
+        }
+      }
+    }
+  }
+}кф
+```
+
+### Transfers between 2 accounts
+
+In this example we retrieve last 30 messages between elector contract and some validator wallet with value more than some number:
+
+```graphql
+query{
+  blockchain{
+    account(address:"-1:3333333333333333333333333333333333333333333333333333333333333333"){
+      messages(last:30, counterparties:["-1:99392dea1c5035feddb1bb3db9e71138d82868f7460c6da3dca26f0520798ebd"],
+       min_value:"58579566000" ){
+        edges{
+          node{
+            src
+            dst
+            id
+            hash
+            value(format:DEC)
+            msg_type
+            created_at_string
+          }
+          cursor
+        }
+        pageInfo{
+          hasPreviousPage
+        }
+      }
+    }
+  }
+}
+```
+
+Result:
+
+```graphql
+{
+  "data": {
+    "blockchain": {
+      "account": {
+        "messages": {
+          "edges": [
+            {
+              "node": {
+                "src": "-1:3333333333333333333333333333333333333333333333333333333333333333",
+                "dst": "-1:99392dea1c5035feddb1bb3db9e71138d82868f7460c6da3dca26f0520798ebd",
+                "id": "message/958ee60bb2233e9e94d6c36465c0941632535d9dd1f9cb8e6b67616f1d33959e",
+                "hash": "958ee60bb2233e9e94d6c36465c0941632535d9dd1f9cb8e6b67616f1d33959e",
+                "value": "1625586165251876",
+                "msg_type": 0,
+                "created_at_string": "2022-03-15 18:12:16.000"
+              },
+              "cursor": "5edf8c1m0e01"
+            },
+          .....
+                    ],
+          "pageInfo": {
+            "hasPreviousPage": true
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+We see that previous page exists and can continue pagination.&#x20;
 
 ## Get the list of account's counterparties
 
