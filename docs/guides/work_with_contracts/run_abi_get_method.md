@@ -29,7 +29,7 @@ Here is the sample that executes the get method `getTimestamp` on the latest acc
     const [account, message] = await Promise.all([
         // Download the latest state (BOC)
         // See more info about query method here 
-        // https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_net.md#query_collection
+        // https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_net.md#query_collection
         client.net.query_collection({
             collection: 'accounts',
             filter: { id: { eq: address } },
@@ -53,7 +53,7 @@ Here is the sample that executes the get method `getTimestamp` on the latest acc
 
     // Execute `getTimestamp` get method  (execute the message locally on TVM)
     // See more info about run_tvm method here 
-    // https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_tvm.md#run_tvm
+    // https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_tvm.md#run_tvm
     response = await client.tvm.run_tvm({ message, account, abi });
     console.log('Contract reacted to your getTimestamp:', response.decoded.output);
 ```

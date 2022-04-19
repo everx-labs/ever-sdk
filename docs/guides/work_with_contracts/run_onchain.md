@@ -104,7 +104,7 @@ Now the message should be sent. `sendMessage` method returns the the last block 
 ```javascript
 // Send `touch` call message to the network
 // See more info about `send_message` here  
-// https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_processing.md#send_message
+// https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_processing.md#send_message
 shard_block_id = (await client.processing.send_message({
     message: encode_touch_result.message,
     send_events: true
@@ -118,7 +118,7 @@ After the message was sent we need to wait for the transaction starting from the
 ```javascript
 // Monitor message delivery. 
 // See more info about `wait_for_transaction` here  
-// https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_processing.md#wait_for_transaction
+// https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_processing.md#wait_for_transaction
 const touch_processing_result = await client.processing.wait_for_transaction({
     abi = {
         type: 'Contract',

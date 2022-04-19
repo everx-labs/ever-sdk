@@ -69,7 +69,7 @@ pub(crate) async fn find_last_shard_block(
         // if account is from other chains, then starting point is last account's shard block
         // To obtain it we take masterchain block to get shards configuration and select matching shard
         if blocks[0].is_null() {
-            // TON OS SE case - no masterchain, no sharding. Check that only one shard
+            // Evernode SE case - no masterchain, no sharding. Check that only one shard
             let blocks = server_link.query_collection(ParamsOfQueryCollection {
                     collection: BLOCKS_COLLECTION.to_string(),
                     filter: Some(json!({
@@ -90,7 +90,7 @@ pub(crate) async fn find_last_shard_block(
                     workchain
                 )));
             }
-            // if workchain is sharded, then it is not TON OS SE and masterchain blocks missing is error
+            // if workchain is sharded, then it is not Evernode SE and masterchain blocks missing is error
             if blocks[0]["after_merge"] == true || blocks[0]["shard"] != "8000000000000000" {
                 return Err(Error::block_not_found(
                     "No masterchain block found".to_owned(),
@@ -116,7 +116,7 @@ pub(crate) async fn find_last_shard_block(
                 .as_str()
                 .map(|val| val.to_owned().into())
                 .ok_or(Error::block_not_found(
-                    "No starting TON OS SE block found".to_owned(),
+                    "No starting Evernode SE block found".to_owned(),
                 ))
         } else {
             let shards =

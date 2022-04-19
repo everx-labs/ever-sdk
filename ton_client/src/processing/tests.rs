@@ -287,7 +287,7 @@ async fn test_process_message() {
 
 #[tokio::test(core_threads = 2)]
 async fn test_error_resolving() {
-    // skip on TON OS SE since it behaves different to real node
+    // skip on Evernode SE since it behaves different to real node
     if TestClient::node_se() {
         return;
     }

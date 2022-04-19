@@ -6,17 +6,17 @@ You can find how to deploy your own Giver [here](github.com/tonlabs/tondev/blob/
 
 In this guide we will show you how you can use your own Giver in the core SDK. 
 
-First of all, let's initialize giver's address, keys and ABI. All the data in this example are used from TON OS SE giver, substitute them by your Giver's data.
+First of all, let's initialize giver's address, keys and ABI. All the data in this example are used from Evernode SE giver, substitute them by your Giver's data.
 
 ```javascript
-// Giver address TON OS SE
+// Giver address Evernode SE
 const giverAddress = '0:b5e9240fc2d2f1ff8cbb1d1dee7fb7cae155e5f6320e585fcc685698994a19a5';
-// Giver keys on TON OS SE
+// Giver keys on Evernode SE
 const giverSigner = signerKeys({
     "public": "2ada2e65ab8eeab09490e3521415f45b6e42df9c760a639bcf53957550b25a16",
     "secret": "172af540e43a524763dd53b26a066d472a97c4de37d5498170564510608250c3"
 });
-// Giver ABI on TON OS SE
+// Giver ABI on Evernode SE
 const giverAbi = abiContract({
     'ABI version': 2,
     header: ['time', 'expire'],
@@ -67,7 +67,7 @@ Next, implement a function to request tokens from the Giver:
 ```javascript
 // Requesting test tokens from the Giver
 async function getTokensFromGiver(client, account, amount) {
-    // Execute method `sendTransaction` of the TON OS SE Giver v2 contract:
+    // Execute method `sendTransaction` of the Evernode SE Giver v2 contract:
     const processingResult = await client.processing.process_message({
         send_events: false,
         message_encode_params: {
@@ -106,7 +106,7 @@ Now you can use your new function for funding your contracts before deployment:
 ```javascript
 async function main(client) {
     // Define contract ABI in the Application 
-    // See more info about ABI type here https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_abi.md#abi
+    // See more info about ABI type here https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_abi.md#abi
     const abi = {
         type: 'Contract',
         value: HelloWallet.abi
@@ -115,7 +115,7 @@ async function main(client) {
     const helloKeys = await client.crypto.generate_random_sign_keys();
     
     // Prepare parameters for deploy message encoding
-    // See more info about `encode_message` method parameters here https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_abi.md#encode_message
+    // See more info about `encode_message` method parameters here https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_abi.md#encode_message
     const deployOptions = {
         abi,
         deploy_set: {
@@ -144,7 +144,7 @@ async function main(client) {
 
     // Deploy `hello` contract
     // See more info about `process_message` here  
-    // https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_processing.md#process_message
+    // https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_processing.md#process_message
     await client.processing.process_message({
         send_events: false,
         message_encode_params: deployOptions
