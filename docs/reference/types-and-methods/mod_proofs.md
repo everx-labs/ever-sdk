@@ -4,20 +4,20 @@
 
 
 ## Functions
-[proof_block_data](#proof_block_data) – Proves that a given block's data, which is queried from TONOS API, can be trusted.
+[proof_block_data](mod\_proofs.md#proof_block_data) – Proves that a given block's data, which is queried from TONOS API, can be trusted.
 
-[proof_transaction_data](#proof_transaction_data) – Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
+[proof_transaction_data](mod\_proofs.md#proof_transaction_data) – Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
 
-[proof_message_data](#proof_message_data) – Proves that a given message's data, which is queried from TONOS API, can be trusted.
+[proof_message_data](mod\_proofs.md#proof_message_data) – Proves that a given message's data, which is queried from TONOS API, can be trusted.
 
 ## Types
-[ProofsErrorCode](#proofserrorcode)
+[ProofsErrorCode](mod\_proofs.md#proofserrorcode)
 
-[ParamsOfProofBlockData](#paramsofproofblockdata)
+[ParamsOfProofBlockData](mod\_proofs.md#paramsofproofblockdata)
 
-[ParamsOfProofTransactionData](#paramsofprooftransactiondata)
+[ParamsOfProofTransactionData](mod\_proofs.md#paramsofprooftransactiondata)
 
-[ParamsOfProofMessageData](#paramsofproofmessagedata)
+[ParamsOfProofMessageData](mod\_proofs.md#paramsofproofmessagedata)
 
 
 # Functions

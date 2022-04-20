@@ -9,7 +9,7 @@ Learn how to run methods of a contract on-chain
 
 > [See the API reference](../../reference/types-and-methods/modules.md).
 
-Core api is more flexible than [AppKit](https://github.com/tonlabs/appkit-js) and you can perform a lot of complex logic using it. But you will need to write more code with it as well :)
+Core api is more flexible than [AppKit](https://github.com/tonlabs/ever-appkit-js) and you can perform a lot of complex logic using it. But you will need to write more code with it as well :)
 
 You need to [define the contract in your node.js](add\_contract\_to\_your\_app.md) application before running its methods.
 

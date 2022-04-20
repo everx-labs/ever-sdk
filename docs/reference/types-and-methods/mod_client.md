@@ -4,46 +4,46 @@ Provides information about library.
 
 
 ## Functions
-[get_api_reference](#get_api_reference) – Returns Core Library API reference
+[get_api_reference](mod\_client.md#get_api_reference) – Returns Core Library API reference
 
-[version](#version) – Returns Core Library version
+[version](mod\_client.md#version) – Returns Core Library version
 
-[build_info](#build_info) – Returns detailed information about this build.
+[build_info](mod\_client.md#build_info) – Returns detailed information about this build.
 
-[resolve_app_request](#resolve_app_request) – Resolves application request processing result
+[resolve_app_request](mod\_client.md#resolve_app_request) – Resolves application request processing result
 
 ## Types
-[ClientErrorCode](#clienterrorcode)
+[ClientErrorCode](mod\_client.md#clienterrorcode)
 
-[ClientError](#clienterror)
+[ClientError](mod\_client.md#clienterror)
 
-[ClientConfig](#clientconfig)
+[ClientConfig](mod\_client.md#clientconfig)
 
-[NetworkConfig](#networkconfig)
+[NetworkConfig](mod\_client.md#networkconfig)
 
-[NetworkQueriesProtocol](#networkqueriesprotocol) – Network protocol used to perform GraphQL queries.
+[NetworkQueriesProtocol](mod\_client.md#networkqueriesprotocol) – Network protocol used to perform GraphQL queries.
 
-[CryptoConfig](#cryptoconfig) – Crypto config.
+[CryptoConfig](mod\_client.md#cryptoconfig) – Crypto config.
 
-[AbiConfig](#abiconfig)
+[AbiConfig](mod\_client.md#abiconfig)
 
-[BocConfig](#bocconfig)
+[BocConfig](mod\_client.md#bocconfig)
 
-[ProofsConfig](#proofsconfig)
+[ProofsConfig](mod\_client.md#proofsconfig)
 
-[BuildInfoDependency](#buildinfodependency)
+[BuildInfoDependency](mod\_client.md#buildinfodependency)
 
-[ParamsOfAppRequest](#paramsofapprequest)
+[ParamsOfAppRequest](mod\_client.md#paramsofapprequest)
 
-[AppRequestResult](#apprequestresult)
+[AppRequestResult](mod\_client.md#apprequestresult)
 
-[ResultOfGetApiReference](#resultofgetapireference)
+[ResultOfGetApiReference](mod\_client.md#resultofgetapireference)
 
-[ResultOfVersion](#resultofversion)
+[ResultOfVersion](mod\_client.md#resultofversion)
 
-[ResultOfBuildInfo](#resultofbuildinfo)
+[ResultOfBuildInfo](mod\_client.md#resultofbuildinfo)
 
-[ParamsOfResolveAppRequest](#paramsofresolveapprequest)
+[ParamsOfResolveAppRequest](mod\_client.md#paramsofresolveapprequest)
 
 
 # Functions
@@ -100,7 +100,7 @@ function build_info(): Promise<ResultOfBuildInfo>;
 ### Result
 
 - `build_number`: _number_ – Build number assigned to this build by the CI.
-- `dependencies`: _[BuildInfoDependency](mod_client.md#buildinfodependency)[]_ – Fingerprint of the most important dependencies.
+- `dependencies`: _[BuildInfoDependency](mod\_client.md#buildinfodependency)[]_ – Fingerprint of the most important dependencies.
 
 
 ## resolve_app_request
@@ -119,7 +119,7 @@ function resolve_app_request(
 ```
 ### Parameters
 - `app_request_id`: _number_ – Request ID received from SDK
-- `result`: _[AppRequestResult](mod_client.md#apprequestresult)_ – Result of request processing
+- `result`: _[AppRequestResult](mod\_client.md#apprequestresult)_ – Result of request processing
 
 
 # Types
@@ -226,11 +226,11 @@ type ClientConfig = {
     local_storage_path?: string
 }
 ```
-- `network`?: _[NetworkConfig](mod_client.md#networkconfig)_
-- `crypto`?: _[CryptoConfig](mod_client.md#cryptoconfig)_
-- `abi`?: _[AbiConfig](mod_client.md#abiconfig)_
-- `boc`?: _[BocConfig](mod_client.md#bocconfig)_
-- `proofs`?: _[ProofsConfig](mod_client.md#proofsconfig)_
+- `network`?: _[NetworkConfig](mod\_client.md#networkconfig)_
+- `crypto`?: _[CryptoConfig](mod\_client.md#cryptoconfig)_
+- `abi`?: _[AbiConfig](mod\_client.md#abiconfig)_
+- `boc`?: _[BocConfig](mod\_client.md#bocconfig)_
+- `proofs`?: _[ProofsConfig](mod\_client.md#proofsconfig)_
 - `local_storage_path`?: _string_ – For file based storage is a folder name where SDK will store its data. For browser based is a browser async storage key prefix. Default (recommended) value is "~/.tonclient" for native environments and ".tonclient" for web-browser.
 
 
@@ -278,7 +278,7 @@ type NetworkConfig = {
 <br>Must be specified in milliseconds. Default is 60000 (1 min).
 - `query_timeout`?: _number_ – Default timeout for http requests.
 <br>Is is used when no timeout specified for the request to limit the answer waiting time. If no answer received during the timeout requests ends with<br>error.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
-- `queries_protocol`?: _[NetworkQueriesProtocol](mod_client.md#networkqueriesprotocol)_ – Queries protocol.
+- `queries_protocol`?: _[NetworkQueriesProtocol](mod\_client.md#networkqueriesprotocol)_ – Queries protocol.
 <br>`HTTP` or `WS`. <br>Default is `HTTP`.
 - `access_key`?: _string_ – Access key to GraphQL API.
 <br>At the moment is not used in production.
@@ -431,7 +431,7 @@ type ResultOfBuildInfo = {
 }
 ```
 - `build_number`: _number_ – Build number assigned to this build by the CI.
-- `dependencies`: _[BuildInfoDependency](mod_client.md#buildinfodependency)[]_ – Fingerprint of the most important dependencies.
+- `dependencies`: _[BuildInfoDependency](mod\_client.md#buildinfodependency)[]_ – Fingerprint of the most important dependencies.
 
 
 ## ParamsOfResolveAppRequest
@@ -442,6 +442,6 @@ type ParamsOfResolveAppRequest = {
 }
 ```
 - `app_request_id`: _number_ – Request ID received from SDK
-- `result`: _[AppRequestResult](mod_client.md#apprequestresult)_ – Result of request processing
+- `result`: _[AppRequestResult](mod\_client.md#apprequestresult)_ – Result of request processing
 
 

@@ -4,40 +4,40 @@ Misc utility Functions.
 
 
 ## Functions
-[convert_address](#convert_address) – Converts address from any TON format to any TON format
+[convert_address](mod\_utils.md#convert_address) – Converts address from any TON format to any TON format
 
-[get_address_type](#get_address_type) – Validates and returns the type of any TON address.
+[get_address_type](mod\_utils.md#get_address_type) – Validates and returns the type of any TON address.
 
-[calc_storage_fee](#calc_storage_fee) – Calculates storage fee for an account over a specified time period
+[calc_storage_fee](mod\_utils.md#calc_storage_fee) – Calculates storage fee for an account over a specified time period
 
-[compress_zstd](#compress_zstd) – Compresses data using Zstandard algorithm
+[compress_zstd](mod\_utils.md#compress_zstd) – Compresses data using Zstandard algorithm
 
-[decompress_zstd](#decompress_zstd) – Decompresses data using Zstandard algorithm
+[decompress_zstd](mod\_utils.md#decompress_zstd) – Decompresses data using Zstandard algorithm
 
 ## Types
-[AddressStringFormat](#addressstringformat)
+[AddressStringFormat](mod\_utils.md#addressstringformat)
 
-[AccountAddressType](#accountaddresstype)
+[AccountAddressType](mod\_utils.md#accountaddresstype)
 
-[ParamsOfConvertAddress](#paramsofconvertaddress)
+[ParamsOfConvertAddress](mod\_utils.md#paramsofconvertaddress)
 
-[ResultOfConvertAddress](#resultofconvertaddress)
+[ResultOfConvertAddress](mod\_utils.md#resultofconvertaddress)
 
-[ParamsOfGetAddressType](#paramsofgetaddresstype)
+[ParamsOfGetAddressType](mod\_utils.md#paramsofgetaddresstype)
 
-[ResultOfGetAddressType](#resultofgetaddresstype)
+[ResultOfGetAddressType](mod\_utils.md#resultofgetaddresstype)
 
-[ParamsOfCalcStorageFee](#paramsofcalcstoragefee)
+[ParamsOfCalcStorageFee](mod\_utils.md#paramsofcalcstoragefee)
 
-[ResultOfCalcStorageFee](#resultofcalcstoragefee)
+[ResultOfCalcStorageFee](mod\_utils.md#resultofcalcstoragefee)
 
-[ParamsOfCompressZstd](#paramsofcompresszstd)
+[ParamsOfCompressZstd](mod\_utils.md#paramsofcompresszstd)
 
-[ResultOfCompressZstd](#resultofcompresszstd)
+[ResultOfCompressZstd](mod\_utils.md#resultofcompresszstd)
 
-[ParamsOfDecompressZstd](#paramsofdecompresszstd)
+[ParamsOfDecompressZstd](mod\_utils.md#paramsofdecompresszstd)
 
-[ResultOfDecompressZstd](#resultofdecompresszstd)
+[ResultOfDecompressZstd](mod\_utils.md#resultofdecompresszstd)
 
 
 # Functions
@@ -61,7 +61,7 @@ function convert_address(
 ```
 ### Parameters
 - `address`: _string_ – Account address in any TON format.
-- `output_format`: _[AddressStringFormat](mod_utils.md#addressstringformat)_ – Specify the format to convert to.
+- `output_format`: _[AddressStringFormat](mod\_utils.md#addressstringformat)_ – Specify the format to convert to.
 
 
 ### Result
@@ -101,7 +101,7 @@ function get_address_type(
 
 ### Result
 
-- `address_type`: _[AccountAddressType](mod_utils.md#accountaddresstype)_ – Account address type.
+- `address_type`: _[AccountAddressType](mod\_utils.md#accountaddresstype)_ – Account address type.
 
 
 ## calc_storage_fee
@@ -251,7 +251,7 @@ type ParamsOfConvertAddress = {
 }
 ```
 - `address`: _string_ – Account address in any TON format.
-- `output_format`: _[AddressStringFormat](mod_utils.md#addressstringformat)_ – Specify the format to convert to.
+- `output_format`: _[AddressStringFormat](mod\_utils.md#addressstringformat)_ – Specify the format to convert to.
 
 
 ## ResultOfConvertAddress
@@ -278,7 +278,7 @@ type ResultOfGetAddressType = {
     address_type: AccountAddressType
 }
 ```
-- `address_type`: _[AccountAddressType](mod_utils.md#accountaddresstype)_ – Account address type.
+- `address_type`: _[AccountAddressType](mod\_utils.md#accountaddresstype)_ – Account address type.
 
 
 ## ParamsOfCalcStorageFee
