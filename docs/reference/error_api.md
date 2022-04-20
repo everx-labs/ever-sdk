@@ -2,11 +2,11 @@
 
 SDK Error API
 
-* [TONClientError](error_api.md#tonclienterror)
-  * [Properties](error_api.md#properties)
-* [Types](error_api.md#types)
-  * [ErrorData](error_api.md#errordata)
-* [Error example](error_api.md#error-example)
+* [TONClientError](error\_api.md#tonclienterror)
+  * [Properties](error\_api.md#properties)
+* [Types](error\_api.md#types)
+  * [ErrorData](error\_api.md#errordata)
+* [Error example](error\_api.md#error-example)
 
 ## TONClientError
 

@@ -2,15 +2,15 @@
 
 This section explains how to generate mnemonics, derive keys and get a key pair
 
-* [Mnemonic generation](mnemonics_and_keys.md#mnemonic-generation)
-* [Key pair generation from mnemonic](mnemonics_and_keys.md#key-pair-generation-from-mnemonic)
-* [Key pair generation without mnemonic](mnemonics_and_keys.md#key-pair-generation-without-mnemonic)
-* [Keys derivation](mnemonics_and_keys.md#keys-derivation)
-  * [Master (root) key](mnemonics_and_keys.md#master-root-key)
-  * [Derived key](mnemonics_and_keys.md#derived-key)
-  * [Generate keys for signature](mnemonics_and_keys.md#generate-keys-for-signature)
+* [Mnemonic generation](mnemonics\_and\_keys.md#mnemonic-generation)
+* [Key pair generation from mnemonic](mnemonics\_and\_keys.md#key-pair-generation-from-mnemonic)
+* [Key pair generation without mnemonic](mnemonics\_and\_keys.md#key-pair-generation-without-mnemonic)
+* [Keys derivation](mnemonics\_and\_keys.md#keys-derivation)
+  * [Master (root) key](mnemonics\_and\_keys.md#master-root-key)
+  * [Derived key](mnemonics\_and\_keys.md#derived-key)
+  * [Generate keys for signature](mnemonics\_and\_keys.md#generate-keys-for-signature)
 
-> Check [crypto module](../../reference/types-and-methods/mod_crypto.md) reference for more info:
+> Check [crypto module](../../reference/types-and-methods/mod\_crypto.md) reference for more info:
 
 ## Mnemonic generation
 
@@ -60,7 +60,7 @@ Generated key pair:
 }
 ```
 
-See the [Keys derivation](mnemonics_and_keys.md#keys-derivation) section for more information about the algorithm that is used in `mnemonic_derive_sign_keys`.
+See the [Keys derivation](mnemonics\_and\_keys.md#keys-derivation) section for more information about the algorithm that is used in `mnemonic_derive_sign_keys`.
 
 ## Key pair generation without mnemonic
 

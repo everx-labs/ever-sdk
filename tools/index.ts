@@ -24,6 +24,7 @@ function docs(options: any) {
     console.log('Generate docs to:', outDir);
     const code = new TSCode(parseApi(apiJson));
     const docs = new Docs(code);
+    writeText(outDir, 'README.md', docs.readme());
     writeText(outDir, 'modules.md', docs.modules());
     for (const module of docs.api.modules) {
         writeText(outDir, `mod_${module.name}.md`, docs.module(module));

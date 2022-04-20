@@ -18,7 +18,7 @@ Find out how to deploy a contract to Everscale Blockchain with SDK
 
 > [See the API reference](../../reference/types-and-methods/modules.md).
 
-Core api is more flexible than [AppKit](https://github.com/tonlabs/appkit-js/), and you can perform a lot of complex logic using it. But you will need to write more code with it as well:)
+Core api is more flexible than [AppKit](https://github.com/tonlabs/ever-appkit-js), and you can perform a lot of complex logic using it. But you will need to write more code with it as well:)
 
 You need to define the contract in your node.js application before deploy.
 
@@ -164,7 +164,7 @@ console.log(`Future address of the contract will be: ${address}`);
 
 Now that you know the address, you need to transfer the initial funds to it from your wallet or the Giver.
 
-> **Note**: Evernode SE offers a pre-deployed giver. When in real networks, you need to use your wallet for this or deploy your own giver. We have separated guides of [deployment](https://github.com/tonlabs/tondev/blob/main/docs/work_with_devnet.md) and [usage](./custom_giver.md) of your own giver.
+> **Note**: Evernode SE offers a pre-deployed giver. When in real networks, you need to use your wallet for this or deploy your own giver. We have separated guides of [deployment](https://tonlabs.gitbook.io/everdev/guides/work-with-devnet) and [usage](custom\_giver.md) of your own giver.
 
 ```javascript
 // Request contract deployment funds form a local Evernode SE giver

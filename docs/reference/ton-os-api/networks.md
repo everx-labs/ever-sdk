@@ -16,7 +16,7 @@ Each Everscale Operating System (EVER OS) instance has a single GraphQL API endp
 
 ## Connect your application to EVER OS
 
-Find out how to [connect your JS application to EVER OS](../../guides/installation/configure_sdk.md).
+Find out how to [connect your JS application to EVER OS](../../guides/installation/configure\_sdk.md).
 
 ## Connect TONOS-CLI to EVER OS
 

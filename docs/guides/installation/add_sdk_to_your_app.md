@@ -17,14 +17,14 @@ npm init -y
 Now lets install core package and bridge package for Node.js
 
 ```
-npm i --save @tonclient/core
-npm i --save @tonclient/lib-node
+npm i --save @eversdk/core
+npm i --save @eversdk/lib-node
 ```
 
-If you want to use high-level [AppKit](https://github.com/tonlabs/appkit-js) package then install this package as well:
+If you want to use high-level [AppKit](https://github.com/tonlabs/ever-appkit-js) package then install this package as well:
 
 ```
-npm i --save @tonclient/appkit
+npm i --save @eversdk/appkit
 ```
 
 You must initialize the library before the first use. The best place to do it is an initialization code of your application.
@@ -32,8 +32,8 @@ You must initialize the library before the first use. The best place to do it is
 You need to attach the chosen binary module to the `TonClient` class. Create `index.js` file and add this code:
 
 ```
-const {TonClient} = require("@tonclient/core");
-const {libNode} = require("@tonclient/lib-node");
+const {TonClient} = require("@eversdk/core");
+const {libNode} = require("@eversdk/lib-node");
 
 // Application initialization
 TonClient.useBinaryLibrary(libNode)
@@ -58,16 +58,16 @@ npm init -y
 Now lets install core package and bridge package for Web
 
 ```
-npm i --save @tonclient/core
-npm i --save @tonclient/lib-web
+npm i --save @eversdk/core
+npm i --save @eversdk/lib-web
 ```
 
-**Important!** Each time you run `npm install` the new version of the `tonclient.wasm` and `index.js` is downloaded. So you have to always update the `tonclient.wasm` inside your web package before publishing (starting local web server, creating web bundle etc.). If you use Webpack the best way is to use CopyPlugin.
+**Important!** Each time you run `npm install` the new version of the `eversdk.wasm` and `index.js` is downloaded. So you have to always update the `eversdk.wasm` inside your web package before publishing (starting local web server, creating web bundle etc.). If you use Webpack the best way is to use CopyPlugin.
 
-If you want to use high-level [AppKit](https://github.com/tonlabs/appkit-js) package then install this package as well:
+If you want to use high-level [AppKit](https://github.com/tonlabs/ever-appkit-js) package then install this package as well:
 
 ```
-npm i --save @tonclient/appkit
+npm i --save @eversdk/appkit
 ```
 
 You must initialize the library before the first use. The best place to do it is in initialization code of your application.
@@ -75,8 +75,8 @@ You must initialize the library before the first use. The best place to do it is
 You need to attach the chosen binary module to the `TonClient` class:
 
 ```
-import { TonClient } from '@tonclient/core';
-import { libWeb } from '@tonclient/lib-web';
+import { TonClient } from '@eversdk/core';
+import { libWeb } from '@eversdk/lib-web';
 
 TonClient.useBinaryLibrary(libWeb);
 ```
