@@ -365,7 +365,7 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": "DApp Server public address. For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be net.ton.dev",
+              "summary": "**This field is deprecated, but left for backward-compatibility.** DApp Server public address.",
               "description": null
             },
             {
@@ -378,7 +378,7 @@
                 }
               },
               "summary": "List of DApp Server addresses.",
-              "description": "Any correct URL format can be specified, including IP addresses This parameter is prevailing over `server_address`."
+              "description": "Any correct URL format can be specified, including IP addresses This parameter is prevailing over `server_address`. For more information see [here](../../ton-os-api/networks)."
             },
             {
               "name": "network_retries_count",

@@ -87,13 +87,13 @@ abi?:{
 
 List of DApp Server addresses. Any correct URL format can be specified, including IP addresses. **This parameter is prevailing over `server_address`**.
 
-For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be `net.ton.dev`. For Evernode SE the endpoint will be `http://localhost`.
+For instance, for `https://rbx01.net.everos.dev/graphql` GraphQL endpoint the server address will be `https://rbx01.net.everos.dev`. For Evernode SE the endpoint the server address will be `http://localhost`.
 
 At the start SDK sends requests to all the specified endpoints and chooses the one whose answer returns first. Later, if the application loses connection, SDK will try to switch to another endpoint from the list. If no endpoint is working there will be an error.
 
 #### server\_address
 
-**This field is deprecated, but left for backward-compatibility.** DApp Server public address. For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be `net.ton.dev`
+**This field is deprecated, but left for backward-compatibility.** DApp Server public address.
 
 #### network\_retries\_count
 
