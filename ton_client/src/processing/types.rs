@@ -1,6 +1,9 @@
+use crate::abi::decode_message::ResponsibleCall;
 use crate::abi::DecodedMessageBody;
-use crate::error::ClientError;
+use crate::error::{ClientError, ClientResult};
 use serde_json::Value;
+use ton_abi::Contract;
+use ton_block::Message;
 use ton_sdk::TransactionFees;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug, PartialEq, Clone)]
@@ -13,6 +16,43 @@ pub struct DecodedOutput {
 
     /// Decoded body of the function output message.
     pub output: Option<Value>,
+}
+
+impl DecodedOutput {
+    pub fn decode(
+        abi: &Contract,
+        responsible: Option<&ResponsibleCall>,
+        messages: impl Iterator<Item = Message>,
+    ) -> ClientResult<Self> {
+        let mut out_messages = Vec::new();
+        let mut output = None;
+        for ref message in messages {
+            let decoded = if let Some(body) = message.body() {
+                if let Ok(decoded) = DecodedMessageBody::decode(
+                    abi,
+                    responsible,
+                    body,
+                    message.is_internal(),
+                    message.dst_ref(),
+                    false,
+                ) {
+                    if decoded.body_type.is_output() {
+                        output = decoded.value.clone();
+                    }
+                    Some(decoded)
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+            out_messages.push(decoded);
+        }
+        Ok(Self {
+            out_messages,
+            output,
+        })
+    }
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug, PartialEq, Clone)]

@@ -37,6 +37,7 @@ pub mod proofs;
 pub mod tvm;
 pub mod utils;
 
+pub mod native;
 #[cfg(test)]
 mod tests;
 

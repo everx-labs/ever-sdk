@@ -38,7 +38,7 @@ use tokio::sync::Mutex;
 
 lazy_static! {
     static ref DEBOT: Mutex<Option<DebotData>> = Mutex::new(None);
-};
+}
 
 const TEST_DEBOT2: &'static str = "testDebot2";
 const TEST_DEBOT3: &'static str = "testDebot3";
@@ -435,6 +435,7 @@ impl TestBrowser {
                             abi,
                             body,
                             is_internal: true,
+                            allow_partial: false,
                         },
                     )
                     .await

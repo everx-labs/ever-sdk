@@ -4,20 +4,20 @@
 
 
 ## Functions
-[proof_block_data](#proof_block_data) – Proves that a given block's data, which is queried from TONOS API, can be trusted.
+[proof_block_data](mod\_proofs.md#proof_block_data) – Proves that a given block's data, which is queried from TONOS API, can be trusted.
 
-[proof_transaction_data](#proof_transaction_data) – Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
+[proof_transaction_data](mod\_proofs.md#proof_transaction_data) – Proves that a given transaction's data, which is queried from TONOS API, can be trusted.
 
-[proof_message_data](#proof_message_data) – Proves that a given message's data, which is queried from TONOS API, can be trusted.
+[proof_message_data](mod\_proofs.md#proof_message_data) – Proves that a given message's data, which is queried from TONOS API, can be trusted.
 
 ## Types
-[ProofsErrorCode](#proofserrorcode)
+[ProofsErrorCode](mod\_proofs.md#proofserrorcode)
 
-[ParamsOfProofBlockData](#paramsofproofblockdata)
+[ParamsOfProofBlockData](mod\_proofs.md#paramsofproofblockdata)
 
-[ParamsOfProofTransactionData](#paramsofprooftransactiondata)
+[ParamsOfProofTransactionData](mod\_proofs.md#paramsofprooftransactiondata)
 
-[ParamsOfProofMessageData](#paramsofproofmessagedata)
+[ParamsOfProofMessageData](mod\_proofs.md#paramsofproofmessagedata)
 
 
 # Functions
@@ -63,7 +63,7 @@ In order to prove any block in the master-chain we need to check, that it has be
 a trusted validator set. So we need to check all key-blocks' proofs, started from the zero-state
 and until the block, which we want to prove. But it can take a lot of time and traffic to
 download and prove all key-blocks on a client. For solving this, special trusted blocks are used
-in TON-SDK.
+in Ever-SDK.
 
 The trusted block is the authority root, as well, as the zero-state. Each trusted block is the
 `id` (e.g. `root_hash`) of the already proven key-block. There can be plenty of trusted

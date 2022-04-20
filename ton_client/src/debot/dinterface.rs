@@ -34,7 +34,7 @@ async fn decode_msg(
     let (_, body) = deserialize_cell_from_boc(&client, &msg_body, "message body").await?;
     let body: SliceData = body.into();
     let input = abi
-        .decode_input(body, true)
+        .decode_input(body, true, false)
         .map_err(|e| Error::invalid_message_for_decode(e))?;
     let value = Detokenizer::detokenize_to_json_value(&input.tokens)
         .map_err(|e| Error::invalid_message_for_decode(e))?;

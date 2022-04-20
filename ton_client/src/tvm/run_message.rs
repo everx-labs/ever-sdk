@@ -310,7 +310,7 @@ pub async fn run_executor_internal(
 
     // TODO decode Message object without converting to string
     let decoded = if let Some(abi) = params.abi.as_ref() {
-        Some(decode_output(&context, abi, out_messages.clone()).await?)
+        Some(decode_output(&context, abi, out_messages.clone(), None).await?)
     } else {
         None
     };
@@ -372,7 +372,7 @@ pub async fn run_tvm(
 
     // TODO decode Message object without converting to string
     let decoded = if let Some(abi) = params.abi.as_ref() {
-        Some(decode_output(&context, abi, out_messages.clone()).await?)
+        Some(decode_output(&context, abi, out_messages.clone(), None).await?)
     } else {
         None
     };

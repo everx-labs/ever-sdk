@@ -1,4 +1,3 @@
-use std::array::IntoIter;
 use std::borrow::Cow;
 use std::collections::HashSet;
 use std::fmt::{Display, Formatter};
@@ -16,12 +15,12 @@ use crate::proofs::errors::Error;
 
 lazy_static! {
     static ref BLOCK_IGNORE_FIELDS: HashSet<&'static str> =
-        IntoIter::new(["chain_order", "gen_software_capabilities",]).collect();
+        IntoIterator::into_iter(["chain_order", "gen_software_capabilities",]).collect();
     static ref TRANSACTION_IGNORE_FIELDS: HashSet<&'static str> =
-        IntoIter::new(["chain_order",]).collect();
+        IntoIterator::into_iter(["chain_order",]).collect();
     static ref MESSAGE_IGNORE_FIELDS: HashSet<&'static str> =
-        IntoIter::new(["chain_order",]).collect();
-    static ref BLOCK_NUMERIC_FIELDS: HashSet<&'static str> = IntoIter::new([
+        IntoIterator::into_iter(["chain_order",]).collect();
+    static ref BLOCK_NUMERIC_FIELDS: HashSet<&'static str> = IntoIterator::into_iter([
         "account_blocks.transactions.lt",
         "account_blocks.transactions.total_fees",
         "account_blocks.transactions.total_fees_other.value",
@@ -130,7 +129,7 @@ lazy_static! {
         "value_flow.to_next_blk_other.value",
     ])
     .collect();
-    static ref TRANSACTION_NUMERIC_FIELDS: HashSet<&'static str> = IntoIter::new([
+    static ref TRANSACTION_NUMERIC_FIELDS: HashSet<&'static str> = IntoIterator::into_iter([
         "action.total_action_fees",
         "action.total_fwd_fees",
         "balance_delta",
@@ -153,7 +152,7 @@ lazy_static! {
         "total_fees_other.value",
     ])
     .collect();
-    static ref MESSAGE_NUMERIC_FIELDS: HashSet<&'static str> = IntoIter::new([
+    static ref MESSAGE_NUMERIC_FIELDS: HashSet<&'static str> = IntoIterator::into_iter([
         "created_lt",
         "fwd_fee",
         "ihr_fee",
@@ -162,7 +161,7 @@ lazy_static! {
         "value_other.value",
     ])
     .collect();
-    static ref BLOCKS_UNIX_TIME_FIELDS: HashSet<&'static str> = IntoIter::new([
+    static ref BLOCKS_UNIX_TIME_FIELDS: HashSet<&'static str> = IntoIterator::into_iter([
         "gen_utime",
         "master.config.p18.utime_since",
         "master.config.p32.utime_since",
@@ -183,9 +182,9 @@ lazy_static! {
     ])
     .collect();
     static ref TRANSACTIONS_UNIX_TIME_FIELDS: HashSet<&'static str> =
-        IntoIter::new(["now",]).collect();
+        IntoIterator::into_iter(["now",]).collect();
     static ref MESSAGES_UNIX_TIME_FIELDS: HashSet<&'static str> =
-        IntoIter::new(["created_at",]).collect();
+        IntoIterator::into_iter(["created_at",]).collect();
 }
 
 pub(crate) enum JsonPath<'a, 'b> {

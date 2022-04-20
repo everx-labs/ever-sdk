@@ -2,12 +2,12 @@
 
 How to perform deploy and run scenarios without disclosing the private key
 
-* [When you may need it?](external_signing.md#when-you-may-need-it)
-  * [Patterns](external_signing.md#patterns)
-* [Use signingBox interface](external_signing.md#use-signingbox-interface)
-  * [Sample source code](external_signing.md#sample-source-code)
-* [Sign message outside sdk](external_signing.md#sign-message-outside-sdk)
-  * [Sample source code](external_signing.md#sample-source-code-1)
+* [When you may need it?](external\_signing.md#when-you-may-need-it)
+  * [Patterns](external\_signing.md#patterns)
+* [Use signingBox interface](external\_signing.md#use-signingbox-interface)
+  * [Sample source code](external\_signing.md#sample-source-code)
+* [Sign message outside sdk](external\_signing.md#sign-message-outside-sdk)
+  * [Sample source code](external\_signing.md#sample-source-code-1)
 
 ## When you may need it?
 
@@ -51,7 +51,7 @@ type ResultOfAppSigningBoxSign = {
 }
 ```
 
-All the methods that create messages - `encode_message`, `process_message` can take [Signer of type SigningBox object](../../reference/types-and-methods/mod_abi.md#signer), implementing this interface, instead of a key pair.
+All the methods that create messages - `encode_message`, `process_message` can take [Signer of type SigningBox object](../../reference/types-and-methods/mod\_abi.md#signer), implementing this interface, instead of a key pair.
 
 ### Sample source code
 
@@ -65,8 +65,8 @@ All the methods that create messages - `encode_message`, `process_message` can t
 
 ## Sign message outside sdk
 
-In this case you may create an unsigned message with `encode_message` function, specifying Signer of type `External` . After that you sign it somewhere outside and attach signature with [attach_signature](../../reference/types-and-methods/mod_abi.md#attach_signature) function.
+In this case you may create an unsigned message with `encode_message` function, specifying Signer of type `External` . After that you sign it somewhere outside and attach signature with [attach_signature](../../reference/types-and-methods/mod\_abi.md#attach_signature) function.
 
 ### Sample source code
 
-We will upload a sample with it later. If you need it in your work, please write in [SDK telegram channel](https://t.me/ton_sdk).
+We will upload a sample with it later. If you need it in your work, please write in [SDK telegram channel](https://t.me/ever_sdk).

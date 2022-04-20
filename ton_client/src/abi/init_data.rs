@@ -132,6 +132,12 @@ pub struct ParamsOfDecodeInitialData {
     pub abi: Option<Abi>,
     /// Data BOC or BOC handle
     pub data: String,
+    /// Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC.
+    /// Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC:
+    /// `true` - return decoded values
+    /// `false` - return error of incomplete BOC deserialization (default)
+    #[serde(default)]
+    pub allow_partial: bool,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
@@ -161,7 +167,7 @@ pub async fn decode_initial_data(
         let abi = abi.abi()?;
 
         let tokens = abi
-            .decode_data(data)
+            .decode_data(data, params.allow_partial)
             .map_err(|e| Error::invalid_data_for_decode(e))?;
 
         let initial_data = ton_abi::token::Detokenizer::detokenize_to_json_value(&tokens)

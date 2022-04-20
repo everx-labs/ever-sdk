@@ -15,6 +15,13 @@ pub struct ParamsOfDecodeAccountData {
 
     /// Data BOC or BOC handle
     pub data: String,
+
+    /// Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC.
+    /// Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC:
+    /// `true` - return decoded values
+    /// `false` - return error of incomplete BOC deserialization (default)
+    #[serde(default)]
+    pub allow_partial: bool,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
@@ -35,7 +42,7 @@ pub async fn decode_account_data(
     let abi = params.abi.abi()?;
 
     let tokens = abi
-        .decode_storage_fields(data.into())
+        .decode_storage_fields(data.into(), params.allow_partial)
         .map_err(|e| Error::invalid_data_for_decode(e))?;
 
     let data = Detokenizer::detokenize_to_json_value(&tokens)

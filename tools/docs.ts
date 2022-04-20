@@ -34,7 +34,7 @@ function docOf(element: Documented): string {
 }
 
 function moduleFile(module: ApiModule): string {
-    return `mod_${module.name}.md`;
+    return `mod\\_${module.name}.md`;
 }
 
 function funcRef(func: ApiFunction, module?: ApiModule): string {
@@ -46,7 +46,7 @@ function typeRef(t: ApiField, module?: ApiModule): string {
 }
 
 function appObjectTypeRef(t: ApiModule, module?: ApiModule): string {
-    return `[${t.name}](${module ? moduleFile(module) : ""}#${t.name.toLowerCase()})`;
+    return `[${t.name}](${module ? moduleFile(module) : moduleFile(t)}#${t.name.toLowerCase()})`;
 }
 
 export class Docs extends Code {
@@ -166,7 +166,7 @@ export class Docs extends Code {
             }
             const parts = type.ref_name.split(".");
             return parts.length === 2
-                ? `[${parts[1]}](mod_${parts[0]}.md#${parts[1].toLowerCase()})`
+                ? `[${parts[1]}](mod\\_${parts[0]}.md#${parts[1].toLowerCase()})`
                 : type.ref_name;
         case ApiTypeIs.Optional:
             return `${this.fieldType(type.optional_inner)}?`;
@@ -283,14 +283,14 @@ export class Docs extends Code {
         md += docOf(module);
         md += "\n## Functions\n";
         for (const func of module.functions) {
-            md += `${funcRef(func)}${summaryOf(func)}\n\n`;
+            md += `${funcRef(func, module)}${summaryOf(func)}\n\n`;
         }
         md += "## Types\n";
         for (const type of module.types) {
-            md += `${typeRef(type)}${summaryOf(type)}\n\n`;
+            md += `${typeRef(type, module)}${summaryOf(type)}\n\n`;
         }
         for (const type of appObjectTypes) {
-            md += `${appObjectTypeRef(type)}${summaryOf(type)}\n\n`;
+            md += `${appObjectTypeRef(type, module)}${summaryOf(type)}\n\n`;
         }
 
         md += "\n# Functions\n";
@@ -308,6 +308,22 @@ export class Docs extends Code {
         for (const type of appObjectTypes) {
             md += this.appObjectTypeDef(type);
             md += "\n\n";
+        }
+
+        return md;
+    }
+
+    readme(): string {
+        let md = "";
+        md += `# Types and Methods
+
+This section contains documents describing TON SDK Types and Methods supported by various [modules](modules.md).
+
+`;
+        for (const module of this.api.modules.slice().sort(
+          (left, right) => left.name.localeCompare(right.name)
+        )) {
+            md += `* [Module ${module.name}](${moduleFile(module)})\n`;
         }
 
         return md;

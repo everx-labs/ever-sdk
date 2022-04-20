@@ -300,6 +300,7 @@ fn decode_v2() {
                 ParamsOfDecodeMessage {
                     abi: events_abi.clone(),
                     message: message.into(),
+                    allow_partial: false,
                 },
             )
             .unwrap();
@@ -319,6 +320,7 @@ fn decode_v2() {
                     abi: events_abi.clone(),
                     body,
                     is_internal: parsed.parsed["msg_type_name"] == "Internal",
+                    allow_partial: false,
                 },
             )
             .unwrap();
@@ -353,6 +355,7 @@ fn decode_v2() {
         abi: events_abi.clone(),
         body: "te6ccgEBAgEAlgAB4a3f2/jCeWWvgMoAXOakv3VSD56sQrDPT76n1cbrSvpZ0BCs0KEUy2Duvo3zPExePONW3TYy0MCA1i+FFRXcSIXTHxAj/Hd67jWQF7peccWoU/dbMCBJBB6YdPCVZcJlJkAAAF0ZyXLg19VzGQVviwSgAQBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=".into(),
         is_internal: false,
+        allow_partial: false,
     }).unwrap();
     let expected = DecodedMessageBody {
         body_type: MessageBodyType::Input,
@@ -915,7 +918,11 @@ fn test_decode_account_data() {
     let decoded = client
         .request::<_, ResultOfDecodeAccountData>(
             "abi.decode_account_data",
-            ParamsOfDecodeAccountData { data, abi },
+            ParamsOfDecodeAccountData {
+                data,
+                abi,
+                allow_partial: false,
+            },
         )
         .unwrap()
         .data;
@@ -963,6 +970,7 @@ fn test_init_data() {
             ParamsOfDecodeInitialData {
                 abi: Some(abi.clone()),
                 data: data.clone(),
+                allow_partial: false,
             },
         )
         .unwrap();
@@ -1012,6 +1020,7 @@ fn test_init_data() {
             ParamsOfDecodeInitialData {
                 abi: Some(abi.clone()),
                 data: result.data,
+                allow_partial: false,
             },
         )
         .unwrap();

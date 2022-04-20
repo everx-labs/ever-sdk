@@ -2,25 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.0] – 2022-04-01
+
+### New 
+
+- `allow_partial` flag in all `abi.decode_*` functions. This flag controls decoder behaviour whether 
+  return error or not in case of incomplete BOC decoding.
+- `tvm.run_responsible` api function.
+
 ## [1.32.0] – 2022-03-22
 
 ### New 
 
-- `network.queries_protocol` config parameter allows selecting protocol the SDK uses to communicaite with GraphQL endpoint:
+- `network.queries_protocol` config parameter allows selecting protocol the SDK uses to communicate 
+  with GraphQL endpoint:
   - `HTTP` – SDK performs single HTTP-request for each request.
   - `WS` – SDK uses single WebSocket connection to send all requests. This protocol is a preferable
     way when the application sends many GraphQL requests in parallel. 
 
 ### Fixed
 - **Debot module**:
-    - If DEngine received a non-zero exit_code while emulating a transaction while sending a message, DEngine will call onErrorId callback of the message.
+    - If DEngine received a non-zero exit_code while emulating a transaction while sending a message, 
+      DEngine will call onErrorId callback of the message.
     
 ## [1.31.0] – 2022-03-09
 
 ### New 
 
 **crypto module:**
-- `Cryptobox` introduced: root crypto object that stores encrypted secret and acts as a factory for all crypto primitives used in SDK.
+- `Cryptobox` introduced: root crypto object that stores encrypted secret and acts as a factory for 
+  all crypto primitives used in SDK.
   Crypto box provides signing and encryption boxes.
 
   Functions:

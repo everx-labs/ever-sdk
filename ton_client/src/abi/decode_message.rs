@@ -7,6 +7,8 @@ use serde_json::Value;
 use std::sync::Arc;
 use ton_abi::contract::DecodedMessage;
 use ton_abi::token::Detokenizer;
+use ton_abi::{Function};
+use ton_block::MsgAddressInt;
 use ton_sdk::AbiContract;
 use ton_types::SliceData;
 
@@ -26,6 +28,21 @@ pub enum MessageBodyType {
 
     /// Message contains the input of the ABI event.
     Event,
+}
+
+impl MessageBodyType {
+    pub fn is_output(&self) -> bool {
+        match self {
+            MessageBodyType::InternalOutput | MessageBodyType::Output => true,
+            _ => false,
+        }
+    }
+}
+
+pub struct ResponsibleCall<'a> {
+    pub function: &'a Function,
+    pub src: &'a MsgAddressInt,
+    pub answer_id: u32,
 }
 
 #[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone)]
@@ -58,6 +75,96 @@ impl DecodedMessageBody {
             header,
         })
     }
+
+    pub(crate) fn decode(
+        abi: &AbiContract,
+        responsible: Option<&ResponsibleCall>,
+        body: SliceData,
+        is_internal: bool,
+        internal_dst: Option<&MsgAddressInt>,
+        allow_partial: bool,
+    ) -> ClientResult<Self> {
+        match (internal_dst, responsible) {
+            (Some(internal_dst), Some(ref responsible))
+                if is_internal && internal_dst == responsible.src =>
+            {
+                let receiver_func_id = Function::decode_output_id(body.clone()).map_err(|err| {
+                    Error::invalid_message_for_decode(format!(
+                        "Can't decode function header: {}",
+                        err
+                    ))
+                })?;
+
+                if receiver_func_id == responsible.answer_id {
+                    let tokens = responsible
+                        .function
+                        .decode_output(body, true, false)
+                        .map_err(|err| {
+                            Error::invalid_message_for_decode(format!(
+                                "Responsible function output can't be decoded: {}",
+                                err
+                            ))
+                        })?;
+
+                    let decoded = DecodedMessage {
+                        function_name: responsible.function.name.clone(),
+                        tokens,
+                    };
+                    return DecodedMessageBody::new(MessageBodyType::InternalOutput, decoded, None);
+                }
+            }
+            _ => {}
+        }
+        if let Ok(output) = abi.decode_output(body.clone(), is_internal, allow_partial) {
+            if abi.events().get(&output.function_name).is_some() {
+                DecodedMessageBody::new(MessageBodyType::Event, output, None)
+            } else {
+                DecodedMessageBody::new(MessageBodyType::Output, output, None)
+            }
+        } else if let Ok(input) = abi.decode_input(body.clone(), is_internal, allow_partial) {
+            let (header, _, _) = ton_abi::Function::decode_header(
+                abi.version(),
+                body.clone(),
+                abi.header(),
+                is_internal,
+            )
+            .map_err(|err| {
+                Error::invalid_message_for_decode(format!("Can't decode function header: {}", err))
+            })?;
+            DecodedMessageBody::new(
+                MessageBodyType::Input,
+                input,
+                FunctionHeader::from(&header)?,
+            )
+        } else {
+            Err(Error::invalid_message_for_decode(
+                "The message body does not match the specified ABI.\n
+                Tip: Please check that you specified message's body, not full BOC.",
+            ))
+        }
+    }
+
+    pub async fn decode_message<'a>(
+        context: Arc<ClientContext>,
+        params: ParamsOfDecodeMessage,
+        responsible: Option<&ResponsibleCall<'a>>,
+    ) -> ClientResult<DecodedMessageBody> {
+        let (abi, message) = prepare_decode(&context, &params).await?;
+        if let Some(body) = message.body() {
+            Self::decode(
+                &abi,
+                responsible,
+                body,
+                message.is_internal(),
+                message.dst_ref(),
+                params.allow_partial,
+            )
+        } else {
+            Err(Error::invalid_message_for_decode(
+                "The message body is empty",
+            ))
+        }
+    }
 }
 
 //---------------------------------------------------------------------------------- decode_message
@@ -69,6 +176,13 @@ pub struct ParamsOfDecodeMessage {
 
     /// Message BOC
     pub message: String,
+
+    /// Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC.
+    /// Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC:
+    /// `true` - return decoded values
+    /// `false` - return error of incomplete BOC deserialization (default)
+    #[serde(default)]
+    pub allow_partial: bool,
 }
 
 /// Decodes message body using provided message BOC and ABI.
@@ -79,7 +193,14 @@ pub async fn decode_message(
 ) -> ClientResult<DecodedMessageBody> {
     let (abi, message) = prepare_decode(&context, &params).await?;
     if let Some(body) = message.body() {
-        decode_body(abi, body, message.is_internal())
+        DecodedMessageBody::decode(
+            &abi,
+            None,
+            body,
+            message.is_internal(),
+            message.dst_ref(),
+            params.allow_partial,
+        )
     } else {
         Err(Error::invalid_message_for_decode(
             "The message body is empty",
@@ -99,6 +220,13 @@ pub struct ParamsOfDecodeMessageBody {
 
     /// True if the body belongs to the internal message.
     pub is_internal: bool,
+
+    /// Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC.
+    /// Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC:
+    /// `true` - return decoded values
+    /// `false` - return error of incomplete BOC deserialization (default)
+    #[serde(default)]
+    pub allow_partial: bool,
 }
 
 /// Decodes message body using provided body BOC and ABI.
@@ -110,7 +238,14 @@ pub async fn decode_message_body(
     let abi = params.abi.json_string()?;
     let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
     let (_, body) = deserialize_cell_from_boc(&context, &params.body, "message body").await?;
-    decode_body(abi, body.into(), params.is_internal)
+    DecodedMessageBody::decode(
+        &abi,
+        None,
+        body.into(),
+        params.is_internal,
+        None,
+        params.allow_partial,
+    )
 }
 
 async fn prepare_decode(
@@ -123,38 +258,4 @@ async fn prepare_decode(
         .await
         .map_err(|x| Error::invalid_message_for_decode(x))?;
     Ok((abi, message.object))
-}
-
-fn decode_body(
-    abi: AbiContract,
-    body: SliceData,
-    is_internal: bool,
-) -> ClientResult<DecodedMessageBody> {
-    if let Ok(output) = abi.decode_output(body.clone(), is_internal) {
-        if abi.events().get(&output.function_name).is_some() {
-            DecodedMessageBody::new(MessageBodyType::Event, output, None)
-        } else {
-            DecodedMessageBody::new(MessageBodyType::Output, output, None)
-        }
-    } else if let Ok(input) = abi.decode_input(body.clone(), is_internal) {
-        let (header, _, _) = ton_abi::Function::decode_header(
-            abi.version(),
-            body.clone(),
-            abi.header(),
-            is_internal,
-        )
-        .map_err(|err| {
-            Error::invalid_message_for_decode(format!("Can't decode function header: {}", err))
-        })?;
-        DecodedMessageBody::new(
-            MessageBodyType::Input,
-            input,
-            FunctionHeader::from(&header)?,
-        )
-    } else {
-        Err(Error::invalid_message_for_decode(
-            "The message body does not match the specified ABI.\n
-                Tip: Please check that you specified message's body, not full BOC.",
-        ))
-    }
 }

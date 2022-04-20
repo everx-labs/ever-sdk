@@ -218,8 +218,15 @@ impl Contract {
         function: String,
         response: SliceData,
         internal: bool,
+        allow_partial: bool,
     ) -> Result<String> {
-        ton_abi::json_abi::decode_function_response(abi, function, response, internal)
+        ton_abi::json_abi::decode_function_response(
+            abi,
+            function,
+            response,
+            internal,
+            allow_partial,
+        )
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
@@ -228,10 +235,11 @@ impl Contract {
         function: String,
         response: &[u8],
         internal: bool,
+        allow_partial: bool,
     ) -> Result<String> {
         let slice = Self::deserialize_tree_to_slice(response)?;
 
-        Self::decode_function_response_json(abi, function, slice, internal)
+        Self::decode_function_response_json(abi, function, slice, internal, allow_partial)
     }
 
     /// Decodes output parameters returned by contract function call
@@ -239,8 +247,9 @@ impl Contract {
         abi: String,
         response: SliceData,
         internal: bool,
+        allow_partial: bool,
     ) -> Result<DecodedMessage> {
-        ton_abi::json_abi::decode_unknown_function_response(abi, response, internal)
+        ton_abi::json_abi::decode_unknown_function_response(abi, response, internal, allow_partial)
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
@@ -248,10 +257,11 @@ impl Contract {
         abi: String,
         response: &[u8],
         internal: bool,
+        allow_partial: bool,
     ) -> Result<DecodedMessage> {
         let slice = Self::deserialize_tree_to_slice(response)?;
 
-        Self::decode_unknown_function_response_json(abi, slice, internal)
+        Self::decode_unknown_function_response_json(abi, slice, internal, allow_partial)
     }
 
     /// Decodes output parameters returned by contract function call
@@ -259,8 +269,9 @@ impl Contract {
         abi: String,
         response: SliceData,
         internal: bool,
+        allow_partial: bool,
     ) -> Result<DecodedMessage> {
-        ton_abi::json_abi::decode_unknown_function_call(abi, response, internal)
+        ton_abi::json_abi::decode_unknown_function_call(abi, response, internal, allow_partial)
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
@@ -268,10 +279,11 @@ impl Contract {
         abi: String,
         response: &[u8],
         internal: bool,
+        allow_partial: bool,
     ) -> Result<DecodedMessage> {
         let slice = Self::deserialize_tree_to_slice(response)?;
 
-        Self::decode_unknown_function_call_json(abi, slice, internal)
+        Self::decode_unknown_function_call_json(abi, slice, internal, allow_partial)
     }
 
     // ------- Call constructing functions -------

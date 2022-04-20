@@ -172,8 +172,8 @@ can receive an unlimited count of responses related to single request. Parameter
     - `RESULT = 0`, function result.
     - `ERROR = 1`, function execution error.
     - `NOP = 2`, no operation. In combination with `finished = true` signals that the request handling was finished.
-    - `APP_REQUEST = 3`, request some data from application. See [Application objects](#Application-objects)
-    - `APP_NOTIFY = 4`, notify application with some data. See [Application objects](#Application-objects)
+    - `APP_REQUEST = 3`, request some data from application. See [Application objects](json\_interface.md#Application-objects)
+    - `APP_NOTIFY = 4`, notify application with some data. See [Application objects](json\_interface.md#Application-objects)
     - `RESERVED = 5..99` – reserved for protocol internal purposes. Application (or binding) must ignore this response. 
       Nevertheless the binding must check the `finished` flag to release data, associated with request.
     - `CUSTOM >= 100` - additional function data related to request handling. Depends on the function.
@@ -296,4 +296,4 @@ In case if response type is `4`, `params_json` contains serialized notification 
 
 ### How to work with Application Objects in binding generators
 
-Find out how to work with Application Objects in binding generators in this [specification](app_objects.md).
+Find out how to work with Application Objects in binding generators in this [specification](app\_objects.md).

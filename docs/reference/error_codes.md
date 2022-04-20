@@ -2,28 +2,28 @@
 
 You can find error codes with descriptions on this page
 
-* [SDK Errors](error_codes.md#sdk-errors)
-* [Solidity Runtime Errors](error_codes.md#solidity-runtime-errors)
-* [TON Virtual Machine Runtime Errors](error_codes.md#ton-virtual-machine-runtime-errors)
-  * [Action phase errors](error_codes.md#action-phase-errors)
+* [SDK Errors](error\_codes.md#sdk-errors)
+* [Solidity Runtime Errors](error\_codes.md#solidity-runtime-errors)
+* [TON Virtual Machine Runtime Errors](error\_codes.md#ton-virtual-machine-runtime-errors)
+  * [Action phase errors](error\_codes.md#action-phase-errors)
 
 ## SDK Errors
 
-[Client Error codes (1-99)](types-and-methods/mod_client.md#clienterrorcode)
+[Client Error codes (1-99)](types-and-methods/mod\_client.md#clienterrorcode)
 
-[Crypto Error codes (100-199)](types-and-methods/mod_crypto.md#CryptoErrorCode)
+[Crypto Error codes (100-199)](types-and-methods/mod\_crypto.md#CryptoErrorCode)
 
-[Boc error codes(200-299)](types-and-methods/mod_boc.md#BocErrorCode)
+[Boc error codes(200-299)](types-and-methods/mod\_boc.md#BocErrorCode)
 
-[Abi Error codes (300-399)](types-and-methods/mod_abi.md#AbiErrorCode)
+[Abi Error codes (300-399)](types-and-methods/mod\_abi.md#AbiErrorCode)
 
-[TVM Error codes (400-499)](types-and-methods/mod_tvm.md#TvmErrorCode)
+[TVM Error codes (400-499)](types-and-methods/mod\_tvm.md#TvmErrorCode)
 
-[Processing Error codes (500-599)](types-and-methods/mod_processing.md#ProcessingErrorCode)
+[Processing Error codes (500-599)](types-and-methods/mod\_processing.md#ProcessingErrorCode)
 
-[Net Error Codes (600-699)](types-and-methods/mod_net.md#NetErrorCode)
+[Net Error Codes (600-699)](types-and-methods/mod\_net.md#NetErrorCode)
 
-[DeBot Error Codes (800-899)](types-and-methods/mod_debot.md#DebotErrorCode)
+[DeBot Error Codes (800-899)](types-and-methods/mod\_debot.md#DebotErrorCode)
 
 ## Solidity Runtime Errors
 

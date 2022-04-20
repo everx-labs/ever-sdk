@@ -4,120 +4,120 @@ Network access.
 
 
 ## Functions
-[query](#query) – Performs DAppServer GraphQL query.
+[query](mod\_net.md#query) – Performs DAppServer GraphQL query.
 
-[batch_query](#batch_query) – Performs multiple queries per single fetch.
+[batch_query](mod\_net.md#batch_query) – Performs multiple queries per single fetch.
 
-[query_collection](#query_collection) – Queries collection data
+[query_collection](mod\_net.md#query_collection) – Queries collection data
 
-[aggregate_collection](#aggregate_collection) – Aggregates collection data.
+[aggregate_collection](mod\_net.md#aggregate_collection) – Aggregates collection data.
 
-[wait_for_collection](#wait_for_collection) – Returns an object that fulfills the conditions or waits for its appearance
+[wait_for_collection](mod\_net.md#wait_for_collection) – Returns an object that fulfills the conditions or waits for its appearance
 
-[unsubscribe](#unsubscribe) – Cancels a subscription
+[unsubscribe](mod\_net.md#unsubscribe) – Cancels a subscription
 
-[subscribe_collection](#subscribe_collection) – Creates a collection subscription
+[subscribe_collection](mod\_net.md#subscribe_collection) – Creates a collection subscription
 
-[subscribe](#subscribe) – Creates a subscription
+[subscribe](mod\_net.md#subscribe) – Creates a subscription
 
-[suspend](#suspend) – Suspends network module to stop any network activity
+[suspend](mod\_net.md#suspend) – Suspends network module to stop any network activity
 
-[resume](#resume) – Resumes network module to enable network activity
+[resume](mod\_net.md#resume) – Resumes network module to enable network activity
 
-[find_last_shard_block](#find_last_shard_block) – Returns ID of the last block in a specified account shard
+[find_last_shard_block](mod\_net.md#find_last_shard_block) – Returns ID of the last block in a specified account shard
 
-[fetch_endpoints](#fetch_endpoints) – Requests the list of alternative endpoints from server
+[fetch_endpoints](mod\_net.md#fetch_endpoints) – Requests the list of alternative endpoints from server
 
-[set_endpoints](#set_endpoints) – Sets the list of endpoints to use on reinit
+[set_endpoints](mod\_net.md#set_endpoints) – Sets the list of endpoints to use on reinit
 
-[get_endpoints](#get_endpoints) – Requests the list of alternative endpoints from server
+[get_endpoints](mod\_net.md#get_endpoints) – Requests the list of alternative endpoints from server
 
-[query_counterparties](#query_counterparties) – Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
+[query_counterparties](mod\_net.md#query_counterparties) – Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
 
-[query_transaction_tree](#query_transaction_tree) – Returns a tree of transactions triggered by a specific message.
+[query_transaction_tree](mod\_net.md#query_transaction_tree) – Returns a tree of transactions triggered by a specific message.
 
-[create_block_iterator](#create_block_iterator) – Creates block iterator.
+[create_block_iterator](mod\_net.md#create_block_iterator) – Creates block iterator.
 
-[resume_block_iterator](#resume_block_iterator) – Resumes block iterator.
+[resume_block_iterator](mod\_net.md#resume_block_iterator) – Resumes block iterator.
 
-[create_transaction_iterator](#create_transaction_iterator) – Creates transaction iterator.
+[create_transaction_iterator](mod\_net.md#create_transaction_iterator) – Creates transaction iterator.
 
-[resume_transaction_iterator](#resume_transaction_iterator) – Resumes transaction iterator.
+[resume_transaction_iterator](mod\_net.md#resume_transaction_iterator) – Resumes transaction iterator.
 
-[iterator_next](#iterator_next) – Returns next available items.
+[iterator_next](mod\_net.md#iterator_next) – Returns next available items.
 
-[remove_iterator](#remove_iterator) – Removes an iterator
+[remove_iterator](mod\_net.md#remove_iterator) – Removes an iterator
 
 ## Types
-[NetErrorCode](#neterrorcode)
+[NetErrorCode](mod\_net.md#neterrorcode)
 
-[OrderBy](#orderby)
+[OrderBy](mod\_net.md#orderby)
 
-[SortDirection](#sortdirection)
+[SortDirection](mod\_net.md#sortdirection)
 
-[ParamsOfQueryOperation](#paramsofqueryoperation)
+[ParamsOfQueryOperation](mod\_net.md#paramsofqueryoperation)
 
-[FieldAggregation](#fieldaggregation)
+[FieldAggregation](mod\_net.md#fieldaggregation)
 
-[AggregationFn](#aggregationfn)
+[AggregationFn](mod\_net.md#aggregationfn)
 
-[TransactionNode](#transactionnode)
+[TransactionNode](mod\_net.md#transactionnode)
 
-[MessageNode](#messagenode)
+[MessageNode](mod\_net.md#messagenode)
 
-[ParamsOfQuery](#paramsofquery)
+[ParamsOfQuery](mod\_net.md#paramsofquery)
 
-[ResultOfQuery](#resultofquery)
+[ResultOfQuery](mod\_net.md#resultofquery)
 
-[ParamsOfBatchQuery](#paramsofbatchquery)
+[ParamsOfBatchQuery](mod\_net.md#paramsofbatchquery)
 
-[ResultOfBatchQuery](#resultofbatchquery)
+[ResultOfBatchQuery](mod\_net.md#resultofbatchquery)
 
-[ParamsOfQueryCollection](#paramsofquerycollection)
+[ParamsOfQueryCollection](mod\_net.md#paramsofquerycollection)
 
-[ResultOfQueryCollection](#resultofquerycollection)
+[ResultOfQueryCollection](mod\_net.md#resultofquerycollection)
 
-[ParamsOfAggregateCollection](#paramsofaggregatecollection)
+[ParamsOfAggregateCollection](mod\_net.md#paramsofaggregatecollection)
 
-[ResultOfAggregateCollection](#resultofaggregatecollection)
+[ResultOfAggregateCollection](mod\_net.md#resultofaggregatecollection)
 
-[ParamsOfWaitForCollection](#paramsofwaitforcollection)
+[ParamsOfWaitForCollection](mod\_net.md#paramsofwaitforcollection)
 
-[ResultOfWaitForCollection](#resultofwaitforcollection)
+[ResultOfWaitForCollection](mod\_net.md#resultofwaitforcollection)
 
-[ResultOfSubscribeCollection](#resultofsubscribecollection)
+[ResultOfSubscribeCollection](mod\_net.md#resultofsubscribecollection)
 
-[ParamsOfSubscribeCollection](#paramsofsubscribecollection)
+[ParamsOfSubscribeCollection](mod\_net.md#paramsofsubscribecollection)
 
-[ParamsOfSubscribe](#paramsofsubscribe)
+[ParamsOfSubscribe](mod\_net.md#paramsofsubscribe)
 
-[ParamsOfFindLastShardBlock](#paramsoffindlastshardblock)
+[ParamsOfFindLastShardBlock](mod\_net.md#paramsoffindlastshardblock)
 
-[ResultOfFindLastShardBlock](#resultoffindlastshardblock)
+[ResultOfFindLastShardBlock](mod\_net.md#resultoffindlastshardblock)
 
-[EndpointsSet](#endpointsset)
+[EndpointsSet](mod\_net.md#endpointsset)
 
-[ResultOfGetEndpoints](#resultofgetendpoints)
+[ResultOfGetEndpoints](mod\_net.md#resultofgetendpoints)
 
-[ParamsOfQueryCounterparties](#paramsofquerycounterparties)
+[ParamsOfQueryCounterparties](mod\_net.md#paramsofquerycounterparties)
 
-[ParamsOfQueryTransactionTree](#paramsofquerytransactiontree)
+[ParamsOfQueryTransactionTree](mod\_net.md#paramsofquerytransactiontree)
 
-[ResultOfQueryTransactionTree](#resultofquerytransactiontree)
+[ResultOfQueryTransactionTree](mod\_net.md#resultofquerytransactiontree)
 
-[ParamsOfCreateBlockIterator](#paramsofcreateblockiterator)
+[ParamsOfCreateBlockIterator](mod\_net.md#paramsofcreateblockiterator)
 
-[RegisteredIterator](#registerediterator)
+[RegisteredIterator](mod\_net.md#registerediterator)
 
-[ParamsOfResumeBlockIterator](#paramsofresumeblockiterator)
+[ParamsOfResumeBlockIterator](mod\_net.md#paramsofresumeblockiterator)
 
-[ParamsOfCreateTransactionIterator](#paramsofcreatetransactioniterator)
+[ParamsOfCreateTransactionIterator](mod\_net.md#paramsofcreatetransactioniterator)
 
-[ParamsOfResumeTransactionIterator](#paramsofresumetransactioniterator)
+[ParamsOfResumeTransactionIterator](mod\_net.md#paramsofresumetransactioniterator)
 
-[ParamsOfIteratorNext](#paramsofiteratornext)
+[ParamsOfIteratorNext](mod\_net.md#paramsofiteratornext)
 
-[ResultOfIteratorNext](#resultofiteratornext)
+[ResultOfIteratorNext](mod\_net.md#resultofiteratornext)
 
 
 # Functions
@@ -168,7 +168,7 @@ function batch_query(
 ): Promise<ResultOfBatchQuery>;
 ```
 ### Parameters
-- `operations`: _[ParamsOfQueryOperation](mod_net.md#paramsofqueryoperation)[]_ – List of query operations that must be performed per single fetch.
+- `operations`: _[ParamsOfQueryOperation](mod\_net.md#paramsofqueryoperation)[]_ – List of query operations that must be performed per single fetch.
 
 
 ### Result
@@ -206,7 +206,7 @@ function query_collection(
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
-- `order`?: _[OrderBy](mod_net.md#orderby)[]_ – Sorting order
+- `order`?: _[OrderBy](mod\_net.md#orderby)[]_ – Sorting order
 - `limit`?: _number_ – Number of documents to return
 
 
@@ -240,7 +240,7 @@ function aggregate_collection(
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
-- `fields`?: _[FieldAggregation](mod_net.md#fieldaggregation)[]_ – Projection (result) string
+- `fields`?: _[FieldAggregation](mod\_net.md#fieldaggregation)[]_ – Projection (result) string
 
 
 ### Result
@@ -551,8 +551,8 @@ function get_endpoints(): Promise<ResultOfGetEndpoints>;
 Allows to query and paginate through the list of accounts that the specified account has interacted with, sorted by the time of the last internal message between accounts
 
 *Attention* this query retrieves data from 'Counterparties' service which is not supported in
-the opensource version of DApp Server (and will not be supported) as well as in TON OS SE (will be supported in SE in future),
-but is always accessible via [TON OS Devnet/Mainnet Clouds](https://docs.ton.dev/86757ecb2/p/85c869-networks)
+the opensource version of DApp Server (and will not be supported) as well as in Evernode SE (will be supported in SE in future),
+but is always accessible via [EVER OS Clouds](../ton-os-api/networks.md)
 
 ```ts
 type ParamsOfQueryCounterparties = {
@@ -636,15 +636,15 @@ function query_transaction_tree(
 ```
 ### Parameters
 - `in_msg`: _string_ – Input message id.
-- `abi_registry`?: _[Abi](mod_abi.md#abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
+- `abi_registry`?: _[Abi](mod\_abi.md#abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
 - `timeout`?: _number_ – Timeout used to limit waiting time for the missing messages and transaction.
 <br>If some of the following messages and transactions are missing yet<br>The maximum waiting time is regulated by this option.<br><br>Default value is 60000 (1 min).
 
 
 ### Result
 
-- `messages`: _[MessageNode](mod_net.md#messagenode)[]_ – Messages.
-- `transactions`: _[TransactionNode](mod_net.md#transactionnode)[]_ – Transactions.
+- `messages`: _[MessageNode](mod\_net.md#messagenode)[]_ – Messages.
+- `transactions`: _[TransactionNode](mod\_net.md#transactionnode)[]_ – Transactions.
 
 
 ## create_block_iterator
@@ -1009,7 +1009,7 @@ type OrderBy = {
 }
 ```
 - `path`: _string_
-- `direction`: _[SortDirection](mod_net.md#sortdirection)_
+- `direction`: _[SortDirection](mod\_net.md#sortdirection)_
 
 
 ## SortDirection
@@ -1044,7 +1044,7 @@ When _type_ is _'QueryCollection'_
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
-- `order`?: _[OrderBy](mod_net.md#orderby)[]_ – Sorting order
+- `order`?: _[OrderBy](mod\_net.md#orderby)[]_ – Sorting order
 - `limit`?: _number_ – Number of documents to return
 
 When _type_ is _'WaitForCollection'_
@@ -1058,7 +1058,7 @@ When _type_ is _'AggregateCollection'_
 
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
-- `fields`?: _[FieldAggregation](mod_net.md#fieldaggregation)[]_ – Projection (result) string
+- `fields`?: _[FieldAggregation](mod\_net.md#fieldaggregation)[]_ – Projection (result) string
 
 When _type_ is _'QueryCounterparties'_
 
@@ -1085,7 +1085,7 @@ type FieldAggregation = {
 }
 ```
 - `field`: _string_ – Dot separated path to the field
-- `fn`: _[AggregationFn](mod_net.md#aggregationfn)_ – Aggregation function that must be applied to field values
+- `fn`: _[AggregationFn](mod\_net.md#aggregationfn)_ – Aggregation function that must be applied to field values
 
 
 ## AggregationFn
@@ -1150,7 +1150,7 @@ type MessageNode = {
 - `dst`?: _string_ – Destination address.
 - `value`?: _string_ – Transferred tokens value.
 - `bounce`: _boolean_ – Bounce flag.
-- `decoded_body`?: _[DecodedMessageBody](mod_abi.md#decodedmessagebody)_ – Decoded body.
+- `decoded_body`?: _[DecodedMessageBody](mod\_abi.md#decodedmessagebody)_ – Decoded body.
 <br>Library tries to decode message body using provided `params.abi_registry`.<br>This field will be missing if none of the provided abi can be used to decode.
 
 
@@ -1181,7 +1181,7 @@ type ParamsOfBatchQuery = {
     operations: ParamsOfQueryOperation[]
 }
 ```
-- `operations`: _[ParamsOfQueryOperation](mod_net.md#paramsofqueryoperation)[]_ – List of query operations that must be performed per single fetch.
+- `operations`: _[ParamsOfQueryOperation](mod\_net.md#paramsofqueryoperation)[]_ – List of query operations that must be performed per single fetch.
 
 
 ## ResultOfBatchQuery
@@ -1207,7 +1207,7 @@ type ParamsOfQueryCollection = {
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
 - `result`: _string_ – Projection (result) string
-- `order`?: _[OrderBy](mod_net.md#orderby)[]_ – Sorting order
+- `order`?: _[OrderBy](mod\_net.md#orderby)[]_ – Sorting order
 - `limit`?: _number_ – Number of documents to return
 
 
@@ -1230,7 +1230,7 @@ type ParamsOfAggregateCollection = {
 ```
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
-- `fields`?: _[FieldAggregation](mod_net.md#fieldaggregation)[]_ – Projection (result) string
+- `fields`?: _[FieldAggregation](mod\_net.md#fieldaggregation)[]_ – Projection (result) string
 
 
 ## ResultOfAggregateCollection
@@ -1364,7 +1364,7 @@ type ParamsOfQueryTransactionTree = {
 }
 ```
 - `in_msg`: _string_ – Input message id.
-- `abi_registry`?: _[Abi](mod_abi.md#abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
+- `abi_registry`?: _[Abi](mod\_abi.md#abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
 - `timeout`?: _number_ – Timeout used to limit waiting time for the missing messages and transaction.
 <br>If some of the following messages and transactions are missing yet<br>The maximum waiting time is regulated by this option.<br><br>Default value is 60000 (1 min).
 
@@ -1376,8 +1376,8 @@ type ResultOfQueryTransactionTree = {
     transactions: TransactionNode[]
 }
 ```
-- `messages`: _[MessageNode](mod_net.md#messagenode)[]_ – Messages.
-- `transactions`: _[TransactionNode](mod_net.md#transactionnode)[]_ – Transactions.
+- `messages`: _[MessageNode](mod\_net.md#messagenode)[]_ – Messages.
+- `transactions`: _[TransactionNode](mod\_net.md#transactionnode)[]_ – Transactions.
 
 
 ## ParamsOfCreateBlockIterator
