@@ -45,13 +45,16 @@ The `pragma AbiHeader expire;` line initiates the message expiration option for 
 
 ```graphql
 const client = new TonClient({
-network: { 
-    endpoints: ['net.ton.dev'] 
+    network: {
+        endpoints: [
+            'eri01.net.everos.dev',
+            'rbx01.net.everos.dev',
+            'gra01.net.everos.dev',
+        ]
     },
-abi: {
-message_expiration_timeout: 120000
+    abi: {
+        message_expiration_timeout: 120000,
     }
-
 });
 ```
 

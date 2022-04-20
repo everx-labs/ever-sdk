@@ -10,15 +10,18 @@ In this example the number of retries will be decreased to 3 and expiration time
 
 ```graphql
 const client = new TonClient({
-network: { 
-    endpoints: ['net.ton.dev'] ,
-      message_retries_count: 3
+    network: {
+        endpoints: [
+            'eri01.net.everos.dev',
+            'rbx01.net.everos.dev',
+            'gra01.net.everos.dev',
+        ],
+        message_retries_count: 3
     },
-  abi: {
-    message_expiration_timeout: 120000,
-    message_expiration_timeout_grow_factor: 1.3
+    abi: {
+        message_expiration_timeout: 120000,
+        message_expiration_timeout_grow_factor: 1.3
     }
-
 });
 ```
 
