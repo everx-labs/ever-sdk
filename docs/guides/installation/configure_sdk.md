@@ -28,7 +28,7 @@ Find out how to create and configure `TONClient` object to start interacting wit
 
 Make sure you completed the previous step and [installed SDK properly](add\_sdk\_to\_your\_app.md).
 
-`TONClient` is the main class of TON SDK Library. To start using library one needs to create and setup a TONClient instance.
+`TONClient` is the main class of Ever SDK Library. To start using library one needs to create and setup a TONClient instance.
 
 The simplest initialization code can look like this: we just specify the Developer Network endpoints, other parameters are used by default. See the defaults below.
 
@@ -36,9 +36,9 @@ The simplest initialization code can look like this: we just specify the Develop
 const client = new TonClient({
 network: { 
     endpoints: [
-        '​https://eri01.net.everos.dev',
+        'https://eri01.net.everos.dev',
         'https://rbx01.net.everos.dev',
-        'https://gra01.net.everos.dev'​
+        'https://gra01.net.everos.dev'
 ] 
     } 
 });
@@ -48,7 +48,7 @@ If you are working with [local blockchain Evernode SE](https://github.com/tonlab
 
 Check the full list of [supported network endpoints](../../reference/ton-os-api/networks.md).
 
-You can find reference guide to `TonClient` here: [TON-SDK API Documentation](../../reference/types-and-methods/modules.md).
+You can find reference guide to `TonClient` here: [Ever-SDK API Documentation](../../reference/types-and-methods/modules.md).
 
 ## Configure Client
 
@@ -87,13 +87,13 @@ abi?:{
 
 List of DApp Server addresses. Any correct URL format can be specified, including IP addresses. **This parameter is prevailing over `server_address`**.
 
-For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be `net.ton.dev`. For TON OS SE the endpoint will be `http://localhost`.
+For instance, for `https://rbx01.net.everos.dev/graphql` GraphQL endpoint the server address will be `https://rbx01.net.everos.dev`. For Evernode SE the endpoint the server address will be `http://localhost`.
 
 At the start SDK sends requests to all the specified endpoints and chooses the one whose answer returns first. Later, if the application loses connection, SDK will try to switch to another endpoint from the list. If no endpoint is working there will be an error.
 
 #### server\_address
 
-**This field is deprecated, but left for backward-compatibility.** DApp Server public address. For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be `net.ton.dev`
+**This field is deprecated, but left for backward-compatibility.** DApp Server public address.
 
 #### network\_retries\_count
 

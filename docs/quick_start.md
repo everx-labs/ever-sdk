@@ -24,7 +24,7 @@ $ npm install -g everdev
 
 ## Start local node (SE)
 
-We will run our test on local blockchain for testing ([TON OS SE](https://github.com/tonlabs/tonos-se), start it with this command (docker should be launched).
+We will run our test on local blockchain for testing ([Evernode SE](https://github.com/tonlabs/evernode-se), start it with this command (docker should be launched).
 
 ```
 $ everdev se start
@@ -70,18 +70,18 @@ Read below a short description of what the script does. Look for more detailed i
 Script code:
 
 ```javascript
-const { Account } = require("@tonclient/appkit");
-const { TonClient, signerKeys } = require("@tonclient/core");
-const { libNode } = require("@tonclient/lib-node");
+const { Account } = require("@eversdk/appkit");
+const { TonClient, signerKeys } = require("@eversdk/core");
+const { libNode } = require("@eversdk/lib-node");
 
 const { HelloWallet } = require("./HelloWallet.js")
 
-// Link the platform-dependable TON-SDK binary with the target Application in Typescript
+// Link the platform-dependable Ever-SDK binary with the target Application in Typescript
 // This is a Node.js project, so we link the application with `libNode` binary
-// from `@tonclient/lib-node` package
+// from `@eversdk/lib-node` package
 // If you want to use this code on other platforms, such as Web or React-Native,
-// use  `@tonclient/lib-web` and `@tonclient/lib-react-native` packages accordingly
-// (see README in  https://github.com/tonlabs/ton-client-js )
+// use  `@eversdk/lib-web` and `@eversdk/lib-react-native` packages accordingly
+// (see README in  https://github.com/tonlabs/ever-sdk-js )
 TonClient.useBinaryLibrary(libNode);
 
 /**
@@ -101,7 +101,7 @@ async function main(client) {
     const address = await helloAcc.getAddress();
     console.log(`Future address of the contract will be: ${address}`);
 
-    // Request contract deployment funds form a local TON OS SE giver
+    // Request contract deployment funds form a local Evernode SE giver
     // not suitable for other networks.
     // Deploy `hello` contract.
     await helloAcc.deploy({ useGiver: true });
@@ -135,7 +135,7 @@ async function main(client) {
 (async () => {
     const client = new TonClient({
         network: {
-            // Local TON OS SE instance URL here
+            // Local Evernode SE instance URL here
             endpoints: ["http://localhost"]
         }
     });
@@ -145,7 +145,7 @@ async function main(client) {
         process.exit(0);
     } catch (error) {
         if (error.code === 504) {
-            console.error(`Network is inaccessible. You have to start TON OS SE using \`everdev se start\`.\n If you run SE on another port or ip, replace http://localhost endpoint with http://localhost:port or http://ip:port in index.js file.`);
+            console.error(`Network is inaccessible. You have to start Evernode SE using \`everdev se start\`.\n If you run SE on another port or ip, replace http://localhost endpoint with http://localhost:port or http://ip:port in index.js file.`);
         } else {
             console.error(error);
         }
@@ -226,11 +226,11 @@ HelloWallet.js contains artifacts received from contract compilation. Read more 
 
 The script implements the following logic:
 
-1. Links the project with Node.js [TON-SDK](https://github.com/tonlabs/TON-SDK) binary. If you plan to use JS SDK in Web, link it with Wasm binary. Read more [here](https://github.com/tonlabs/ton-client-js).
-2. `TONClient` instance is created and initialized with [TON OS SE](https://github.com/tonlabs/tonos-se) ("[http://localhost](http://localhost)", local blockchain) endpoint. See the list of other available [endpoints](reference/ton-os-api/networks.md).
+1. Links the project with Node.js [Ever-SDK](https://github.com/tonlabs/ever-sdk) binary. If you plan to use JS SDK in Web, link it with Wasm binary. Read more [here](https://github.com/tonlabs/ever-sdk-js).
+2. `TONClient` instance is created and initialized with [Evernode SE](https://github.com/tonlabs/evernode-se) ("[http://localhost](http://localhost)", local blockchain) endpoint. See the list of other available [endpoints](reference/ton-os-api/networks.md).
 3. new `Account` type object is initialized with a generated key pair, `HelloWallet` object and client object. Read more about Account initialization [here](guides/work\_with\_contracts/deploy.md).
 4. Future address of the contract is calculated and printed to console.
-5. `deploy` function is used to deploy the contract. Flag `useGiver: true` allows to sponsor deploy with TON OS SE giver that is hard coded as the default Account giver. [You can re-assign it to your own giver](guides/work\_with\_contracts/deploy.md#transfer-funds-to-the-future-address).
+5. `deploy` function is used to deploy the contract. Flag `useGiver: true` allows to sponsor deploy with Evernode SE giver that is hard coded as the default Account giver. [You can re-assign it to your own giver](guides/work\_with\_contracts/deploy.md#transfer-funds-to-the-future-address).
 6. `run` function is used to execute contract function `touch` on-chain.
 7. `runLocal` function is used to tun get method `getTimestamp` is executed off-chain - locally to read the contract's data.
 8. `run` function is used to execute contract function `sendValue` on-chain to send some tokens to a randomly generated address.

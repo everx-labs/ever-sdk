@@ -155,12 +155,11 @@ pub enum NetworkQueriesProtocol {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
 pub struct NetworkConfig {
-    /// DApp Server public address.
-    /// For instance, for `net.ton.dev/graphql` GraphQL endpoint the server address will be net.ton.dev
+    /// **This field is deprecated, but left for backward-compatibility.** DApp Server public address.
     pub server_address: Option<String>,
 
     /// List of DApp Server addresses. Any correct URL format can be specified, including IP addresses
-    /// This parameter is prevailing over `server_address`.
+    /// This parameter is prevailing over `server_address`. For more information see [here](../../ton-os-api/networks).
     pub endpoints: Option<Vec<String>>,
 
     /// Deprecated. You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout.
