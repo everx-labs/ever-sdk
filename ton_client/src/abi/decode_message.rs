@@ -7,7 +7,7 @@ use serde_json::Value;
 use std::sync::Arc;
 use ton_abi::contract::DecodedMessage;
 use ton_abi::token::Detokenizer;
-use ton_abi::{Function, TokenValue};
+use ton_abi::{Function};
 use ton_block::MsgAddressInt;
 use ton_sdk::AbiContract;
 use ton_types::SliceData;
@@ -88,9 +88,7 @@ impl DecodedMessageBody {
             (Some(internal_dst), Some(ref responsible))
                 if is_internal && internal_dst == responsible.src =>
             {
-                let mut body = body.clone();
-
-                let receiver_func_id = body.get_next_u32().map_err(|err| {
+                let receiver_func_id = Function::decode_output_id(body.clone()).map_err(|err| {
                     Error::invalid_message_for_decode(format!(
                         "Can't decode function header: {}",
                         err
@@ -98,18 +96,15 @@ impl DecodedMessageBody {
                 })?;
 
                 if receiver_func_id == responsible.answer_id {
-                    let tokens = TokenValue::decode_params(
-                        responsible.function.output_params(),
-                        body,
-                        &abi.version(),
-                        allow_partial,
-                    )
-                    .map_err(|err| {
-                        Error::invalid_message_for_decode(format!(
-                            "Responsible function output can't be decoded: {}",
-                            err
-                        ))
-                    })?;
+                    let tokens = responsible
+                        .function
+                        .decode_output(body, true, false)
+                        .map_err(|err| {
+                            Error::invalid_message_for_decode(format!(
+                                "Responsible function output can't be decoded: {}",
+                                err
+                            ))
+                        })?;
 
                     let decoded = DecodedMessage {
                         function_name: responsible.function.name.clone(),
