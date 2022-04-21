@@ -256,7 +256,7 @@ type NetworkConfig = {
 ```
 - `server_address`?: _string_ – **This field is deprecated, but left for backward-compatibility.** DApp Server public address.
 - `endpoints`?: _string[]_ – List of DApp Server addresses.
-<br>Any correct URL format can be specified, including IP addresses This parameter is prevailing over `server_address`. For more information see [here](../../ton-os-api/networks).
+<br>Any correct URL format can be specified, including IP addresses. This parameter is prevailing over `server_address`.<br>Check the full list of [supported network endpoints](../ton-os-api/networks.md).
 - `network_retries_count`?: _number_ – Deprecated.
 <br>You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout.
 - `max_reconnect_timeout`?: _number_ – Maximum time for sequential reconnections.

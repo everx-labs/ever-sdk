@@ -158,8 +158,9 @@ pub struct NetworkConfig {
     /// **This field is deprecated, but left for backward-compatibility.** DApp Server public address.
     pub server_address: Option<String>,
 
-    /// List of DApp Server addresses. Any correct URL format can be specified, including IP addresses
-    /// This parameter is prevailing over `server_address`. For more information see [here](../../ton-os-api/networks).
+    /// List of DApp Server addresses. Any correct URL format can be specified, including IP addresses.
+    /// This parameter is prevailing over `server_address`.
+    /// Check the full list of [supported network endpoints](../ton-os-api/networks.md).
     pub endpoints: Option<Vec<String>>,
 
     /// Deprecated. You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout.
