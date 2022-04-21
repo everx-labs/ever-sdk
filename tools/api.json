@@ -378,7 +378,7 @@
                 }
               },
               "summary": "List of DApp Server addresses.",
-              "description": "Any correct URL format can be specified, including IP addresses This parameter is prevailing over `server_address`. For more information see [here](../../ton-os-api/networks)."
+              "description": "Any correct URL format can be specified, including IP addresses. This parameter is prevailing over `server_address`.\nCheck the full list of [supported network endpoints](../ton-os-api/networks.md)."
             },
             {
               "name": "network_retries_count",
