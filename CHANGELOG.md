@@ -6,9 +6,9 @@ All notable changes to this project will be documented in this file.
 
 ### New 
 
-- `allow_partial` flag in all `abi.decode_*` functions. This flag controls decoder behaviour whether 
-  return error or not in case of incomplete BOC decoding.
-- `tvm.run_responsible` api function.
+- `allow_partial` flag in all `abi.decode_*` functions. This flag controls decoder behaviour whether to 
+  return error or partially decoded BOC in case of incomplete BOC decoding.
+- `tvm.run_responsible` function, that allows to run responsible methods (including get-methods) off-chain.
 
 ## [1.32.0] – 2022-03-22
 

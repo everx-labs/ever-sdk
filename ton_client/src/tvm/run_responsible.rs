@@ -30,7 +30,7 @@ const DEFAULT_ANSWER_ID: u32 = 0x12345678;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfRunResponsible {
-    /// Contract ABI for encoding and decoding messages
+    /// Contract ABI 
     pub abi: Abi,
     /// Account BOC in `base64`
     pub account: String,
@@ -38,10 +38,10 @@ pub struct ParamsOfRunResponsible {
     pub function_name: String,
     /// Input parameters
     pub input: Option<Value>,
-    /// Value passed with message
+    /// Message token value
     pub value: Option<String>,
-    /// Source address used for message.
-    /// If value is missing then account's address will be used as a source.
+    /// Message source addres
+    /// If ommited then account's address is used
     pub src_address: Option<String>,
 
     /// Execution options
@@ -52,13 +52,12 @@ pub struct ParamsOfRunResponsible {
     pub return_updated_account: Option<bool>,
 }
 
-/// Executes a `responsible` contract method.
-///
-/// Responsible method is an internal message handlers in `async` manner:
-/// - the first parameter of the responsible method always is an `answerId` – the caller's
-///   function selector.
-/// - return statement produces response message to the caller's address with
-///   the function selector equals to `answerId`.
+/// Executes a `responsible` contract method and decodes the returned parameters.  
+/// [Read more about responsible modifyer here](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#external-function-calls).
+/// 
+/// Can be used to run responsible get methods off-chain.
+/// Developer can omit `answer_id` parameter (library then will pass default u32 = 0x12345678 value) 
+/// or pass any random uint32 value, and will receive it in the decoded result's answer_id field. 
 ///
 #[api_function]
 pub async fn run_responsible(
