@@ -4,8 +4,8 @@
 
 Choose any playground from the network list
 
-{% content-ref url="../reference/ton-os-api/networks.md" %}
-[networks.md](../reference/ton-os-api/networks.md)
+{% content-ref url="../reference/ever-os-api/networks.md" %}
+[networks.md](../reference/ever-os-api/networks.md)
 {% endcontent-ref %}
 
 You will see the GraphQL playground.

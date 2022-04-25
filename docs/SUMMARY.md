@@ -21,13 +21,13 @@
 * [Error Codes](reference/error\_codes.md)
 * [JavaScript Reference](https://tonlabs.github.io/ever-sdk-js/)
 * [Rust Reference](https://github.com/tonlabs/ever-sdk/tree/master/docs/reference/rust-api)
-* [EVER OS API](reference/ton-os-api/README.md)
-  * [Networks](reference/ton-os-api/networks.md)
-  * [Web Playground](reference/ton-os-api/web\_playground.md)
-  * [Schema](reference/ton-os-api/schema.md)
-  * [Deprecated: Collection Query Language](reference/ton-os-api/query\_language.md)
-  * [Field Descriptions](reference/ton-os-api/field\_descriptions.md)
-  * [Samples](reference/ton-os-api/samples.md)
+* [EVER OS API](reference/ever-os-api/README.md)
+  * [Networks](reference/ever-os-api/networks.md)
+  * [Web Playground](reference/ever-os-api/web\_playground.md)
+  * [Schema](reference/ever-os-api/schema.md)
+  * [Deprecated: Collection Query Language](reference/ever-os-api/query\_language.md)
+  * [Field Descriptions](reference/ever-os-api/field\_descriptions.md)
+  * [Samples](reference/ever-os-api/samples.md)
 
 ## Samples
 
@@ -79,4 +79,4 @@
 ## Links
 
 * [Ever SDK repository](https://github.com/tonlabs/ever-sdk)
-* [AppKit JS documentation](https://tonlabs.gitbook.io/appkit-js/)
+* [AppKit JS documentation](https://docs.everos.dev/appkit-js/)

@@ -20,7 +20,7 @@ There are a few collections with blockchain data:
 * _blocks_: blockchain blocks.
 * _block\_signatures_ : validator block signatures
 
-The JS Client Library contains the Query Module called `net` - a wrapper for [TON Labs GraphQL API](../../reference/ton-os-api/) - to perform GraphQL queries over a blockchain.
+The JS Client Library contains the Query Module called `net` - a wrapper for [TON Labs GraphQL API](../../reference/ever-os-api/) - to perform GraphQL queries over a blockchain.
 
 [Use `query_collection` method to query data that can be filtered and sorted](../../reference/types-and-methods/mod\_net.md#query\_collection).
 
