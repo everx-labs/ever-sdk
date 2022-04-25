@@ -46,7 +46,7 @@ network: {
 
 If you are working with [local blockchain Evernode SE](https://github.com/tonlabs/evernode-se), specify [http://localhost](http://localhost) in the `endpoints`.
 
-Check the full list of [supported network endpoints](../../reference/ton-os-api/networks.md).
+Check the full list of [supported network endpoints](../../reference/ever-os-api/networks.md).
 
 You can find reference guide to `TonClient` here: [Ever-SDK API Documentation](../../reference/types-and-methods/modules.md).
 

@@ -8,19 +8,19 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 
 ## Content Table
 
-* [Ever SDK](README.md#ever-sdk)
-  * [Content Table](README.md#content-table)
-  * [Useful links](README.md#useful-links)
-  * [What is Core Everscale Client Library](README.md#what-is-core-everscale-client-library)
-  * [SDKs in other languages (bindings over Ever-SDK)](README.md#sdks-in-other-languages-bindings-over-ever-sdk)
-    * [Official Javascript(Typescript) SDK](README.md#official-javascripttypescript-sdk)
-    * [Community bindings](README.md#community-bindings)
-  * [How to use library](README.md#how-to-use-library)
-  * [How to avoid Soft Breaking Problems](README.md#how-to-avoid-soft-breaking-problems)
-  * [Build client library](README.md#build-client-library)
-  * [Build artifacts](README.md#build-artifacts)
-  * [Run tests](README.md#run-tests)
-  * [Download precompiled binaries](README.md#download-precompiled-binaries)
+* [Ever SDK](./#ever-sdk)
+  * [Content Table](./#content-table)
+  * [Useful links](./#useful-links)
+  * [What is Core Everscale Client Library](./#what-is-core-everscale-client-library)
+  * [SDKs in other languages (bindings over Ever-SDK)](./#sdks-in-other-languages-bindings-over-ever-sdk)
+    * [Official Javascript(Typescript) SDK](./#official-javascripttypescript-sdk)
+    * [Community bindings](./#community-bindings)
+  * [How to use library](./#how-to-use-library)
+  * [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
+  * [Build client library](./#build-client-library)
+  * [Build artifacts](./#build-artifacts)
+  * [Run tests](./#run-tests)
+  * [Download precompiled binaries](./#download-precompiled-binaries)
 
 ## Useful links
 
@@ -46,7 +46,7 @@ Also this approach provided an opportunity to easily create bindings for any pro
 
 Client Library exposes all the functionality through a few of exported functions. All interaction with library is performed using JSON-RPC like protocol.
 
-Library works over [GraphQL API](docs/reference/ton-os-api/) of [EVER OS DApp Server](https://github.com/tonlabs/evernode-ds). So, it can be used to interact directly with [EVER OS Clouds](docs/reference/ton-os-api/networks.md).
+Library works over [GraphQL API](docs/reference/ever-os-api/) of [EVER OS DApp Server](https://github.com/tonlabs/evernode-ds). So, it can be used to interact directly with [EVER OS Clouds](docs/reference/ever-os-api/networks.md).
 
 ## SDKs in other languages (bindings over Ever-SDK)
 
@@ -190,7 +190,7 @@ To run test suite use standard Rust test command
 cargo test
 ```
 
-SDK tests need [EVER OS API](docs/reference/ton-os-api/networks.md) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/evernode-ds) which runs in real networks and by local blockchain [Evernode SE](https://github.com/tonlabs/evernode-se).
+SDK tests need [EVER OS API](docs/reference/ever-os-api/networks.md) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/evernode-ds) which runs in real networks and by local blockchain [Evernode SE](https://github.com/tonlabs/evernode-se).
 
 Evernode SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`. If you have Evernode SE running on another address or you need to run tests on a real Everscale network use the following environment variables to override the default parameters
 
