@@ -20,7 +20,7 @@ Events in blockchain are external outbound messages. In GraphQL API their `msg_t
 
 ## Query/subscribe to events
 
-You can fetch events of you contract with this filter from graphql. Try it out in playground [main.ton.dev/graphql](https://main.ton.dev/graphql):
+You can fetch events of you contract with this filter from graphql. Try it out in playground [https://eri01.main.everos.dev/graphql](https://eri01.main.everos.dev/graphql):
 
 ```graphql
 query{
@@ -177,4 +177,4 @@ switch (decoded.body_type) {
                 }
 ```
 
-Check out [AppKit documentation](https://tonlabs.gitbook.io/appkit-js/guides/work\_with\_events) for this use case.
+Check out [AppKit documentation](https://docs.everos.dev/appkit-js/guides/work\_with\_events) for this use case.

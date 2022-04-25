@@ -136,4 +136,4 @@ console.log(`Touch fees: ${JSON.stringify(touch_processing_result.fees,null,2)}`
 
 See the full example in sdk samples repository: [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index\_pattern2.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index\_pattern2.js)
 
-Check out [AppKit documentation](https://tonlabs.gitbook.io/appkit-js/guides/run\_onchain) for this use case.
+Check out [AppKit documentation](https://docs.everos.dev/appkit-js/guides/run\_onchain) for this use case.

@@ -164,7 +164,7 @@ console.log(`Future address of the contract will be: ${address}`);
 
 Now that you know the address, you need to transfer the initial funds to it from your wallet or the Giver.
 
-> **Note**: Evernode SE offers a pre-deployed giver. When in real networks, you need to use your wallet for this or deploy your own giver. We have separated guides of [deployment](https://tonlabs.gitbook.io/everdev/guides/work-with-devnet) and [usage](custom\_giver.md) of your own giver.
+> **Note**: Evernode SE offers a pre-deployed giver. When in real networks, you need to use your wallet for this or deploy your own giver. We have separated guides of [deployment](https://docs.everos.dev/everdev/guides/work-with-devnet) and [usage](custom\_giver.md) of your own giver.
 
 ```javascript
 // Request contract deployment funds form a local Evernode SE giver
@@ -304,4 +304,4 @@ You can get it several ways:
 
 Full sample: [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/)
 
-Check out [AppKit documentation](https://tonlabs.gitbook.io/appkit-js/guides/deploy) for this use case.
+Check out [AppKit documentation](https://docs.everos.dev/appkit-js/guides/deploy) for this use case.
