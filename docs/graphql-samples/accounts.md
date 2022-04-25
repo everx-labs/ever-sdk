@@ -420,7 +420,7 @@ We see that previous page exists and can continue pagination.&#x20;
 
 Returns the paginable list of accounts the account has ever interacted with, with the last message info attached, sorted by the last message time. Useful for applications that want to show a screen with dialog list sorted by the last interaction time.
 
-<mark style="color:orange;">**Attention! Available only in public API. Not available in Evernode-DS**</mark>**.**[ **See functionality comparison section.** ](https://tonlabs.gitbook.io/evernode-platform/products/functionality-comparison)****
+<mark style="color:orange;">**Attention! Available only in public API. Not available in Evernode-DS**</mark>**.**[ **See functionality comparison section.** ](https://docs.everos.dev/evernode-platform/products/functionality-comparison)****
 
 ```graphql
 query{

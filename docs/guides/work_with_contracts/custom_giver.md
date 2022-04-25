@@ -2,9 +2,9 @@
 
 Working with DevNet is similar to working with SE except you usually don't have any predeployed giver in DevNet. So you need to fund your contracts manually or deploy your own giver, which you will be able to use the same way as in SE. Deploying your own giver can be useful, if you need to deploy many contracts or need to frequently redeploy and test contract after subsequent midification.
 
-You can find how to deploy your own Giver [here](https://tonlabs.gitbook.io/everdev/guides/work-with-devnet).
+You can find how to deploy your own Giver [here](https://docs.everos.dev/everdev/guides/work-with-devnet).
 
-In this guide we will show you how you can use your own Giver in the core SDK. 
+In this guide we will show you how you can use your own Giver in the core SDK.
 
 First of all, let's initialize giver's address, keys and ABI. All the data in this example are used from Evernode SE giver, substitute them by your Giver's data.
 

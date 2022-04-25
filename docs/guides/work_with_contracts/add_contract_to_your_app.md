@@ -15,13 +15,13 @@ If you need to deploy a contract, then you will also need its tvc file. This fil
 
 If you plan to develop and compile the contracts yourself then these docs will help you:
 
-* [Compiling contract with one command with everdev](https://github.com/tonlabs/everdev#compile)
-* [Solidity Compiler](https://docs.ton.dev/86757ecb2/p/950f8a-write-smart-contract-in-solidity)
-* [Public TON Labs repository with contracts](https://github.com/tonlabs/ton-labs-contracts)
+* [Compiling contract with one command with everdev](https://docs.everos.dev/everdev/command-line-interface/solidity#compile)
+* [Solidity Compiler](https://github.com/tonlabs/TON-Solidity-Compiler)
+* [Public repository with contracts](https://github.com/tonlabs/ton-labs-contracts)
 
 ## Create contract wrapper
 
-Use EVERDEV tool to [generate contract wrapper](https://github.com/tonlabs/everdev#create-contract-js-wrapper) that will have the following structure:
+Use EVERDEV tool to [generate contract wrapper](https://docs.everos.dev/everdev/command-line-interface/sdk#create-contract-js-wrapper) that will have the following structure:
 
 ```javascript
 export type Contract = {

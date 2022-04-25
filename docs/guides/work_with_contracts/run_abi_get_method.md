@@ -62,4 +62,4 @@ Here is the sample that executes the get method `getTimestamp` on the latest acc
 
 [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js)
 
-Check out [AppKit documentation](https://tonlabs.gitbook.io/appkit-js/guides/run\_abi\_get\_method) for this use case.
+Check out [AppKit documentation](https://docs.everos.dev/appkit-js/guides/run\_abi\_get\_method) for this use case.
