@@ -8,19 +8,19 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 
 ## Content Table
 
-* [Ever SDK](./#ever-sdk)
-  * [Content Table](./#content-table)
-  * [Useful links](./#useful-links)
-  * [What is Core Everscale Client Library](./#what-is-core-everscale-client-library)
-  * [SDKs in other languages (bindings over Ever-SDK)](./#sdks-in-other-languages-bindings-over-ever-sdk)
-    * [Official Javascript(Typescript) SDK](./#official-javascripttypescript-sdk)
-    * [Community bindings](./#community-bindings)
-  * [How to use library](./#how-to-use-library)
-  * [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
-  * [Build client library](./#build-client-library)
-  * [Build artifacts](./#build-artifacts)
-  * [Run tests](./#run-tests)
-  * [Download precompiled binaries](./#download-precompiled-binaries)
+* [Ever SDK](README.md#ever-sdk)
+  * [Content Table](README.md#content-table)
+  * [Useful links](README.md#useful-links)
+  * [What is Core Everscale Client Library](README.md#what-is-core-everscale-client-library)
+  * [SDKs in other languages (bindings over Ever-SDK)](README.md#sdks-in-other-languages-bindings-over-ever-sdk)
+    * [Official Javascript(Typescript) SDK](README.md#official-javascripttypescript-sdk)
+    * [Community bindings](README.md#community-bindings)
+  * [How to use library](README.md#how-to-use-library)
+  * [How to avoid Soft Breaking Problems](README.md#how-to-avoid-soft-breaking-problems)
+  * [Build client library](README.md#build-client-library)
+  * [Build artifacts](README.md#build-artifacts)
+  * [Run tests](README.md#run-tests)
+  * [Download precompiled binaries](README.md#download-precompiled-binaries)
 
 ## Useful links
 
