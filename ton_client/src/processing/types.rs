@@ -141,4 +141,28 @@ pub enum ProcessingEvent {
         message: String,
         error: ClientError,
     },
+
+    RempSentToValidators {
+        message_id: String,
+        timestamp: u64,
+        json: Value,
+    },
+    RempIncludedIntoBlock {
+        message_id: String,
+        timestamp: u64,
+        json: Value,
+    },
+    RempIncludedIntoAcceptedBlock {
+        message_id: String,
+        timestamp: u64,
+        json: Value,
+    },
+    RempOther {
+        message_id: String,
+        timestamp: u64,
+        json: Value,
+    },
+    RempError {
+        error: ClientError,
+    }
 }

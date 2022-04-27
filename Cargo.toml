@@ -7,3 +7,6 @@ members = [
     'api/test',
     'tools/update_trusted_blocks'
 ]
+
+[patch.'https://github.com/tonlabs/ton-labs-abi.git']
+ton_abi = { git = 'https://github.com/tonlabs//ton-labs-abi.git', branch = "allow-partial-decode" }
