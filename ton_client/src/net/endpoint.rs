@@ -16,9 +16,10 @@ use crate::client::{core_version, ClientEnv, FetchMethod};
 use crate::error::ClientResult;
 use crate::net::{Error, NetworkConfig};
 use serde_json::Value;
-use std::sync::atomic::{AtomicI64, AtomicU32, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicI64, AtomicU32, AtomicU64, Ordering, AtomicBool};
 
 const V_0_39_0: u32 = 39000;
+const V_0_51_0: u32 = 51000;
 const BOC_VERSION: &str = "2";
 
 pub(crate) struct Endpoint {
@@ -29,6 +30,7 @@ pub(crate) struct Endpoint {
     pub server_time_delta: AtomicI64,
     pub server_latency: AtomicU64,
     pub next_latency_detection_time: AtomicU64,
+    pub remp_enabled: AtomicBool,
 }
 
 impl Clone for Endpoint {
@@ -43,12 +45,14 @@ impl Clone for Endpoint {
             next_latency_detection_time: AtomicU64::new(
                 self.next_latency_detection_time.load(Ordering::Relaxed),
             ),
+            remp_enabled: AtomicBool::new(self.remp_enabled.load(Ordering::Relaxed))
         }
     }
 }
 
 const QUERY_INFO_SCHEMA: &str = "?query=%7Binfo%7Bversion%20time%7D%7D";
 const QUERY_INFO_METRICS: &str = "?query=%7Binfo%7Bversion%20time%20latency%7D%7D";
+const QUERY_INFO_METRICS_REMP: &str = "?query=%7Binfo%7Bversion%20time%20latency%20rempEnabled%7D%7D";
 
 const HTTP_PROTOCOL: &str = "http://";
 const HTTPS_PROTOCOL: &str = "https://";
@@ -117,6 +121,7 @@ impl Endpoint {
             server_version: AtomicU32::default(),
             server_latency: AtomicU64::default(),
             next_latency_detection_time: AtomicU64::default(),
+            remp_enabled: AtomicBool::default(),
         };
         endpoint.apply_server_info(client_env, config, info_request_time, &info)?;
         endpoint.refresh(client_env, config).await?;
@@ -129,9 +134,19 @@ impl Endpoint {
         config: &NetworkConfig,
     ) -> ClientResult<()> {
         if self.version() >= V_0_39_0 {
+            let query = if self.version() >= V_0_51_0 {
+                QUERY_INFO_METRICS_REMP
+            } else {
+                QUERY_INFO_METRICS
+            };
             let info_request_time = client_env.now_ms();
-            let (info, _, _) =
-                Self::fetch_info_with_url(client_env, &self.query_url, QUERY_INFO_METRICS, config.query_timeout).await?;
+            let (info, _, _) = Self::fetch_info_with_url(
+                client_env,
+                &self.query_url,
+                query,
+                config.query_timeout,
+            )
+            .await?;
             self.apply_server_info(client_env, config, info_request_time, &info)?;
         }
         Ok(())
@@ -175,6 +190,7 @@ impl Endpoint {
                 );
             }
         }
+        self.remp_enabled.store(info["rempEnabled"].as_bool().unwrap_or_default(), Ordering::Relaxed);
         Ok(())
     }
 
@@ -192,5 +208,9 @@ impl Endpoint {
 
     pub fn next_latency_detection_time(&self) -> u64 {
         self.next_latency_detection_time.load(Ordering::Relaxed)
+    }
+
+    pub fn remp_enabled(&self) -> bool {
+        self.remp_enabled.load(Ordering::Relaxed)
     }
 }

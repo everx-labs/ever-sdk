@@ -31,6 +31,9 @@ pub enum ErrorCode {
     BlockNotFound = 511,
     InvalidData = 512,
     ExternalSignerMustNotBeUsed = 513,
+    MessageRejected = 514,
+    InvalidRempStatus = 515,
+    NextRempStatusTimeout = 516,
 }
 
 pub struct Error;
@@ -145,7 +148,7 @@ impl Error {
     pub fn fetch_transaction_result_failed<E: std::fmt::Display>(
         err: E,
         message_id: &str,
-        shard_block_id: &String,
+        shard_block_id: &str,
     ) -> ClientError {
         Self::processing_error(
             ErrorCode::InvalidBlockReceived,
@@ -157,7 +160,7 @@ impl Error {
 
     pub fn message_expired(
         message_id: &str,
-        shard_block_id: &String,
+        shard_block_id: &str,
         expiration_time: u32,
         block_time: u32,
         address: &MsgAddressInt,
@@ -212,5 +215,22 @@ impl Error {
 
     pub fn invalid_data<E: std::fmt::Display>(err: E) -> ClientError {
         error(ErrorCode::InvalidData, format!("Invalid data: {}", err))
+    }
+
+    pub fn message_rejected(message_id: &str, err: &str) -> ClientError {
+        Self::processing_error(
+            ErrorCode::MessageRejected,
+            format!("message has been rejected: {}", err),
+            message_id,
+            None,
+        )
+    }
+
+    pub fn invalid_remp_status<E: std::fmt::Display>(err: E) -> ClientError {
+        error(ErrorCode::InvalidRempStatus, format!("Invalid REMP status: {}", err))
+    }
+
+    pub fn next_remp_status_timeout() -> ClientError {
+        error(ErrorCode::NextRempStatusTimeout, format!("Next REMP status awaiting timeout"))
     }
 }

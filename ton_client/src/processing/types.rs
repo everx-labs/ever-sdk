@@ -141,4 +141,34 @@ pub enum ProcessingEvent {
         message: String,
         error: ClientError,
     },
+
+    /// Notifies the app that the message has been delivered to the thread's validators 
+    RempSentToValidators {
+        message_id: String,
+        timestamp: u64,
+        json: Value,
+    },
+    /// Notifies the app that the message has been successfully included into a block candidate by the thread's collator
+    RempIncludedIntoBlock {
+        message_id: String,
+        timestamp: u64,
+        json: Value,
+    },
+    /// Notifies the app that the block candicate with the message has been accepted by the thread's validators
+    RempIncludedIntoAcceptedBlock {
+        message_id: String,
+        timestamp: u64,
+        json: Value,
+    },
+    /// Notifies the app about some other minor REMP statuses occurring during message processing
+    RempOther {
+        message_id: String,
+        timestamp: u64,
+        json: Value,
+    },
+    /// Notifies the app about any problem that has occured in REMP processing - 
+    /// in this case library switches to the fallback transaction awaiting scenario (sequential block reading). 
+    RempError {
+        error: ClientError,
+    }
 }
