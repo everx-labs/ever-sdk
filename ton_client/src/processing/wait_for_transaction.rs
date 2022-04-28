@@ -173,7 +173,6 @@ async fn process_remp_message<F: futures::Future<Output = ()> + Send>(
     remp_message: ClientResult<serde_json::Value>,
 ) -> ClientResult<Option<ClientResult<ResultOfProcessMessage>>> {
     let remp_message = remp_message?;
-    println!("process_remp_message {} {:#}", chrono::prelude::Utc::now().timestamp_millis(), remp_message);
     let status: RempStatus = serde_json::from_value(remp_message)
         .map_err(|err| Error::invalid_remp_status(format!("can not parse REMP status message: {}", err)))?;
 

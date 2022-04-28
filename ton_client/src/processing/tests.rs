@@ -18,7 +18,6 @@ use api_info::ApiModule;
 
 fn processing_event_name(e: Option<&ProcessingEvent>) -> &str {
     if let Some(e) = e {
-        println!("callback {} {:#}", chrono::prelude::Utc::now().timestamp_millis(), json!(e));
         match e {
             ProcessingEvent::DidSend { .. } => "DidSend",
             ProcessingEvent::FetchFirstBlockFailed { .. } => "FetchFirstBlockFailed",
@@ -39,7 +38,31 @@ fn processing_event_name(e: Option<&ProcessingEvent>) -> &str {
     }
 }
 
-fn assert_events(events: Vec<ProcessingEvent>, expected: Vec<&str>) {
+fn assert_events(events: &[ProcessingEvent], remp_enabled: bool) {
+    let expected = if remp_enabled {
+        &[
+            "WillFetchFirstBlock",
+            "WillSend",
+            "DidSend",
+            "RempOther*",
+            "RempSentToValidators",
+            "RempOther*",
+            "RempIncludedIntoBlock",
+            "RempOther*",
+            "RempIncludedIntoAcceptedBlock",
+            "RempOther*",
+            "RempIncludedIntoAcceptedBlock*",
+            "RempOther*",
+        ][..]
+    } else {
+        &[
+            "WillFetchFirstBlock",
+            "WillSend",
+            "WillSend*",
+            "DidSend",
+            "WillFetchNextBlock*",
+        ][..]
+    };
     let mut i = 0;
     for expected in expected {
         if let Some(name) = expected.strip_suffix("*") {
@@ -48,7 +71,7 @@ fn assert_events(events: Vec<ProcessingEvent>, expected: Vec<&str>) {
             }
         } else {
             let event = events.get(i);
-            assert_eq!(processing_event_name(event), expected);
+            assert_eq!(processing_event_name(event), *expected);
             i += 1;
         }
     }
@@ -82,6 +105,7 @@ async fn test_wait_message() {
     let events_copy = events.clone();
     let callback = move |result: ProcessingEvent, response_type: ProcessingResponseType| {
         assert_eq!(response_type, ProcessingResponseType::ProcessingEvent);
+        println!("{} {:#}", chrono::prelude::Utc::now().timestamp_millis(), json!(result));
         let events_copy = events_copy.clone();
         async move {
             events_copy.lock().await.push(result);
@@ -157,34 +181,7 @@ async fn test_wait_message() {
             output: None,
         })
     );
-    let expected = if remp_enabled(&client).await {
-        vec![
-            "WillFetchFirstBlock",
-            "WillSend",
-            "DidSend",
-            "RempOther*",
-            "RempSentToValidators",
-            "RempOther*",
-            "RempIncludedIntoBlock",
-            "RempOther*",
-            "RempIncludedIntoAcceptedBlock",
-            "RempOther*",
-            "RempIncludedIntoAcceptedBlock*",
-            "RempOther*",
-        ]
-    } else {
-        vec![
-            "WillFetchFirstBlock",
-            "WillSend",
-            "WillSend*",
-            "DidSend",
-            "WillFetchNextBlock*",
-        ]
-    };
-    assert_events(
-        events.lock().await.clone(),
-        expected
-    );
+    assert_events(&events.lock().await, remp_enabled(&client).await);
 }
 
 #[tokio::test(core_threads = 2)]
@@ -249,34 +246,8 @@ async fn test_process_message() {
         })
     );
 
-    let expected = if remp_enabled(&client).await {
-        vec![
-            "WillFetchFirstBlock",
-            "WillSend",
-            "DidSend",
-            "RempOther*",
-            "RempSentToValidators",
-            "RempOther*",
-            "RempIncludedIntoBlock",
-            "RempOther*",
-            "RempIncludedIntoAcceptedBlock",
-            "RempOther*",
-            "RempIncludedIntoAcceptedBlock*",
-            "RempOther*",
-        ]
-    } else {
-        vec![
-            "WillFetchFirstBlock",
-            "WillSend",
-            "WillSend*",
-            "DidSend",
-            "WillFetchNextBlock*",
-        ]
-    };
-    assert_events(
-        events.lock().await.clone(),
-        expected
-    );
+    let remp_enabled = remp_enabled(&client).await;
+    assert_events(&events.lock().await, remp_enabled);
 
     let events = std::sync::Arc::new(tokio::sync::Mutex::new(vec![]));
     let events_copy = events.clone();
@@ -334,34 +305,7 @@ async fn test_process_message() {
         })
     );
 
-    let expected = if remp_enabled(&client).await {
-        vec![
-            "WillFetchFirstBlock",
-            "WillSend",
-            "DidSend",
-            "RempOther*",
-            "RempSentToValidators",
-            "RempOther*",
-            "RempIncludedIntoBlock",
-            "RempOther*",
-            "RempIncludedIntoAcceptedBlock",
-            "RempOther*",
-            "RempIncludedIntoAcceptedBlock*",
-            "RempOther*",
-        ]
-    } else {
-        vec![
-            "WillFetchFirstBlock",
-            "WillSend",
-            "WillSend*",
-            "DidSend",
-            "WillFetchNextBlock*",
-        ]
-    };
-    assert_events(
-        events.lock().await.clone(),
-        expected
-    );
+    assert_events(&events.lock().await, remp_enabled);
 }
 
 #[tokio::test(core_threads = 2)]
@@ -416,10 +360,15 @@ async fn test_error_resolving() {
         }),
     };
 
-    let original_code = if TestClient::abi_version() == 1 {
-        ErrorCode::TransactionWaitTimeout
+    let remp_enabled = remp_enabled(&client).await;
+    let original_code = if remp_enabled {
+        ErrorCode::MessageRejected
     } else {
-        ErrorCode::MessageExpired
+        if TestClient::abi_version() == 1 {
+            ErrorCode::TransactionWaitTimeout
+        } else {
+            ErrorCode::MessageExpired
+        }
     } as u32;
 
     // deploy to non-exesting account
@@ -556,6 +505,11 @@ async fn test_retries() {
             "message_expiration_timeout": 5000,
         }
     }));
+
+    if remp_enabled(&client).await {
+        return;
+    }
+
     let client = std::sync::Arc::new(client);
     let (abi, tvc) = TestClient::package(HELLO, Some(2));
     let keys = client.generate_sign_keys();

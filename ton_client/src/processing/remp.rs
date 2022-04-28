@@ -38,22 +38,22 @@ impl Into<ProcessingEvent> for RempStatus {
     fn into(self) -> ProcessingEvent {
         match self {
             RempStatus::SentToValidators(data) => {
-                ProcessingEvent::RempSentToValidators { message_id: data.message_id, timestamp: chrono::prelude::Utc::now().timestamp_millis() as u64, json: data.json }
+                ProcessingEvent::RempSentToValidators { message_id: data.message_id, timestamp: data.timestamp, json: data.json }
             },
             RempStatus::IncludedIntoBlock(data) => {
-                ProcessingEvent::RempIncludedIntoBlock { message_id: data.message_id, timestamp: chrono::prelude::Utc::now().timestamp_millis() as u64, json: data.json }
+                ProcessingEvent::RempIncludedIntoBlock { message_id: data.message_id, timestamp: data.timestamp, json: data.json }
             },
             RempStatus::IncludedIntoAcceptedBlock(data) => {
-                ProcessingEvent::RempIncludedIntoAcceptedBlock { message_id: data.message_id, timestamp: chrono::prelude::Utc::now().timestamp_millis() as u64, json: data.json }
+                ProcessingEvent::RempIncludedIntoAcceptedBlock { message_id: data.message_id, timestamp: data.timestamp, json: data.json }
             },
             RempStatus::Other(data) => {
-                ProcessingEvent::RempOther { message_id: data.message_id, timestamp: chrono::prelude::Utc::now().timestamp_millis() as u64, json: data.json }
+                ProcessingEvent::RempOther { message_id: data.message_id, timestamp: data.timestamp, json: data.json }
             },
             RempStatus::RejectedByFullnode(data) => {
-                ProcessingEvent::RempOther { message_id: data.message_id, timestamp: chrono::prelude::Utc::now().timestamp_millis() as u64, json: data.json }
+                ProcessingEvent::RempOther { message_id: data.message_id, timestamp: data.timestamp, json: data.json }
             },
             RempStatus::Finalized(data) => {
-                ProcessingEvent::RempOther { message_id: data.message_id, timestamp: chrono::prelude::Utc::now().timestamp_millis() as u64, json: data.json }
+                ProcessingEvent::RempOther { message_id: data.message_id, timestamp: data.timestamp, json: data.json }
             },
         }
     }

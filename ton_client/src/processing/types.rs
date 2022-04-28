@@ -142,26 +142,32 @@ pub enum ProcessingEvent {
         error: ClientError,
     },
 
+    /// Notifies the app that the message has been sent to shardchain validators by fullnode
     RempSentToValidators {
         message_id: String,
         timestamp: u64,
         json: Value,
     },
+    /// Notifies the app that the message has been included into collated shrdchain block by some validator
     RempIncludedIntoBlock {
         message_id: String,
         timestamp: u64,
         json: Value,
     },
+    /// Notifies the app that the block the message was included to was accepted by shardchain validators
     RempIncludedIntoAcceptedBlock {
         message_id: String,
         timestamp: u64,
         json: Value,
     },
+    /// Notifies the app about some other minor REMP statuses occured during message processing
     RempOther {
         message_id: String,
         timestamp: u64,
         json: Value,
     },
+    /// Notifies the app about error occured during REMP status processing. When any error occured 
+    /// fallback transaction awaiting scenario is activated
     RempError {
         error: ClientError,
     }
