@@ -142,32 +142,32 @@ pub enum ProcessingEvent {
         error: ClientError,
     },
 
-    /// Notifies the app that the message has been sent to shardchain validators by fullnode
+    /// Notifies the app that the message has been delivered to the thread's validators 
     RempSentToValidators {
         message_id: String,
         timestamp: u64,
         json: Value,
     },
-    /// Notifies the app that the message has been included into collated shrdchain block by some validator
+    /// Notifies the app that the message has been successfully included into a block candidate by the thread's collator
     RempIncludedIntoBlock {
         message_id: String,
         timestamp: u64,
         json: Value,
     },
-    /// Notifies the app that the block the message was included to was accepted by shardchain validators
+    /// Notifies the app that the block candicate with the message has been accepted by the thread's validators
     RempIncludedIntoAcceptedBlock {
         message_id: String,
         timestamp: u64,
         json: Value,
     },
-    /// Notifies the app about some other minor REMP statuses occured during message processing
+    /// Notifies the app about some other minor REMP statuses occurring during message processing
     RempOther {
         message_id: String,
         timestamp: u64,
         json: Value,
     },
-    /// Notifies the app about error occured during REMP status processing. When any error occured 
-    /// fallback transaction awaiting scenario is activated
+    /// Notifies the app about any problem that has occured in REMP processing - 
+    /// in this case library switches to the fallback transaction awaiting scenario (sequential block reading). 
     RempError {
         error: ClientError,
     }
