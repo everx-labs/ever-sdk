@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### New 
 
 - `allow_partial` flag in all `abi.decode_*` functions. This flag controls decoder behaviour whether return error or not in case of incomplete BOC decoding
+- `REMP` supported. `ProcessingEvent` enum provided from `processing.wait_for_transaction` function callback is extended with `REMP` statuses 
 
 ## [1.32.0] – 2022-03-22
 
