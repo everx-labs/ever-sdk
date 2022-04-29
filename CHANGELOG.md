@@ -2,6 +2,10 @@
 
 All notable changes to this project will be documented in this file.
 
+### New
+- supported changed interface of ton_types::Cell
+- supported removing Copy interface from UInt256
+
 ## [1.32.0] – 2022-03-22
 
 ### New 
