@@ -1,4 +1,4 @@
-# TON SDK
+# Ever SDK
 
 Core Client Library built on the EVER OS GraphQL API for Everscale DApp development
 
@@ -8,19 +8,19 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 
 ## Content Table
 
-* [TON SDK](./#ton-sdk)
-  * [Content Table](./#content-table)
-  * [Useful links](./#useful-links)
-  * [What is Core Everscale Client Library](./#what-is-core-everscale-client-library)
-  * [SDKs in other languages (bindings over TON-SDK)](./#sdks-in-other-languages-bindings-over-ton-sdk)
-    * [Official Javascript(Typescript) SDK](./#official-javascripttypescript-sdk)
-    * [Community bindings](./#community-bindings)
-  * [How to use library](./#how-to-use-library)
-  * [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
-  * [Build client library](./#build-client-library)
-  * [Build artifacts](./#build-artifacts)
-  * [Run tests](./#run-tests)
-  * [Download precompiled binaries](./#download-precompiled-binaries)
+* [Ever SDK](README.md#ever-sdk)
+  * [Content Table](README.md#content-table)
+  * [Useful links](README.md#useful-links)
+  * [What is Core Everscale Client Library](README.md#what-is-core-everscale-client-library)
+  * [SDKs in other languages (bindings over Ever-SDK)](README.md#sdks-in-other-languages-bindings-over-ever-sdk)
+    * [Official Javascript(Typescript) SDK](README.md#official-javascripttypescript-sdk)
+    * [Community bindings](README.md#community-bindings)
+  * [How to use library](README.md#how-to-use-library)
+  * [How to avoid Soft Breaking Problems](README.md#how-to-avoid-soft-breaking-problems)
+  * [Build client library](README.md#build-client-library)
+  * [Build artifacts](README.md#build-artifacts)
+  * [Run tests](README.md#run-tests)
+  * [Download precompiled binaries](README.md#download-precompiled-binaries)
 
 ## Useful links
 
@@ -46,9 +46,9 @@ Also this approach provided an opportunity to easily create bindings for any pro
 
 Client Library exposes all the functionality through a few of exported functions. All interaction with library is performed using JSON-RPC like protocol.
 
-Library works over [GraphQL API](docs/reference/ton-os-api/) of [EVER OS DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server). So, it can be used to interact directly with [EVER OS Clouds](docs/reference/ton-os-api/networks.md).
+Library works over [GraphQL API](docs/reference/ever-os-api/) of [EVER OS DApp Server](https://github.com/tonlabs/evernode-ds). So, it can be used to interact directly with [EVER OS Clouds](docs/reference/ever-os-api/networks.md).
 
-## SDKs in other languages (bindings over TON-SDK)
+## SDKs in other languages (bindings over Ever-SDK)
 
 Binding is a thin client library written on the specific language that acts like a bridge between a client library and an application code written on that language.
 
@@ -56,7 +56,7 @@ Binding is a thin client library written on the specific language that acts like
 
 Supported platforms: Node.js, Web, React-Native for IOS/Android
 
-Repository: [JavaScript SDK](https://github.com/tonlabs/ton-client-js)
+Repository: [JavaScript SDK](https://github.com/tonlabs/ever-sdk-js)
 
 ### Community bindings
 
@@ -179,7 +179,7 @@ Rebuild `modules.ts`:
 cd tools
 npm i
 tsc
-node index binding -l ts -o ../../ton-client-js/packages/core/src
+node index binding -l ts -o ../../ever-sdk-js/packages/core/src
 ```
 
 ## Run tests
@@ -190,14 +190,14 @@ To run test suite use standard Rust test command
 cargo test
 ```
 
-SDK tests need [EVER OS API](docs/reference/ton-os-api/networks.md) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/TON-OS-DApp-Server) which runs in real networks and by local blockchain [TON OS SE](https://github.com/tonlabs/tonos-se).
+SDK tests need [EVER OS API](docs/reference/ever-os-api/networks.md) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/evernode-ds) which runs in real networks and by local blockchain [Evernode SE](https://github.com/tonlabs/evernode-se).
 
-TON OS SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`. If you have TON OS SE running on another address or you need to run tests on a real Everscale network use the following environment variables to override the default parameters
+Evernode SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`. If you have Evernode SE running on another address or you need to run tests on a real Everscale network use the following environment variables to override the default parameters
 
 ```
-TON_USE_SE: true/false - flag defining if tests run against TON OS SE or a real network (DApp Server)
-TON_NETWORK_ADDRESS - Dapp server or TON OS SE addresses separated by comma.
-TON_GIVER_SECRET - Giver secret key. If not defined, default TON OS SE giver keys are used
+TON_USE_SE: true/false - flag defining if tests run against Evernode SE or a real network (DApp Server)
+TON_NETWORK_ADDRESS - Dapp server or Evernode SE addresses separated by comma.
+TON_GIVER_SECRET - Giver secret key. If not defined, default Evernode SE giver keys are used
 TON_GIVER_ADDRESS - Address of the giver to use for prepaying accounts before deploying test contracts. If not defined, the address is calculated using `GiverV2.tvc` and configured public key
 ```
 

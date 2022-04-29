@@ -4,306 +4,306 @@ Crypto functions.
 
 
 ## Functions
-[factorize](#factorize) – Integer factorization
+[factorize](mod\_crypto.md#factorize) – Integer factorization
 
-[modular_power](#modular_power) – Modular exponentiation
+[modular_power](mod\_crypto.md#modular_power) – Modular exponentiation
 
-[ton_crc16](#ton_crc16) – Calculates CRC16 using TON algorithm.
+[ton_crc16](mod\_crypto.md#ton_crc16) – Calculates CRC16 using TON algorithm.
 
-[generate_random_bytes](#generate_random_bytes) – Generates random byte array of the specified length and returns it in `base64` format
+[generate_random_bytes](mod\_crypto.md#generate_random_bytes) – Generates random byte array of the specified length and returns it in `base64` format
 
-[convert_public_key_to_ton_safe_format](#convert_public_key_to_ton_safe_format) – Converts public key to ton safe_format
+[convert_public_key_to_ton_safe_format](mod\_crypto.md#convert_public_key_to_ton_safe_format) – Converts public key to ton safe_format
 
-[generate_random_sign_keys](#generate_random_sign_keys) – Generates random ed25519 key pair.
+[generate_random_sign_keys](mod\_crypto.md#generate_random_sign_keys) – Generates random ed25519 key pair.
 
-[sign](#sign) – Signs a data using the provided keys.
+[sign](mod\_crypto.md#sign) – Signs a data using the provided keys.
 
-[verify_signature](#verify_signature) – Verifies signed data using the provided public key. Raises error if verification is failed.
+[verify_signature](mod\_crypto.md#verify_signature) – Verifies signed data using the provided public key. Raises error if verification is failed.
 
-[sha256](#sha256) – Calculates SHA256 hash of the specified data.
+[sha256](mod\_crypto.md#sha256) – Calculates SHA256 hash of the specified data.
 
-[sha512](#sha512) – Calculates SHA512 hash of the specified data.
+[sha512](mod\_crypto.md#sha512) – Calculates SHA512 hash of the specified data.
 
-[scrypt](#scrypt) – Perform `scrypt` encryption
+[scrypt](mod\_crypto.md#scrypt) – Perform `scrypt` encryption
 
-[nacl_sign_keypair_from_secret_key](#nacl_sign_keypair_from_secret_key) – Generates a key pair for signing from the secret key
+[nacl_sign_keypair_from_secret_key](mod\_crypto.md#nacl_sign_keypair_from_secret_key) – Generates a key pair for signing from the secret key
 
-[nacl_sign](#nacl_sign) – Signs data using the signer's secret key.
+[nacl_sign](mod\_crypto.md#nacl_sign) – Signs data using the signer's secret key.
 
-[nacl_sign_open](#nacl_sign_open) – Verifies the signature and returns the unsigned message
+[nacl_sign_open](mod\_crypto.md#nacl_sign_open) – Verifies the signature and returns the unsigned message
 
-[nacl_sign_detached](#nacl_sign_detached) – Signs the message using the secret key and returns a signature.
+[nacl_sign_detached](mod\_crypto.md#nacl_sign_detached) – Signs the message using the secret key and returns a signature.
 
-[nacl_sign_detached_verify](#nacl_sign_detached_verify) – Verifies the signature with public key and `unsigned` data.
+[nacl_sign_detached_verify](mod\_crypto.md#nacl_sign_detached_verify) – Verifies the signature with public key and `unsigned` data.
 
-[nacl_box_keypair](#nacl_box_keypair) – Generates a random NaCl key pair
+[nacl_box_keypair](mod\_crypto.md#nacl_box_keypair) – Generates a random NaCl key pair
 
-[nacl_box_keypair_from_secret_key](#nacl_box_keypair_from_secret_key) – Generates key pair from a secret key
+[nacl_box_keypair_from_secret_key](mod\_crypto.md#nacl_box_keypair_from_secret_key) – Generates key pair from a secret key
 
-[nacl_box](#nacl_box) – Public key authenticated encryption
+[nacl_box](mod\_crypto.md#nacl_box) – Public key authenticated encryption
 
-[nacl_box_open](#nacl_box_open) – Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.
+[nacl_box_open](mod\_crypto.md#nacl_box_open) – Decrypt and verify the cipher text using the receivers secret key, the senders public key, and the nonce.
 
-[nacl_secret_box](#nacl_secret_box) – Encrypt and authenticate message using nonce and secret key.
+[nacl_secret_box](mod\_crypto.md#nacl_secret_box) – Encrypt and authenticate message using nonce and secret key.
 
-[nacl_secret_box_open](#nacl_secret_box_open) – Decrypts and verifies cipher text using `nonce` and secret `key`.
+[nacl_secret_box_open](mod\_crypto.md#nacl_secret_box_open) – Decrypts and verifies cipher text using `nonce` and secret `key`.
 
-[mnemonic_words](#mnemonic_words) – Prints the list of words from the specified dictionary
+[mnemonic_words](mod\_crypto.md#mnemonic_words) – Prints the list of words from the specified dictionary
 
-[mnemonic_from_random](#mnemonic_from_random) – Generates a random mnemonic
+[mnemonic_from_random](mod\_crypto.md#mnemonic_from_random) – Generates a random mnemonic
 
-[mnemonic_from_entropy](#mnemonic_from_entropy) – Generates mnemonic from pre-generated entropy
+[mnemonic_from_entropy](mod\_crypto.md#mnemonic_from_entropy) – Generates mnemonic from pre-generated entropy
 
-[mnemonic_verify](#mnemonic_verify) – Validates a mnemonic phrase
+[mnemonic_verify](mod\_crypto.md#mnemonic_verify) – Validates a mnemonic phrase
 
-[mnemonic_derive_sign_keys](#mnemonic_derive_sign_keys) – Derives a key pair for signing from the seed phrase
+[mnemonic_derive_sign_keys](mod\_crypto.md#mnemonic_derive_sign_keys) – Derives a key pair for signing from the seed phrase
 
-[hdkey_xprv_from_mnemonic](#hdkey_xprv_from_mnemonic) – Generates an extended master private key that will be the root for all the derived keys
+[hdkey_xprv_from_mnemonic](mod\_crypto.md#hdkey_xprv_from_mnemonic) – Generates an extended master private key that will be the root for all the derived keys
 
-[hdkey_derive_from_xprv](#hdkey_derive_from_xprv) – Returns extended private key derived from the specified extended private key and child index
+[hdkey_derive_from_xprv](mod\_crypto.md#hdkey_derive_from_xprv) – Returns extended private key derived from the specified extended private key and child index
 
-[hdkey_derive_from_xprv_path](#hdkey_derive_from_xprv_path) – Derives the extended private key from the specified key and path
+[hdkey_derive_from_xprv_path](mod\_crypto.md#hdkey_derive_from_xprv_path) – Derives the extended private key from the specified key and path
 
-[hdkey_secret_from_xprv](#hdkey_secret_from_xprv) – Extracts the private key from the serialized extended private key
+[hdkey_secret_from_xprv](mod\_crypto.md#hdkey_secret_from_xprv) – Extracts the private key from the serialized extended private key
 
-[hdkey_public_from_xprv](#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
+[hdkey_public_from_xprv](mod\_crypto.md#hdkey_public_from_xprv) – Extracts the public key from the serialized extended private key
 
-[chacha20](#chacha20) – Performs symmetric `chacha20` encryption.
+[chacha20](mod\_crypto.md#chacha20) – Performs symmetric `chacha20` encryption.
 
-[create_crypto_box](#create_crypto_box) – Creates a Crypto Box instance.
+[create_crypto_box](mod\_crypto.md#create_crypto_box) – Creates a Crypto Box instance.
 
-[remove_crypto_box](#remove_crypto_box) – Removes Crypto Box. Clears all secret data.
+[remove_crypto_box](mod\_crypto.md#remove_crypto_box) – Removes Crypto Box. Clears all secret data.
 
-[get_crypto_box_info](#get_crypto_box_info) – Get Crypto Box Info. Used to get `encrypted_secret` that should be used for all the cryptobox initializations except the first one.
+[get_crypto_box_info](mod\_crypto.md#get_crypto_box_info) – Get Crypto Box Info. Used to get `encrypted_secret` that should be used for all the cryptobox initializations except the first one.
 
-[get_crypto_box_seed_phrase](#get_crypto_box_seed_phrase) – Get Crypto Box Seed Phrase.
+[get_crypto_box_seed_phrase](mod\_crypto.md#get_crypto_box_seed_phrase) – Get Crypto Box Seed Phrase.
 
-[get_signing_box_from_crypto_box](#get_signing_box_from_crypto_box) – Get handle of Signing Box derived from Crypto Box.
+[get_signing_box_from_crypto_box](mod\_crypto.md#get_signing_box_from_crypto_box) – Get handle of Signing Box derived from Crypto Box.
 
-[get_encryption_box_from_crypto_box](#get_encryption_box_from_crypto_box) – Gets Encryption Box from Crypto Box.
+[get_encryption_box_from_crypto_box](mod\_crypto.md#get_encryption_box_from_crypto_box) – Gets Encryption Box from Crypto Box.
 
-[clear_crypto_box_secret_cache](#clear_crypto_box_secret_cache) – Removes cached secrets (overwrites with zeroes) from all signing and encryption boxes, derived from crypto box.
+[clear_crypto_box_secret_cache](mod\_crypto.md#clear_crypto_box_secret_cache) – Removes cached secrets (overwrites with zeroes) from all signing and encryption boxes, derived from crypto box.
 
-[register_signing_box](#register_signing_box) – Register an application implemented signing box.
+[register_signing_box](mod\_crypto.md#register_signing_box) – Register an application implemented signing box.
 
-[get_signing_box](#get_signing_box) – Creates a default signing box implementation.
+[get_signing_box](mod\_crypto.md#get_signing_box) – Creates a default signing box implementation.
 
-[signing_box_get_public_key](#signing_box_get_public_key) – Returns public key of signing key pair.
+[signing_box_get_public_key](mod\_crypto.md#signing_box_get_public_key) – Returns public key of signing key pair.
 
-[signing_box_sign](#signing_box_sign) – Returns signed user data.
+[signing_box_sign](mod\_crypto.md#signing_box_sign) – Returns signed user data.
 
-[remove_signing_box](#remove_signing_box) – Removes signing box from SDK.
+[remove_signing_box](mod\_crypto.md#remove_signing_box) – Removes signing box from SDK.
 
-[register_encryption_box](#register_encryption_box) – Register an application implemented encryption box.
+[register_encryption_box](mod\_crypto.md#register_encryption_box) – Register an application implemented encryption box.
 
-[remove_encryption_box](#remove_encryption_box) – Removes encryption box from SDK
+[remove_encryption_box](mod\_crypto.md#remove_encryption_box) – Removes encryption box from SDK
 
-[encryption_box_get_info](#encryption_box_get_info) – Queries info from the given encryption box
+[encryption_box_get_info](mod\_crypto.md#encryption_box_get_info) – Queries info from the given encryption box
 
-[encryption_box_encrypt](#encryption_box_encrypt) – Encrypts data using given encryption box Note.
+[encryption_box_encrypt](mod\_crypto.md#encryption_box_encrypt) – Encrypts data using given encryption box Note.
 
-[encryption_box_decrypt](#encryption_box_decrypt) – Decrypts data using given encryption box Note.
+[encryption_box_decrypt](mod\_crypto.md#encryption_box_decrypt) – Decrypts data using given encryption box Note.
 
-[create_encryption_box](#create_encryption_box) – Creates encryption box with specified algorithm
+[create_encryption_box](mod\_crypto.md#create_encryption_box) – Creates encryption box with specified algorithm
 
 ## Types
-[CryptoErrorCode](#cryptoerrorcode)
+[CryptoErrorCode](mod\_crypto.md#cryptoerrorcode)
 
-[SigningBoxHandle](#signingboxhandle)
+[SigningBoxHandle](mod\_crypto.md#signingboxhandle)
 
-[EncryptionBoxHandle](#encryptionboxhandle)
+[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)
 
-[EncryptionBoxInfo](#encryptionboxinfo) – Encryption box information.
+[EncryptionBoxInfo](mod\_crypto.md#encryptionboxinfo) – Encryption box information.
 
-[EncryptionAlgorithm](#encryptionalgorithm)
+[EncryptionAlgorithm](mod\_crypto.md#encryptionalgorithm)
 
-[CipherMode](#ciphermode)
+[CipherMode](mod\_crypto.md#ciphermode)
 
-[AesParamsEB](#aesparamseb)
+[AesParamsEB](mod\_crypto.md#aesparamseb)
 
-[AesInfo](#aesinfo)
+[AesInfo](mod\_crypto.md#aesinfo)
 
-[ChaCha20ParamsEB](#chacha20paramseb)
+[ChaCha20ParamsEB](mod\_crypto.md#chacha20paramseb)
 
-[NaclBoxParamsEB](#naclboxparamseb)
+[NaclBoxParamsEB](mod\_crypto.md#naclboxparamseb)
 
-[NaclSecretBoxParamsEB](#naclsecretboxparamseb)
+[NaclSecretBoxParamsEB](mod\_crypto.md#naclsecretboxparamseb)
 
-[CryptoBoxSecret](#cryptoboxsecret) – Crypto Box Secret.
+[CryptoBoxSecret](mod\_crypto.md#cryptoboxsecret) – Crypto Box Secret.
 
-[CryptoBoxHandle](#cryptoboxhandle)
+[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)
 
-[BoxEncryptionAlgorithm](#boxencryptionalgorithm)
+[BoxEncryptionAlgorithm](mod\_crypto.md#boxencryptionalgorithm)
 
-[ChaCha20ParamsCB](#chacha20paramscb)
+[ChaCha20ParamsCB](mod\_crypto.md#chacha20paramscb)
 
-[NaclBoxParamsCB](#naclboxparamscb)
+[NaclBoxParamsCB](mod\_crypto.md#naclboxparamscb)
 
-[NaclSecretBoxParamsCB](#naclsecretboxparamscb)
+[NaclSecretBoxParamsCB](mod\_crypto.md#naclsecretboxparamscb)
 
-[ParamsOfFactorize](#paramsoffactorize)
+[ParamsOfFactorize](mod\_crypto.md#paramsoffactorize)
 
-[ResultOfFactorize](#resultoffactorize)
+[ResultOfFactorize](mod\_crypto.md#resultoffactorize)
 
-[ParamsOfModularPower](#paramsofmodularpower)
+[ParamsOfModularPower](mod\_crypto.md#paramsofmodularpower)
 
-[ResultOfModularPower](#resultofmodularpower)
+[ResultOfModularPower](mod\_crypto.md#resultofmodularpower)
 
-[ParamsOfTonCrc16](#paramsoftoncrc16)
+[ParamsOfTonCrc16](mod\_crypto.md#paramsoftoncrc16)
 
-[ResultOfTonCrc16](#resultoftoncrc16)
+[ResultOfTonCrc16](mod\_crypto.md#resultoftoncrc16)
 
-[ParamsOfGenerateRandomBytes](#paramsofgeneraterandombytes)
+[ParamsOfGenerateRandomBytes](mod\_crypto.md#paramsofgeneraterandombytes)
 
-[ResultOfGenerateRandomBytes](#resultofgeneraterandombytes)
+[ResultOfGenerateRandomBytes](mod\_crypto.md#resultofgeneraterandombytes)
 
-[ParamsOfConvertPublicKeyToTonSafeFormat](#paramsofconvertpublickeytotonsafeformat)
+[ParamsOfConvertPublicKeyToTonSafeFormat](mod\_crypto.md#paramsofconvertpublickeytotonsafeformat)
 
-[ResultOfConvertPublicKeyToTonSafeFormat](#resultofconvertpublickeytotonsafeformat)
+[ResultOfConvertPublicKeyToTonSafeFormat](mod\_crypto.md#resultofconvertpublickeytotonsafeformat)
 
-[KeyPair](#keypair)
+[KeyPair](mod\_crypto.md#keypair)
 
-[ParamsOfSign](#paramsofsign)
+[ParamsOfSign](mod\_crypto.md#paramsofsign)
 
-[ResultOfSign](#resultofsign)
+[ResultOfSign](mod\_crypto.md#resultofsign)
 
-[ParamsOfVerifySignature](#paramsofverifysignature)
+[ParamsOfVerifySignature](mod\_crypto.md#paramsofverifysignature)
 
-[ResultOfVerifySignature](#resultofverifysignature)
+[ResultOfVerifySignature](mod\_crypto.md#resultofverifysignature)
 
-[ParamsOfHash](#paramsofhash)
+[ParamsOfHash](mod\_crypto.md#paramsofhash)
 
-[ResultOfHash](#resultofhash)
+[ResultOfHash](mod\_crypto.md#resultofhash)
 
-[ParamsOfScrypt](#paramsofscrypt)
+[ParamsOfScrypt](mod\_crypto.md#paramsofscrypt)
 
-[ResultOfScrypt](#resultofscrypt)
+[ResultOfScrypt](mod\_crypto.md#resultofscrypt)
 
-[ParamsOfNaclSignKeyPairFromSecret](#paramsofnaclsignkeypairfromsecret)
+[ParamsOfNaclSignKeyPairFromSecret](mod\_crypto.md#paramsofnaclsignkeypairfromsecret)
 
-[ParamsOfNaclSign](#paramsofnaclsign)
+[ParamsOfNaclSign](mod\_crypto.md#paramsofnaclsign)
 
-[ResultOfNaclSign](#resultofnaclsign)
+[ResultOfNaclSign](mod\_crypto.md#resultofnaclsign)
 
-[ParamsOfNaclSignOpen](#paramsofnaclsignopen)
+[ParamsOfNaclSignOpen](mod\_crypto.md#paramsofnaclsignopen)
 
-[ResultOfNaclSignOpen](#resultofnaclsignopen)
+[ResultOfNaclSignOpen](mod\_crypto.md#resultofnaclsignopen)
 
-[ResultOfNaclSignDetached](#resultofnaclsigndetached)
+[ResultOfNaclSignDetached](mod\_crypto.md#resultofnaclsigndetached)
 
-[ParamsOfNaclSignDetachedVerify](#paramsofnaclsigndetachedverify)
+[ParamsOfNaclSignDetachedVerify](mod\_crypto.md#paramsofnaclsigndetachedverify)
 
-[ResultOfNaclSignDetachedVerify](#resultofnaclsigndetachedverify)
+[ResultOfNaclSignDetachedVerify](mod\_crypto.md#resultofnaclsigndetachedverify)
 
-[ParamsOfNaclBoxKeyPairFromSecret](#paramsofnaclboxkeypairfromsecret)
+[ParamsOfNaclBoxKeyPairFromSecret](mod\_crypto.md#paramsofnaclboxkeypairfromsecret)
 
-[ParamsOfNaclBox](#paramsofnaclbox)
+[ParamsOfNaclBox](mod\_crypto.md#paramsofnaclbox)
 
-[ResultOfNaclBox](#resultofnaclbox)
+[ResultOfNaclBox](mod\_crypto.md#resultofnaclbox)
 
-[ParamsOfNaclBoxOpen](#paramsofnaclboxopen)
+[ParamsOfNaclBoxOpen](mod\_crypto.md#paramsofnaclboxopen)
 
-[ResultOfNaclBoxOpen](#resultofnaclboxopen)
+[ResultOfNaclBoxOpen](mod\_crypto.md#resultofnaclboxopen)
 
-[ParamsOfNaclSecretBox](#paramsofnaclsecretbox)
+[ParamsOfNaclSecretBox](mod\_crypto.md#paramsofnaclsecretbox)
 
-[ParamsOfNaclSecretBoxOpen](#paramsofnaclsecretboxopen)
+[ParamsOfNaclSecretBoxOpen](mod\_crypto.md#paramsofnaclsecretboxopen)
 
-[ParamsOfMnemonicWords](#paramsofmnemonicwords)
+[ParamsOfMnemonicWords](mod\_crypto.md#paramsofmnemonicwords)
 
-[ResultOfMnemonicWords](#resultofmnemonicwords)
+[ResultOfMnemonicWords](mod\_crypto.md#resultofmnemonicwords)
 
-[ParamsOfMnemonicFromRandom](#paramsofmnemonicfromrandom)
+[ParamsOfMnemonicFromRandom](mod\_crypto.md#paramsofmnemonicfromrandom)
 
-[ResultOfMnemonicFromRandom](#resultofmnemonicfromrandom)
+[ResultOfMnemonicFromRandom](mod\_crypto.md#resultofmnemonicfromrandom)
 
-[ParamsOfMnemonicFromEntropy](#paramsofmnemonicfromentropy)
+[ParamsOfMnemonicFromEntropy](mod\_crypto.md#paramsofmnemonicfromentropy)
 
-[ResultOfMnemonicFromEntropy](#resultofmnemonicfromentropy)
+[ResultOfMnemonicFromEntropy](mod\_crypto.md#resultofmnemonicfromentropy)
 
-[ParamsOfMnemonicVerify](#paramsofmnemonicverify)
+[ParamsOfMnemonicVerify](mod\_crypto.md#paramsofmnemonicverify)
 
-[ResultOfMnemonicVerify](#resultofmnemonicverify)
+[ResultOfMnemonicVerify](mod\_crypto.md#resultofmnemonicverify)
 
-[ParamsOfMnemonicDeriveSignKeys](#paramsofmnemonicderivesignkeys)
+[ParamsOfMnemonicDeriveSignKeys](mod\_crypto.md#paramsofmnemonicderivesignkeys)
 
-[ParamsOfHDKeyXPrvFromMnemonic](#paramsofhdkeyxprvfrommnemonic)
+[ParamsOfHDKeyXPrvFromMnemonic](mod\_crypto.md#paramsofhdkeyxprvfrommnemonic)
 
-[ResultOfHDKeyXPrvFromMnemonic](#resultofhdkeyxprvfrommnemonic)
+[ResultOfHDKeyXPrvFromMnemonic](mod\_crypto.md#resultofhdkeyxprvfrommnemonic)
 
-[ParamsOfHDKeyDeriveFromXPrv](#paramsofhdkeyderivefromxprv)
+[ParamsOfHDKeyDeriveFromXPrv](mod\_crypto.md#paramsofhdkeyderivefromxprv)
 
-[ResultOfHDKeyDeriveFromXPrv](#resultofhdkeyderivefromxprv)
+[ResultOfHDKeyDeriveFromXPrv](mod\_crypto.md#resultofhdkeyderivefromxprv)
 
-[ParamsOfHDKeyDeriveFromXPrvPath](#paramsofhdkeyderivefromxprvpath)
+[ParamsOfHDKeyDeriveFromXPrvPath](mod\_crypto.md#paramsofhdkeyderivefromxprvpath)
 
-[ResultOfHDKeyDeriveFromXPrvPath](#resultofhdkeyderivefromxprvpath)
+[ResultOfHDKeyDeriveFromXPrvPath](mod\_crypto.md#resultofhdkeyderivefromxprvpath)
 
-[ParamsOfHDKeySecretFromXPrv](#paramsofhdkeysecretfromxprv)
+[ParamsOfHDKeySecretFromXPrv](mod\_crypto.md#paramsofhdkeysecretfromxprv)
 
-[ResultOfHDKeySecretFromXPrv](#resultofhdkeysecretfromxprv)
+[ResultOfHDKeySecretFromXPrv](mod\_crypto.md#resultofhdkeysecretfromxprv)
 
-[ParamsOfHDKeyPublicFromXPrv](#paramsofhdkeypublicfromxprv)
+[ParamsOfHDKeyPublicFromXPrv](mod\_crypto.md#paramsofhdkeypublicfromxprv)
 
-[ResultOfHDKeyPublicFromXPrv](#resultofhdkeypublicfromxprv)
+[ResultOfHDKeyPublicFromXPrv](mod\_crypto.md#resultofhdkeypublicfromxprv)
 
-[ParamsOfChaCha20](#paramsofchacha20)
+[ParamsOfChaCha20](mod\_crypto.md#paramsofchacha20)
 
-[ResultOfChaCha20](#resultofchacha20)
+[ResultOfChaCha20](mod\_crypto.md#resultofchacha20)
 
-[ParamsOfCreateCryptoBox](#paramsofcreatecryptobox)
+[ParamsOfCreateCryptoBox](mod\_crypto.md#paramsofcreatecryptobox)
 
-[RegisteredCryptoBox](#registeredcryptobox)
+[RegisteredCryptoBox](mod\_crypto.md#registeredcryptobox)
 
-[ParamsOfAppPasswordProvider](#paramsofapppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
+[ParamsOfAppPasswordProvider](mod\_crypto.md#paramsofapppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
 
-[ResultOfAppPasswordProvider](#resultofapppasswordprovider)
+[ResultOfAppPasswordProvider](mod\_crypto.md#resultofapppasswordprovider)
 
-[ResultOfGetCryptoBoxInfo](#resultofgetcryptoboxinfo)
+[ResultOfGetCryptoBoxInfo](mod\_crypto.md#resultofgetcryptoboxinfo)
 
-[ResultOfGetCryptoBoxSeedPhrase](#resultofgetcryptoboxseedphrase)
+[ResultOfGetCryptoBoxSeedPhrase](mod\_crypto.md#resultofgetcryptoboxseedphrase)
 
-[ParamsOfGetSigningBoxFromCryptoBox](#paramsofgetsigningboxfromcryptobox)
+[ParamsOfGetSigningBoxFromCryptoBox](mod\_crypto.md#paramsofgetsigningboxfromcryptobox)
 
-[RegisteredSigningBox](#registeredsigningbox)
+[RegisteredSigningBox](mod\_crypto.md#registeredsigningbox)
 
-[ParamsOfGetEncryptionBoxFromCryptoBox](#paramsofgetencryptionboxfromcryptobox)
+[ParamsOfGetEncryptionBoxFromCryptoBox](mod\_crypto.md#paramsofgetencryptionboxfromcryptobox)
 
-[RegisteredEncryptionBox](#registeredencryptionbox)
+[RegisteredEncryptionBox](mod\_crypto.md#registeredencryptionbox)
 
-[ParamsOfAppSigningBox](#paramsofappsigningbox) – Signing box callbacks.
+[ParamsOfAppSigningBox](mod\_crypto.md#paramsofappsigningbox) – Signing box callbacks.
 
-[ResultOfAppSigningBox](#resultofappsigningbox) – Returning values from signing box callbacks.
+[ResultOfAppSigningBox](mod\_crypto.md#resultofappsigningbox) – Returning values from signing box callbacks.
 
-[ResultOfSigningBoxGetPublicKey](#resultofsigningboxgetpublickey)
+[ResultOfSigningBoxGetPublicKey](mod\_crypto.md#resultofsigningboxgetpublickey)
 
-[ParamsOfSigningBoxSign](#paramsofsigningboxsign)
+[ParamsOfSigningBoxSign](mod\_crypto.md#paramsofsigningboxsign)
 
-[ResultOfSigningBoxSign](#resultofsigningboxsign)
+[ResultOfSigningBoxSign](mod\_crypto.md#resultofsigningboxsign)
 
-[ParamsOfAppEncryptionBox](#paramsofappencryptionbox) – Interface for data encryption/decryption
+[ParamsOfAppEncryptionBox](mod\_crypto.md#paramsofappencryptionbox) – Interface for data encryption/decryption
 
-[ResultOfAppEncryptionBox](#resultofappencryptionbox) – Returning values from signing box callbacks.
+[ResultOfAppEncryptionBox](mod\_crypto.md#resultofappencryptionbox) – Returning values from signing box callbacks.
 
-[ParamsOfEncryptionBoxGetInfo](#paramsofencryptionboxgetinfo)
+[ParamsOfEncryptionBoxGetInfo](mod\_crypto.md#paramsofencryptionboxgetinfo)
 
-[ResultOfEncryptionBoxGetInfo](#resultofencryptionboxgetinfo)
+[ResultOfEncryptionBoxGetInfo](mod\_crypto.md#resultofencryptionboxgetinfo)
 
-[ParamsOfEncryptionBoxEncrypt](#paramsofencryptionboxencrypt)
+[ParamsOfEncryptionBoxEncrypt](mod\_crypto.md#paramsofencryptionboxencrypt)
 
-[ResultOfEncryptionBoxEncrypt](#resultofencryptionboxencrypt)
+[ResultOfEncryptionBoxEncrypt](mod\_crypto.md#resultofencryptionboxencrypt)
 
-[ParamsOfEncryptionBoxDecrypt](#paramsofencryptionboxdecrypt)
+[ParamsOfEncryptionBoxDecrypt](mod\_crypto.md#paramsofencryptionboxdecrypt)
 
-[ResultOfEncryptionBoxDecrypt](#resultofencryptionboxdecrypt)
+[ResultOfEncryptionBoxDecrypt](mod\_crypto.md#resultofencryptionboxdecrypt)
 
-[ParamsOfCreateEncryptionBox](#paramsofcreateencryptionbox)
+[ParamsOfCreateEncryptionBox](mod\_crypto.md#paramsofcreateencryptionbox)
 
-[AppPasswordProvider](#apppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
+[AppPasswordProvider](mod\_crypto.md#apppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
 
-[AppSigningBox](#appsigningbox) – Signing box callbacks.
+[AppSigningBox](mod\_crypto.md#appsigningbox) – Signing box callbacks.
 
-[AppEncryptionBox](#appencryptionbox) – Interface for data encryption/decryption
+[AppEncryptionBox](mod\_crypto.md#appencryptionbox) – Interface for data encryption/decryption
 
 
 # Functions
@@ -490,7 +490,7 @@ function sign(
 ```
 ### Parameters
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-- `keys`: _[KeyPair](mod_crypto.md#keypair)_ – Sign keys.
+- `keys`: _[KeyPair](mod\_crypto.md#keypair)_ – Sign keys.
 
 
 ### Result
@@ -1333,14 +1333,14 @@ function create_crypto_box(
 ```
 ### Parameters
 - `secret_encryption_salt`: _string_ – Salt used for secret encryption. For example, a mobile device can use device ID as salt.
-- `secret`: _[CryptoBoxSecret](mod_crypto.md#cryptoboxsecret)_ – Cryptobox secret
-- `obj`: [AppPasswordProvider](#apppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
+- `secret`: _[CryptoBoxSecret](mod\_crypto.md#cryptoboxsecret)_ – Cryptobox secret
+- `obj`: [AppPasswordProvider](mod\_AppPasswordProvider.md#apppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
 
 
 
 ### Result
 
-- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+- `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
 
 ## remove_crypto_box
@@ -1357,7 +1357,7 @@ function remove_crypto_box(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+- `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
 
 ## get_crypto_box_info
@@ -1378,7 +1378,7 @@ function get_crypto_box_info(
 ): Promise<ResultOfGetCryptoBoxInfo>;
 ```
 ### Parameters
-- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+- `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
 
 ### Result
@@ -1408,7 +1408,7 @@ function get_crypto_box_seed_phrase(
 ): Promise<ResultOfGetCryptoBoxSeedPhrase>;
 ```
 ### Parameters
-- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+- `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
 
 ### Result
@@ -1446,7 +1446,7 @@ function get_signing_box_from_crypto_box(
 
 ### Result
 
-- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ## get_encryption_box_from_crypto_box
@@ -1479,13 +1479,13 @@ function get_encryption_box_from_crypto_box(
 - `handle`: _number_ – Crypto Box Handle.
 - `hdpath`?: _string_ – HD key derivation path.
 <br>By default, Everscale HD path is used.
-- `algorithm`: _[BoxEncryptionAlgorithm](mod_crypto.md#boxencryptionalgorithm)_ – Encryption algorithm.
+- `algorithm`: _[BoxEncryptionAlgorithm](mod\_crypto.md#boxencryptionalgorithm)_ – Encryption algorithm.
 - `secret_lifetime`?: _number_ – Store derived secret for encryption algorithm for this lifetime (in ms). The timer starts after each encryption box operation. Secrets will be deleted (overwritten with zeroes) after each encryption operation, if this value is not set.
 
 
 ### Result
 
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
+- `handle`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
 
 ## clear_crypto_box_secret_cache
@@ -1502,7 +1502,7 @@ function clear_crypto_box_secret_cache(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+- `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
 
 ## register_signing_box
@@ -1519,13 +1519,13 @@ function register_signing_box(
 ): Promise<RegisteredSigningBox>;
 ```
 ### Parameters
-- `obj`: [AppSigningBox](#appsigningbox) – Signing box callbacks.
+- `obj`: [AppSigningBox](mod\_AppSigningBox.md#appsigningbox) – Signing box callbacks.
 
 
 
 ### Result
 
-- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ## get_signing_box
@@ -1553,7 +1553,7 @@ function get_signing_box(
 
 ### Result
 
-- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ## signing_box_get_public_key
@@ -1574,7 +1574,7 @@ function signing_box_get_public_key(
 ): Promise<ResultOfSigningBoxGetPublicKey>;
 ```
 ### Parameters
-- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ### Result
@@ -1602,7 +1602,7 @@ function signing_box_sign(
 ): Promise<ResultOfSigningBoxSign>;
 ```
 ### Parameters
-- `signing_box`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Signing Box handle.
+- `signing_box`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Signing Box handle.
 - `unsigned`: _string_ – Unsigned user data.
 <br>Must be encoded with `base64`.
 
@@ -1627,7 +1627,7 @@ function remove_signing_box(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ## register_encryption_box
@@ -1644,13 +1644,13 @@ function register_encryption_box(
 ): Promise<RegisteredEncryptionBox>;
 ```
 ### Parameters
-- `obj`: [AppEncryptionBox](#appencryptionbox) – Interface for data encryption/decryption
+- `obj`: [AppEncryptionBox](mod\_AppEncryptionBox.md#appencryptionbox) – Interface for data encryption/decryption
 
 
 
 ### Result
 
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
+- `handle`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
 
 ## remove_encryption_box
@@ -1667,7 +1667,7 @@ function remove_encryption_box(
 ): Promise<void>;
 ```
 ### Parameters
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
+- `handle`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
 
 ## encryption_box_get_info
@@ -1688,12 +1688,12 @@ function encryption_box_get_info(
 ): Promise<ResultOfEncryptionBoxGetInfo>;
 ```
 ### Parameters
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
 
 
 ### Result
 
-- `info`: _[EncryptionBoxInfo](mod_crypto.md#encryptionboxinfo)_ – Encryption box information
+- `info`: _[EncryptionBoxInfo](mod\_crypto.md#encryptionboxinfo)_ – Encryption box information
 
 
 ## encryption_box_encrypt
@@ -1718,7 +1718,7 @@ function encryption_box_encrypt(
 ): Promise<ResultOfEncryptionBoxEncrypt>;
 ```
 ### Parameters
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
 - `data`: _string_ – Data to be encrypted, encoded in Base64
 
 
@@ -1750,7 +1750,7 @@ function encryption_box_decrypt(
 ): Promise<ResultOfEncryptionBoxDecrypt>;
 ```
 ### Parameters
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
 - `data`: _string_ – Data to be decrypted, encoded in Base64
 
 
@@ -1777,12 +1777,12 @@ function create_encryption_box(
 ): Promise<RegisteredEncryptionBox>;
 ```
 ### Parameters
-- `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#encryptionalgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
+- `algorithm`: _[EncryptionAlgorithm](mod\_crypto.md#encryptionalgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
 
 
 ### Result
 
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
+- `handle`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
 
 # Types
@@ -1902,7 +1902,7 @@ Depends on value of the  `type` field.
 
 When _type_ is _'AES'_
 
-- `mode`: _[CipherMode](mod_crypto.md#ciphermode)_
+- `mode`: _[CipherMode](mod\_crypto.md#ciphermode)_
 - `key`: _string_
 - `iv`?: _string_
 
@@ -1964,7 +1964,7 @@ type AesParamsEB = {
     iv?: string
 }
 ```
-- `mode`: _[CipherMode](mod_crypto.md#ciphermode)_
+- `mode`: _[CipherMode](mod\_crypto.md#ciphermode)_
 - `key`: _string_
 - `iv`?: _string_
 
@@ -1976,7 +1976,7 @@ type AesInfo = {
     iv?: string
 }
 ```
-- `mode`: _[CipherMode](mod_crypto.md#ciphermode)_
+- `mode`: _[CipherMode](mod\_crypto.md#ciphermode)_
 - `iv`?: _string_
 
 
@@ -2279,7 +2279,7 @@ type ParamsOfSign = {
 }
 ```
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
-- `keys`: _[KeyPair](mod_crypto.md#keypair)_ – Sign keys.
+- `keys`: _[KeyPair](mod\_crypto.md#keypair)_ – Sign keys.
 
 
 ## ResultOfSign
@@ -2763,7 +2763,7 @@ type ParamsOfCreateCryptoBox = {
 }
 ```
 - `secret_encryption_salt`: _string_ – Salt used for secret encryption. For example, a mobile device can use device ID as salt.
-- `secret`: _[CryptoBoxSecret](mod_crypto.md#cryptoboxsecret)_ – Cryptobox secret
+- `secret`: _[CryptoBoxSecret](mod\_crypto.md#cryptoboxsecret)_ – Cryptobox secret
 
 
 ## RegisteredCryptoBox
@@ -2772,7 +2772,7 @@ type RegisteredCryptoBox = {
     handle: CryptoBoxHandle
 }
 ```
-- `handle`: _[CryptoBoxHandle](mod_crypto.md#cryptoboxhandle)_
+- `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
 
 ## ParamsOfAppPasswordProvider
@@ -2873,7 +2873,7 @@ type RegisteredSigningBox = {
     handle: SigningBoxHandle
 }
 ```
-- `handle`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Handle of the signing box.
+- `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
 
 ## ParamsOfGetEncryptionBoxFromCryptoBox
@@ -2888,7 +2888,7 @@ type ParamsOfGetEncryptionBoxFromCryptoBox = {
 - `handle`: _number_ – Crypto Box Handle.
 - `hdpath`?: _string_ – HD key derivation path.
 <br>By default, Everscale HD path is used.
-- `algorithm`: _[BoxEncryptionAlgorithm](mod_crypto.md#boxencryptionalgorithm)_ – Encryption algorithm.
+- `algorithm`: _[BoxEncryptionAlgorithm](mod\_crypto.md#boxencryptionalgorithm)_ – Encryption algorithm.
 - `secret_lifetime`?: _number_ – Store derived secret for encryption algorithm for this lifetime (in ms). The timer starts after each encryption box operation. Secrets will be deleted (overwritten with zeroes) after each encryption operation, if this value is not set.
 
 
@@ -2898,7 +2898,7 @@ type RegisteredEncryptionBox = {
     handle: EncryptionBoxHandle
 }
 ```
-- `handle`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
+- `handle`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
 
 ## ParamsOfAppSigningBox
@@ -2987,7 +2987,7 @@ type ParamsOfSigningBoxSign = {
     unsigned: string
 }
 ```
-- `signing_box`: _[SigningBoxHandle](mod_crypto.md#signingboxhandle)_ – Signing Box handle.
+- `signing_box`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Signing Box handle.
 - `unsigned`: _string_ – Unsigned user data.
 <br>Must be encoded with `base64`.
 
@@ -3068,7 +3068,7 @@ When _type_ is _'GetInfo'_
 Result of getting encryption box info
 
 
-- `info`: _[EncryptionBoxInfo](mod_crypto.md#encryptionboxinfo)_
+- `info`: _[EncryptionBoxInfo](mod\_crypto.md#encryptionboxinfo)_
 
 When _type_ is _'Encrypt'_
 
@@ -3099,7 +3099,7 @@ type ParamsOfEncryptionBoxGetInfo = {
     encryption_box: EncryptionBoxHandle
 }
 ```
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
 
 
 ## ResultOfEncryptionBoxGetInfo
@@ -3108,7 +3108,7 @@ type ResultOfEncryptionBoxGetInfo = {
     info: EncryptionBoxInfo
 }
 ```
-- `info`: _[EncryptionBoxInfo](mod_crypto.md#encryptionboxinfo)_ – Encryption box information
+- `info`: _[EncryptionBoxInfo](mod\_crypto.md#encryptionboxinfo)_ – Encryption box information
 
 
 ## ParamsOfEncryptionBoxEncrypt
@@ -3118,7 +3118,7 @@ type ParamsOfEncryptionBoxEncrypt = {
     data: string
 }
 ```
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
 - `data`: _string_ – Data to be encrypted, encoded in Base64
 
 
@@ -3139,7 +3139,7 @@ type ParamsOfEncryptionBoxDecrypt = {
     data: string
 }
 ```
-- `encryption_box`: _[EncryptionBoxHandle](mod_crypto.md#encryptionboxhandle)_ – Encryption box handle
+- `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
 - `data`: _string_ – Data to be decrypted, encoded in Base64
 
 
@@ -3158,7 +3158,7 @@ type ParamsOfCreateEncryptionBox = {
     algorithm: EncryptionAlgorithm
 }
 ```
-- `algorithm`: _[EncryptionAlgorithm](mod_crypto.md#encryptionalgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
+- `algorithm`: _[EncryptionAlgorithm](mod\_crypto.md#encryptionalgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
 
 
 ## AppPasswordProvider
@@ -3333,7 +3333,7 @@ function get_info(): Promise<ResultOfAppEncryptionBoxGetInfo>;
 
 ### Result
 
-- `info`: _[EncryptionBoxInfo](mod_crypto.md#encryptionboxinfo)_
+- `info`: _[EncryptionBoxInfo](mod\_crypto.md#encryptionboxinfo)_
 
 
 ## encrypt

@@ -1,4 +1,74 @@
+---
+description: Blocks-related query samples
+---
+
 # Blocks
+
+## Get the block info
+
+### By seq\_no
+
+Specify the workchain\_id, thread (shard) and seq\_no:
+
+```graphql
+query{
+  blockchain{
+    block_by_seq_no(workchain:0, thread:"1800000000000000", seq_no:22723155){
+      id
+      hash
+      seq_no
+    }
+  }
+}
+```
+
+Result:
+
+```graphql
+{
+  "data": {
+    "blockchain": {
+      "block_by_seq_no": {
+        "id": "block/8f1fa341f9d419dea23c621c659fe4534d7d4f3aab2abdf512eeb90da919a956",
+        "hash": "8f1fa341f9d419dea23c621c659fe4534d7d4f3aab2abdf512eeb90da919a956",
+        "seq_no": 22723155
+      }
+    }
+  }
+}
+```
+
+### By hash
+
+Specify the block hash:
+
+```graphql
+query{
+  blockchain{
+    block(hash:"8f1fa341f9d419dea23c621c659fe4534d7d4f3aab2abdf512eeb90da919a956"){
+      id
+      hash
+      seq_no
+    }
+  }
+}
+```
+
+Result:
+
+```graphql
+{
+  "data": {
+    "blockchain": {
+      "block": {
+        "id": "block/8f1fa341f9d419dea23c621c659fe4534d7d4f3aab2abdf512eeb90da919a956",
+        "hash": "8f1fa341f9d419dea23c621c659fe4534d7d4f3aab2abdf512eeb90da919a956",
+        "seq_no": 22723155
+      }
+    }
+  }
+}
+```
 
 ## Blocks pagination
 
@@ -282,55 +352,6 @@ Result:
 ```
 
 Implement Pagination  the same way as described above:)
-
-## Get the block hash by seq\_no
-
-Specify the workchain\_id, shard and seq\_no:
-
-```graphql
-query{
-  blocks(filter:{
-    workchain_id:{
-      eq:-1
-    }   
-    shard:{
-      eq:"8000000000000000"
-    }
-    seq_no:{
-      eq:1418523
-    }
-  }
-    orderBy:{
-      path:"seq_no"
-      direction:DESC
-    }
-    limit: 1
-  )
-  {
-    id
-    workchain_id
-    shard
-    seq_no
-  }
-}
-```
-
-The block hash is `11d663227777659a9f90a4098281cedfd50b929daa7093876b061d6915c90bef`:
-
-```graphql
-{
-  "data": {
-    "blocks": [
-      {
-        "id": "11d663227777659a9f90a4098281cedfd50b929daa7093876b061d6915c90bef",
-        "workchain_id": -1,
-        "shard": "8000000000000000",
-        "seq_no": 1418523
-      }
-    ]
-  }
-}
-```
 
 ## Query the latest masterchain block height
 

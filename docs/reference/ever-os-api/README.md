@@ -21,7 +21,7 @@ Read more in the next sections.
 
 ## SDK
 
-GraphQL API goes along with [SDK](https://github.com/tonlabs/TON-SDK) that helps one to create messages, handle network issues and implement any possible use-case over this API.
+GraphQL API goes along with [SDK](https://github.com/tonlabs/ever-sdk) that helps one to create messages, handle network issues and implement any possible use-case over this API.
 
 SDK is supported for 14 programming languages for all the popular platforms.
 

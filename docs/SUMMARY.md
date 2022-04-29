@@ -1,6 +1,6 @@
 # Table of contents
 
-* [TON SDK](../README.md)
+* [Ever SDK](../README.md)
 * [Quick start (JavaScript)](quick\_start.md)
 
 ## Reference
@@ -19,15 +19,15 @@
   * [Module utils](reference/types-and-methods/mod\_utils.md)
 * [Error API](reference/error\_api.md)
 * [Error Codes](reference/error\_codes.md)
-* [JavaScript Reference](https://tonlabs.github.io/ton-client-js/)
-* [Rust Reference](https://github.com/tonlabs/TON-SDK/tree/master/docs/reference/rust-api)
-* [EVER OS API](reference/ton-os-api/README.md)
-  * [Networks](reference/ton-os-api/networks.md)
-  * [Web Playground](reference/ton-os-api/web\_playground.md)
-  * [Schema](reference/ton-os-api/schema.md)
-  * [Query Language](reference/ton-os-api/query\_language.md)
-  * [Field Descriptions](reference/ton-os-api/field\_descriptions.md)
-  * [Samples](reference/ton-os-api/samples.md)
+* [JavaScript Reference](https://tonlabs.github.io/ever-sdk-js/)
+* [Rust Reference](https://github.com/tonlabs/ever-sdk/tree/master/docs/reference/rust-api)
+* [EVER OS API](reference/ever-os-api/README.md)
+  * [Networks](reference/ever-os-api/networks.md)
+  * [Web Playground](reference/ever-os-api/web\_playground.md)
+  * [Schema](reference/ever-os-api/schema.md)
+  * [Deprecated: Collection Query Language](reference/ever-os-api/query\_language.md)
+  * [Field Descriptions](reference/ever-os-api/field\_descriptions.md)
+  * [Samples](reference/ever-os-api/samples.md)
 
 ## Samples
 
@@ -38,6 +38,7 @@
   * [Blocks](graphql-samples/blocks.md)
   * [Accounts](graphql-samples/accounts.md)
   * [Transactions](graphql-samples/transactions.md)
+  * [Messages](samples/graphql-samples/messages.md)
   * [Blockchain Statistics](graphql-samples/statistics.md)
   * [Counterparties](graphql-samples/counterparties.md)
 
@@ -64,9 +65,9 @@
 * [Crypto](guides/crypto/README.md)
   * [Mnemonics and Keys](guides/crypto/mnemonics\_and\_keys.md)
 * [Queries and subscriptions](guides/queries\_and\_subscriptions/README.md)
+  * [Raw Query](guides/queries\_and\_subscriptions/raw\_query.md)
   * [Query Collection](guides/queries\_and\_subscriptions/query\_collection.md)
   * [Aggregate Collection](guides/queries\_and\_subscriptions/aggregate\_collection.md)
-  * [Raw Query](guides/queries\_and\_subscriptions/raw\_query.md)
   * [Batch Query](guides/queries\_and\_subscriptions/batch\_query.md)
   * [Subscribe to Updates](guides/queries\_and\_subscriptions/subscribe\_to\_updates.md)
 
@@ -77,5 +78,5 @@
 
 ## Links
 
-* [TON SDK repository](https://github.com/tonlabs/TON-SDK)
-* [AppKit JS documentation](https://tonlabs.gitbook.io/appkit-js/)
+* [Ever SDK repository](https://github.com/tonlabs/ever-sdk)
+* [AppKit JS documentation](https://docs.everos.dev/appkit-js/)

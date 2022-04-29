@@ -9,7 +9,7 @@ Learn how to run methods of a contract on-chain
 
 > [See the API reference](../../reference/types-and-methods/modules.md).
 
-Core api is more flexible than [AppKit](https://github.com/tonlabs/appkit-js) and you can perform a lot of complex logic using it. But you will need to write more code with it as well :)
+Core api is more flexible than [AppKit](https://github.com/tonlabs/ever-appkit-js) and you can perform a lot of complex logic using it. But you will need to write more code with it as well :)
 
 You need to [define the contract in your node.js](add\_contract\_to\_your\_app.md) application before running its methods.
 
@@ -104,7 +104,7 @@ Now the message should be sent. `sendMessage` method returns the the last block 
 ```javascript
 // Send `touch` call message to the network
 // See more info about `send_message` here  
-// https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_processing.md#send_message
+// https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_processing.md#send_message
 shard_block_id = (await client.processing.send_message({
     message: encode_touch_result.message,
     send_events: true
@@ -118,7 +118,7 @@ After the message was sent we need to wait for the transaction starting from the
 ```javascript
 // Monitor message delivery. 
 // See more info about `wait_for_transaction` here  
-// https://github.com/tonlabs/TON-SDK/blob/master/docs/mod_processing.md#wait_for_transaction
+// https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_processing.md#wait_for_transaction
 const touch_processing_result = await client.processing.wait_for_transaction({
     abi = {
         type: 'Contract',
@@ -136,4 +136,4 @@ console.log(`Touch fees: ${JSON.stringify(touch_processing_result.fees,null,2)}`
 
 See the full example in sdk samples repository: [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index\_pattern2.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index\_pattern2.js)
 
-Check out [AppKit documentation](https://tonlabs.gitbook.io/appkit-js/guides/run\_onchain) for this use case.
+Check out [AppKit documentation](https://docs.everos.dev/appkit-js/guides/run\_onchain) for this use case.
