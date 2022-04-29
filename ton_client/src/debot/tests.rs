@@ -36,12 +36,12 @@ lazy_static!(
     static ref DEBOT: Mutex<Option<DebotData>> = Mutex::new(None);
 );
 
-const TEST_DEBOT2: &'static str = "testDebot2";
-const TEST_DEBOT3: &'static str = "testDebot3";
-const TEST_DEBOT4: &'static str = "testDebot4";
-const TEST_DEBOT5: &'static str = "testDebot5";
-const TEST_DEBOTA: &'static str = "tda";
-const TEST_DEBOTB: &'static str = "tdb";
+const TEST_DEBOT2: &str = "testDebot2";
+const TEST_DEBOT3: &str = "testDebot3";
+const TEST_DEBOT4: &str = "testDebot4";
+const TEST_DEBOT5: &str = "testDebot5";
+const TEST_DEBOTA: &str = "tda";
+const TEST_DEBOTB: &str = "tdb";
 
 struct ExpectedTransaction {
     dst: String,

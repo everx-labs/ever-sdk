@@ -135,7 +135,7 @@ pub(crate) fn check_crypto_signatures(
     // Check signatures
     let mut weight = 0;
     for sign in signatures.pure_signatures() {
-        let key = AdnlKeyId(sign.node_id_short.inner());
+        let key = AdnlKeyId(sign.node_id_short.as_array().clone());
         if let Some(vd) = validators_map.get(&key) {
             if !vd.public_key.verify_signature(data, &sign.sign) {
                 bail!("bad signature from validator with pub_key {}", key)

@@ -922,12 +922,11 @@ impl ProofHelperEngine for ProofHelperEngineImpl {
         let boc = self.query_zerostate_boc().await?;
 
         let actual_hash = UInt256::from_str(&get_boc_hash(&boc)?)?;
-        let expected_hash = get_current_network_uid(self.context()).await?
-            .zerostate_root_hash;
-        if actual_hash != expected_hash {
+        let network_uid = get_current_network_uid(&context).await?;
+        if actual_hash != network_uid.zerostate_root_hash {
             bail!(
-                "Zerostate hashes mismatch (expected `{}`, but queried from DApp is `{}`)",
-                expected_hash,
+                "Zerostate hashes mismatch (expected `{:x}`, but queried from DApp is `{:x}`)",
+                network_uid.zerostate_root_hash,
                 actual_hash,
             );
         }
