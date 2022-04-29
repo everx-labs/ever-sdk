@@ -126,6 +126,7 @@ impl MessageNode {
                                 body: body.to_string(),
                                 abi: abi.clone(),
                                 is_internal,
+                                allow_partial: false,
                             },
                         )
                         .await

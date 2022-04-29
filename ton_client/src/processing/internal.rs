@@ -57,6 +57,7 @@ pub(crate) async fn get_message_expiration_time(
             ParamsOfDecodeMessage {
                 abi: abi.clone(),
                 message: message.to_string(),
+                allow_partial: false,
             },
         )
         .await

@@ -39,7 +39,7 @@ pub fn default_out_of_sync_threshold() -> u32 {
 }
 
 pub fn default_sending_endpoint_count() -> u8 {
-    2
+    1
 }
 
 pub fn default_max_reconnect_timeout() -> u32 {
@@ -235,7 +235,7 @@ pub struct NetworkConfig {
 
     /// Maximum number of randomly chosen endpoints the library uses to broadcast a message.
     ///
-    /// Default is 2.
+    /// Default is 1.
     #[serde(
         default = "default_sending_endpoint_count",
         deserialize_with = "deserialize_sending_endpoint_count"

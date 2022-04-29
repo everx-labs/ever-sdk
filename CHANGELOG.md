@@ -2,7 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
-### New
+## [1.33.0] – 2022-04-01
+
+### New 
+
+- `allow_partial` flag in all `abi.decode_*` functions. This flag controls decoder behaviour whether return error or not in case of incomplete BOC decoding
+- `REMP` supported. `ProcessingEvent` enum is extended with `REMP` statuses (enum of events posted into `processing.wait_for_transaction` function callback )
 - supported changed interface of ton_types::Cell
 - supported removing Copy interface from UInt256
 
