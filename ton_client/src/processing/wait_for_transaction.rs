@@ -13,9 +13,6 @@ use ton_block::Message;
 
 use super::remp::{RempStatus, RempStatusData};
 
-const FIRST_REMP_MSG_TIMEOUT: u64 = 1000;
-const REMP_MSG_TIMEOUT: u64 = 10000;
-
 //--------------------------------------------------------------------------- wait_for_transaction
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
@@ -119,9 +116,9 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
 
     // wait for REMP statuses and process them 
     // if no statuses recieved during timeout or any error accured then activate fallback
-    let mut timeout = FIRST_REMP_MSG_TIMEOUT;
+    let mut timeout = context.config.network.first_remp_status_timeout;
     loop {
-        let timer = tokio::time::delay_for(tokio::time::Duration::from_millis(timeout)).fuse();
+        let timer = tokio::time::delay_for(tokio::time::Duration::from_millis(timeout as u64)).fuse();
         futures::pin_mut!(timer);
         let result = futures::select! {
             _ = timer => { 
@@ -134,7 +131,7 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
             },
             fallback = fallback_fut => Some(fallback),
             remp_message = reciever.select_next_some() => {
-                timeout = REMP_MSG_TIMEOUT;
+                timeout = context.config.network.next_remp_status_timeout;
                 match process_remp_message(
                     context.clone(),
                     callback.clone(),
