@@ -19,7 +19,7 @@ use chrono::prelude::Utc;
 use ed25519_dalek::{Keypair, PublicKey};
 use serde_json::Value;
 use std::convert::Into;
-use std::io::{Read, Seek};
+use std::io::{Read, Seek, Cursor};
 use ton_abi::json_abi::DecodedMessage;
 use ton_block::{AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash,
     Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit,
@@ -88,7 +88,7 @@ impl ContractImage {
 
     pub fn from_state_init<T>(state_init_bag: &mut T) -> Result<Self>
     where
-        T: Read,
+        T: Read + Seek,
     {
         let cell = deserialize_tree_of_cells(state_init_bag)?;
         let state_init: StateInit = StateInit::construct_from_cell(cell)?;
@@ -99,7 +99,7 @@ impl ContractImage {
 
     pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> Result<Self>
     where
-        T: Read,
+        T: Read + Seek,
     {
         let mut result = Self::from_state_init(state_init_bag)?;
         result.set_public_key(pub_key)?;
@@ -652,7 +652,7 @@ impl Contract {
 
     /// Deserializes tree of cells from byte array into `SliceData`
     pub fn deserialize_tree_to_slice(data: &[u8]) -> Result<SliceData> {
-        Ok(deserialize_tree_of_cells(&mut data.clone())?.into())
+        Ok(deserialize_tree_of_cells(&mut Cursor::new(data))?.into())
     }
 
     pub fn get_dst_from_msg(msg: &[u8]) -> Result<MsgAddressInt> {

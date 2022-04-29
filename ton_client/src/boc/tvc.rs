@@ -221,8 +221,8 @@ pub fn get_compiler_version_from_cell(
     let (_, version) = get_salt_and_ver(code)?;
 
     version.map(|cell| {
-        let bytes = cell.data();
-        String::from_utf8(bytes[..bytes.len() - 1].to_vec())
+        let bytes = SliceData::from(cell).get_bytestring(0);
+        String::from_utf8(bytes)
             .map_err(|err| Error::invalid_boc(
                 format!("can not convert version cell to string: {}", err)))
     })
