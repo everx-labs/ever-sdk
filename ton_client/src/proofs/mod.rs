@@ -670,7 +670,7 @@ impl BlockProof {
             )
         }
         let (validators, validators_hash_short) =
-            self.process_prev_key_block_proof(prev_key_block_proof, virt_block_info.gen_utime().0)?;
+            self.process_prev_key_block_proof(prev_key_block_proof, virt_block_info.gen_utime().as_u32())?;
 
         if virt_block_info.key_block() {
             self.pre_check_key_block_proof(virt_block)?;

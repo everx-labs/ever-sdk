@@ -117,7 +117,7 @@ pub(crate) fn call_tvm_msg(
         .map_err(|err| Error::internal_error(format!("can not serialize message: {}", err)))?;
 
     let mut stack = Stack::new();
-    let balance = account.balance().map(|cc| cc.grams.0).unwrap_or_default();
+    let balance = account.balance().map_or(0, |cc| cc.grams.as_u128());
     let function_selector = match msg.header() {
         CommonMsgInfo::IntMsgInfo(_) => ton_vm::int!(0),
         CommonMsgInfo::ExtInMsgInfo(_) => ton_vm::int!(-1),
@@ -170,7 +170,7 @@ fn build_contract_info(
     *info.block_lt_mut() = block_lt;
     *info.trans_lt_mut() = tr_lt;
     *info.unix_time_mut() = block_unixtime;
-    *info.balance_remaining_grams_mut() = balance.grams.0;
+    *info.balance_remaining_grams_mut() = balance.grams.as_u128();
     *info.balance_remaining_other_mut() = balance.other_as_hashmap();
     if let Some(data) = config_params.config_params.data() {
         info.set_config_params(data.clone());
