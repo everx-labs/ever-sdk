@@ -21,6 +21,7 @@ mod fetching;
 mod internal;
 pub(crate) mod parsing;
 pub(crate) mod process_message;
+mod remp;
 pub(crate) mod send_message;
 mod types;
 pub(crate) mod wait_for_transaction;

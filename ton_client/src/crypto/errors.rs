@@ -36,6 +36,7 @@ pub enum ErrorCode {
     InvalidCryptoBoxType = 131,
     CryptoBoxSecretSerializationError = 132,
     CryptoBoxSecretDeserializationError = 133,
+    InvalidNonceSize = 134,
 }
 
 pub struct Error;
@@ -260,6 +261,17 @@ impl Error {
         error(
             ErrorCode::CryptoBoxSecretDeserializationError,
             format!("Crypto box secret deserialization error: {}", err),
+        )
+    }
+
+    pub fn invalid_nonce_size(actual: usize, expected: &[usize]) -> ClientError {
+        error(
+            ErrorCode::InvalidNonceSize,
+            format!(
+                "Invalid nonce size {}. Expected {}.",
+                actual,
+                expected.iter().map(|val| val.to_string()).collect::<Vec<String>>().join(" or ")
+            ),
         )
     }
 }

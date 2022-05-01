@@ -105,6 +105,7 @@ impl MsgInterface {
             ParamsOfDecodeMessage {
                 abi: self.debot_abi.clone(),
                 message: answer_msg,
+                allow_partial: false,
             },
         )
         .await
@@ -146,6 +147,7 @@ impl MsgInterface {
             ParamsOfDecodeMessage {
                 abi: self.debot_abi.clone(),
                 message: answer_msg,
+                allow_partial: false,
             },
         )
         .await

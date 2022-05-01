@@ -416,7 +416,7 @@ impl ServerLink {
         self.state.config_servers().await
     }
 
-    pub async fn state(&self) -> Arc<NetworkState> {
+    pub fn state(&self) -> Arc<NetworkState> {
         self.state.clone()
     }
 
@@ -715,7 +715,7 @@ impl ServerLink {
         &self,
         key: &[u8],
         value: &[u8],
-        endpoint: Option<Endpoint>,
+        endpoint: Option<&Endpoint>,
     ) -> ClientResult<Option<ClientError>> {
         let request = PostRequest {
             id: base64::encode(key),
@@ -727,7 +727,7 @@ impl ServerLink {
         let result = self
             .query(
                 &GraphQLQuery::with_post_requests(&[request]),
-                endpoint.as_ref(),
+                endpoint,
             )
             .await;
 
