@@ -377,7 +377,8 @@ Decodes message body using provided message BOC and ABI.
 ```ts
 type ParamsOfDecodeMessage = {
     abi: Abi,
-    message: string
+    message: string,
+    allow_partial?: boolean
 }
 
 type DecodedMessageBody = {
@@ -394,6 +395,7 @@ function decode_message(
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – contract ABI
 - `message`: _string_ – Message BOC
+- `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
 
 
 ### Result
@@ -412,7 +414,8 @@ Decodes message body using provided body BOC and ABI.
 type ParamsOfDecodeMessageBody = {
     abi: Abi,
     body: string,
-    is_internal: boolean
+    is_internal: boolean,
+    allow_partial?: boolean
 }
 
 type DecodedMessageBody = {
@@ -430,6 +433,7 @@ function decode_message_body(
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
 - `body`: _string_ – Message body BOC encoded in `base64`.
 - `is_internal`: _boolean_ – True if the body belongs to the internal message.
+- `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
 
 
 ### Result
@@ -490,7 +494,8 @@ Note: this feature requires ABI 2.1 or higher.
 ```ts
 type ParamsOfDecodeAccountData = {
     abi: Abi,
-    data: string
+    data: string,
+    allow_partial?: boolean
 }
 
 type ResultOfDecodeAccountData = {
@@ -504,6 +509,7 @@ function decode_account_data(
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
+- `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
 
 
 ### Result
@@ -588,7 +594,8 @@ Decodes initial values of a contract's static variables and owner's public key f
 ```ts
 type ParamsOfDecodeInitialData = {
     abi?: Abi,
-    data: string
+    data: string,
+    allow_partial?: boolean
 }
 
 type ResultOfDecodeInitialData = {
@@ -604,6 +611,7 @@ function decode_initial_data(
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 <br>Initial data is decoded if this parameter is provided
 - `data`: _string_ – Data BOC or BOC handle
+- `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
 
 
 ### Result
@@ -1265,11 +1273,13 @@ type ResultOfAttachSignature = {
 ```ts
 type ParamsOfDecodeMessage = {
     abi: Abi,
-    message: string
+    message: string,
+    allow_partial?: boolean
 }
 ```
 - `abi`: _[Abi](mod\_abi.md#abi)_ – contract ABI
 - `message`: _string_ – Message BOC
+- `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
 
 
 ## DecodedMessageBody
@@ -1292,12 +1302,14 @@ type DecodedMessageBody = {
 type ParamsOfDecodeMessageBody = {
     abi: Abi,
     body: string,
-    is_internal: boolean
+    is_internal: boolean,
+    allow_partial?: boolean
 }
 ```
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
 - `body`: _string_ – Message body BOC encoded in `base64`.
 - `is_internal`: _boolean_ – True if the body belongs to the internal message.
+- `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
 
 
 ## ParamsOfEncodeAccount
@@ -1333,11 +1345,13 @@ type ResultOfEncodeAccount = {
 ```ts
 type ParamsOfDecodeAccountData = {
     abi: Abi,
-    data: string
+    data: string,
+    allow_partial?: boolean
 }
 ```
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
+- `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
 
 
 ## ResultOfDecodeAccountData
@@ -1405,12 +1419,14 @@ type ResultOfEncodeInitialData = {
 ```ts
 type ParamsOfDecodeInitialData = {
     abi?: Abi,
-    data: string
+    data: string,
+    allow_partial?: boolean
 }
 ```
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 <br>Initial data is decoded if this parameter is provided
 - `data`: _string_ – Data BOC or BOC handle
+- `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
 
 
 ## ResultOfDecodeInitialData
