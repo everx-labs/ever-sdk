@@ -213,7 +213,10 @@ enum ProcessingErrorCode {
     CanNotCheckBlockShard = 510,
     BlockNotFound = 511,
     InvalidData = 512,
-    ExternalSignerMustNotBeUsed = 513
+    ExternalSignerMustNotBeUsed = 513,
+    MessageRejected = 514,
+    InvalidRempStatus = 515,
+    NextRempStatusTimeout = 516
 }
 ```
 One of the following value:
@@ -231,6 +234,9 @@ One of the following value:
 - `BlockNotFound = 511`
 - `InvalidData = 512`
 - `ExternalSignerMustNotBeUsed = 513`
+- `MessageRejected = 514`
+- `InvalidRempStatus = 515`
+- `NextRempStatusTimeout = 516`
 
 
 ## ProcessingEvent
@@ -271,6 +277,29 @@ type ProcessingEvent = {
     type: 'MessageExpired'
     message_id: string,
     message: string,
+    error: ClientError
+} | {
+    type: 'RempSentToValidators'
+    message_id: string,
+    timestamp: bigint,
+    json: any
+} | {
+    type: 'RempIncludedIntoBlock'
+    message_id: string,
+    timestamp: bigint,
+    json: any
+} | {
+    type: 'RempIncludedIntoAcceptedBlock'
+    message_id: string,
+    timestamp: bigint,
+    json: any
+} | {
+    type: 'RempOther'
+    message_id: string,
+    timestamp: bigint,
+    json: any
+} | {
+    type: 'RempError'
     error: ClientError
 }
 ```
@@ -381,6 +410,49 @@ events will be repeated.
 - `message`: _string_
 - `error`: _[ClientError](mod\_client.md#clienterror)_
 
+When _type_ is _'RempSentToValidators'_
+
+Notifies the app that the message has been delivered to the thread's validators
+
+
+- `message_id`: _string_
+- `timestamp`: _bigint_
+- `json`: _any_
+
+When _type_ is _'RempIncludedIntoBlock'_
+
+Notifies the app that the message has been successfully included into a block candidate by the thread's collator
+
+
+- `message_id`: _string_
+- `timestamp`: _bigint_
+- `json`: _any_
+
+When _type_ is _'RempIncludedIntoAcceptedBlock'_
+
+Notifies the app that the block candicate with the message has been accepted by the thread's validators
+
+
+- `message_id`: _string_
+- `timestamp`: _bigint_
+- `json`: _any_
+
+When _type_ is _'RempOther'_
+
+Notifies the app about some other minor REMP statuses occurring during message processing
+
+
+- `message_id`: _string_
+- `timestamp`: _bigint_
+- `json`: _any_
+
+When _type_ is _'RempError'_
+
+Notifies the app about any problem that has occured in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).
+
+
+- `error`: _[ClientError](mod\_client.md#clienterror)_
+
 
 Variant constructors:
 
@@ -393,6 +465,11 @@ function processingEventSendFailed(shard_block_id: string, message_id: string, m
 function processingEventWillFetchNextBlock(shard_block_id: string, message_id: string, message: string): ProcessingEvent;
 function processingEventFetchNextBlockFailed(shard_block_id: string, message_id: string, message: string, error: ClientError): ProcessingEvent;
 function processingEventMessageExpired(message_id: string, message: string, error: ClientError): ProcessingEvent;
+function processingEventRempSentToValidators(message_id: string, timestamp: bigint, json: any): ProcessingEvent;
+function processingEventRempIncludedIntoBlock(message_id: string, timestamp: bigint, json: any): ProcessingEvent;
+function processingEventRempIncludedIntoAcceptedBlock(message_id: string, timestamp: bigint, json: any): ProcessingEvent;
+function processingEventRempOther(message_id: string, timestamp: bigint, json: any): ProcessingEvent;
+function processingEventRempError(error: ClientError): ProcessingEvent;
 ```
 
 ## ResultOfProcessMessage

@@ -39,7 +39,7 @@ pub fn default_out_of_sync_threshold() -> u32 {
 }
 
 pub fn default_sending_endpoint_count() -> u8 {
-    2
+    1
 }
 
 pub fn default_max_reconnect_timeout() -> u32 {
@@ -64,6 +64,14 @@ pub fn default_query_timeout() -> u32 {
 
 pub fn default_queries_protocol() -> NetworkQueriesProtocol {
     NetworkQueriesProtocol::HTTP
+}
+
+pub fn default_first_remp_status_timeout() -> u32 {
+    1000
+}
+
+pub fn default_next_remp_status_timeout() -> u32 {
+    5000
 }
 
 fn deserialize_network_retries_count<'de, D: Deserializer<'de>>(
@@ -136,6 +144,18 @@ fn deserialize_queries_protocol<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<NetworkQueriesProtocol, D::Error> {
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_queries_protocol()))
+}
+
+fn deserialize_first_remp_status_timeout<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u32, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_first_remp_status_timeout()))
+}
+
+fn deserialize_next_remp_status_timeout<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<u32, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(default_next_remp_status_timeout()))
 }
 
 #[derive(Debug, Clone, PartialEq, ApiType)]
@@ -235,7 +255,7 @@ pub struct NetworkConfig {
 
     /// Maximum number of randomly chosen endpoints the library uses to broadcast a message.
     ///
-    /// Default is 2.
+    /// Default is 1.
     #[serde(
         default = "default_sending_endpoint_count",
         deserialize_with = "deserialize_sending_endpoint_count"
@@ -287,6 +307,26 @@ pub struct NetworkConfig {
     )]
     pub queries_protocol: NetworkQueriesProtocol,
 
+    /// UNSTABLE. First REMP status awaiting timeout. If no status recieved during the timeout than fallback 
+    /// transaction scenario is activated.
+    ///
+    /// Must be specified in milliseconds. Default is 1000 (1 sec).
+    #[serde(
+        default = "default_first_remp_status_timeout",
+        deserialize_with = "deserialize_first_remp_status_timeout"
+    )]
+    pub first_remp_status_timeout: u32,
+
+    /// UNSTABLE. Subsequent REMP status awaiting timeout. If no status recieved during the timeout than fallback 
+    /// transaction scenario is activated.
+    ///
+    /// Must be specified in milliseconds. Default is 5000 (5 sec).
+    #[serde(
+        default = "default_next_remp_status_timeout",
+        deserialize_with = "deserialize_next_remp_status_timeout"
+    )]
+    pub next_remp_status_timeout: u32,
+
     /// Access key to GraphQL API. At the moment is not used in production.
     pub access_key: Option<String>,
 }
@@ -308,6 +348,8 @@ impl Default for NetworkConfig {
             max_latency: default_max_latency(),
             query_timeout: default_query_timeout(),
             queries_protocol: default_queries_protocol(),
+            first_remp_status_timeout: default_first_remp_status_timeout(),
+            next_remp_status_timeout: default_next_remp_status_timeout(),
             access_key: None,
         }
     }

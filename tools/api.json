@@ -1,5 +1,5 @@
 {
-  "version": "1.32.0",
+  "version": "1.33.0",
   "modules": [
     {
       "name": "client",
@@ -466,7 +466,7 @@
                 "number_size": 8
               },
               "summary": "Maximum number of randomly chosen endpoints the library uses to broadcast a message.",
-              "description": "Default is 2."
+              "description": "Default is 1."
             },
             {
               "name": "latency_detection_interval",
@@ -510,6 +510,28 @@
               },
               "summary": "Queries protocol.",
               "description": "`HTTP` or `WS`. \nDefault is `HTTP`."
+            },
+            {
+              "name": "first_remp_status_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "UNSTABLE.",
+              "description": "First REMP status awaiting timeout. If no status recieved during the timeout than fallback transaction scenario is activated.\n\nMust be specified in milliseconds. Default is 1000 (1 sec)."
+            },
+            {
+              "name": "next_remp_status_timeout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "UNSTABLE.",
+              "description": "Subsequent REMP status awaiting timeout. If no status recieved during the timeout than fallback transaction scenario is activated.\n\nMust be specified in milliseconds. Default is 5000 (5 sec)."
             },
             {
               "name": "access_key",
@@ -1175,6 +1197,13 @@
               "name": "CryptoBoxSecretDeserializationError",
               "type": "Number",
               "value": "133",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidNonceSize",
+              "type": "Number",
+              "value": "134",
               "summary": null,
               "description": null
             }
@@ -6398,6 +6427,15 @@
               "type": "String",
               "summary": "Message BOC",
               "description": null
+            },
+            {
+              "name": "allow_partial",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)",
+              "description": null
             }
           ],
           "summary": null,
@@ -6465,6 +6503,15 @@
               "name": "is_internal",
               "type": "Boolean",
               "summary": "True if the body belongs to the internal message.",
+              "description": null
+            },
+            {
+              "name": "allow_partial",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)",
               "description": null
             }
           ],
@@ -6564,6 +6611,15 @@
               "name": "data",
               "type": "String",
               "summary": "Data BOC or BOC handle",
+              "description": null
+            },
+            {
+              "name": "allow_partial",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)",
               "description": null
             }
           ],
@@ -6731,6 +6787,15 @@
               "name": "data",
               "type": "String",
               "summary": "Data BOC or BOC handle",
+              "description": null
+            },
+            {
+              "name": "allow_partial",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)",
               "description": null
             }
           ],
@@ -9111,6 +9176,27 @@
               "value": "513",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "MessageRejected",
+              "type": "Number",
+              "value": "514",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidRempStatus",
+              "type": "Number",
+              "value": "515",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "NextRempStatusTimeout",
+              "type": "Number",
+              "value": "516",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -9312,6 +9398,137 @@
               ],
               "summary": "Notifies the app that the message was not executed within expire timeout on-chain and will never be because it is already expired. The expiration timeout can be configured with `AbiConfig` parameters.",
               "description": "This event occurs only for the contracts which ABI includes \"expire\" header.\n\nIf Application specifies `NetworkConfig.message_retries_count` > 0, then `process_message`\nwill perform retries: will create a new message and send it again and repeat it untill it reaches\nthe maximum retries count or receives a successful result.  All the processing\nevents will be repeated."
+            },
+            {
+              "name": "RempSentToValidators",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "timestamp",
+                  "type": "BigInt",
+                  "number_type": "UInt",
+                  "number_size": 64,
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "json",
+                  "type": "Ref",
+                  "ref_name": "Value",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": "Notifies the app that the message has been delivered to the thread's validators",
+              "description": null
+            },
+            {
+              "name": "RempIncludedIntoBlock",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "timestamp",
+                  "type": "BigInt",
+                  "number_type": "UInt",
+                  "number_size": 64,
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "json",
+                  "type": "Ref",
+                  "ref_name": "Value",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": "Notifies the app that the message has been successfully included into a block candidate by the thread's collator",
+              "description": null
+            },
+            {
+              "name": "RempIncludedIntoAcceptedBlock",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "timestamp",
+                  "type": "BigInt",
+                  "number_type": "UInt",
+                  "number_size": 64,
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "json",
+                  "type": "Ref",
+                  "ref_name": "Value",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": "Notifies the app that the block candicate with the message has been accepted by the thread's validators",
+              "description": null
+            },
+            {
+              "name": "RempOther",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "timestamp",
+                  "type": "BigInt",
+                  "number_type": "UInt",
+                  "number_size": 64,
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "json",
+                  "type": "Ref",
+                  "ref_name": "Value",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": "Notifies the app about some other minor REMP statuses occurring during message processing",
+              "description": null
+            },
+            {
+              "name": "RempError",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "error",
+                  "type": "Ref",
+                  "ref_name": "client.ClientError",
+                  "summary": null,
+                  "description": null
+                }
+              ],
+              "summary": "Notifies the app about any problem that has occured in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).",
+              "description": null
             }
           ],
           "summary": null,

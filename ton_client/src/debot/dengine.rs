@@ -583,6 +583,7 @@ impl DEngine {
                 abi: abi.clone(),
                 body: body.to_string(),
                 is_internal: true,
+                allow_partial: false,
             },
         )
         .await
