@@ -135,6 +135,18 @@ impl SendingMessage {
     }
 
     async fn send(&self, context: &Arc<ClientContext>) -> ClientResult<Vec<String>> {
+        let net = context.get_server_link()?;
+        let endpoint = net.state().get_query_endpoint().await?;
+        if endpoint.remp_enabled() {
+            let address = endpoint.query_url.clone();
+            return net
+                .send_message(&hex_decode(&self.id)?, &self.body, Some(&endpoint))
+                .await
+                .add_endpoint_from_context(&context, &endpoint)
+                .await
+                .map(|_| vec![address])
+        }
+
         let addresses = context.get_server_link()?.get_addresses_for_sending().await;
         let mut last_result = None::<ClientResult<String>>;
         let succedeed_limit = context.config.network.sending_endpoint_count as usize;
@@ -189,7 +201,7 @@ impl SendingMessage {
         // Send
         context
             .get_server_link()?
-            .send_message(&hex_decode(&self.id)?, &self.body, Some(endpoint.clone()))
+            .send_message(&hex_decode(&self.id)?, &self.body, Some(&endpoint))
             .await
             .add_endpoint_from_context(&context, &endpoint)
             .await

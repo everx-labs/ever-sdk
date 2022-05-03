@@ -101,7 +101,28 @@ impl TransactionBoc {
         .result)
     }
 
-    fn from(value: Value, message_id: &str, shard_block_id: &String) -> ClientResult<Self> {
+    async fn fetch_from_block(
+        context: &Arc<ClientContext>,
+        message_id: &str,
+        block_id: &str,
+    ) -> ClientResult<Value> {
+        Ok(wait_for_collection(
+            context.clone(),
+            ParamsOfWaitForCollection {
+                collection: TRANSACTIONS_COLLECTION.into(),
+                filter: Some(json!({
+                    "in_msg": { "eq": message_id },
+                    "block_id": { "eq": block_id },
+                })),
+                result: "boc out_messages { boc }".into(),
+                timeout: Some(MAX_TIMEOUT),
+            },
+        )
+        .await?
+        .result)
+    }
+
+    fn from(value: Value, message_id: &str, shard_block_id: &str) -> ClientResult<Self> {
         serde_json::from_value::<TransactionBoc>(value).map_err(|err| {
             Error::fetch_transaction_result_failed(
                 format!("Transaction can't be parsed: {}", err),
@@ -157,10 +178,10 @@ async fn fetch_contract_balance(
 
 pub async fn fetch_transaction_result(
     context: &Arc<ClientContext>,
-    shard_block_id: &String,
+    shard_block_id: &str,
     message_id: &str,
     message: &str,
-    transaction_id: &str,
+    transaction_id: Option<&str>,
     abi: &Option<Abi>,
     address: MsgAddressInt,
     expiration_time: u32,
@@ -241,15 +262,20 @@ pub async fn fetch_transaction_result(
 
 async fn fetch_transaction_boc(
     context: &Arc<ClientContext>,
-    transaction_id: &str,
+    transaction_id: Option<&str>,
     message_id: &str,
-    shard_block_id: &String,
+    shard_block_id: &str,
 ) -> ClientResult<TransactionBoc> {
     let start = context.env.now_ms();
 
     // Network retries loop
     loop {
-        match TransactionBoc::fetch_value(context, transaction_id).await {
+        let fetch_result = if let Some(transaction_id) = transaction_id {
+            TransactionBoc::fetch_value(context, transaction_id).await
+        } else {
+            TransactionBoc::fetch_from_block(context, message_id, shard_block_id).await
+        };
+        match fetch_result {
             Ok(value) => {
                 return Ok(TransactionBoc::from(value, message_id, shard_block_id)?);
             }

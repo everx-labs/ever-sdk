@@ -20,7 +20,7 @@ use ton_block::{
 };
 use ton_types::Cell;
 
-struct StringVisitor;
+pub struct StringVisitor;
 
 impl<'de> serde::de::Visitor<'de> for StringVisitor {
     type Value = String;
