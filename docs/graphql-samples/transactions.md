@@ -36,6 +36,49 @@ Result:&#x20;
 }
 ```
 
+## Calculate account fees for transaction
+
+```graphql
+query{
+  blockchain{
+    transaction(hash:"998fee062e8daad96e88ce43adb52832b2e653d9a824912bc83051060932aceb"){
+      ext_in_msg_fee(format:DEC)
+      storage{
+        storage_fees_collected(format:DEC)
+      }
+      compute{
+        gas_fees(format:DEC)
+      }
+      action{
+        total_fwd_fees(format:DEC)
+      }      
+    }
+  }
+}
+```
+
+You need to sum up these values to get the total fee the account paid for the transaction
+
+```graphql
+{
+  "data": {
+    "blockchain": {
+      "transaction": {
+        "ext_in_msg_fee": "2062000",
+        "storage": {
+          "storage_fees_collected": "270"
+        },
+        "compute": {
+          "gas_fees": "10741000"
+        },
+        "action": {
+          "total_fwd_fees": null
+        }
+      }
+    }
+  }
+```
+
 ## Paginate blockchain transactions
 
 Sometimes it is needed to  paginate all the network transactions. &#x20;
