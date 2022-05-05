@@ -70,7 +70,7 @@ impl StringId {
 }
 
 pub fn grams_to_u64(grams: &ton_block::types::Grams) -> Result<u64> {
-    grams.0.to_u64().ok_or(
+    grams.as_u128().to_u64().ok_or(
         SdkError::InvalidData {
             msg: "Cannot convert grams value".to_owned(),
         }
