@@ -11,6 +11,7 @@
 * limitations under the License.
 */
 
+use num_traits::cast::ToPrimitive;
 use std::fmt;
 use ton_types::{Result, UInt256};
 

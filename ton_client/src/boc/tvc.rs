@@ -295,10 +295,10 @@ pub async fn encode_tvc(
         None
     };
 
-    let split_depth = params.split_depth.map(Number5);
-    
+    let split_depth = params.split_depth.map(|split_depth| Number5::new(split_depth).unwrap());
+
     let state = StateInit { code, data, library, special, split_depth };
-    
+
     Ok(ResultOfEncodeTvc { 
         tvc: serialize_object_to_boc(&context, &state, "TVC", params.boc_cache).await?
     })
@@ -380,7 +380,7 @@ pub async fn decode_tvc(
         library,
         tick: tvc.object.special.as_ref().map(|val| val.tick),
         tock: tvc.object.special.as_ref().map(|val| val.tick),
-        split_depth: tvc.object.split_depth.map(|val| val.0),
+        split_depth: tvc.object.split_depth.map(|val| val.as_u32()),
         compiler_version,
     })
 }
