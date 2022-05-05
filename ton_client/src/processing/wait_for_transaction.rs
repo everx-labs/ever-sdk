@@ -118,7 +118,7 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
     // if no statuses recieved during timeout or any error accured then activate fallback
     let mut timeout = context.config.network.first_remp_status_timeout;
     loop {
-        let timer = tokio::time::delay_for(tokio::time::Duration::from_millis(timeout as u64)).fuse();
+        let timer = context.env.set_timer(timeout as u64).fuse();
         futures::pin_mut!(timer);
         let result = futures::select! {
             _ = timer => { 

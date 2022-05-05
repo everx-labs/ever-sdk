@@ -1819,7 +1819,8 @@ enum CryptoErrorCode {
     CryptoBoxNotRegistered = 130,
     InvalidCryptoBoxType = 131,
     CryptoBoxSecretSerializationError = 132,
-    CryptoBoxSecretDeserializationError = 133
+    CryptoBoxSecretDeserializationError = 133,
+    InvalidNonceSize = 134
 }
 ```
 One of the following value:
@@ -1855,6 +1856,7 @@ One of the following value:
 - `InvalidCryptoBoxType = 131`
 - `CryptoBoxSecretSerializationError = 132`
 - `CryptoBoxSecretDeserializationError = 133`
+- `InvalidNonceSize = 134`
 
 
 ## SigningBoxHandle
