@@ -28,6 +28,5 @@ If you use another language check the official GraphQL documentation how to conn
 
 * via [other GraphQL Clients](https://graphql.org/code/)
 * via [HTTP requests](https://graphql.org/learn/serving-over-http/)
-* via websocket protocol [https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md](https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md)
 
 In the next section find out how to work with GraphQL Web playground and easily explore blockchain data with it.

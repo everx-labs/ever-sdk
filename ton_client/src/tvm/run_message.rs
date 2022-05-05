@@ -261,7 +261,7 @@ pub async fn run_executor_internal(
     let contract_info = move || async move {
         let account = deserialize_object_from_cell::<Account>(account_copy.clone(), "account")?;
         if let (Some(addr), Some(balance)) = (account.get_addr(), account.balance()) {
-            Ok((addr.clone(), balance.grams.as_u64()))
+            Ok((addr.clone(), grams_to_u64(&balance.grams)?))
         } else {
             Ok((msg_address.clone(), 0))
         }

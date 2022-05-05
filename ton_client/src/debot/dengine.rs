@@ -27,7 +27,7 @@ use super::msg_interface::MsgInterface;
 use super::run_output::RunOutput;
 use ton_abi::Contract;
 
-const EMPTY_CELL: &str = "te6ccgEBAQEAAgAAAA==";
+const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
 
 fn create_client(url: &str) -> Result<TonClient, String> {
     let cli_conf = ClientConfig {

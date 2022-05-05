@@ -869,8 +869,8 @@ async fn test_proof_block_data() -> Result<()> {
 
 #[tokio::test]
 async fn test_transaction_get_required_data() -> Result<()> {
-    const ID: &str = "5b532e2ec17ac84b4efa92703192368dd4ed8a2729f2be2b0ee4e0665368f7c0";
-    const BOC: &str = "\
+    const ID: &'static str = "5b532e2ec17ac84b4efa92703192368dd4ed8a2729f2be2b0ee4e0665368f7c0";
+    const BOC: &'static str = "\
             te6ccgECBgEAATMAA69wT2TGr7/z3RDYumcHeQrJZw1UDzepRIsDN7qmpakqysAAAR0tIeN4FanEM9ilnr+FQpc\
             mlTEG3AXJ47njjdUvtmEBGza8vWswAAEdLSDvVDYWPE5wABQIBQQBAgUgMDQDAgBpYAAAAJYAAAAEAAYAAAAAAA\
             UZroTxe4+LIgJql1/1Xxqxn95KdodE0heN+mO7Uz4QekCQJrwAoEJmUBfXhAAAAAAAAAAAADAAAAAAAAAAAAAAA\

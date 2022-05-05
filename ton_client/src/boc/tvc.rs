@@ -77,7 +77,7 @@ fn get_mycode_selector_salt_and_ver(code: &Cell) -> ClientResult<(Option<Cell>, 
 }
 
 pub fn get_salt_and_ver(code: Cell) -> ClientResult<(Option<Cell>, Option<Cell>)> {
-    match SliceData::from(code.clone()).get_bytestring(0).as_slice() {
+    match code.data() {
         OLD_CPP_SELECTOR_DATA => get_old_selector_salt(&code).map(|salt| (salt, None)),
         OLD_SOL_SELECTOR_DATA => Ok((None, None)),
         NEW_SELECTOR_DATA => get_new_selector_salt_and_ver(&code).map(|(salt, ver)| (salt, Some(ver))),
@@ -190,7 +190,7 @@ pub async fn set_code_salt(
     let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code").await?;
     let (_, salt) = deserialize_cell_from_boc(&context, &params.salt, "salt").await?;
     
-    let code = match SliceData::from(code.clone()).get_bytestring(0).as_slice() {
+    let code = match code.data() {
         OLD_CPP_SELECTOR_DATA => set_old_selector_salt(code, salt),
         NEW_SELECTOR_DATA => set_new_selector_salt(code, salt),
         MYCODE_SELECTOR_DATA => set_mycode_selector_salt(code, salt),
