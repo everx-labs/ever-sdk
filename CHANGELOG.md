@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - `allow_partial` flag in all `abi.decode_*` functions. This flag controls decoder behaviour whether return error or not in case of incomplete BOC decoding
 - `REMP` supported. `ProcessingEvent` enum is extended with `REMP` statuses (enum of events posted into `processing.wait_for_transaction` function callback )
-- supported changed interface of ton_types::Cell
+- supported internal changes in node repos
 - supported removing Copy interface from UInt256
 - UNSTABLE. `first_remp_status_timeout` and `next_remp_status_timeout` parameters in network config
 
