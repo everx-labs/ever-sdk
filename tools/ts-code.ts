@@ -20,7 +20,6 @@ import {
     ApiFunction,
     ApiFunctionInfo,
     ApiModule,
-    ApiStruct,
     ApiType,
     ApiTypeIs,
     Code,
@@ -107,10 +106,6 @@ function enumOfTypesJsDoc(type: ApiEnumOfTypes, indent = "") {
         if (variant.summary) {
             ts += jsDoc(variant.summary, indent);
         }
-        if (variant.description) {
-            ts += jsDoc("", indent);
-            ts += jsDoc(variant.description, indent);
-        }
     }
     ts += jsDocEnd(indent);
     return ts;
@@ -195,19 +190,11 @@ export class ${Code.upperFirst(module.name)}Module {
         return fields.map(f => this.field(f, indent, includeDoc)).join(",\n");
     }
 
-    typeVariantStructFields(variant: ApiStruct, _indent: string): ApiField[] {
-        const fields = variant.struct_fields;
-        if (fields.length === 0) {
-            return fields;
-        }
-        return fields;
-    }
-
     typeVariant(variant: ApiField, indent: string, includeDoc?: boolean): string {
         if (variant.type === ApiTypeIs.Ref) {
             return `({\n${indent}    type: '${variant.name}'\n${indent}} & ${typeName(variant.ref_name)})`;
         } else if (variant.type === ApiTypeIs.Struct) {
-            const fields = this.typeVariantStructFields(variant, indent);
+            const fields = variant.struct_fields;
             let fieldsDecl: string;
             if (fields.length === 0) {
                 fieldsDecl = "";

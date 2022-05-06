@@ -160,6 +160,39 @@ export function parseApi(json: any): Api {
     const types = new Map<string, ApiField>();
     for (const module of api.modules) {
         module.api = api;
+        const originalTypes = module.types;
+        module.types = [];
+        for (const type of originalTypes) {
+            if (type.type === ApiTypeIs.EnumOfTypes) {
+                const originalVariants = type.enum_types;
+                type.enum_types = [];
+                for (const variant of originalVariants) {
+                    if (variant.type === ApiTypeIs.Struct) {
+                        const name = `${type.name}${variant.name}Variant`;
+                        const variantType: ApiField ={
+                            module,
+                            name,
+                            summary: variant.summary,
+                            description: variant.description,
+                            type: ApiTypeIs.Struct,
+                            struct_fields: variant.struct_fields
+                        } ;
+                        module.types.push(variantType)
+                        type.enum_types.push({
+                            module,
+                            name: variant.name,
+                            summary: variant.summary,
+                            description: variant.description,
+                            type: ApiTypeIs.Ref,
+                            ref_name: name,
+                        });
+                    } else {
+                        type.enum_types.push(variant);
+                    }
+                }
+            }
+            module.types.push(type);
+        }
         for (const type of module.types) {
             type.module = module;
             types.set(`${module.name}.${type.name}`, type);
@@ -257,7 +290,7 @@ export abstract class Code {
             const result = resolvedResult.enum_types.find(x => x.name === params.name);
             const functionParams: ApiField[] = [];
             if (params.type === ApiTypeIs.Struct && params.struct_fields.length > 0) {
-                const paramsTypeName = `ParamsOf${obj.name}${params.name}`;
+                const paramsTypeName = `ParamsOf${obj.name}${params.name}Variant`;
                 obj.types.push({
                     ...params,
                     module: obj,
@@ -271,7 +304,7 @@ export abstract class Code {
                 });
             }
 
-            const resultTypeName = `ResultOf${obj.name}${params.name}`;
+            const resultTypeName = `ResultOf${obj.name}${params.name}Variant`;
             if (result && result.type === ApiTypeIs.Struct && result.struct_fields.length > 0) {
                 obj.types.push({
                     ...result,
