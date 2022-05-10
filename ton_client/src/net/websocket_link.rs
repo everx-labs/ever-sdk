@@ -408,6 +408,9 @@ impl LinkHandler {
     }
 
     async fn check_latency(&mut self) -> Option<Phase> {
+        if !self.state.has_multiple_endpoints() {
+            return None
+        }
         let current = self.state.query_endpoint().await?;
         if self.client_env.now_ms() < current.next_latency_detection_time() {
             return None;
