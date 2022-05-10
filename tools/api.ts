@@ -26,6 +26,7 @@ export type ApiField = ApiType & {
     name: string,
     summary?: string,
     description?: string,
+    isInternal?: boolean,
 }
 
 export enum ApiConstValueIs {
@@ -169,22 +170,23 @@ export function parseApi(json: any): Api {
                 for (const variant of originalVariants) {
                     if (variant.type === ApiTypeIs.Struct) {
                         const name = `${type.name}${variant.name}Variant`;
-                        const variantType: ApiField ={
+                        const variantType: ApiField = {
                             module,
                             name,
                             summary: variant.summary,
                             description: variant.description,
                             type: ApiTypeIs.Struct,
-                            struct_fields: variant.struct_fields
-                        } ;
-                        module.types.push(variantType)
+                            struct_fields: variant.struct_fields,
+                            isInternal: true,
+                        };
+                        module.types.push(variantType);
                         type.enum_types.push({
                             module,
                             name: variant.name,
                             summary: variant.summary,
                             description: variant.description,
                             type: ApiTypeIs.Ref,
-                            ref_name: name,
+                            ref_name: `${module.name}.${name}`,
                         });
                     } else {
                         type.enum_types.push(variant);
@@ -261,6 +263,22 @@ export abstract class Code {
     }
 
 
+    getVariantStructType(variant: ApiField | undefined): ApiStruct | undefined {
+        if (!variant) {
+            return undefined;
+        }
+        if (variant.type === ApiTypeIs.Struct) {
+            return variant;
+        }
+        if (variant.type === ApiTypeIs.Ref) {
+            const refType = this.findType(variant.ref_name);
+            if (refType && refType.type === ApiTypeIs.Struct) {
+                return refType;
+            }
+        }
+        return undefined;
+    }
+
     getAppObject(source: ApiGeneric): ApiModule {
         const requiredRefEnum = (type: ApiType, name: string): ApiEnumOfTypes => {
             const refType = type.type === ApiTypeIs.Ref ? this.findType(type.ref_name) : null;
@@ -289,7 +307,8 @@ export abstract class Code {
         for (const params of resolvedParams.enum_types) {
             const result = resolvedResult.enum_types.find(x => x.name === params.name);
             const functionParams: ApiField[] = [];
-            if (params.type === ApiTypeIs.Struct && params.struct_fields.length > 0) {
+            const paramsStructType = this.getVariantStructType(params);
+            if (paramsStructType && paramsStructType.struct_fields.length > 0) {
                 const paramsTypeName = `ParamsOf${obj.name}${params.name}Variant`;
                 obj.types.push({
                     ...params,
@@ -305,7 +324,8 @@ export abstract class Code {
             }
 
             const resultTypeName = `ResultOf${obj.name}${params.name}Variant`;
-            if (result && result.type === ApiTypeIs.Struct && result.struct_fields.length > 0) {
+            const resultStructType = this.getVariantStructType(result);
+            if (result && resultStructType && resultStructType.struct_fields.length > 0) {
                 obj.types.push({
                     ...result,
                     module: obj,
@@ -316,7 +336,7 @@ export abstract class Code {
                 module: obj,
                 name: Code.pascalToSnake(params.name),
                 params: functionParams,
-                result: (result && result.type === ApiTypeIs.Struct && result.struct_fields.length == 0)
+                result: (result && resultStructType && resultStructType.struct_fields.length == 0)
                     ? {
                         type: ApiTypeIs.None,
                         module: obj,

@@ -300,10 +300,9 @@ export class ${Code.upperFirst(module.name)}Module {
 
     appObjectInterface(obj: ApiModule): string {
         let ts = "";
-        for (const type of obj.types) {
-            ts += "\n";
-            ts += this.typeDef(type);
-        }
+        // for (const type of obj.types) {
+        //     ts += `\ntype ${type.name} = ${type.name}Variant`;
+        // }
         ts += `\nexport interface ${obj.name} {`;
         for (const f of obj.functions) {
             const isNotify = (f.result.type === ApiTypeIs.Ref) && f.result.ref_name === "";
@@ -391,13 +390,7 @@ ${this.api.modules.map(m => this.module(m)).join("")}
         for (const variant of type.enum_types) {
             let params = "";
             let properties = "";
-            switch (variant.type) {
-            case ApiTypeIs.Ref:
-                params = `params: ${typeName(variant.ref_name)}`;
-                properties = `        ...params,\n`;
-                break;
-            case ApiTypeIs.Struct:
-                const fields = variant.struct_fields;
+            const addFields = (fields: ApiField[]) => {
                 for (const field of fields) {
                     if (params !== "") {
                         params += ", ";
@@ -406,6 +399,19 @@ ${this.api.modules.map(m => this.module(m)).join("")}
                     properties += `        ${fixFieldName(field.name)},\n`;
 
                 }
+            };
+            switch (variant.type) {
+            case ApiTypeIs.Ref:
+                const refType = this.findType(variant.ref_name);
+                if (refType && refType.type === ApiTypeIs.Struct && refType.isInternal) {
+                    addFields(refType.struct_fields);
+                } else {
+                    params = `params: ${typeName(variant.ref_name)}`;
+                    properties = `        ...params,\n`;
+                }
+                break;
+            case ApiTypeIs.Struct:
+                addFields(variant.struct_fields);
                 break;
             }
             ts +=
