@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.33.1] – 2022-05-02
+
+### Fixed
+
+- Websocket errors weren't treated as a network errors.
+  So all processing functions weren't retrying on these errors.
+- SDK rebalanced even in a single endpoint specified.
+
 ## [1.33.0] – 2022-05-02
 
 ### New 
