@@ -377,18 +377,25 @@ Where:
         let md = "Variant constructors:\n\n```ts";
         for (const variant of type.enum_types) {
             let params = "";
-            switch (variant.type) {
-            case ApiTypeIs.Ref:
-                params = `params: ${typeName(variant.ref_name)}`;
-                break;
-            case ApiTypeIs.Struct:
-                const fields = variant.struct_fields;
+                const addFields = (fields: ApiField[]) => {
                 for (const field of fields) {
                     if (params !== "") {
                         params += ", ";
                     }
-                    params += `${this.code.field(field, "")}`;
+                    params += `${this.field(field)}`;
                 }
+            };
+        switch (variant.type) {
+            case ApiTypeIs.Ref:
+                const refType = this.findType(variant.ref_name);
+                if (refType && refType.type === ApiTypeIs.Struct && refType.isInternal) {
+                    addFields(refType.struct_fields);
+                } else {
+                    params = `params: ${typeName(variant.ref_name)}`;
+                }
+                break;
+            case ApiTypeIs.Struct:
+                addFields(variant.struct_fields);
                 break;
             }
             md += `\nfunction ${TSCode.lowerFirst(enumName)}${variant.name}(${params}): ${enumName};`;
