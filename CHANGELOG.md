@@ -7,8 +7,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Websocket errors weren't treated as a network errors.
-  So all processing functions weren't retrying on these errors.
-- SDK rebalanced even in a single endpoint specified.
+  This is why all the processing functions that worked via wss protocol failed on these errors without retries. Now retries are performed. 
+- SDK tried to rebalance even if only a single endpoint was specified. Now in case of a single endpoint, no rebalancing occurs.
 
 ## [1.33.0] – 2022-05-02
 
