@@ -81,6 +81,7 @@ pub(crate) struct NetworkState {
     client_env: Arc<ClientEnv>,
     config: NetworkConfig,
     endpoint_addresses: RwLock<Vec<String>>,
+    has_multiple_endpoints: AtomicBool,
     bad_delivery_addresses: RwLock<HashSet<String>>,
     suspended: watch::Receiver<bool>,
     suspend_regulation: Arc<Mutex<SuspendRegulation>>,
@@ -120,10 +121,12 @@ impl NetworkState {
             internal_suspend: false,
             external_suspend: false,
         };
+        let has_multiple_endpoints = AtomicBool::new(endpoint_addresses.len() > 1);
         Self {
             client_env,
             config,
             endpoint_addresses: RwLock::new(endpoint_addresses),
+            has_multiple_endpoints,
             bad_delivery_addresses: RwLock::new(HashSet::new()),
             suspended: receiver,
             suspend_regulation: Arc::new(Mutex::new(regulation)),
@@ -131,6 +134,10 @@ impl NetworkState {
             query_endpoint: RwLock::new(None),
             time_checked: AtomicBool::new(false),
         }
+    }
+
+    pub fn has_multiple_endpoints(&self) -> bool {
+        self.has_multiple_endpoints.load(Ordering::Relaxed)
     }
 
     async fn suspend(&self, sender: &watch::Sender<bool>) {
@@ -186,6 +193,8 @@ impl NetworkState {
     }
 
     pub async fn set_endpoint_addresses(&self, addresses: Vec<String>) {
+        self.has_multiple_endpoints
+            .store(addresses.len() > 1, Ordering::Relaxed);
         *self.endpoint_addresses.write().await = addresses;
     }
 
@@ -627,12 +636,13 @@ impl ServerLink {
         params: &[ParamsOfQueryOperation],
         endpoint: Option<Endpoint>,
     ) -> ClientResult<Vec<Value>> {
-        let latency_detection_required = if endpoint.is_none() {
-            let endpoint = self.state.get_query_endpoint().await?;
-            self.client_env.now_ms() > endpoint.next_latency_detection_time()
-        } else {
-            false
-        };
+        let latency_detection_required =
+            if endpoint.is_none() && self.state.has_multiple_endpoints() {
+                let endpoint = self.state.get_query_endpoint().await?;
+                self.client_env.now_ms() > endpoint.next_latency_detection_time()
+            } else {
+                false
+            };
         let mut query = GraphQLQuery::build(
             params,
             latency_detection_required,
@@ -725,10 +735,7 @@ impl ServerLink {
         self.state.check_sync().await?;
 
         let result = self
-            .query(
-                &GraphQLQuery::with_post_requests(&[request]),
-                endpoint,
-            )
+            .query(&GraphQLQuery::with_post_requests(&[request]), endpoint)
             .await;
 
         // send message is always successful in order to process case when server received message
