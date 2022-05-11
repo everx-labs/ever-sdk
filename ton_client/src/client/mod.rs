@@ -159,3 +159,10 @@ pub async fn resolve_app_request(
     sender.send(params.result)
         .map_err(|_| Error::can_not_send_request_result(request_id))
 }
+
+/// Returns Core Library API reference
+#[api_function]
+pub fn config(context: Arc<ClientContext>) -> ClientResult<ClientConfig> {
+    Ok(context.config.clone())
+}
+

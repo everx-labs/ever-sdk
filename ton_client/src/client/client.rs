@@ -159,7 +159,7 @@ Note that default values are used if parameters are omitted in config"#,
     }
 }
 
-#[derive(Deserialize, Debug, Clone, ApiType)]
+#[derive(Deserialize, Serialize, Debug, Clone, ApiType)]
 pub struct ClientConfig {
     #[serde(default, deserialize_with = "deserialize_network_config")]
     pub network: NetworkConfig,
