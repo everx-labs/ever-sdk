@@ -129,6 +129,12 @@ Crypto functions.
 
 [NaclSecretBoxParamsEB](mod\_crypto.md#naclsecretboxparamseb)
 
+[CryptoBoxSecretRandomSeedPhraseVariant](mod\_crypto.md#cryptoboxsecretrandomseedphrasevariant) – Creates Crypto Box from a random seed phrase. This option can be used if a developer doesn't want the seed phrase to leave the core library's memory, where it is stored encrypted.
+
+[CryptoBoxSecretPredefinedSeedPhraseVariant](mod\_crypto.md#cryptoboxsecretpredefinedseedphrasevariant) – Restores crypto box instance from an existing seed phrase. This type should be used when Crypto Box is initialized from a seed phrase, entered by a user.
+
+[CryptoBoxSecretEncryptedSecretVariant](mod\_crypto.md#cryptoboxsecretencryptedsecretvariant) – Use this type for wallet reinitializations, when you already have `encrypted_secret` on hands. To get `encrypted_secret`, use `get_crypto_box_info` function after you initialized your crypto box for the first time.
+
 [CryptoBoxSecret](mod\_crypto.md#cryptoboxsecret) – Crypto Box Secret.
 
 [CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)
@@ -255,7 +261,11 @@ Crypto functions.
 
 [RegisteredCryptoBox](mod\_crypto.md#registeredcryptobox)
 
+[ParamsOfAppPasswordProviderGetPasswordVariant](mod\_crypto.md#paramsofapppasswordprovidergetpasswordvariant)
+
 [ParamsOfAppPasswordProvider](mod\_crypto.md#paramsofapppasswordprovider) – Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
+
+[ResultOfAppPasswordProviderGetPasswordVariant](mod\_crypto.md#resultofapppasswordprovidergetpasswordvariant)
 
 [ResultOfAppPasswordProvider](mod\_crypto.md#resultofapppasswordprovider)
 
@@ -271,7 +281,15 @@ Crypto functions.
 
 [RegisteredEncryptionBox](mod\_crypto.md#registeredencryptionbox)
 
+[ParamsOfAppSigningBoxGetPublicKeyVariant](mod\_crypto.md#paramsofappsigningboxgetpublickeyvariant) – Get signing box public key
+
+[ParamsOfAppSigningBoxSignVariant](mod\_crypto.md#paramsofappsigningboxsignvariant) – Sign data
+
 [ParamsOfAppSigningBox](mod\_crypto.md#paramsofappsigningbox) – Signing box callbacks.
+
+[ResultOfAppSigningBoxGetPublicKeyVariant](mod\_crypto.md#resultofappsigningboxgetpublickeyvariant) – Result of getting public key
+
+[ResultOfAppSigningBoxSignVariant](mod\_crypto.md#resultofappsigningboxsignvariant) – Result of signing data
 
 [ResultOfAppSigningBox](mod\_crypto.md#resultofappsigningbox) – Returning values from signing box callbacks.
 
@@ -281,7 +299,19 @@ Crypto functions.
 
 [ResultOfSigningBoxSign](mod\_crypto.md#resultofsigningboxsign)
 
+[ParamsOfAppEncryptionBoxGetInfoVariant](mod\_crypto.md#paramsofappencryptionboxgetinfovariant) – Get encryption box info
+
+[ParamsOfAppEncryptionBoxEncryptVariant](mod\_crypto.md#paramsofappencryptionboxencryptvariant) – Encrypt data
+
+[ParamsOfAppEncryptionBoxDecryptVariant](mod\_crypto.md#paramsofappencryptionboxdecryptvariant) – Decrypt data
+
 [ParamsOfAppEncryptionBox](mod\_crypto.md#paramsofappencryptionbox) – Interface for data encryption/decryption
+
+[ResultOfAppEncryptionBoxGetInfoVariant](mod\_crypto.md#resultofappencryptionboxgetinfovariant) – Result of getting encryption box info
+
+[ResultOfAppEncryptionBoxEncryptVariant](mod\_crypto.md#resultofappencryptionboxencryptvariant) – Result of encrypting data
+
+[ResultOfAppEncryptionBoxDecryptVariant](mod\_crypto.md#resultofappencryptionboxdecryptvariant) – Result of decrypting data
 
 [ResultOfAppEncryptionBox](mod\_crypto.md#resultofappencryptionbox) – Returning values from signing box callbacks.
 
@@ -2022,23 +2052,73 @@ type NaclSecretBoxParamsEB = {
 - `nonce`: _string_ – Nonce in `hex`
 
 
+## CryptoBoxSecretRandomSeedPhraseVariant
+Creates Crypto Box from a random seed phrase. This option can be used if a developer doesn't want the seed phrase to leave the core library's memory, where it is stored encrypted.
+
+This type should be used upon the first wallet initialization, all further initializations
+should use `EncryptedSecret` type instead.
+
+Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
+
+```ts
+type CryptoBoxSecretRandomSeedPhraseVariant = {
+    dictionary: number,
+    wordcount: number
+}
+```
+- `dictionary`: _number_
+- `wordcount`: _number_
+
+
+## CryptoBoxSecretPredefinedSeedPhraseVariant
+Restores crypto box instance from an existing seed phrase. This type should be used when Crypto Box is initialized from a seed phrase, entered by a user.
+
+This type should be used only upon the first wallet initialization, all further
+initializations should use `EncryptedSecret` type instead.
+
+Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
+
+```ts
+type CryptoBoxSecretPredefinedSeedPhraseVariant = {
+    phrase: string,
+    dictionary: number,
+    wordcount: number
+}
+```
+- `phrase`: _string_
+- `dictionary`: _number_
+- `wordcount`: _number_
+
+
+## CryptoBoxSecretEncryptedSecretVariant
+Use this type for wallet reinitializations, when you already have `encrypted_secret` on hands. To get `encrypted_secret`, use `get_crypto_box_info` function after you initialized your crypto box for the first time.
+
+It is an object, containing seed phrase or private key, encrypted with
+`secret_encryption_salt` and password from `password_provider`.
+
+Note that if you want to change salt or password provider, then you need to reinitialize
+the wallet with `PredefinedSeedPhrase`, then get `EncryptedSecret` via `get_crypto_box_info`,
+store it somewhere, and only after that initialize the wallet with `EncryptedSecret` type.
+
+```ts
+type CryptoBoxSecretEncryptedSecretVariant = {
+    encrypted_secret: string
+}
+```
+- `encrypted_secret`: _string_ – It is an object, containing encrypted seed phrase or private key (now we support only seed phrase).
+
+
 ## CryptoBoxSecret
 Crypto Box Secret.
 
 ```ts
-type CryptoBoxSecret = {
+type CryptoBoxSecret = ({
     type: 'RandomSeedPhrase'
-    dictionary: number,
-    wordcount: number
-} | {
+} & CryptoBoxSecretRandomSeedPhraseVariant) | ({
     type: 'PredefinedSeedPhrase'
-    phrase: string,
-    dictionary: number,
-    wordcount: number
-} | {
+} & CryptoBoxSecretPredefinedSeedPhraseVariant) | ({
     type: 'EncryptedSecret'
-    encrypted_secret: string
-}
+} & CryptoBoxSecretEncryptedSecretVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -2051,7 +2131,6 @@ should use `EncryptedSecret` type instead.
 
 Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
 
-
 - `dictionary`: _number_
 - `wordcount`: _number_
 
@@ -2063,7 +2142,6 @@ This type should be used only upon the first wallet initialization, all further
 initializations should use `EncryptedSecret` type instead.
 
 Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
-
 
 - `phrase`: _string_
 - `dictionary`: _number_
@@ -2080,16 +2158,21 @@ Note that if you want to change salt or password provider, then you need to rein
 the wallet with `PredefinedSeedPhrase`, then get `EncryptedSecret` via `get_crypto_box_info`,
 store it somewhere, and only after that initialize the wallet with `EncryptedSecret` type.
 
-
 - `encrypted_secret`: _string_ – It is an object, containing encrypted seed phrase or private key (now we support only seed phrase).
 
 
 Variant constructors:
 
 ```ts
-function cryptoBoxSecretRandomSeedPhrase(dictionary: number, wordcount: number): CryptoBoxSecret;
-function cryptoBoxSecretPredefinedSeedPhrase(phrase: string, dictionary: number, wordcount: number): CryptoBoxSecret;
-function cryptoBoxSecretEncryptedSecret(encrypted_secret: string): CryptoBoxSecret;
+function cryptoBoxSecretRandomSeedPhrase(- `dictionary`: _number_
+, - `wordcount`: _number_
+): CryptoBoxSecret;
+function cryptoBoxSecretPredefinedSeedPhrase(- `phrase`: _string_
+, - `dictionary`: _number_
+, - `wordcount`: _number_
+): CryptoBoxSecret;
+function cryptoBoxSecretEncryptedSecret(- `encrypted_secret`: _string_ – It is an object, containing encrypted seed phrase or private key (now we support only seed phrase).
+): CryptoBoxSecret;
 ```
 
 ## CryptoBoxHandle
@@ -2777,6 +2860,15 @@ type RegisteredCryptoBox = {
 - `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
 
+## ParamsOfAppPasswordProviderGetPasswordVariant
+```ts
+type ParamsOfAppPasswordProviderGetPasswordVariant = {
+    encryption_public_key: string
+}
+```
+- `encryption_public_key`: _string_ – Temporary library pubkey, that is used on application side for password encryption, along with application temporary private key and nonce. Used for password decryption on library side.
+
+
 ## ParamsOfAppPasswordProvider
 Interface that provides a callback that returns an encrypted password, used for cryptobox secret encryption
 
@@ -2790,15 +2882,13 @@ and encrypt the password with naclbox function using nacl_box_keypair.secret
 and encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key.
 
 ```ts
-type ParamsOfAppPasswordProvider = {
+type ParamsOfAppPasswordProvider = ({
     type: 'GetPassword'
-    encryption_public_key: string
-}
+} & ParamsOfAppPasswordProviderGetPasswordVariant)
 ```
 Depends on value of the  `type` field.
 
 When _type_ is _'GetPassword'_
-
 
 - `encryption_public_key`: _string_ – Temporary library pubkey, that is used on application side for password encryption, along with application temporary private key and nonce. Used for password decryption on library side.
 
@@ -2806,21 +2896,31 @@ When _type_ is _'GetPassword'_
 Variant constructors:
 
 ```ts
-function paramsOfAppPasswordProviderGetPassword(encryption_public_key: string): ParamsOfAppPasswordProvider;
+function paramsOfAppPasswordProviderGetPassword(- `encryption_public_key`: _string_ – Temporary library pubkey, that is used on application side for password encryption, along with application temporary private key and nonce. Used for password decryption on library side.
+): ParamsOfAppPasswordProvider;
 ```
 
-## ResultOfAppPasswordProvider
+## ResultOfAppPasswordProviderGetPasswordVariant
 ```ts
-type ResultOfAppPasswordProvider = {
-    type: 'GetPassword'
+type ResultOfAppPasswordProviderGetPasswordVariant = {
     encrypted_password: string,
     app_encryption_pubkey: string
 }
 ```
+- `encrypted_password`: _string_ – Password, encrypted and encoded to base64. Crypto box uses this password to decrypt its secret (seed phrase).
+- `app_encryption_pubkey`: _string_ – Hex encoded public key of a temporary key pair, used for password encryption on application side.
+<br>Used together with `encryption_public_key` to decode `encrypted_password`.
+
+
+## ResultOfAppPasswordProvider
+```ts
+type ResultOfAppPasswordProvider = ({
+    type: 'GetPassword'
+} & ResultOfAppPasswordProviderGetPasswordVariant)
+```
 Depends on value of the  `type` field.
 
 When _type_ is _'GetPassword'_
-
 
 - `encrypted_password`: _string_ – Password, encrypted and encoded to base64. Crypto box uses this password to decrypt its secret (seed phrase).
 - `app_encryption_pubkey`: _string_ – Hex encoded public key of a temporary key pair, used for password encryption on application side.
@@ -2830,7 +2930,10 @@ When _type_ is _'GetPassword'_
 Variant constructors:
 
 ```ts
-function resultOfAppPasswordProviderGetPassword(encrypted_password: string, app_encryption_pubkey: string): ResultOfAppPasswordProvider;
+function resultOfAppPasswordProviderGetPassword(- `encrypted_password`: _string_ – Password, encrypted and encoded to base64. Crypto box uses this password to decrypt its secret (seed phrase).
+, - `app_encryption_pubkey`: _string_ – Hex encoded public key of a temporary key pair, used for password encryption on application side.
+<br>Used together with `encryption_public_key` to decode `encrypted_password`.
+): ResultOfAppPasswordProvider;
 ```
 
 ## ResultOfGetCryptoBoxInfo
@@ -2903,16 +3006,36 @@ type RegisteredEncryptionBox = {
 - `handle`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
 
+## ParamsOfAppSigningBoxGetPublicKeyVariant
+Get signing box public key
+
+```ts
+type ParamsOfAppSigningBoxGetPublicKeyVariant = {
+
+}
+```
+
+
+## ParamsOfAppSigningBoxSignVariant
+Sign data
+
+```ts
+type ParamsOfAppSigningBoxSignVariant = {
+    unsigned: string
+}
+```
+- `unsigned`: _string_ – Data to sign encoded as base64
+
+
 ## ParamsOfAppSigningBox
 Signing box callbacks.
 
 ```ts
-type ParamsOfAppSigningBox = {
+type ParamsOfAppSigningBox = ({
     type: 'GetPublicKey'
-} | {
+} & ParamsOfAppSigningBoxGetPublicKeyVariant) | ({
     type: 'Sign'
-    unsigned: string
-}
+} & ParamsOfAppSigningBoxSignVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -2925,7 +3048,6 @@ When _type_ is _'Sign'_
 
 Sign data
 
-
 - `unsigned`: _string_ – Data to sign encoded as base64
 
 
@@ -2933,20 +3055,41 @@ Variant constructors:
 
 ```ts
 function paramsOfAppSigningBoxGetPublicKey(): ParamsOfAppSigningBox;
-function paramsOfAppSigningBoxSign(unsigned: string): ParamsOfAppSigningBox;
+function paramsOfAppSigningBoxSign(- `unsigned`: _string_ – Data to sign encoded as base64
+): ParamsOfAppSigningBox;
 ```
+
+## ResultOfAppSigningBoxGetPublicKeyVariant
+Result of getting public key
+
+```ts
+type ResultOfAppSigningBoxGetPublicKeyVariant = {
+    public_key: string
+}
+```
+- `public_key`: _string_ – Signing box public key
+
+
+## ResultOfAppSigningBoxSignVariant
+Result of signing data
+
+```ts
+type ResultOfAppSigningBoxSignVariant = {
+    signature: string
+}
+```
+- `signature`: _string_ – Data signature encoded as hex
+
 
 ## ResultOfAppSigningBox
 Returning values from signing box callbacks.
 
 ```ts
-type ResultOfAppSigningBox = {
+type ResultOfAppSigningBox = ({
     type: 'GetPublicKey'
-    public_key: string
-} | {
+} & ResultOfAppSigningBoxGetPublicKeyVariant) | ({
     type: 'Sign'
-    signature: string
-}
+} & ResultOfAppSigningBoxSignVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -2954,13 +3097,11 @@ When _type_ is _'GetPublicKey'_
 
 Result of getting public key
 
-
 - `public_key`: _string_ – Signing box public key
 
 When _type_ is _'Sign'_
 
 Result of signing data
-
 
 - `signature`: _string_ – Data signature encoded as hex
 
@@ -2968,8 +3109,10 @@ Result of signing data
 Variant constructors:
 
 ```ts
-function resultOfAppSigningBoxGetPublicKey(public_key: string): ResultOfAppSigningBox;
-function resultOfAppSigningBoxSign(signature: string): ResultOfAppSigningBox;
+function resultOfAppSigningBoxGetPublicKey(- `public_key`: _string_ – Signing box public key
+): ResultOfAppSigningBox;
+function resultOfAppSigningBoxSign(- `signature`: _string_ – Data signature encoded as hex
+): ResultOfAppSigningBox;
 ```
 
 ## ResultOfSigningBoxGetPublicKey
@@ -3004,19 +3147,49 @@ type ResultOfSigningBoxSign = {
 <br>Encoded with `hex`.
 
 
+## ParamsOfAppEncryptionBoxGetInfoVariant
+Get encryption box info
+
+```ts
+type ParamsOfAppEncryptionBoxGetInfoVariant = {
+
+}
+```
+
+
+## ParamsOfAppEncryptionBoxEncryptVariant
+Encrypt data
+
+```ts
+type ParamsOfAppEncryptionBoxEncryptVariant = {
+    data: string
+}
+```
+- `data`: _string_ – Data, encoded in Base64
+
+
+## ParamsOfAppEncryptionBoxDecryptVariant
+Decrypt data
+
+```ts
+type ParamsOfAppEncryptionBoxDecryptVariant = {
+    data: string
+}
+```
+- `data`: _string_ – Data, encoded in Base64
+
+
 ## ParamsOfAppEncryptionBox
 Interface for data encryption/decryption
 
 ```ts
-type ParamsOfAppEncryptionBox = {
+type ParamsOfAppEncryptionBox = ({
     type: 'GetInfo'
-} | {
+} & ParamsOfAppEncryptionBoxGetInfoVariant) | ({
     type: 'Encrypt'
-    data: string
-} | {
+} & ParamsOfAppEncryptionBoxEncryptVariant) | ({
     type: 'Decrypt'
-    data: string
-}
+} & ParamsOfAppEncryptionBoxDecryptVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -3029,13 +3202,11 @@ When _type_ is _'Encrypt'_
 
 Encrypt data
 
-
 - `data`: _string_ – Data, encoded in Base64
 
 When _type_ is _'Decrypt'_
 
 Decrypt data
-
 
 - `data`: _string_ – Data, encoded in Base64
 
@@ -3044,24 +3215,56 @@ Variant constructors:
 
 ```ts
 function paramsOfAppEncryptionBoxGetInfo(): ParamsOfAppEncryptionBox;
-function paramsOfAppEncryptionBoxEncrypt(data: string): ParamsOfAppEncryptionBox;
-function paramsOfAppEncryptionBoxDecrypt(data: string): ParamsOfAppEncryptionBox;
+function paramsOfAppEncryptionBoxEncrypt(- `data`: _string_ – Data, encoded in Base64
+): ParamsOfAppEncryptionBox;
+function paramsOfAppEncryptionBoxDecrypt(- `data`: _string_ – Data, encoded in Base64
+): ParamsOfAppEncryptionBox;
 ```
+
+## ResultOfAppEncryptionBoxGetInfoVariant
+Result of getting encryption box info
+
+```ts
+type ResultOfAppEncryptionBoxGetInfoVariant = {
+    info: EncryptionBoxInfo
+}
+```
+- `info`: _[EncryptionBoxInfo](mod\_crypto.md#encryptionboxinfo)_
+
+
+## ResultOfAppEncryptionBoxEncryptVariant
+Result of encrypting data
+
+```ts
+type ResultOfAppEncryptionBoxEncryptVariant = {
+    data: string
+}
+```
+- `data`: _string_ – Encrypted data, encoded in Base64
+
+
+## ResultOfAppEncryptionBoxDecryptVariant
+Result of decrypting data
+
+```ts
+type ResultOfAppEncryptionBoxDecryptVariant = {
+    data: string
+}
+```
+- `data`: _string_ – Decrypted data, encoded in Base64
+
 
 ## ResultOfAppEncryptionBox
 Returning values from signing box callbacks.
 
 ```ts
-type ResultOfAppEncryptionBox = {
+type ResultOfAppEncryptionBox = ({
     type: 'GetInfo'
-    info: EncryptionBoxInfo
-} | {
+} & ResultOfAppEncryptionBoxGetInfoVariant) | ({
     type: 'Encrypt'
-    data: string
-} | {
+} & ResultOfAppEncryptionBoxEncryptVariant) | ({
     type: 'Decrypt'
-    data: string
-}
+} & ResultOfAppEncryptionBoxDecryptVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -3069,13 +3272,11 @@ When _type_ is _'GetInfo'_
 
 Result of getting encryption box info
 
-
 - `info`: _[EncryptionBoxInfo](mod\_crypto.md#encryptionboxinfo)_
 
 When _type_ is _'Encrypt'_
 
 Result of encrypting data
-
 
 - `data`: _string_ – Encrypted data, encoded in Base64
 
@@ -3083,16 +3284,18 @@ When _type_ is _'Decrypt'_
 
 Result of decrypting data
 
-
 - `data`: _string_ – Decrypted data, encoded in Base64
 
 
 Variant constructors:
 
 ```ts
-function resultOfAppEncryptionBoxGetInfo(info: EncryptionBoxInfo): ResultOfAppEncryptionBox;
-function resultOfAppEncryptionBoxEncrypt(data: string): ResultOfAppEncryptionBox;
-function resultOfAppEncryptionBoxDecrypt(data: string): ResultOfAppEncryptionBox;
+function resultOfAppEncryptionBoxGetInfo(- `info`: _[EncryptionBoxInfo](mod\_crypto.md#encryptionboxinfo)_
+): ResultOfAppEncryptionBox;
+function resultOfAppEncryptionBoxEncrypt(- `data`: _string_ – Encrypted data, encoded in Base64
+): ResultOfAppEncryptionBox;
+function resultOfAppEncryptionBoxDecrypt(- `data`: _string_ – Decrypted data, encoded in Base64
+): ResultOfAppEncryptionBox;
 ```
 
 ## ParamsOfEncryptionBoxGetInfo
@@ -3178,35 +3381,21 @@ and encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key
 
 ```ts
 
-type ParamsOfAppPasswordProviderGetPassword = {
-    encryption_public_key: string
-}
-
-type ResultOfAppPasswordProviderGetPassword = {
-    encrypted_password: string,
-    app_encryption_pubkey: string
-}
-
 export interface AppPasswordProvider {
-    get_password(params: ParamsOfAppPasswordProviderGetPassword): Promise<ResultOfAppPasswordProviderGetPassword>,
+    get_password(params: ParamsOfAppPasswordProviderGetPasswordVariant): Promise<ResultOfAppPasswordProviderGetPasswordVariant>,
 }
 ```
 
 ## get_password
 
 ```ts
-type ParamsOfAppPasswordProviderGetPassword = {
-    encryption_public_key: string
-}
+type ParamsOfAppPasswordProviderGetPasswordVariant = ParamsOfAppPasswordProviderGetPasswordVariant
 
-type ResultOfAppPasswordProviderGetPassword = {
-    encrypted_password: string,
-    app_encryption_pubkey: string
-}
+type ResultOfAppPasswordProviderGetPasswordVariant = ResultOfAppPasswordProviderGetPasswordVariant
 
 function get_password(
-    params: ParamsOfAppPasswordProviderGetPassword,
-): Promise<ResultOfAppPasswordProviderGetPassword>;
+    params: ParamsOfAppPasswordProviderGetPasswordVariant,
+): Promise<ResultOfAppPasswordProviderGetPasswordVariant>;
 ```
 ### Parameters
 - `encryption_public_key`: _string_ – Temporary library pubkey, that is used on application side for password encryption, along with application temporary private key and nonce. Used for password decryption on library side.
@@ -3225,21 +3414,9 @@ Signing box callbacks.
 
 ```ts
 
-type ResultOfAppSigningBoxGetPublicKey = {
-    public_key: string
-}
-
-type ParamsOfAppSigningBoxSign = {
-    unsigned: string
-}
-
-type ResultOfAppSigningBoxSign = {
-    signature: string
-}
-
 export interface AppSigningBox {
-    get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKey>,
-    sign(params: ParamsOfAppSigningBoxSign): Promise<ResultOfAppSigningBoxSign>,
+    get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKeyVariant>,
+    sign(params: ParamsOfAppSigningBoxSignVariant): Promise<ResultOfAppSigningBoxSignVariant>,
 }
 ```
 
@@ -3248,11 +3425,9 @@ export interface AppSigningBox {
 Get signing box public key
 
 ```ts
-type ResultOfAppSigningBoxGetPublicKey = {
-    public_key: string
-}
+type ResultOfAppSigningBoxGetPublicKeyVariant = ResultOfAppSigningBoxGetPublicKeyVariant
 
-function get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKey>;
+function get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKeyVariant>;
 ```
 
 
@@ -3266,17 +3441,13 @@ function get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKey>;
 Sign data
 
 ```ts
-type ParamsOfAppSigningBoxSign = {
-    unsigned: string
-}
+type ParamsOfAppSigningBoxSignVariant = ParamsOfAppSigningBoxSignVariant
 
-type ResultOfAppSigningBoxSign = {
-    signature: string
-}
+type ResultOfAppSigningBoxSignVariant = ResultOfAppSigningBoxSignVariant
 
 function sign(
-    params: ParamsOfAppSigningBoxSign,
-): Promise<ResultOfAppSigningBoxSign>;
+    params: ParamsOfAppSigningBoxSignVariant,
+): Promise<ResultOfAppSigningBoxSignVariant>;
 ```
 ### Parameters
 - `unsigned`: _string_ – Data to sign encoded as base64
@@ -3293,30 +3464,10 @@ Interface for data encryption/decryption
 
 ```ts
 
-type ResultOfAppEncryptionBoxGetInfo = {
-    info: EncryptionBoxInfo
-}
-
-type ParamsOfAppEncryptionBoxEncrypt = {
-    data: string
-}
-
-type ResultOfAppEncryptionBoxEncrypt = {
-    data: string
-}
-
-type ParamsOfAppEncryptionBoxDecrypt = {
-    data: string
-}
-
-type ResultOfAppEncryptionBoxDecrypt = {
-    data: string
-}
-
 export interface AppEncryptionBox {
-    get_info(): Promise<ResultOfAppEncryptionBoxGetInfo>,
-    encrypt(params: ParamsOfAppEncryptionBoxEncrypt): Promise<ResultOfAppEncryptionBoxEncrypt>,
-    decrypt(params: ParamsOfAppEncryptionBoxDecrypt): Promise<ResultOfAppEncryptionBoxDecrypt>,
+    get_info(): Promise<ResultOfAppEncryptionBoxGetInfoVariant>,
+    encrypt(params: ParamsOfAppEncryptionBoxEncryptVariant): Promise<ResultOfAppEncryptionBoxEncryptVariant>,
+    decrypt(params: ParamsOfAppEncryptionBoxDecryptVariant): Promise<ResultOfAppEncryptionBoxDecryptVariant>,
 }
 ```
 
@@ -3325,11 +3476,9 @@ export interface AppEncryptionBox {
 Get encryption box info
 
 ```ts
-type ResultOfAppEncryptionBoxGetInfo = {
-    info: EncryptionBoxInfo
-}
+type ResultOfAppEncryptionBoxGetInfoVariant = ResultOfAppEncryptionBoxGetInfoVariant
 
-function get_info(): Promise<ResultOfAppEncryptionBoxGetInfo>;
+function get_info(): Promise<ResultOfAppEncryptionBoxGetInfoVariant>;
 ```
 
 
@@ -3343,17 +3492,13 @@ function get_info(): Promise<ResultOfAppEncryptionBoxGetInfo>;
 Encrypt data
 
 ```ts
-type ParamsOfAppEncryptionBoxEncrypt = {
-    data: string
-}
+type ParamsOfAppEncryptionBoxEncryptVariant = ParamsOfAppEncryptionBoxEncryptVariant
 
-type ResultOfAppEncryptionBoxEncrypt = {
-    data: string
-}
+type ResultOfAppEncryptionBoxEncryptVariant = ResultOfAppEncryptionBoxEncryptVariant
 
 function encrypt(
-    params: ParamsOfAppEncryptionBoxEncrypt,
-): Promise<ResultOfAppEncryptionBoxEncrypt>;
+    params: ParamsOfAppEncryptionBoxEncryptVariant,
+): Promise<ResultOfAppEncryptionBoxEncryptVariant>;
 ```
 ### Parameters
 - `data`: _string_ – Data, encoded in Base64
@@ -3369,17 +3514,13 @@ function encrypt(
 Decrypt data
 
 ```ts
-type ParamsOfAppEncryptionBoxDecrypt = {
-    data: string
-}
+type ParamsOfAppEncryptionBoxDecryptVariant = ParamsOfAppEncryptionBoxDecryptVariant
 
-type ResultOfAppEncryptionBoxDecrypt = {
-    data: string
-}
+type ResultOfAppEncryptionBoxDecryptVariant = ResultOfAppEncryptionBoxDecryptVariant
 
 function decrypt(
-    params: ParamsOfAppEncryptionBoxDecrypt,
-): Promise<ResultOfAppEncryptionBoxDecrypt>;
+    params: ParamsOfAppEncryptionBoxDecryptVariant,
+): Promise<ResultOfAppEncryptionBoxDecryptVariant>;
 ```
 ### Parameters
 - `data`: _string_ – Data, encoded in Base64

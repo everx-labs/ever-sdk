@@ -35,6 +35,10 @@ Provides information about library.
 
 [ParamsOfAppRequest](mod\_client.md#paramsofapprequest)
 
+[AppRequestResultErrorVariant](mod\_client.md#apprequestresulterrorvariant) – Error occurred during request processing
+
+[AppRequestResultOkVariant](mod\_client.md#apprequestresultokvariant) – Request processed successfully
+
 [AppRequestResult](mod\_client.md#apprequestresult)
 
 [ResultOfGetApiReference](mod\_client.md#resultofgetapireference)
@@ -377,15 +381,35 @@ type ParamsOfAppRequest = {
 - `request_data`: _any_ – Request describing data
 
 
-## AppRequestResult
+## AppRequestResultErrorVariant
+Error occurred during request processing
+
 ```ts
-type AppRequestResult = {
-    type: 'Error'
+type AppRequestResultErrorVariant = {
     text: string
-} | {
-    type: 'Ok'
+}
+```
+- `text`: _string_ – Error description
+
+
+## AppRequestResultOkVariant
+Request processed successfully
+
+```ts
+type AppRequestResultOkVariant = {
     result: any
 }
+```
+- `result`: _any_ – Request processing result
+
+
+## AppRequestResult
+```ts
+type AppRequestResult = ({
+    type: 'Error'
+} & AppRequestResultErrorVariant) | ({
+    type: 'Ok'
+} & AppRequestResultOkVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -393,13 +417,11 @@ When _type_ is _'Error'_
 
 Error occurred during request processing
 
-
 - `text`: _string_ – Error description
 
 When _type_ is _'Ok'_
 
 Request processed successfully
-
 
 - `result`: _any_ – Request processing result
 
@@ -407,8 +429,10 @@ Request processed successfully
 Variant constructors:
 
 ```ts
-function appRequestResultError(text: string): AppRequestResult;
-function appRequestResultOk(result: any): AppRequestResult;
+function appRequestResultError(- `text`: _string_ – Error description
+): AppRequestResult;
+function appRequestResultOk(- `result`: _any_ – Request processing result
+): AppRequestResult;
 ```
 
 ## ResultOfGetApiReference

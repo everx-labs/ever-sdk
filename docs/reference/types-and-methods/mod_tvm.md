@@ -13,6 +13,12 @@
 
 [ExecutionOptions](mod\_tvm.md#executionoptions)
 
+[AccountForExecutorNoneVariant](mod\_tvm.md#accountforexecutornonevariant) – Non-existing account to run a creation internal message. Should be used with `skip_transaction_check = true` if the message has no deploy data since transactions on the uninitialized account are always aborted
+
+[AccountForExecutorUninitVariant](mod\_tvm.md#accountforexecutoruninitvariant) – Emulate uninitialized account to run deploy message
+
+[AccountForExecutorAccountVariant](mod\_tvm.md#accountforexecutoraccountvariant) – Account state to run message
+
 [AccountForExecutor](mod\_tvm.md#accountforexecutor)
 
 [TransactionFees](mod\_tvm.md#transactionfees)
@@ -265,17 +271,50 @@ type ExecutionOptions = {
 - `transaction_lt`?: _bigint_ – transaction logical time
 
 
-## AccountForExecutor
+## AccountForExecutorNoneVariant
+Non-existing account to run a creation internal message. Should be used with `skip_transaction_check = true` if the message has no deploy data since transactions on the uninitialized account are always aborted
+
 ```ts
-type AccountForExecutor = {
-    type: 'None'
-} | {
-    type: 'Uninit'
-} | {
-    type: 'Account'
+type AccountForExecutorNoneVariant = {
+
+}
+```
+
+
+## AccountForExecutorUninitVariant
+Emulate uninitialized account to run deploy message
+
+```ts
+type AccountForExecutorUninitVariant = {
+
+}
+```
+
+
+## AccountForExecutorAccountVariant
+Account state to run message
+
+```ts
+type AccountForExecutorAccountVariant = {
     boc: string,
     unlimited_balance?: boolean
 }
+```
+- `boc`: _string_ – Account BOC.
+<br>Encoded as base64.
+- `unlimited_balance`?: _boolean_ – Flag for running account with the unlimited balance.
+<br>Can be used to calculate transaction fees without balance check
+
+
+## AccountForExecutor
+```ts
+type AccountForExecutor = ({
+    type: 'None'
+} & AccountForExecutorNoneVariant) | ({
+    type: 'Uninit'
+} & AccountForExecutorUninitVariant) | ({
+    type: 'Account'
+} & AccountForExecutorAccountVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -293,7 +332,6 @@ When _type_ is _'Account'_
 
 Account state to run message
 
-
 - `boc`: _string_ – Account BOC.
 <br>Encoded as base64.
 - `unlimited_balance`?: _boolean_ – Flag for running account with the unlimited balance.
@@ -305,7 +343,11 @@ Variant constructors:
 ```ts
 function accountForExecutorNone(): AccountForExecutor;
 function accountForExecutorUninit(): AccountForExecutor;
-function accountForExecutorAccount(boc: string, unlimited_balance?: boolean): AccountForExecutor;
+function accountForExecutorAccount(- `boc`: _string_ – Account BOC.
+<br>Encoded as base64.
+, - `unlimited_balance`?: _boolean_ – Flag for running account with the unlimited balance.
+<br>Can be used to calculate transaction fees without balance check
+): AccountForExecutor;
 ```
 
 ## TransactionFees

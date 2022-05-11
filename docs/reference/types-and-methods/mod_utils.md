@@ -15,6 +15,12 @@ Misc utility Functions.
 [decompress_zstd](mod\_utils.md#decompress_zstd) – Decompresses data using Zstandard algorithm
 
 ## Types
+[AddressStringFormatAccountIdVariant](mod\_utils.md#addressstringformataccountidvariant)
+
+[AddressStringFormatHexVariant](mod\_utils.md#addressstringformathexvariant)
+
+[AddressStringFormatBase64Variant](mod\_utils.md#addressstringformatbase64variant)
+
 [AddressStringFormat](mod\_utils.md#addressstringformat)
 
 [AccountAddressType](mod\_utils.md#accountaddresstype)
@@ -191,18 +197,44 @@ function decompress_zstd(
 
 
 # Types
-## AddressStringFormat
+## AddressStringFormatAccountIdVariant
 ```ts
-type AddressStringFormat = {
-    type: 'AccountId'
-} | {
-    type: 'Hex'
-} | {
-    type: 'Base64'
+type AddressStringFormatAccountIdVariant = {
+
+}
+```
+
+
+## AddressStringFormatHexVariant
+```ts
+type AddressStringFormatHexVariant = {
+
+}
+```
+
+
+## AddressStringFormatBase64Variant
+```ts
+type AddressStringFormatBase64Variant = {
     url: boolean,
     test: boolean,
     bounce: boolean
 }
+```
+- `url`: _boolean_
+- `test`: _boolean_
+- `bounce`: _boolean_
+
+
+## AddressStringFormat
+```ts
+type AddressStringFormat = ({
+    type: 'AccountId'
+} & AddressStringFormatAccountIdVariant) | ({
+    type: 'Hex'
+} & AddressStringFormatHexVariant) | ({
+    type: 'Base64'
+} & AddressStringFormatBase64Variant)
 ```
 Depends on value of the  `type` field.
 
@@ -214,7 +246,6 @@ When _type_ is _'Hex'_
 
 When _type_ is _'Base64'_
 
-
 - `url`: _boolean_
 - `test`: _boolean_
 - `bounce`: _boolean_
@@ -225,7 +256,10 @@ Variant constructors:
 ```ts
 function addressStringFormatAccountId(): AddressStringFormat;
 function addressStringFormatHex(): AddressStringFormat;
-function addressStringFormatBase64(url: boolean, test: boolean, bounce: boolean): AddressStringFormat;
+function addressStringFormatBase64(- `url`: _boolean_
+, - `test`: _boolean_
+, - `bounce`: _boolean_
+): AddressStringFormat;
 ```
 
 ## AccountAddressType

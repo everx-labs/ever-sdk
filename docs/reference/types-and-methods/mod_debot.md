@@ -25,6 +25,8 @@
 
 [DebotInfo](mod\_debot.md#debotinfo) – [UNSTABLE](UNSTABLE.md) Describes DeBot metadata.
 
+[DebotActivityTransactionVariant](mod\_debot.md#debotactivitytransactionvariant) – DeBot wants to create new transaction in blockchain.
+
 [DebotActivity](mod\_debot.md#debotactivity) – [UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
 
 [Spending](mod\_debot.md#spending) – [UNSTABLE](UNSTABLE.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.
@@ -33,7 +35,33 @@
 
 [RegisteredDebot](mod\_debot.md#registereddebot) – [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.
 
+[ParamsOfAppDebotBrowserLogVariant](mod\_debot.md#paramsofappdebotbrowserlogvariant) – Print message to user.
+
+[ParamsOfAppDebotBrowserSwitchVariant](mod\_debot.md#paramsofappdebotbrowserswitchvariant) – Switch debot to another context (menu).
+
+[ParamsOfAppDebotBrowserSwitchCompletedVariant](mod\_debot.md#paramsofappdebotbrowserswitchcompletedvariant) – Notify browser that all context actions are shown.
+
+[ParamsOfAppDebotBrowserShowActionVariant](mod\_debot.md#paramsofappdebotbrowsershowactionvariant) – Show action to the user. Called after `switch` for each action in context.
+
+[ParamsOfAppDebotBrowserInputVariant](mod\_debot.md#paramsofappdebotbrowserinputvariant) – Request user input.
+
+[ParamsOfAppDebotBrowserGetSigningBoxVariant](mod\_debot.md#paramsofappdebotbrowsergetsigningboxvariant) – Get signing box to sign data.
+
+[ParamsOfAppDebotBrowserInvokeDebotVariant](mod\_debot.md#paramsofappdebotbrowserinvokedebotvariant) – Execute action of another debot.
+
+[ParamsOfAppDebotBrowserSendVariant](mod\_debot.md#paramsofappdebotbrowsersendvariant) – Used by Debot to call DInterface implemented by Debot Browser.
+
+[ParamsOfAppDebotBrowserApproveVariant](mod\_debot.md#paramsofappdebotbrowserapprovevariant) – Requests permission from DeBot Browser to execute DeBot operation.
+
 [ParamsOfAppDebotBrowser](mod\_debot.md#paramsofappdebotbrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
+
+[ResultOfAppDebotBrowserInputVariant](mod\_debot.md#resultofappdebotbrowserinputvariant) – Result of user input.
+
+[ResultOfAppDebotBrowserGetSigningBoxVariant](mod\_debot.md#resultofappdebotbrowsergetsigningboxvariant) – Result of getting signing box.
+
+[ResultOfAppDebotBrowserInvokeDebotVariant](mod\_debot.md#resultofappdebotbrowserinvokedebotvariant) – Result of debot invoking.
+
+[ResultOfAppDebotBrowserApproveVariant](mod\_debot.md#resultofappdebotbrowserapprovevariant) – Result of `approve` callback.
 
 [ResultOfAppDebotBrowser](mod\_debot.md#resultofappdebotbrowser) – [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
 
@@ -315,12 +343,11 @@ type DebotInfo = {
 - `dabiVersion`: _string_ – ABI version ("x.y") supported by DeBot
 
 
-## DebotActivity
-[UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
+## DebotActivityTransactionVariant
+DeBot wants to create new transaction in blockchain.
 
 ```ts
-type DebotActivity = {
-    type: 'Transaction'
+type DebotActivityTransactionVariant = {
     msg: string,
     dst: string,
     out: Spending[],
@@ -330,12 +357,28 @@ type DebotActivity = {
     signing_box_handle: number
 }
 ```
+- `msg`: _string_ – External inbound message BOC.
+- `dst`: _string_ – Target smart contract address.
+- `out`: _[Spending](mod\_debot.md#spending)[]_ – List of spendings as a result of transaction.
+- `fee`: _bigint_ – Transaction total fee.
+- `setcode`: _boolean_ – Indicates if target smart contract updates its code.
+- `signkey`: _string_ – Public key from keypair that was used to sign external message.
+- `signing_box_handle`: _number_ – Signing box handle used to sign external message.
+
+
+## DebotActivity
+[UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
+
+```ts
+type DebotActivity = ({
+    type: 'Transaction'
+} & DebotActivityTransactionVariant)
+```
 Depends on value of the  `type` field.
 
 When _type_ is _'Transaction'_
 
 DeBot wants to create new transaction in blockchain.
-
 
 - `msg`: _string_ – External inbound message BOC.
 - `dst`: _string_ – Target smart contract address.
@@ -349,7 +392,14 @@ DeBot wants to create new transaction in blockchain.
 Variant constructors:
 
 ```ts
-function debotActivityTransaction(msg: string, dst: string, out: Spending[], fee: bigint, setcode: boolean, signkey: string, signing_box_handle: number): DebotActivity;
+function debotActivityTransaction(- `msg`: _string_ – External inbound message BOC.
+, - `dst`: _string_ – Target smart contract address.
+, - `out`: _[Spending](mod\_debot.md#spending)[]_ – List of spendings as a result of transaction.
+, - `fee`: _bigint_ – Transaction total fee.
+, - `setcode`: _boolean_ – Indicates if target smart contract updates its code.
+, - `signkey`: _string_ – Public key from keypair that was used to sign external message.
+, - `signing_box_handle`: _number_ – Signing box handle used to sign external message.
+): DebotActivity;
 ```
 
 ## Spending
@@ -391,39 +441,133 @@ type RegisteredDebot = {
 - `info`: _[DebotInfo](mod\_debot.md#debotinfo)_ – Debot metadata.
 
 
+## ParamsOfAppDebotBrowserLogVariant
+Print message to user.
+
+```ts
+type ParamsOfAppDebotBrowserLogVariant = {
+    msg: string
+}
+```
+- `msg`: _string_ – A string that must be printed to user.
+
+
+## ParamsOfAppDebotBrowserSwitchVariant
+Switch debot to another context (menu).
+
+```ts
+type ParamsOfAppDebotBrowserSwitchVariant = {
+    context_id: number
+}
+```
+- `context_id`: _number_ – Debot context ID to which debot is switched.
+
+
+## ParamsOfAppDebotBrowserSwitchCompletedVariant
+Notify browser that all context actions are shown.
+
+```ts
+type ParamsOfAppDebotBrowserSwitchCompletedVariant = {
+
+}
+```
+
+
+## ParamsOfAppDebotBrowserShowActionVariant
+Show action to the user. Called after `switch` for each action in context.
+
+```ts
+type ParamsOfAppDebotBrowserShowActionVariant = {
+    action: DebotAction
+}
+```
+- `action`: _[DebotAction](mod\_debot.md#debotaction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
+
+
+## ParamsOfAppDebotBrowserInputVariant
+Request user input.
+
+```ts
+type ParamsOfAppDebotBrowserInputVariant = {
+    prompt: string
+}
+```
+- `prompt`: _string_ – A prompt string that must be printed to user before input request.
+
+
+## ParamsOfAppDebotBrowserGetSigningBoxVariant
+Get signing box to sign data.
+
+Signing box returned is owned and disposed by debot engine
+
+```ts
+type ParamsOfAppDebotBrowserGetSigningBoxVariant = {
+
+}
+```
+
+
+## ParamsOfAppDebotBrowserInvokeDebotVariant
+Execute action of another debot.
+
+```ts
+type ParamsOfAppDebotBrowserInvokeDebotVariant = {
+    debot_addr: string,
+    action: DebotAction
+}
+```
+- `debot_addr`: _string_ – Address of debot in blockchain.
+- `action`: _[DebotAction](mod\_debot.md#debotaction)_ – Debot action to execute.
+
+
+## ParamsOfAppDebotBrowserSendVariant
+Used by Debot to call DInterface implemented by Debot Browser.
+
+```ts
+type ParamsOfAppDebotBrowserSendVariant = {
+    message: string
+}
+```
+- `message`: _string_ – Internal message to DInterface address.
+<br>Message body contains interface function and parameters.
+
+
+## ParamsOfAppDebotBrowserApproveVariant
+Requests permission from DeBot Browser to execute DeBot operation.
+
+```ts
+type ParamsOfAppDebotBrowserApproveVariant = {
+    activity: DebotActivity
+}
+```
+- `activity`: _[DebotActivity](mod\_debot.md#debotactivity)_ – DeBot activity details.
+
+
 ## ParamsOfAppDebotBrowser
 [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
 
 Called by debot engine to communicate with debot browser.
 
 ```ts
-type ParamsOfAppDebotBrowser = {
+type ParamsOfAppDebotBrowser = ({
     type: 'Log'
-    msg: string
-} | {
+} & ParamsOfAppDebotBrowserLogVariant) | ({
     type: 'Switch'
-    context_id: number
-} | {
+} & ParamsOfAppDebotBrowserSwitchVariant) | ({
     type: 'SwitchCompleted'
-} | {
+} & ParamsOfAppDebotBrowserSwitchCompletedVariant) | ({
     type: 'ShowAction'
-    action: DebotAction
-} | {
+} & ParamsOfAppDebotBrowserShowActionVariant) | ({
     type: 'Input'
-    prompt: string
-} | {
+} & ParamsOfAppDebotBrowserInputVariant) | ({
     type: 'GetSigningBox'
-} | {
+} & ParamsOfAppDebotBrowserGetSigningBoxVariant) | ({
     type: 'InvokeDebot'
-    debot_addr: string,
-    action: DebotAction
-} | {
+} & ParamsOfAppDebotBrowserInvokeDebotVariant) | ({
     type: 'Send'
-    message: string
-} | {
+} & ParamsOfAppDebotBrowserSendVariant) | ({
     type: 'Approve'
-    activity: DebotActivity
-}
+} & ParamsOfAppDebotBrowserApproveVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -431,13 +575,11 @@ When _type_ is _'Log'_
 
 Print message to user.
 
-
 - `msg`: _string_ – A string that must be printed to user.
 
 When _type_ is _'Switch'_
 
 Switch debot to another context (menu).
-
 
 - `context_id`: _number_ – Debot context ID to which debot is switched.
 
@@ -450,13 +592,11 @@ When _type_ is _'ShowAction'_
 
 Show action to the user. Called after `switch` for each action in context.
 
-
 - `action`: _[DebotAction](mod\_debot.md#debotaction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
 
 When _type_ is _'Input'_
 
 Request user input.
-
 
 - `prompt`: _string_ – A prompt string that must be printed to user before input request.
 
@@ -471,14 +611,12 @@ When _type_ is _'InvokeDebot'_
 
 Execute action of another debot.
 
-
 - `debot_addr`: _string_ – Address of debot in blockchain.
 - `action`: _[DebotAction](mod\_debot.md#debotaction)_ – Debot action to execute.
 
 When _type_ is _'Send'_
 
 Used by Debot to call DInterface implemented by Debot Browser.
-
 
 - `message`: _string_ – Internal message to DInterface address.
 <br>Message body contains interface function and parameters.
@@ -487,40 +625,89 @@ When _type_ is _'Approve'_
 
 Requests permission from DeBot Browser to execute DeBot operation.
 
-
 - `activity`: _[DebotActivity](mod\_debot.md#debotactivity)_ – DeBot activity details.
 
 
 Variant constructors:
 
 ```ts
-function paramsOfAppDebotBrowserLog(msg: string): ParamsOfAppDebotBrowser;
-function paramsOfAppDebotBrowserSwitch(context_id: number): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserLog(- `msg`: _string_ – A string that must be printed to user.
+): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserSwitch(- `context_id`: _number_ – Debot context ID to which debot is switched.
+): ParamsOfAppDebotBrowser;
 function paramsOfAppDebotBrowserSwitchCompleted(): ParamsOfAppDebotBrowser;
-function paramsOfAppDebotBrowserShowAction(action: DebotAction): ParamsOfAppDebotBrowser;
-function paramsOfAppDebotBrowserInput(prompt: string): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserShowAction(- `action`: _[DebotAction](mod\_debot.md#debotaction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
+): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserInput(- `prompt`: _string_ – A prompt string that must be printed to user before input request.
+): ParamsOfAppDebotBrowser;
 function paramsOfAppDebotBrowserGetSigningBox(): ParamsOfAppDebotBrowser;
-function paramsOfAppDebotBrowserInvokeDebot(debot_addr: string, action: DebotAction): ParamsOfAppDebotBrowser;
-function paramsOfAppDebotBrowserSend(message: string): ParamsOfAppDebotBrowser;
-function paramsOfAppDebotBrowserApprove(activity: DebotActivity): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserInvokeDebot(- `debot_addr`: _string_ – Address of debot in blockchain.
+, - `action`: _[DebotAction](mod\_debot.md#debotaction)_ – Debot action to execute.
+): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserSend(- `message`: _string_ – Internal message to DInterface address.
+<br>Message body contains interface function and parameters.
+): ParamsOfAppDebotBrowser;
+function paramsOfAppDebotBrowserApprove(- `activity`: _[DebotActivity](mod\_debot.md#debotactivity)_ – DeBot activity details.
+): ParamsOfAppDebotBrowser;
 ```
+
+## ResultOfAppDebotBrowserInputVariant
+Result of user input.
+
+```ts
+type ResultOfAppDebotBrowserInputVariant = {
+    value: string
+}
+```
+- `value`: _string_ – String entered by user.
+
+
+## ResultOfAppDebotBrowserGetSigningBoxVariant
+Result of getting signing box.
+
+```ts
+type ResultOfAppDebotBrowserGetSigningBoxVariant = {
+    signing_box: SigningBoxHandle
+}
+```
+- `signing_box`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Signing box for signing data requested by debot engine.
+<br>Signing box is owned and disposed by debot engine
+
+
+## ResultOfAppDebotBrowserInvokeDebotVariant
+Result of debot invoking.
+
+```ts
+type ResultOfAppDebotBrowserInvokeDebotVariant = {
+
+}
+```
+
+
+## ResultOfAppDebotBrowserApproveVariant
+Result of `approve` callback.
+
+```ts
+type ResultOfAppDebotBrowserApproveVariant = {
+    approved: boolean
+}
+```
+- `approved`: _boolean_ – Indicates whether the DeBot is allowed to perform the specified operation.
+
 
 ## ResultOfAppDebotBrowser
 [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
 
 ```ts
-type ResultOfAppDebotBrowser = {
+type ResultOfAppDebotBrowser = ({
     type: 'Input'
-    value: string
-} | {
+} & ResultOfAppDebotBrowserInputVariant) | ({
     type: 'GetSigningBox'
-    signing_box: SigningBoxHandle
-} | {
+} & ResultOfAppDebotBrowserGetSigningBoxVariant) | ({
     type: 'InvokeDebot'
-} | {
+} & ResultOfAppDebotBrowserInvokeDebotVariant) | ({
     type: 'Approve'
-    approved: boolean
-}
+} & ResultOfAppDebotBrowserApproveVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -528,13 +715,11 @@ When _type_ is _'Input'_
 
 Result of user input.
 
-
 - `value`: _string_ – String entered by user.
 
 When _type_ is _'GetSigningBox'_
 
 Result of getting signing box.
-
 
 - `signing_box`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Signing box for signing data requested by debot engine.
 <br>Signing box is owned and disposed by debot engine
@@ -548,17 +733,20 @@ When _type_ is _'Approve'_
 
 Result of `approve` callback.
 
-
 - `approved`: _boolean_ – Indicates whether the DeBot is allowed to perform the specified operation.
 
 
 Variant constructors:
 
 ```ts
-function resultOfAppDebotBrowserInput(value: string): ResultOfAppDebotBrowser;
-function resultOfAppDebotBrowserGetSigningBox(signing_box: SigningBoxHandle): ResultOfAppDebotBrowser;
+function resultOfAppDebotBrowserInput(- `value`: _string_ – String entered by user.
+): ResultOfAppDebotBrowser;
+function resultOfAppDebotBrowserGetSigningBox(- `signing_box`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Signing box for signing data requested by debot engine.
+<br>Signing box is owned and disposed by debot engine
+): ResultOfAppDebotBrowser;
 function resultOfAppDebotBrowserInvokeDebot(): ResultOfAppDebotBrowser;
-function resultOfAppDebotBrowserApprove(approved: boolean): ResultOfAppDebotBrowser;
+function resultOfAppDebotBrowserApprove(- `approved`: _boolean_ – Indicates whether the DeBot is allowed to perform the specified operation.
+): ResultOfAppDebotBrowser;
 ```
 
 ## ParamsOfStart
@@ -639,57 +827,16 @@ Called by debot engine to communicate with debot browser.
 
 ```ts
 
-type ParamsOfAppDebotBrowserLog = {
-    msg: string
-}
-
-type ParamsOfAppDebotBrowserSwitch = {
-    context_id: number
-}
-
-type ParamsOfAppDebotBrowserShowAction = {
-    action: DebotAction
-}
-
-type ParamsOfAppDebotBrowserInput = {
-    prompt: string
-}
-
-type ResultOfAppDebotBrowserInput = {
-    value: string
-}
-
-type ResultOfAppDebotBrowserGetSigningBox = {
-    signing_box: SigningBoxHandle
-}
-
-type ParamsOfAppDebotBrowserInvokeDebot = {
-    debot_addr: string,
-    action: DebotAction
-}
-
-type ParamsOfAppDebotBrowserSend = {
-    message: string
-}
-
-type ParamsOfAppDebotBrowserApprove = {
-    activity: DebotActivity
-}
-
-type ResultOfAppDebotBrowserApprove = {
-    approved: boolean
-}
-
 export interface AppDebotBrowser {
-    log(params: ParamsOfAppDebotBrowserLog): void,
-    switch(params: ParamsOfAppDebotBrowserSwitch): void,
+    log(params: ParamsOfAppDebotBrowserLogVariant): void,
+    switch(params: ParamsOfAppDebotBrowserSwitchVariant): void,
     switch_completed(): void,
-    show_action(params: ParamsOfAppDebotBrowserShowAction): void,
-    input(params: ParamsOfAppDebotBrowserInput): Promise<ResultOfAppDebotBrowserInput>,
-    get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBox>,
-    invoke_debot(params: ParamsOfAppDebotBrowserInvokeDebot): Promise<void>,
-    send(params: ParamsOfAppDebotBrowserSend): void,
-    approve(params: ParamsOfAppDebotBrowserApprove): Promise<ResultOfAppDebotBrowserApprove>,
+    show_action(params: ParamsOfAppDebotBrowserShowActionVariant): void,
+    input(params: ParamsOfAppDebotBrowserInputVariant): Promise<ResultOfAppDebotBrowserInputVariant>,
+    get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBoxVariant>,
+    invoke_debot(params: ParamsOfAppDebotBrowserInvokeDebotVariant): Promise<void>,
+    send(params: ParamsOfAppDebotBrowserSendVariant): void,
+    approve(params: ParamsOfAppDebotBrowserApproveVariant): Promise<ResultOfAppDebotBrowserApproveVariant>,
 }
 ```
 
@@ -698,12 +845,10 @@ export interface AppDebotBrowser {
 Print message to user.
 
 ```ts
-type ParamsOfAppDebotBrowserLog = {
-    msg: string
-}
+type ParamsOfAppDebotBrowserLogVariant = ParamsOfAppDebotBrowserLogVariant
 
 function log(
-    params: ParamsOfAppDebotBrowserLog,
+    params: ParamsOfAppDebotBrowserLogVariant,
 ): Promise<>;
 ```
 ### Parameters
@@ -715,12 +860,10 @@ function log(
 Switch debot to another context (menu).
 
 ```ts
-type ParamsOfAppDebotBrowserSwitch = {
-    context_id: number
-}
+type ParamsOfAppDebotBrowserSwitchVariant = ParamsOfAppDebotBrowserSwitchVariant
 
 function switch(
-    params: ParamsOfAppDebotBrowserSwitch,
+    params: ParamsOfAppDebotBrowserSwitchVariant,
 ): Promise<>;
 ```
 ### Parameters
@@ -741,12 +884,10 @@ function switch_completed(): Promise<>;
 Show action to the user. Called after `switch` for each action in context.
 
 ```ts
-type ParamsOfAppDebotBrowserShowAction = {
-    action: DebotAction
-}
+type ParamsOfAppDebotBrowserShowActionVariant = ParamsOfAppDebotBrowserShowActionVariant
 
 function show_action(
-    params: ParamsOfAppDebotBrowserShowAction,
+    params: ParamsOfAppDebotBrowserShowActionVariant,
 ): Promise<>;
 ```
 ### Parameters
@@ -758,17 +899,13 @@ function show_action(
 Request user input.
 
 ```ts
-type ParamsOfAppDebotBrowserInput = {
-    prompt: string
-}
+type ParamsOfAppDebotBrowserInputVariant = ParamsOfAppDebotBrowserInputVariant
 
-type ResultOfAppDebotBrowserInput = {
-    value: string
-}
+type ResultOfAppDebotBrowserInputVariant = ResultOfAppDebotBrowserInputVariant
 
 function input(
-    params: ParamsOfAppDebotBrowserInput,
-): Promise<ResultOfAppDebotBrowserInput>;
+    params: ParamsOfAppDebotBrowserInputVariant,
+): Promise<ResultOfAppDebotBrowserInputVariant>;
 ```
 ### Parameters
 - `prompt`: _string_ – A prompt string that must be printed to user before input request.
@@ -786,11 +923,9 @@ Get signing box to sign data.
 Signing box returned is owned and disposed by debot engine
 
 ```ts
-type ResultOfAppDebotBrowserGetSigningBox = {
-    signing_box: SigningBoxHandle
-}
+type ResultOfAppDebotBrowserGetSigningBoxVariant = ResultOfAppDebotBrowserGetSigningBoxVariant
 
-function get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBox>;
+function get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBoxVariant>;
 ```
 
 
@@ -805,13 +940,10 @@ function get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBox>;
 Execute action of another debot.
 
 ```ts
-type ParamsOfAppDebotBrowserInvokeDebot = {
-    debot_addr: string,
-    action: DebotAction
-}
+type ParamsOfAppDebotBrowserInvokeDebotVariant = ParamsOfAppDebotBrowserInvokeDebotVariant
 
 function invoke_debot(
-    params: ParamsOfAppDebotBrowserInvokeDebot,
+    params: ParamsOfAppDebotBrowserInvokeDebotVariant,
 ): Promise<void>;
 ```
 ### Parameters
@@ -824,12 +956,10 @@ function invoke_debot(
 Used by Debot to call DInterface implemented by Debot Browser.
 
 ```ts
-type ParamsOfAppDebotBrowserSend = {
-    message: string
-}
+type ParamsOfAppDebotBrowserSendVariant = ParamsOfAppDebotBrowserSendVariant
 
 function send(
-    params: ParamsOfAppDebotBrowserSend,
+    params: ParamsOfAppDebotBrowserSendVariant,
 ): Promise<>;
 ```
 ### Parameters
@@ -842,17 +972,13 @@ function send(
 Requests permission from DeBot Browser to execute DeBot operation.
 
 ```ts
-type ParamsOfAppDebotBrowserApprove = {
-    activity: DebotActivity
-}
+type ParamsOfAppDebotBrowserApproveVariant = ParamsOfAppDebotBrowserApproveVariant
 
-type ResultOfAppDebotBrowserApprove = {
-    approved: boolean
-}
+type ResultOfAppDebotBrowserApproveVariant = ResultOfAppDebotBrowserApproveVariant
 
 function approve(
-    params: ParamsOfAppDebotBrowserApprove,
-): Promise<ResultOfAppDebotBrowserApprove>;
+    params: ParamsOfAppDebotBrowserApproveVariant,
+): Promise<ResultOfAppDebotBrowserApproveVariant>;
 ```
 ### Parameters
 - `activity`: _[DebotActivity](mod\_debot.md#debotactivity)_ – DeBot activity details.
