@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `client.config` function returns current client config
+- `ext_in_msg_fee`, `total_fwd_fees`, `account_fees` fields to `run_executor().fees`
 
 ## [1.33.1] – 2022-05-10
 
