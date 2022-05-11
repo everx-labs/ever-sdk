@@ -129,7 +129,7 @@ fn deserialize_hdkey_derivation_path<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_hdkey_derivation_path()))
 }
 
-#[derive(Deserialize, Debug, Clone, ApiType)]
+#[derive(Deserialize, Serialize, Debug, Clone, ApiType)]
 /// Crypto config.
 pub struct CryptoConfig {
     /// Mnemonic dictionary that will be used by default in crypto functions.

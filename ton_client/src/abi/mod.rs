@@ -89,7 +89,7 @@ fn deserialize_message_expiration_timeout_grow_factor<'de, D: Deserializer<'de>>
         .unwrap_or(default_message_expiration_timeout_grow_factor()))
 }
 
-#[derive(Deserialize, Debug, Clone, ApiType)]
+#[derive(Deserialize, Serialize, Debug, Clone, ApiType)]
 pub struct AbiConfig {
     /// Workchain id that is used by default in DeploySet
     #[serde(

@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.34.0] – 2022-05-10
+
+### New
+
+- `client.config` function returns current client config
+
 ## [1.33.1] – 2022-05-10
 
 ### Fixed
