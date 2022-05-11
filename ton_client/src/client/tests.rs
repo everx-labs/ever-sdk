@@ -28,6 +28,27 @@ fn test_config_fields() {
 }
 
 #[test]
+fn test_config() {
+    let client = TestClient::new_with_config(json!({
+        "abi": {
+            "message_expiration_timeout": 456
+        },
+        "network": {
+            "max_reconnect_timeout": 123
+        }
+    }));
+    let config: ClientConfig = client
+        .request_no_params(&format!(
+            "{}.{}",
+            ClientModule::api().name,
+            crate::client::config_api().name
+        ))
+        .unwrap();
+    assert_eq!(config.abi.message_expiration_timeout, 456);
+    assert_eq!(config.network.max_reconnect_timeout, 123);
+}
+
+#[test]
 fn api_reference() {
     let client = TestClient::new();
     let api: ResultOfGetApiReference = client

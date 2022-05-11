@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - binding-gen: enum of types produces own type for each enum variant.
+- `client.config` function returns current client config
 
 ## [1.33.1] – 2022-05-10
 
