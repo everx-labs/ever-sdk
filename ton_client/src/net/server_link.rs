@@ -40,24 +40,36 @@ struct EndpointsReplacement<'a> {
     aliases: &'a [&'a str],
 }
 
-const ENDPOINTS_REPLACE: [EndpointsReplacement; 2] = [
+const MAIN_ALIASES: [&str; 5] = [
+    "eri01.main.everos.dev",
+    "gra01.main.everos.dev",
+    "gra02.main.everos.dev",
+    "lim01.main.everos.dev",
+    "rbx01.main.everos.dev",
+];
+
+const DEV_ALIASES: [&str; 3] = [
+    "eri01.net.everos.dev",
+    "rbx01.net.everos.dev",
+    "gra01.net.everos.dev",
+];
+
+const ENDPOINTS_REPLACE: [EndpointsReplacement; 4] = [
     EndpointsReplacement {
         url: "main.ton.dev",
-        aliases: &[
-            "eri01.main.everos.dev",
-            "gra01.main.everos.dev",
-            "gra02.main.everos.dev",
-            "lim01.main.everos.dev",
-            "rbx01.main.everos.dev",
-        ],
+        aliases: &MAIN_ALIASES,
     },
     EndpointsReplacement {
         url: "net.ton.dev",
-        aliases: &[
-            "eri01.net.everos.dev",
-            "rbx01.net.everos.dev",
-            "gra01.net.everos.dev",
-        ],
+        aliases: &DEV_ALIASES,
+    },
+    EndpointsReplacement {
+        url: "main",
+        aliases: &MAIN_ALIASES,
+    },
+    EndpointsReplacement {
+        url: "dev",
+        aliases: &DEV_ALIASES,
     },
 ];
 
