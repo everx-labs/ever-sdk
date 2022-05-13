@@ -17,7 +17,7 @@ All notable changes to this project will be documented in this file.
 
 ### Improved
 
-- Added documentation for `run_executor` result fields.
+- Added documentation for `TransactionFees` type (returned in `result.fees` of `tvm.run_executor`).
 - Documentation now includes `enum` types descriptions. 
   To achieve it we updated binding-gen: enum of types now produces its own type for each enum variant.
 
