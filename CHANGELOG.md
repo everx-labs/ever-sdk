@@ -2,14 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.34.0] – 2022-05-15
+## [1.34.0] – 2022-05-16
 
 ### New
 
-- binding-gen: enum of types produces own type for each enum variant.
-- `client.config` function returns current client config
-- `ext_in_msg_fee`, `total_fwd_fees`, `account_fees` fields to `run_executor().fees`
-- `main` and `dev` endpoints aliases
+- `client.config` function that returns the current client config
+- `run_executor().fees` is extended with these fields:  
+  
+  - `ext_in_msg_fee` - fee for processing external inbound message  
+  - `total_fwd_fees` - total fees of action phase  
+  - `account_fees`  - total fees the account pays for the transaction  
+
+- `main` and `dev` endpoints aliases for Evernode Cloud Mainnet and Devnet endpoints  
+
+### Improved
+
+- Added documentation for `TransactionFees` type (returned in `result.fees` of `tvm.run_executor`).
+- Documentation now includes `enum` types descriptions. 
+  To achieve it we updated binding-gen: enum of types now produces its own type for each enum variant.
+
 
 ## [1.33.1] – 2022-05-10
 
