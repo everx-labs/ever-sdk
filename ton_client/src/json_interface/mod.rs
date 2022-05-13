@@ -18,6 +18,7 @@ pub(crate) mod handlers;
 pub(crate) mod interop;
 pub(crate) mod net;
 pub(crate) mod processing;
+#[cfg(feature = "include-zstd")]
 pub(crate) mod utils;
 
 pub(crate) mod modules;

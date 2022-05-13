@@ -15,23 +15,23 @@ mod client;
 mod client_env;
 pub(crate) mod errors;
 pub(crate) mod storage;
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 mod std_client_env;
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 pub(crate) use std_client_env::{ClientEnv, LocalStorage};
-#[cfg(feature = "wasm")]
+#[cfg(feature = "wasm-base")]
 mod wasm_client_env;
-#[cfg(feature = "wasm")]
+#[cfg(feature = "wasm-base")]
 pub(crate) use wasm_client_env::{ClientEnv, LocalStorage};
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 #[cfg(test)]
 pub(crate) use crate::client::network_mock::{NetworkMock};
 
 #[cfg(test)]
 mod tests;
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 #[cfg(test)]
 mod network_mock;
 
