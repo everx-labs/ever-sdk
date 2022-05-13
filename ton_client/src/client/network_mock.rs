@@ -170,7 +170,7 @@ impl NetworkMock {
         }
     }
 
-    #[cfg(not(feature = "wasm"))]
+    #[cfg(not(feature = "wasm-base"))]
     #[cfg(test)]
     pub async fn get_len(client: &ClientContext) -> usize {
         client
@@ -283,7 +283,7 @@ impl NetworkMockBuilder {
         )))
     }
 
-    #[cfg(not(feature = "wasm"))]
+    #[cfg(not(feature = "wasm-base"))]
     #[cfg(test)]
     pub async fn reset_client(&self, client: &ClientContext) {
         client

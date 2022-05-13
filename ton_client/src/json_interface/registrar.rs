@@ -89,7 +89,7 @@ impl<'h> ModuleReg<'h> {
 
         self.handlers
             .register_async(name.clone(), Box::new(SpawnHandler::new(handler)));
-        #[cfg(not(feature = "wasm"))]
+        #[cfg(not(feature = "wasm-base"))]
         self.handlers.register_sync(
             name,
             Box::new(CallHandler::new(move |context, params| {
@@ -113,7 +113,7 @@ impl<'h> ModuleReg<'h> {
 
         self.handlers
             .register_async(name.clone(), Box::new(SpawnNoArgsHandler::new(handler)));
-        #[cfg(not(feature = "wasm"))]
+        #[cfg(not(feature = "wasm-base"))]
         self.handlers.register_sync(
             name,
             Box::new(CallNoArgsHandler::new(move |context| {

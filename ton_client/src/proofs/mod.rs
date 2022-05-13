@@ -35,7 +35,7 @@ mod validators;
 mod tests;
 mod json;
 
-#[derive(Deserialize, Debug, Clone, ApiType)]
+#[derive(Deserialize, Serialize, Debug, Clone, ApiType)]
 pub struct ProofsConfig {
     /// Cache proofs in the local storage. Default is `true`.
     /// If this value is set to `true`, downloaded proofs and master-chain BOCs are saved into the
@@ -76,7 +76,7 @@ pub struct ParamsOfProofBlockData {
 }
 
 /// Proves that a given block's data, which is queried from TONOS API, can be trusted.
-/// 
+///
 /// This function checks block proofs and compares given data with the proven.
 /// If the given data differs from the proven, the exception will be thrown.
 /// The input param is a single block's JSON object, which was queried from DApp server using
@@ -178,10 +178,10 @@ pub struct ParamsOfProofTransactionData {
 /// This function requests the corresponding block, checks block proofs, ensures that given
 /// transaction exists in the proven block and compares given data with the proven.
 /// If the given data differs from the proven, the exception will be thrown.
-/// The input parameter is a single transaction's JSON object (see params description), 
-/// which was queried from TONOS API using functions such as `net.query`, `net.query_collection` 
+/// The input parameter is a single transaction's JSON object (see params description),
+/// which was queried from TONOS API using functions such as `net.query`, `net.query_collection`
 /// or `net.wait_for_collection`.
-/// 
+///
 /// If transaction's BOC and/or `block_id` are not provided in the JSON, they will be queried from
 /// TONOS API.
 ///

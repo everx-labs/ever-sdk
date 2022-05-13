@@ -34,9 +34,9 @@ use crate::net::{
     subscriptions::SubscriptionAction, ChainIterator, NetworkConfig, ServerLink,
 };
 use crate::proofs::ProofsConfig;
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 use super::std_client_env::ClientEnv;
-#[cfg(feature = "wasm")]
+#[cfg(feature = "wasm-base")]
 use super::wasm_client_env::ClientEnv;
 
 #[derive(Default)]
@@ -159,7 +159,7 @@ Note that default values are used if parameters are omitted in config"#,
     }
 }
 
-#[derive(Deserialize, Debug, Clone, ApiType)]
+#[derive(Deserialize, Serialize, Debug, Clone, ApiType)]
 pub struct ClientConfig {
     #[serde(default, deserialize_with = "deserialize_network_config")]
     pub network: NetworkConfig,
