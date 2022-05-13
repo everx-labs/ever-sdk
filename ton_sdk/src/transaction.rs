@@ -193,14 +193,32 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
 
 #[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone, Default)]
 pub struct TransactionFees {
+    /// Deprecated. Left for backward compatibility. 
+    /// Does not participate in account transaction fees calculation.
     pub in_msg_fwd_fee: u64,
+    /// Fee for account storage
     pub storage_fee: u64,
+    /// Fee for processing 
     pub gas_fee: u64,
+    /// Deprecated. Contains the same data as total_fwd_fees field. Deprecated because of
+    /// its confusing name, that is not the same with GraphQL API Transaction type's field.
     pub out_msgs_fwd_fee: u64,
+    /// Deprecated. This is the field that is named as `total_fees` in GraphQL API Transaction type.
+    /// `total_account_fees` name is misleading, because it does not mean account fees, instead it means 
+    /// validators total fees received for the transaction execution. It does not include some forward fees that account
+    /// actually pays now, but validators will receive later during value delivery to another account (not even in the receiving
+    /// transaction). 
+    /// Because of all of this, this field is not interesting for those who wants to understand
+    /// the real account fees, this is why it is deprecated and left for backward compatibility.
     pub total_account_fees: u64,
+    /// Deprecated because it means total value sent in the transaction, which does not relate to any fees.
     pub total_output: u64,
+    /// Fee for inbound external message import.
     pub ext_in_msg_fee: u64,
+    /// Total fees the account pays for message forwarding
     pub total_fwd_fees: u64,
+    /// Total account fees for the transaction execution.
+    /// Compounds of storage_fee + gas_fee + ext_in_msg_fee + total_fwd_fees
     pub account_fees: u64,
 }
 

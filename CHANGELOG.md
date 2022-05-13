@@ -15,10 +15,12 @@ All notable changes to this project will be documented in this file.
 
 - `main` and `dev` endpoints aliases for Evernode Cloud Mainnet and Devnet endpoints  
 
-### Fixed
+### Improved
 
+- Added documentation for `run_executor` result fields.
 - Documentation now includes `enum` types descriptions. 
   To achieve it we updated binding-gen: enum of types now produces its own type for each enum variant.
+
 
 ## [1.33.1] – 2022-05-10
 
