@@ -4,7 +4,7 @@ use super::{BrowserCallbacks, DebotActivity, Spending, TonClient};
 use crate::abi::Signer;
 use crate::boc::internal::{deserialize_object_from_base64, serialize_object_to_base64};
 use crate::boc::{get_boc_hash, parse_message, ParamsOfParse, ParamsOfGetBocHash};
-use crate::crypto::{SigningBoxHandle, get_signing_box};
+use crate::crypto::{KeyPair, SigningBoxHandle, get_signing_box};
 use crate::encoding::decode_abi_number;
 use crate::error::{ClientError, ClientResult};
 use crate::processing::{
