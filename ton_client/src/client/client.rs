@@ -34,9 +34,9 @@ use crate::net::{
     subscriptions::SubscriptionAction, ChainIterator, NetworkConfig, ServerLink,
 };
 use crate::proofs::ProofsConfig;
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 use super::std_client_env::ClientEnv;
-#[cfg(feature = "wasm")]
+#[cfg(feature = "wasm-base")]
 use super::wasm_client_env::ClientEnv;
 
 #[derive(Default)]
