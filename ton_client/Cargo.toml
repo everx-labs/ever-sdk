@@ -70,7 +70,7 @@ indexmap = '=1.6.2'
 tiny-bip39 = '=0.7.3'
 
 # optional
-zstd = { optional = true, default-features = false, version = '0.11.2' }
+zstd = { optional = true, default-features = false, version = '0.8.0' }
 
 # optional for std
 reqwest = { optional = true, version = '0.10.4' }
