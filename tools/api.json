@@ -1,5 +1,5 @@
 {
-  "version": "1.33.1",
+  "version": "1.34.0",
   "modules": [
     {
       "name": "client",
@@ -899,6 +899,37 @@
               {
                 "type": "Ref",
                 "ref_name": "client.ResultOfVersion"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "config",
+          "summary": "Returns Core Library API reference",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "client.ClientConfig"
               }
             ]
           },
@@ -10540,15 +10571,15 @@
               "type": "BigInt",
               "number_type": "UInt",
               "number_size": 64,
-              "summary": null,
-              "description": null
+              "summary": "Deprecated.",
+              "description": "Left for backward compatibility. Does not participate in account transaction fees calculation."
             },
             {
               "name": "storage_fee",
               "type": "BigInt",
               "number_type": "UInt",
               "number_size": 64,
-              "summary": null,
+              "summary": "Fee for account storage",
               "description": null
             },
             {
@@ -10556,7 +10587,7 @@
               "type": "BigInt",
               "number_type": "UInt",
               "number_size": 64,
-              "summary": null,
+              "summary": "Fee for processing",
               "description": null
             },
             {
@@ -10564,23 +10595,47 @@
               "type": "BigInt",
               "number_type": "UInt",
               "number_size": 64,
-              "summary": null,
-              "description": null
+              "summary": "Deprecated.",
+              "description": "Contains the same data as total_fwd_fees field. Deprecated because of its confusing name, that is not the same with GraphQL API Transaction type's field."
             },
             {
               "name": "total_account_fees",
               "type": "BigInt",
               "number_type": "UInt",
               "number_size": 64,
-              "summary": null,
-              "description": null
+              "summary": "Deprecated.",
+              "description": "This is the field that is named as `total_fees` in GraphQL API Transaction type. `total_account_fees` name is misleading, because it does not mean account fees, instead it means\nvalidators total fees received for the transaction execution. It does not include some forward fees that account\nactually pays now, but validators will receive later during value delivery to another account (not even in the receiving\ntransaction).\nBecause of all of this, this field is not interesting for those who wants to understand\nthe real account fees, this is why it is deprecated and left for backward compatibility."
             },
             {
               "name": "total_output",
               "type": "BigInt",
               "number_type": "UInt",
               "number_size": 64,
-              "summary": null,
+              "summary": "Deprecated because it means total value sent in the transaction, which does not relate to any fees.",
+              "description": null
+            },
+            {
+              "name": "ext_in_msg_fee",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": "Fee for inbound external message import.",
+              "description": null
+            },
+            {
+              "name": "total_fwd_fees",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": "Total fees the account pays for message forwarding",
+              "description": null
+            },
+            {
+              "name": "account_fees",
+              "type": "BigInt",
+              "number_type": "UInt",
+              "number_size": 64,
+              "summary": "Total account fees for the transaction execution. Compounds of storage_fee + gas_fee + ext_in_msg_fee + total_fwd_fees",
               "description": null
             }
           ],
