@@ -17,6 +17,7 @@ mod tests;
 
 pub(crate) mod calc_storage_fee;
 pub(crate) mod conversion;
+#[cfg(feature = "include-zstd")]
 pub(crate) mod compression;
 pub(crate) mod json;
 mod errors;
@@ -28,6 +29,7 @@ pub use conversion::{
     convert_address, AddressStringFormat, ParamsOfConvertAddress, ResultOfConvertAddress,
     get_address_type, ParamsOfGetAddressType, ResultOfGetAddressType,
 };
+#[cfg(feature = "include-zstd")]
 pub use compression::{compress_zstd, decompress_zstd};
 pub use errors::{Error, ErrorCode};
 pub use crate::encoding::AccountAddressType;

@@ -20,7 +20,6 @@ import {
     ApiFunction,
     ApiFunctionInfo,
     ApiModule,
-    ApiStruct,
     ApiType,
     ApiTypeIs,
     Code,
@@ -69,7 +68,11 @@ export function typeName(fullName: string) {
 }
 
 function jsDocStart(element: Documented, indent: string = ""): string {
-    let ts = `\n${indent}/**`;
+    return `\n${indent}/**${jsDocNext(element, indent)}`;
+}
+
+function jsDocNext(element: Documented, indent: string = ""): string {
+    let ts = "";
     if (element.summary) {
         ts += jsDoc(element.summary, indent);
     }
@@ -90,7 +93,22 @@ function jsDocEnd(indent: string = ""): string {
 }
 
 function elementJsDoc(element: Documented, indent: string = ""): string {
-    return `${jsDocStart(element, indent)}${jsDocEnd(indent)}`;
+    return element.summary || element.description ?
+        `${jsDocStart(element, indent)}${jsDocEnd(indent)}`
+        : "";
+}
+
+function enumOfTypesJsDoc(type: ApiEnumOfTypes, indent = "") {
+    let ts = jsDocStart(type);
+    ts += jsDoc("\nDepends on `type` field.\n", indent);
+    for (const variant of type.enum_types) {
+        ts += jsDoc(`\n### \`${variant.name}\`\n`, indent);
+        if (variant.summary) {
+            ts += jsDoc(variant.summary, indent);
+        }
+    }
+    ts += jsDocEnd(indent);
+    return ts;
 }
 
 function getRefName(type: ApiType): string {
@@ -106,6 +124,12 @@ export class TSCode extends Code {
         let ts = `// ${module.name} module\n\n`;
 
         for (const type of module.types) {
+            if (type.type === ApiTypeIs.EnumOfTypes) {
+                ts += enumOfTypesJsDoc(type);
+            } else {
+                ts += elementJsDoc(type);
+            }
+
             ts += `\nexport ${this.typeDef(type, true)}`;
             if (type.type === ApiTypeIs.EnumOfTypes) {
                 ts += this.typeVariantConstructors(type.name, type);
@@ -166,19 +190,11 @@ export class ${Code.upperFirst(module.name)}Module {
         return fields.map(f => this.field(f, indent, includeDoc)).join(",\n");
     }
 
-    typeVariantStructFields(variant: ApiStruct, _indent: string): ApiField[] {
-        const fields = variant.struct_fields;
-        if (fields.length === 0) {
-            return fields;
-        }
-        return fields;
-    }
-
     typeVariant(variant: ApiField, indent: string, includeDoc?: boolean): string {
         if (variant.type === ApiTypeIs.Ref) {
             return `({\n${indent}    type: '${variant.name}'\n${indent}} & ${typeName(variant.ref_name)})`;
         } else if (variant.type === ApiTypeIs.Struct) {
-            const fields = this.typeVariantStructFields(variant, indent);
+            const fields = variant.struct_fields;
             let fieldsDecl: string;
             if (fields.length === 0) {
                 fieldsDecl = "";
@@ -232,7 +248,11 @@ export class ${Code.upperFirst(module.name)}Module {
         case ApiTypeIs.Array:
             return `${this.type(type.array_item, indent)}[]`;
         case ApiTypeIs.EnumOfConsts:
-            const variants = type.enum_consts.map(c => this.constVariant(c, `${indent}    `, includeDoc));
+            const variants = type.enum_consts.map(c => this.constVariant(
+                c,
+                `${indent}    `,
+                includeDoc,
+            ));
             return `{\n${variants.join(",\n")}\n${indent}}`;
         case ApiTypeIs.BigInt:
             return "bigint";
@@ -250,7 +270,9 @@ export class ${Code.upperFirst(module.name)}Module {
     }
 
     typeDef(type: ApiField, includeDoc?: boolean): string {
-        const decl = type.type === ApiTypeIs.EnumOfConsts ? `enum ${type.name}` : `type ${type.name} =`;
+        const decl = type.type === ApiTypeIs.EnumOfConsts
+            ? `enum ${type.name}`
+            : `type ${type.name} =`;
         return `${decl} ${this.type(type, "", includeDoc)}\n`;
     }
 
@@ -271,17 +293,16 @@ export class ${Code.upperFirst(module.name)}Module {
         const paramsInfo = this.getFunctionInfo(func);
         const paramsDecls = this.paramsDecls(paramsInfo);
         const paramsDecl = paramsDecls.length > 0 ? `\n${paramsDecls.map(p => `    ${p},`)
-        .join("\n")}\n` : "";
+            .join("\n")}\n` : "";
         const resultDecl = this.type(func.result, "");
         return `function ${func.name}(${paramsDecl}): Promise<${resultDecl}>;`;
     }
 
     appObjectInterface(obj: ApiModule): string {
         let ts = "";
-        for (const type of obj.types) {
-            ts += "\n";
-            ts += this.typeDef(type);
-        }
+        // for (const type of obj.types) {
+        //     ts += `\ntype ${type.name} = ${type.name}Variant`;
+        // }
         ts += `\nexport interface ${obj.name} {`;
         for (const f of obj.functions) {
             const isNotify = (f.result.type === ApiTypeIs.Ref) && f.result.ref_name === "";
@@ -369,13 +390,7 @@ ${this.api.modules.map(m => this.module(m)).join("")}
         for (const variant of type.enum_types) {
             let params = "";
             let properties = "";
-            switch (variant.type) {
-            case ApiTypeIs.Ref:
-                params = `params: ${typeName(variant.ref_name)}`;
-                properties = `        ...params,\n`;
-                break;
-            case ApiTypeIs.Struct:
-                const fields = variant.struct_fields;
+            const addFields = (fields: ApiField[]) => {
                 for (const field of fields) {
                     if (params !== "") {
                         params += ", ";
@@ -384,6 +399,19 @@ ${this.api.modules.map(m => this.module(m)).join("")}
                     properties += `        ${fixFieldName(field.name)},\n`;
 
                 }
+            };
+            switch (variant.type) {
+            case ApiTypeIs.Ref:
+                const refType = this.findType(variant.ref_name);
+                if (refType && refType.type === ApiTypeIs.Struct && refType.isInternal) {
+                    addFields(refType.struct_fields);
+                } else {
+                    params = `params: ${typeName(variant.ref_name)}`;
+                    properties = `        ...params,\n`;
+                }
+                break;
+            case ApiTypeIs.Struct:
+                addFields(variant.struct_fields);
                 break;
             }
             ts +=

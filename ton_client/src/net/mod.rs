@@ -66,7 +66,7 @@ pub(crate) mod transaction_tree;
 pub(crate) mod types;
 mod websocket_link;
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 #[cfg(test)]
 mod tests;
 

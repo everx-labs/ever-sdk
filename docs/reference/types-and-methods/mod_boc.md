@@ -43,6 +43,10 @@ BOC manipulation module.
 [get_compiler_version](mod\_boc.md#get_compiler_version) – Returns the compiler version used to compile the code.
 
 ## Types
+[BocCacheTypePinnedVariant](mod\_boc.md#boccachetypepinnedvariant) – Pin the BOC with `pin` name.
+
+[BocCacheTypeUnpinnedVariant](mod\_boc.md#boccachetypeunpinnedvariant) –  
+
 [BocCacheType](mod\_boc.md#boccachetype)
 
 [BocErrorCode](mod\_boc.md#bocerrorcode)
@@ -78,6 +82,16 @@ BOC manipulation module.
 [ResultOfBocCacheSet](mod\_boc.md#resultofboccacheset)
 
 [ParamsOfBocCacheUnpin](mod\_boc.md#paramsofboccacheunpin)
+
+[BuilderOpIntegerVariant](mod\_boc.md#builderopintegervariant) – Append integer to cell data.
+
+[BuilderOpBitStringVariant](mod\_boc.md#builderopbitstringvariant) – Append bit string to cell data.
+
+[BuilderOpCellVariant](mod\_boc.md#builderopcellvariant) – Append ref to nested cells.
+
+[BuilderOpCellBocVariant](mod\_boc.md#builderopcellbocvariant) – Append ref to nested cell.
+
+[BuilderOpAddressVariant](mod\_boc.md#builderopaddressvariant) – Address.
 
 [BuilderOp](mod\_boc.md#builderop) – Cell builder operation.
 
@@ -682,14 +696,36 @@ function get_compiler_version(
 
 
 # Types
+## BocCacheTypePinnedVariant
+Pin the BOC with `pin` name.
+
+Such BOC will not be removed from cache until it is unpinned
+
+```ts
+type BocCacheTypePinnedVariant = {
+    pin: string
+}
+```
+- `pin`: _string_
+
+
+## BocCacheTypeUnpinnedVariant
+ 
+
+```ts
+type BocCacheTypeUnpinnedVariant = {
+
+}
+```
+
+
 ## BocCacheType
 ```ts
-type BocCacheType = {
+type BocCacheType = ({
     type: 'Pinned'
-    pin: string
-} | {
+} & BocCacheTypePinnedVariant) | ({
     type: 'Unpinned'
-}
+} & BocCacheTypeUnpinnedVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -698,7 +734,6 @@ When _type_ is _'Pinned'_
 Pin the BOC with `pin` name.
 
 Such BOC will not be removed from cache until it is unpinned
-
 
 - `pin`: _string_
 
@@ -891,34 +926,86 @@ type ParamsOfBocCacheUnpin = {
 <br>If it is provided then only referenced BOC is unpinned
 
 
+## BuilderOpIntegerVariant
+Append integer to cell data.
+
+```ts
+type BuilderOpIntegerVariant = {
+    size: number,
+    value: any
+}
+```
+- `size`: _number_ – Bit size of the value.
+- `value`: _any_ – Value: - `Number` containing integer number.
+<br>e.g. `123`, `-123`. - Decimal string. e.g. `"123"`, `"-123"`.<br>- `0x` prefixed hexadecimal string.<br>  e.g `0x123`, `0X123`, `-0x123`.
+
+
+## BuilderOpBitStringVariant
+Append bit string to cell data.
+
+```ts
+type BuilderOpBitStringVariant = {
+    value: string
+}
+```
+- `value`: _string_ – Bit string content using bitstring notation. See `TON VM specification` 1.0.
+<br>Contains hexadecimal string representation:<br>- Can end with `_` tag.<br>- Can be prefixed with `x` or `X`.<br>- Can be prefixed with `x{` or `X{` and ended with `}`.<br><br>Contains binary string represented as a sequence<br>of `0` and `1` prefixed with `n` or `N`.<br><br>Examples:<br>`1AB`, `x1ab`, `X1AB`, `x{1abc}`, `X{1ABC}`<br>`2D9_`, `x2D9_`, `X2D9_`, `x{2D9_}`, `X{2D9_}`<br>`n00101101100`, `N00101101100`
+
+
+## BuilderOpCellVariant
+Append ref to nested cells.
+
+```ts
+type BuilderOpCellVariant = {
+    builder: BuilderOp[]
+}
+```
+- `builder`: _[BuilderOp](mod\_boc.md#builderop)[]_ – Nested cell builder.
+
+
+## BuilderOpCellBocVariant
+Append ref to nested cell.
+
+```ts
+type BuilderOpCellBocVariant = {
+    boc: string
+}
+```
+- `boc`: _string_ – Nested cell BOC encoded with `base64` or BOC cache key.
+
+
+## BuilderOpAddressVariant
+Address.
+
+```ts
+type BuilderOpAddressVariant = {
+    address: string
+}
+```
+- `address`: _string_ – Address in a common `workchain:account` or base64 format.
+
+
 ## BuilderOp
 Cell builder operation.
 
 ```ts
-type BuilderOp = {
+type BuilderOp = ({
     type: 'Integer'
-    size: number,
-    value: any
-} | {
+} & BuilderOpIntegerVariant) | ({
     type: 'BitString'
-    value: string
-} | {
+} & BuilderOpBitStringVariant) | ({
     type: 'Cell'
-    builder: BuilderOp[]
-} | {
+} & BuilderOpCellVariant) | ({
     type: 'CellBoc'
-    boc: string
-} | {
+} & BuilderOpCellBocVariant) | ({
     type: 'Address'
-    address: string
-}
+} & BuilderOpAddressVariant)
 ```
 Depends on value of the  `type` field.
 
 When _type_ is _'Integer'_
 
 Append integer to cell data.
-
 
 - `size`: _number_ – Bit size of the value.
 - `value`: _any_ – Value: - `Number` containing integer number.
@@ -928,7 +1015,6 @@ When _type_ is _'BitString'_
 
 Append bit string to cell data.
 
-
 - `value`: _string_ – Bit string content using bitstring notation. See `TON VM specification` 1.0.
 <br>Contains hexadecimal string representation:<br>- Can end with `_` tag.<br>- Can be prefixed with `x` or `X`.<br>- Can be prefixed with `x{` or `X{` and ended with `}`.<br><br>Contains binary string represented as a sequence<br>of `0` and `1` prefixed with `n` or `N`.<br><br>Examples:<br>`1AB`, `x1ab`, `X1AB`, `x{1abc}`, `X{1ABC}`<br>`2D9_`, `x2D9_`, `X2D9_`, `x{2D9_}`, `X{2D9_}`<br>`n00101101100`, `N00101101100`
 
@@ -936,20 +1022,17 @@ When _type_ is _'Cell'_
 
 Append ref to nested cells.
 
-
 - `builder`: _[BuilderOp](mod\_boc.md#builderop)[]_ – Nested cell builder.
 
 When _type_ is _'CellBoc'_
 
 Append ref to nested cell.
 
-
 - `boc`: _string_ – Nested cell BOC encoded with `base64` or BOC cache key.
 
 When _type_ is _'Address'_
 
 Address.
-
 
 - `address`: _string_ – Address in a common `workchain:account` or base64 format.
 

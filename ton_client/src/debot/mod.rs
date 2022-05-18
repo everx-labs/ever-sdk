@@ -37,7 +37,7 @@ mod tests;
 #[cfg(test)]
 mod tests_interfaces;
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 pub use calltype::prepare_ext_in_message;
 
 pub use action::DAction;
