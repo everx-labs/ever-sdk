@@ -8,6 +8,8 @@ Provides information about library.
 
 [version](mod\_client.md#version) – Returns Core Library version
 
+[config](mod\_client.md#config) – Returns Core Library API reference
+
 [build_info](mod\_client.md#build_info) – Returns detailed information about this build.
 
 [resolve_app_request](mod\_client.md#resolve_app_request) – Resolves application request processing result
@@ -34,6 +36,10 @@ Provides information about library.
 [BuildInfoDependency](mod\_client.md#buildinfodependency)
 
 [ParamsOfAppRequest](mod\_client.md#paramsofapprequest)
+
+[AppRequestResultErrorVariant](mod\_client.md#apprequestresulterrorvariant) – Error occurred during request processing
+
+[AppRequestResultOkVariant](mod\_client.md#apprequestresultokvariant) – Request processed successfully
 
 [AppRequestResult](mod\_client.md#apprequestresult)
 
@@ -81,6 +87,34 @@ function version(): Promise<ResultOfVersion>;
 ### Result
 
 - `version`: _string_ – Core Library version
+
+
+## config
+
+Returns Core Library API reference
+
+```ts
+type ClientConfig = {
+    network?: NetworkConfig,
+    crypto?: CryptoConfig,
+    abi?: AbiConfig,
+    boc?: BocConfig,
+    proofs?: ProofsConfig,
+    local_storage_path?: string
+}
+
+function config(): Promise<ClientConfig>;
+```
+
+
+### Result
+
+- `network`?: _[NetworkConfig](mod\_client.md#networkconfig)_
+- `crypto`?: _[CryptoConfig](mod\_client.md#cryptoconfig)_
+- `abi`?: _[AbiConfig](mod\_client.md#abiconfig)_
+- `boc`?: _[BocConfig](mod\_client.md#bocconfig)_
+- `proofs`?: _[ProofsConfig](mod\_client.md#proofsconfig)_
+- `local_storage_path`?: _string_ – For file based storage is a folder name where SDK will store its data. For browser based is a browser async storage key prefix. Default (recommended) value is "~/.tonclient" for native environments and ".tonclient" for web-browser.
 
 
 ## build_info
@@ -377,15 +411,35 @@ type ParamsOfAppRequest = {
 - `request_data`: _any_ – Request describing data
 
 
-## AppRequestResult
+## AppRequestResultErrorVariant
+Error occurred during request processing
+
 ```ts
-type AppRequestResult = {
-    type: 'Error'
+type AppRequestResultErrorVariant = {
     text: string
-} | {
-    type: 'Ok'
+}
+```
+- `text`: _string_ – Error description
+
+
+## AppRequestResultOkVariant
+Request processed successfully
+
+```ts
+type AppRequestResultOkVariant = {
     result: any
 }
+```
+- `result`: _any_ – Request processing result
+
+
+## AppRequestResult
+```ts
+type AppRequestResult = ({
+    type: 'Error'
+} & AppRequestResultErrorVariant) | ({
+    type: 'Ok'
+} & AppRequestResultOkVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -393,13 +447,11 @@ When _type_ is _'Error'_
 
 Error occurred during request processing
 
-
 - `text`: _string_ – Error description
 
 When _type_ is _'Ok'_
 
 Request processed successfully
-
 
 - `result`: _any_ – Request processing result
 
