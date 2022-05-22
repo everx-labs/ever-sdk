@@ -35,6 +35,14 @@ Provides message encoding and decoding according to the ABI specification.
 ## Types
 [AbiErrorCode](mod\_abi.md#abierrorcode)
 
+[AbiContractVariant](mod\_abi.md#abicontractvariant)
+
+[AbiJsonVariant](mod\_abi.md#abijsonvariant)
+
+[AbiHandleVariant](mod\_abi.md#abihandlevariant)
+
+[AbiSerializedVariant](mod\_abi.md#abiserializedvariant)
+
 [Abi](mod\_abi.md#abi)
 
 [AbiHandle](mod\_abi.md#abihandle)
@@ -45,13 +53,29 @@ Provides message encoding and decoding according to the ABI specification.
 
 [DeploySet](mod\_abi.md#deployset)
 
+[SignerNoneVariant](mod\_abi.md#signernonevariant) – No keys are provided.
+
+[SignerExternalVariant](mod\_abi.md#signerexternalvariant) – Only public key is provided in unprefixed hex string format to generate unsigned message and `data_to_sign` which can be signed later.
+
+[SignerKeysVariant](mod\_abi.md#signerkeysvariant) – Key pair is provided for signing
+
+[SignerSigningBoxVariant](mod\_abi.md#signersigningboxvariant) – Signing Box interface is provided for signing, allows Dapps to sign messages using external APIs, such as HSM, cold wallet, etc.
+
 [Signer](mod\_abi.md#signer)
 
 [MessageBodyType](mod\_abi.md#messagebodytype)
 
+[StateInitSourceMessageVariant](mod\_abi.md#stateinitsourcemessagevariant) – Deploy message.
+
+[StateInitSourceStateInitVariant](mod\_abi.md#stateinitsourcestateinitvariant) – State init data.
+
+[StateInitSourceTvcVariant](mod\_abi.md#stateinitsourcetvcvariant) – Content of the TVC file.
+
 [StateInitSource](mod\_abi.md#stateinitsource)
 
 [StateInitParams](mod\_abi.md#stateinitparams)
+
+[MessageSourceEncodedVariant](mod\_abi.md#messagesourceencodedvariant)
 
 [MessageSource](mod\_abi.md#messagesource)
 
@@ -736,41 +760,69 @@ One of the following value:
 - `EncodeInitialDataFailed = 314`
 
 
-## Abi
+## AbiContractVariant
 ```ts
-type Abi = {
-    type: 'Contract'
-    value: AbiContract
-} | {
-    type: 'Json'
-    value: string
-} | {
-    type: 'Handle'
-    value: AbiHandle
-} | {
-    type: 'Serialized'
+type AbiContractVariant = {
     value: AbiContract
 }
+```
+- `value`: _[AbiContract](mod\_abi.md#abicontract)_
+
+
+## AbiJsonVariant
+```ts
+type AbiJsonVariant = {
+    value: string
+}
+```
+- `value`: _string_
+
+
+## AbiHandleVariant
+```ts
+type AbiHandleVariant = {
+    value: AbiHandle
+}
+```
+- `value`: _[AbiHandle](mod\_abi.md#abihandle)_
+
+
+## AbiSerializedVariant
+```ts
+type AbiSerializedVariant = {
+    value: AbiContract
+}
+```
+- `value`: _[AbiContract](mod\_abi.md#abicontract)_
+
+
+## Abi
+```ts
+type Abi = ({
+    type: 'Contract'
+} & AbiContractVariant) | ({
+    type: 'Json'
+} & AbiJsonVariant) | ({
+    type: 'Handle'
+} & AbiHandleVariant) | ({
+    type: 'Serialized'
+} & AbiSerializedVariant)
 ```
 Depends on value of the  `type` field.
 
 When _type_ is _'Contract'_
 
-
 - `value`: _[AbiContract](mod\_abi.md#abicontract)_
 
 When _type_ is _'Json'_
-
 
 - `value`: _string_
 
 When _type_ is _'Handle'_
 
-
 - `value`: _[AbiHandle](mod\_abi.md#abihandle)_
 
 When _type_ is _'Serialized'_
-
 
 - `value`: _[AbiContract](mod\_abi.md#abicontract)_
 
@@ -844,20 +896,62 @@ type DeploySet = {
 <br>Public key resolving priority:<br>1. Public key from deploy set.<br>2. Public key, specified in TVM file.<br>3. Public key, provided by Signer.
 
 
-## Signer
+## SignerNoneVariant
+No keys are provided.
+
+Creates an unsigned message.
+
 ```ts
-type Signer = {
-    type: 'None'
-} | {
-    type: 'External'
+type SignerNoneVariant = {
+
+}
+```
+
+
+## SignerExternalVariant
+Only public key is provided in unprefixed hex string format to generate unsigned message and `data_to_sign` which can be signed later.
+
+```ts
+type SignerExternalVariant = {
     public_key: string
-} | {
-    type: 'Keys'
+}
+```
+- `public_key`: _string_
+
+
+## SignerKeysVariant
+Key pair is provided for signing
+
+```ts
+type SignerKeysVariant = {
     keys: KeyPair
-} | {
-    type: 'SigningBox'
+}
+```
+- `keys`: _[KeyPair](mod\_crypto.md#keypair)_
+
+
+## SignerSigningBoxVariant
+Signing Box interface is provided for signing, allows Dapps to sign messages using external APIs, such as HSM, cold wallet, etc.
+
+```ts
+type SignerSigningBoxVariant = {
     handle: SigningBoxHandle
 }
+```
+- `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_
+
+
+## Signer
+```ts
+type Signer = ({
+    type: 'None'
+} & SignerNoneVariant) | ({
+    type: 'External'
+} & SignerExternalVariant) | ({
+    type: 'Keys'
+} & SignerKeysVariant) | ({
+    type: 'SigningBox'
+} & SignerSigningBoxVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -872,20 +966,17 @@ When _type_ is _'External'_
 
 Only public key is provided in unprefixed hex string format to generate unsigned message and `data_to_sign` which can be signed later.
 
-
 - `public_key`: _string_
 
 When _type_ is _'Keys'_
 
 Key pair is provided for signing
 
-
 - `keys`: _[KeyPair](mod\_crypto.md#keypair)_
 
 When _type_ is _'SigningBox'_
 
 Signing Box interface is provided for signing, allows Dapps to sign messages using external APIs, such as HSM, cold wallet, etc.
-
 
 - `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_
 
@@ -917,22 +1008,61 @@ One of the following value:
 - `Event = "Event"` – Message contains the input of the ABI event.
 
 
-## StateInitSource
+## StateInitSourceMessageVariant
+Deploy message.
+
 ```ts
-type StateInitSource = {
-    type: 'Message'
+type StateInitSourceMessageVariant = {
     source: MessageSource
-} | {
-    type: 'StateInit'
+}
+```
+- `source`: _[MessageSource](mod\_abi.md#messagesource)_
+
+
+## StateInitSourceStateInitVariant
+State init data.
+
+```ts
+type StateInitSourceStateInitVariant = {
     code: string,
     data: string,
     library?: string
-} | {
-    type: 'Tvc'
+}
+```
+- `code`: _string_ – Code BOC.
+<br>Encoded in `base64`.
+- `data`: _string_ – Data BOC.
+<br>Encoded in `base64`.
+- `library`?: _string_ – Library BOC.
+<br>Encoded in `base64`.
+
+
+## StateInitSourceTvcVariant
+Content of the TVC file.
+
+Encoded in `base64`.
+
+```ts
+type StateInitSourceTvcVariant = {
     tvc: string,
     public_key?: string,
     init_params?: StateInitParams
 }
+```
+- `tvc`: _string_
+- `public_key`?: _string_
+- `init_params`?: _[StateInitParams](mod\_abi.md#stateinitparams)_
+
+
+## StateInitSource
+```ts
+type StateInitSource = ({
+    type: 'Message'
+} & StateInitSourceMessageVariant) | ({
+    type: 'StateInit'
+} & StateInitSourceStateInitVariant) | ({
+    type: 'Tvc'
+} & StateInitSourceTvcVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -940,13 +1070,11 @@ When _type_ is _'Message'_
 
 Deploy message.
 
-
 - `source`: _[MessageSource](mod\_abi.md#messagesource)_
 
 When _type_ is _'StateInit'_
 
 State init data.
-
 
 - `code`: _string_ – Code BOC.
 <br>Encoded in `base64`.
@@ -960,7 +1088,6 @@ When _type_ is _'Tvc'_
 Content of the TVC file.
 
 Encoded in `base64`.
-
 
 - `tvc`: _string_
 - `public_key`?: _string_
@@ -986,20 +1113,28 @@ type StateInitParams = {
 - `value`: _any_
 
 
-## MessageSource
+## MessageSourceEncodedVariant
 ```ts
-type MessageSource = {
-    type: 'Encoded'
+type MessageSourceEncodedVariant = {
     message: string,
     abi?: Abi
-} | ({
+}
+```
+- `message`: _string_
+- `abi`?: _[Abi](mod\_abi.md#abi)_
+
+
+## MessageSource
+```ts
+type MessageSource = ({
+    type: 'Encoded'
+} & MessageSourceEncodedVariant) | ({
     type: 'EncodingParams'
 } & ParamsOfEncodeMessage)
 ```
 Depends on value of the  `type` field.
 
 When _type_ is _'Encoded'_
-
 
 - `message`: _string_
 - `abi`?: _[Abi](mod\_abi.md#abi)_

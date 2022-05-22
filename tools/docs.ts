@@ -7,7 +7,6 @@ import {
     ApiField,
     ApiFunction,
     ApiModule,
-    ApiStruct,
     ApiType,
     ApiTypeIs,
     Code,
@@ -104,39 +103,11 @@ export class Docs extends Code {
         }
         return "";
     }
-
-    tupleFields(variant: ApiStruct, indent: string): ApiField[] {
-        let fields = variant.struct_fields;
-        const innerType = fields[0];
-        if (innerType.type === ApiTypeIs.Ref) {
-            const refType = this.findType(innerType.ref_name);
-            if (refType && refType.type === ApiTypeIs.Struct) {
-                return this.structFields(refType, indent);
-            }
-        } else if (innerType.type === ApiTypeIs.Struct) {
-            return this.structFields(innerType, indent);
-        }
-        return [
-            {
-                ...innerType,
-                name: "value",
-            },
-        ];
-    }
-
-    structFields(variant: ApiStruct, _indent: string): ApiField[] {
-        const fields = variant.struct_fields;
-        if (fields.length === 0) {
-            return fields;
-        }
-        return fields;
-    }
-
     typeVariant(variant: ApiField, indent: string): string {
         let md = `When _type_ is _'${variant.name}'_\n\n`;
         md += docOf(variant);
         if (variant.type === ApiTypeIs.Struct) {
-            const fields = this.structFields(variant, indent);
+            const fields = variant.struct_fields;
             let fieldsDecl: string;
             if (fields.length === 0) {
                 fieldsDecl = "";
@@ -254,7 +225,7 @@ export class Docs extends Code {
                 md += this.type(params, "");
             }
             if (appObject) {
-                md += `- \`obj\`: ${appObjectTypeRef(appObject)}${summaryOf(appObject)}\n\n`
+                md += `- \`obj\`: ${appObjectTypeRef(appObject)}${summaryOf(appObject)}\n\n`;
             }
             if (funcInfo.hasResponseHandler) {
                 md += `- \`responseHandler\`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.`;
@@ -321,7 +292,7 @@ This section contains documents describing TON SDK Types and Methods supported b
 
 `;
         for (const module of this.api.modules.slice().sort(
-          (left, right) => left.name.localeCompare(right.name)
+            (left, right) => left.name.localeCompare(right.name),
         )) {
             md += `* [Module ${module.name}](${moduleFile(module)})\n`;
         }
@@ -377,18 +348,25 @@ Where:
         let md = "Variant constructors:\n\n```ts";
         for (const variant of type.enum_types) {
             let params = "";
-            switch (variant.type) {
-            case ApiTypeIs.Ref:
-                params = `params: ${typeName(variant.ref_name)}`;
-                break;
-            case ApiTypeIs.Struct:
-                const fields = variant.struct_fields;
+            const addFields = (fields: ApiField[]) => {
                 for (const field of fields) {
                     if (params !== "") {
                         params += ", ";
                     }
                     params += `${this.code.field(field, "")}`;
                 }
+            };
+            switch (variant.type) {
+            case ApiTypeIs.Ref:
+                const refType = this.findType(variant.ref_name);
+                if (refType && refType.type === ApiTypeIs.Struct && refType.isInternal) {
+                    addFields(refType.struct_fields);
+                } else {
+                    params = `params: ${typeName(variant.ref_name)}`;
+                }
+                break;
+            case ApiTypeIs.Struct:
+                addFields(variant.struct_fields);
                 break;
             }
             md += `\nfunction ${TSCode.lowerFirst(enumName)}${variant.name}(${params}): ${enumName};`;

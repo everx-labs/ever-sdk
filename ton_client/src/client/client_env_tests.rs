@@ -3,7 +3,7 @@ use ton_types::Result;
 use crate::client::LocalStorage;
 use crate::client::storage::KeyValueStorage;
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 mod env {
     use crate::client::std_client_env::LocalStorage;
 
@@ -56,7 +56,7 @@ mod env {
     }
 }
 
-#[cfg(feature = "wasm")]
+#[cfg(feature = "wasm-base")]
 mod env {
     pub struct LocalStoragePathManager;
 
@@ -73,7 +73,7 @@ mod env {
     }
 }
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 #[test]
 fn test_storage_path_calculation() {
     assert_eq!(

@@ -13,6 +13,12 @@
 
 [ExecutionOptions](mod\_tvm.md#executionoptions)
 
+[AccountForExecutorNoneVariant](mod\_tvm.md#accountforexecutornonevariant) – Non-existing account to run a creation internal message. Should be used with `skip_transaction_check = true` if the message has no deploy data since transactions on the uninitialized account are always aborted
+
+[AccountForExecutorUninitVariant](mod\_tvm.md#accountforexecutoruninitvariant) – Emulate uninitialized account to run deploy message
+
+[AccountForExecutorAccountVariant](mod\_tvm.md#accountforexecutoraccountvariant) – Account state to run message
+
 [AccountForExecutor](mod\_tvm.md#accountforexecutor)
 
 [TransactionFees](mod\_tvm.md#transactionfees)
@@ -265,17 +271,50 @@ type ExecutionOptions = {
 - `transaction_lt`?: _bigint_ – transaction logical time
 
 
-## AccountForExecutor
+## AccountForExecutorNoneVariant
+Non-existing account to run a creation internal message. Should be used with `skip_transaction_check = true` if the message has no deploy data since transactions on the uninitialized account are always aborted
+
 ```ts
-type AccountForExecutor = {
-    type: 'None'
-} | {
-    type: 'Uninit'
-} | {
-    type: 'Account'
+type AccountForExecutorNoneVariant = {
+
+}
+```
+
+
+## AccountForExecutorUninitVariant
+Emulate uninitialized account to run deploy message
+
+```ts
+type AccountForExecutorUninitVariant = {
+
+}
+```
+
+
+## AccountForExecutorAccountVariant
+Account state to run message
+
+```ts
+type AccountForExecutorAccountVariant = {
     boc: string,
     unlimited_balance?: boolean
 }
+```
+- `boc`: _string_ – Account BOC.
+<br>Encoded as base64.
+- `unlimited_balance`?: _boolean_ – Flag for running account with the unlimited balance.
+<br>Can be used to calculate transaction fees without balance check
+
+
+## AccountForExecutor
+```ts
+type AccountForExecutor = ({
+    type: 'None'
+} & AccountForExecutorNoneVariant) | ({
+    type: 'Uninit'
+} & AccountForExecutorUninitVariant) | ({
+    type: 'Account'
+} & AccountForExecutorAccountVariant)
 ```
 Depends on value of the  `type` field.
 
@@ -292,7 +331,6 @@ Emulate uninitialized account to run deploy message
 When _type_ is _'Account'_
 
 Account state to run message
-
 
 - `boc`: _string_ – Account BOC.
 <br>Encoded as base64.
@@ -316,15 +354,24 @@ type TransactionFees = {
     gas_fee: bigint,
     out_msgs_fwd_fee: bigint,
     total_account_fees: bigint,
-    total_output: bigint
+    total_output: bigint,
+    ext_in_msg_fee: bigint,
+    total_fwd_fees: bigint,
+    account_fees: bigint
 }
 ```
-- `in_msg_fwd_fee`: _bigint_
-- `storage_fee`: _bigint_
-- `gas_fee`: _bigint_
-- `out_msgs_fwd_fee`: _bigint_
-- `total_account_fees`: _bigint_
-- `total_output`: _bigint_
+- `in_msg_fwd_fee`: _bigint_ – Deprecated.
+<br>Left for backward compatibility. Does not participate in account transaction fees calculation.
+- `storage_fee`: _bigint_ – Fee for account storage
+- `gas_fee`: _bigint_ – Fee for processing
+- `out_msgs_fwd_fee`: _bigint_ – Deprecated.
+<br>Contains the same data as total_fwd_fees field. Deprecated because of its confusing name, that is not the same with GraphQL API Transaction type's field.
+- `total_account_fees`: _bigint_ – Deprecated.
+<br>This is the field that is named as `total_fees` in GraphQL API Transaction type. `total_account_fees` name is misleading, because it does not mean account fees, instead it means<br>validators total fees received for the transaction execution. It does not include some forward fees that account<br>actually pays now, but validators will receive later during value delivery to another account (not even in the receiving<br>transaction).<br>Because of all of this, this field is not interesting for those who wants to understand<br>the real account fees, this is why it is deprecated and left for backward compatibility.
+- `total_output`: _bigint_ – Deprecated because it means total value sent in the transaction, which does not relate to any fees.
+- `ext_in_msg_fee`: _bigint_ – Fee for inbound external message import.
+- `total_fwd_fees`: _bigint_ – Total fees the account pays for message forwarding
+- `account_fees`: _bigint_ – Total account fees for the transaction execution. Compounds of storage_fee + gas_fee + ext_in_msg_fee + total_fwd_fees
 
 
 ## ParamsOfRunExecutor

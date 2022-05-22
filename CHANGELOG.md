@@ -2,6 +2,34 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.34.0] – 2022-05-18
+
+### New
+
+- `client.config` function that returns the current client config
+- `run_executor().fees` is extended with these fields:  
+  
+  - `ext_in_msg_fee` - fee for processing external inbound message  
+  - `total_fwd_fees` - total fees of action phase  
+  - `account_fees`  - total fees the account pays for the transaction  
+
+- `main` and `dev` endpoints aliases for Evernode Cloud Mainnet and Devnet endpoints  
+- supported removing Copy interface from UInt256
+
+### Improved
+
+- Added documentation for `TransactionFees` type (`run_executor().fees`).
+- Documentation now includes `enum` types descriptions. 
+  To achieve it we updated binding-gen: enum of types now produces its own type for each enum variant.
+
+## [1.33.1] – 2022-05-10
+
+### Fixed
+
+- Websocket errors weren't treated as a network errors.
+  This is why all the processing functions that worked via wss protocol failed on these errors without retries. Now retries are performed.
+- SDK tried to rebalance even if only a single endpoint was specified. Now in case of a single endpoint, no rebalancing occurs.
+
 ## [1.33.0] – 2022-05-02
 
 ### New 

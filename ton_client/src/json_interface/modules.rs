@@ -41,6 +41,7 @@ fn register_client(handlers: &mut RuntimeHandlers) {
         crate::client::get_api_reference_api,
     );
     module.register_sync_fn_without_args(crate::client::version, crate::client::version_api);
+    module.register_sync_fn_without_args(crate::client::config, crate::client::config_api);
     module.register_sync_fn_without_args(crate::client::build_info, crate::client::build_info_api);
     module.register_async_fn(
         crate::client::resolve_app_request,
@@ -604,7 +605,9 @@ fn register_utils(handlers: &mut RuntimeHandlers) {
         crate::utils::calc_storage_fee,
         crate::utils::calc_storage_fee::calc_storage_fee_api,
     );
+    #[cfg(feature = "include-zstd")]
     module.register_sync_fn(super::utils::compress_zstd, super::utils::compress_zstd_api);
+    #[cfg(feature = "include-zstd")]
     module.register_sync_fn(
         super::utils::decompress_zstd,
         super::utils::decompress_zstd_api,
