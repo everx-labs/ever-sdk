@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [1.34.1] – 2022-05-18
 
 ### New
+- supported removing Copy interface from UInt256
 
 ## [1.34.0] – 2022-05-18
 
@@ -18,7 +19,6 @@ All notable changes to this project will be documented in this file.
   - `account_fees`  - total fees the account pays for the transaction  
 
 - `main` and `dev` endpoints aliases for Evernode Cloud Mainnet and Devnet endpoints  
-- supported removing Copy interface from UInt256
 
 ### Improved
 
