@@ -6,10 +6,10 @@ license = 'Apache-2.0'
 authors = [ 'TON Labs LTD <support@tonlabs.io>' ]
 
 [dependencies]
-ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.2.2' }
-ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.43' }
-ton_vm = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-vm.git', tag = '1.8.33' }
-ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.10.14' }
+ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.2.4' }
+ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.47' }
+ton_vm = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-vm.git', tag = '1.8.34' }
+ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.11.0' }
 
 api_info = { path = '../api/info' }
 api_derive = { path = '../api/derive' }
