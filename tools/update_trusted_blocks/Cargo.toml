@@ -11,4 +11,4 @@ serde_derive = '1.0.130'
 serde_json = '1.0.68'
 tokio = { default-features = false, features = [ 'sync', 'stream', 'fs' ], version = '0.2.13' }
 ton_client = { path = '../../ton_client' }
-ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.10.14' }
+ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.11.1' }

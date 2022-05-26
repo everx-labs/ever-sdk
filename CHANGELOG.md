@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.34.1] – 2022-05-26
+
+### New
+- supported removing Copy interface from UInt256
+- supported changed interface of `ton_types::Cell`
+
 ## [1.34.0] – 2022-05-18
 
 ### New
@@ -20,7 +26,6 @@ All notable changes to this project will be documented in this file.
 - Added documentation for `TransactionFees` type (`run_executor().fees`).
 - Documentation now includes `enum` types descriptions. 
   To achieve it we updated binding-gen: enum of types now produces its own type for each enum variant.
-
 
 ## [1.33.1] – 2022-05-10
 

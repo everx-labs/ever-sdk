@@ -1,6 +1,6 @@
 [package]
 name = 'ton_client'
-version = '1.34.0'
+version = '1.34.1'
 authors = [ 'TON Labs LTD <support@tonlabs.io>' ]
 edition = '2018'
 license = 'Apache-2.0'
@@ -20,12 +20,12 @@ api_derive = { path = '../api/derive' }
 api_info = { path = '../api/info' }
 ton_sdk = { default-features = false, path = '../ton_sdk' }
 
-ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.2.2' }
-ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.43' }
-ton_block_json = { git = 'https://github.com/tonlabs/ton-labs-block-json.git', tag = '0.7.12' }
-ton_executor = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-executor.git', tag = '1.15.65' }
-ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.10.14' }
-ton_vm = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-vm.git', tag = '1.8.33' }
+ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.2.5' }
+ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.48' }
+ton_block_json = { git = 'https://github.com/tonlabs/ton-labs-block-json.git', tag = '0.7.15' }
+ton_executor = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-executor.git', tag = '1.15.67' }
+ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.11.1' }
+ton_vm = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-vm.git', tag = '1.8.35' }
 
 lockfree = { git = 'https://github.com/tonlabs/lockfree.git', package = 'lockfree' }
 sodalite = { features = [ 'rand' ], git = 'https://github.com/tonlabs/sodalite.git' }
@@ -70,7 +70,7 @@ indexmap = '=1.6.2'
 tiny-bip39 = '=0.7.3'
 
 # optional
-zstd = { optional = true, default-features = false, version = '0.8.0' }
+zstd = { default-features = false, optional = true, version = '0.8.0' }
 
 # optional for std
 reqwest = { optional = true, version = '0.10.4' }
@@ -111,7 +111,7 @@ pretty_assertions = '0.6.1'
 
 [features]
 default = [ 'std' ]
-include-zstd = []
+include-zstd = [  ]
 std = [
     'tokio/rt-threaded',
     'tokio/macros',
@@ -135,5 +135,5 @@ wasm-base = [
     'rand/wasm-bindgen',
     'wasm-bindgen',
     'wasm-bindgen-futures',
-    'web-sys',
+    'web-sys'
 ]
