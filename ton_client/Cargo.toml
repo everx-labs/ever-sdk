@@ -20,10 +20,10 @@ api_derive = { path = '../api/derive' }
 api_info = { path = '../api/info' }
 ton_sdk = { default-features = false, path = '../ton_sdk' }
 
-ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.2.5' }
-ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.48' }
-ton_block_json = { git = 'https://github.com/tonlabs/ton-labs-block-json.git', tag = '0.7.15' }
-ton_executor = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-executor.git', tag = '1.15.67' }
+ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.2.6' }
+ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.49' }
+ton_block_json = { git = 'https://github.com/tonlabs/ton-labs-block-json.git', tag = '0.7.16' }
+ton_executor = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-executor.git', tag = '1.15.68' }
 ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.11.1' }
 ton_vm = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-vm.git', tag = '1.8.35' }
 
