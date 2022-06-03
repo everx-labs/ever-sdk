@@ -128,7 +128,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
                     exit_arg: ph.exit_arg,
                     success: Some(ph.success),
                     gas_fees: grams_to_u64(&ph.gas_fees)?,
-                    gas_used: ph.gas_used.0,
+                    gas_used: ph.gas_used.as_u64(),
                 }
             }
         };
