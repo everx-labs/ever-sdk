@@ -2,11 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.34.2] – 2022-05-30
+## [1.34.3] – 2022-06-08
 
 ### New
 
-- send `accessKey` header (specified in `config.network.accessKey`)
+- send `accessKey` header in api requests (specified in `config.network.accessKey`)
+
+## [1.34.2] – 2022-05-30
 
 ### Fixed
 
