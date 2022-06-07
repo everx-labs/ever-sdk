@@ -253,7 +253,7 @@ impl LinkHandler {
         let endpoint = self.state.get_query_endpoint().await?;
         let mut headers = HashMap::new();
         headers.insert("Sec-WebSocket-Protocol".into(), "graphql-ws".into());
-        for (name, value) in Endpoint::http_headers() {
+        for (name, value) in Endpoint::http_headers(self.config.access_key.as_ref()) {
             headers.insert(name, value);
         }
         let mut ws = self
@@ -409,7 +409,7 @@ impl LinkHandler {
 
     async fn check_latency(&mut self) -> Option<Phase> {
         if !self.state.has_multiple_endpoints() {
-            return None
+            return None;
         }
         let current = self.state.query_endpoint().await?;
         if self.client_env.now_ms() < current.next_latency_detection_time() {
