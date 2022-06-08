@@ -8,6 +8,10 @@ All notable changes to this project will be documented in this file.
 
 - send `accessKey` header in api requests (specified in `config.network.accessKey`)
 
+### Fixed
+
+- send headers in `info` api requests
+
 ## [1.34.2] – 2022-05-30
 
 ### Fixed

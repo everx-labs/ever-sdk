@@ -16,6 +16,7 @@ use crate::client::{core_version, ClientEnv, FetchMethod};
 use crate::error::ClientResult;
 use crate::net::{Error, NetworkConfig};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU32, AtomicU64, Ordering};
 
 const V_0_39_0: u32 = 39000;
@@ -95,11 +96,16 @@ impl Endpoint {
         query: &str,
         timeout: u32,
     ) -> ClientResult<(Value, String, Option<String>)> {
+        let mut headers = HashMap::new();
+        headers.insert("content-type".to_owned(), "application/json".to_owned());
+        for (name, value) in Self::http_headers(None) {
+            headers.insert(name, value);
+        }
         let response = client_env
             .fetch(
                 &format!("{}{}", query_url, query),
                 FetchMethod::Get,
-                None,
+                Some(headers),
                 None,
                 timeout,
             )
