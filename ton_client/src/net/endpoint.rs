@@ -16,6 +16,7 @@ use crate::client::{core_version, ClientEnv, FetchMethod};
 use crate::error::ClientResult;
 use crate::net::{Error, NetworkConfig};
 use serde_json::Value;
+use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU32, AtomicU64, Ordering};
 
 const V_0_39_0: u32 = 39000;
@@ -94,12 +95,18 @@ impl Endpoint {
         query_url: &str,
         query: &str,
         timeout: u32,
+        access_key: Option<&String>,
     ) -> ClientResult<(Value, String, Option<String>)> {
+        let mut headers = HashMap::new();
+        headers.insert("content-type".to_owned(), "application/json".to_owned());
+        for (name, value) in Self::http_headers(access_key) {
+            headers.insert(name, value);
+        }
         let response = client_env
             .fetch(
                 &format!("{}{}", query_url, query),
                 FetchMethod::Get,
-                None,
+                Some(headers),
                 None,
                 timeout,
             )
@@ -121,6 +128,7 @@ impl Endpoint {
             &address,
             QUERY_INFO_SCHEMA,
             config.query_timeout,
+            config.access_key.as_ref(),
         )
         .await?;
         let subscription_url = query_url
@@ -154,8 +162,13 @@ impl Endpoint {
             };
             let info_request_time = client_env.now_ms();
             let (info, _, _) =
-                Self::fetch_info_with_url(client_env, &self.query_url, query, config.query_timeout)
-                    .await?;
+                Self::fetch_info_with_url(
+                    client_env,
+                    &self.query_url,
+                    query,
+                    config.query_timeout,
+                    config.access_key.as_ref(),
+                ).await?;
             self.apply_server_info(client_env, config, info_request_time, &info)?;
         }
         Ok(())
