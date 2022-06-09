@@ -66,6 +66,7 @@
   * [Mnemonics and Keys](guides/crypto/mnemonics\_and\_keys.md)
 * [Queries and subscriptions](guides/queries\_and\_subscriptions/README.md)
   * [Raw Query](guides/queries\_and\_subscriptions/raw\_query.md)
+  * [Data pagination](guides/queries\_and\_subscriptions/data-pagination.md)
   * [Query Collection](guides/queries\_and\_subscriptions/query\_collection.md)
   * [Aggregate Collection](guides/queries\_and\_subscriptions/aggregate\_collection.md)
   * [Batch Query](guides/queries\_and\_subscriptions/batch\_query.md)
