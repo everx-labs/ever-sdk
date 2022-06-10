@@ -171,8 +171,8 @@ fn build_contract_info(
     info.block_lt = block_lt;
     info.trans_lt = tr_lt;
     info.unix_time = block_unixtime;
-    info.balance_remaining_grams = balance.grams.as_u128();
-    info.balance_remaining_other = balance.other_as_hashmap();
+    info.balance.grams = balance.grams.as_u128().into();
+    info.balance.other = balance.other_as_hashmap().into();
     if let Some(data) = config_params.config_params.data() {
         info.config_params = Some(data.clone());
     }
