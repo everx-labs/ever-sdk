@@ -167,7 +167,7 @@ lazy_static! {
         "value",
         "value_other.value",
     ]).collect();
-    
+
     static ref BLOCKS_UNIX_TIME_FIELDS: HashSet<&'static str> = IntoIterator::into_iter([
         "gen_utime",
         "master.config.p18.utime_since",

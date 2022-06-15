@@ -18,7 +18,10 @@ use crate::abi::{
     encode_account::{ParamsOfEncodeAccount, StateInitSource},
     Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
-use crate::boc::{internal::{deserialize_object_from_base64, serialize_cell_to_base64}, BocCacheType};
+use crate::boc::{
+    internal::{deserialize_object_from_base64, serialize_cell_to_base64},
+    BocCacheType,
+};
 use crate::error::ClientResult;
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
@@ -949,4 +952,87 @@ async fn test_my_code() {
         .unwrap();
 
     println!("{:?}", get_my_code);
+}
+
+#[tokio::test(core_threads = 2)]
+async fn test_run_executor_fees() {
+    let client = TestClient::new();
+    let (abi, tvc) = TestClient::package("Events", None);
+
+    let keys = client.generate_sign_keys();
+
+    let signer = Signer::Keys { keys: keys.clone() };
+    let deploy_message: ResultOfEncodeMessage = client
+        .request_async(
+            "abi.encode_message",
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                call_set: Some(CallSet {
+                    function_name: "constructor".into(),
+                    ..Default::default()
+                }),
+                deploy_set: Some(DeploySet {
+                    tvc: tvc.clone(),
+                    ..Default::default()
+                }),
+                signer: signer.clone(),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    let deployed: ResultOfRunExecutor = client
+        .request_async(
+            "tvm.run_executor",
+            ParamsOfRunExecutor {
+                message: deploy_message.message.clone(),
+                account: AccountForExecutor::Uninit,
+                return_updated_account: Some(true),
+                abi: Some(abi.clone()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    let return_value_message: ResultOfEncodeMessage = client
+        .request_async(
+            "abi.encode_message",
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                address: Some(deploy_message.address.clone()),
+                call_set: Some(CallSet {
+                    function_name: "returnValue".into(),
+                    input: Some(json!({
+                        "id": "0x1"
+                    })),
+                    ..Default::default()
+                }),
+                signer: signer.clone(),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    let return_value: ResultOfRunExecutor = client
+        .request_async(
+            "tvm.run_executor",
+            ParamsOfRunExecutor {
+                message: return_value_message.message.clone(),
+                account: AccountForExecutor::Account {
+                    boc: deployed.account.clone(),
+                    unlimited_balance: Some(true),
+                },
+                abi: Some(abi.clone()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(2354000, return_value.fees.ext_in_msg_fee);
+    assert_eq!(1166500, return_value.fees.account_fees/10);
+    assert_eq!(2000000, return_value.fees.total_fwd_fees);
 }

@@ -21,22 +21,35 @@ The steps you need to complete to estimate fees of deploy and run:
 
 Here is the structure of fees object.
 
-Basically here you need only 3 fields:
-
-* `total_account_fees` - in fact, this name is misleading. it is actually total validator fees collected from the transaction. But for backward compatibility we do not rename it. It includes `storage_fee`, `in_msg_fwd_fee`, `gas_fee`, and other fees that are being delivered to the validators of this block and not visible here (like fees for external message, `action_fees`, etc - but we will add them in future).
-* `total_output` - sum of all values of internal messages being sent.
-* `out_msgs_fwd_fee` - sum of all fees, that will be collected by the validators of the destination shard. In originating transaction, they are just charged from the account balance or from messages' values (during message creation - depending on the contract logic), and are not included in `total_account_fees` for the current block validators.
-
-So we can sum it up in one formula:
+* `in_msg_fwd_fee`: _bigint_ – Deprecated.\
+  Left for backward compatibility. Does not participate in account transaction fees calculation.
+* `storage_fee`: _bigint_ – Fee for account storage
+* `gas_fee`: _bigint_ – Fee for processing
+* `out_msgs_fwd_fee`: _bigint_ – Deprecated.\
+  Contains the same data as total\_fwd\_fees field. Deprecated because of its confusing name, that is not the same with GraphQL API Transaction type's field.
+* `total_account_fees`: _bigint_ – Deprecated.\
+  This is the field that is named as `total_fees` in GraphQL API Transaction type. `total_account_fees` name is misleading, because it does not mean account fees, instead it means\
+  validators total fees received for the transaction execution. It does not include some forward fees that account\
+  actually pays now, but validators will receive later during value delivery to another account (not even in the receiving\
+  transaction).\
+  Because of all of this, this field is not interesting for those who wants to understand\
+  the real account fees, this is why it is deprecated and left for backward compatibility.
+* `total_output`: _bigint_ – Deprecated because it means total value sent in the transaction, which does not relate to any fees.
+* `ext_in_msg_fee`: _bigint_ – Fee for inbound external message import.
+* `total_fwd_fees`: _bigint_ – Total fees the account pays for message forwarding
+* `account_fees`: _bigint_ – Total account fees for the transaction execution. Compounds of storage\_fee + gas\_fee + ext\_in\_msg\_fee + total\_fwd\_fees
 
 ```graphql
-{
-  "in_msg_fwd_fee": 42881000,
-  "storage_fee": 1,
-  "gas_fee": 11813000,
-  "out_msgs_fwd_fee": 0,
-  "total_account_fees": 54694001,
-  "total_output": 0
+type TransactionFees = {
+    in_msg_fwd_fee: bigint,
+    storage_fee: bigint,
+    gas_fee: bigint,
+    out_msgs_fwd_fee: bigint,
+    total_account_fees: bigint,
+    total_output: bigint,
+    ext_in_msg_fee: bigint,
+    total_fwd_fees: bigint,
+    account_fees: bigint
 }
 ```
 

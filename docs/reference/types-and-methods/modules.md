@@ -17,6 +17,8 @@ Where:
 
 [version](mod\_client.md#version) – Returns Core Library version
 
+[config](mod\_client.md#config) – Returns Core Library API reference
+
 [build_info](mod\_client.md#build_info) – Returns detailed information about this build.
 
 [resolve_app_request](mod\_client.md#resolve_app_request) – Resolves application request processing result

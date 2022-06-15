@@ -61,7 +61,7 @@ fn deserialize_cache_max_size<'de, D: Deserializer<'de>>(deserializer: D) -> Res
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_cache_max_size()))
 }
 
-#[derive(Deserialize, Debug, Clone, ApiType)]
+#[derive(Deserialize, Serialize, Debug, Clone, ApiType)]
 pub struct BocConfig {
     /// Maximum BOC cache size in kilobytes. Default is 10 MB
     #[serde(

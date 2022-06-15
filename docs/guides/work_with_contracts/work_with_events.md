@@ -14,9 +14,7 @@ How to work with contract events
 
 When contract emits an event, you can fetch it from blockchain or you can subscribe to it.
 
-Events in blockchain are external outbound messages. In GraphQL API their `msg_type` is 2:
-
-![../../../.gitbook/assets/scr1.png](../../../.gitbook/assets/scr1.png)
+Events in blockchain are external outbound messages. In GraphQL API their `msg_type` is 2.
 
 ## Query/subscribe to events
 

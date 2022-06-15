@@ -152,3 +152,30 @@ pub(crate) fn call_tvm_msg(
     msgs.reverse();
     Ok(msgs)
 }
+
+fn build_contract_info(
+    config_params: &ConfigParams,
+    address: &MsgAddressInt,
+    balance: &CurrencyCollection,
+    block_unixtime: u32,
+    block_lt: u64,
+    tr_lt: u64,
+    code: Cell,
+    init_code_hash: Option<&UInt256>,
+) -> ton_vm::SmartContractInfo {
+    let mut info =
+        ton_vm::SmartContractInfo::with_myself(address.serialize().unwrap_or_default().into());
+    *info.block_lt_mut() = block_lt;
+    *info.trans_lt_mut() = tr_lt;
+    *info.unix_time_mut() = block_unixtime;
+    *info.balance_remaining_grams_mut() = balance.grams.as_u128();
+    *info.balance_remaining_other_mut() = balance.other_as_hashmap();
+    if let Some(data) = config_params.config_params.data() {
+        info.set_config_params(data.clone());
+    }
+    if let Some(hash) = init_code_hash {
+        info.set_init_code_hash(hash.clone());
+    }
+    info.set_mycode(code);
+    info
+}

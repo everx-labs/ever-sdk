@@ -88,7 +88,7 @@ impl TryFrom<MsgAddressExt> for Metadata {
     }
 }
 
-#[cfg(not(feature = "wasm"))]
+#[cfg(not(feature = "wasm-base"))]
 pub fn prepare_ext_in_message(
     msg: &Message,
     now_ms: u64,

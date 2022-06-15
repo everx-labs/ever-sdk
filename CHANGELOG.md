@@ -2,6 +2,43 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.34.2] – 2022-05-30
+### Fixed
+- build process
+
+## [1.34.1] – 2022-05-26
+
+### New
+- supported removing Copy interface from UInt256
+- supported changed interface of `ton_types::Cell`
+
+## [1.34.0] – 2022-05-18
+
+### New
+
+- `client.config` function that returns the current client config
+- `run_executor().fees` is extended with these fields:  
+  
+  - `ext_in_msg_fee` - fee for processing external inbound message  
+  - `total_fwd_fees` - total fees of action phase  
+  - `account_fees`  - total fees the account pays for the transaction  
+
+- `main` and `dev` endpoints aliases for Evernode Cloud Mainnet and Devnet endpoints  
+
+### Improved
+
+- Added documentation for `TransactionFees` type (`run_executor().fees`).
+- Documentation now includes `enum` types descriptions. 
+  To achieve it we updated binding-gen: enum of types now produces its own type for each enum variant.
+
+## [1.33.1] – 2022-05-10
+
+### Fixed
+
+- Websocket errors weren't treated as a network errors.
+  This is why all the processing functions that worked via wss protocol failed on these errors without retries. Now retries are performed.
+- SDK tried to rebalance even if only a single endpoint was specified. Now in case of a single endpoint, no rebalancing occurs.
+
 ## [1.33.0] – 2022-05-02
 
 ### New 
@@ -11,7 +48,6 @@ All notable changes to this project will be documented in this file.
 - supported internal changes in node repos
 - supported removing Copy interface from UInt256
 - UNSTABLE. `first_remp_status_timeout` and `next_remp_status_timeout` parameters in network config
-- supported changed interface of `ton_types::Cell`
 
 ## [1.32.0] – 2022-03-22
 
