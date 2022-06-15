@@ -4,7 +4,9 @@ use super::{BrowserCallbacks, DebotActivity, Spending, TonClient};
 use crate::abi::Signer;
 use crate::boc::internal::{deserialize_object_from_base64, serialize_object_to_base64};
 use crate::boc::{get_boc_hash, parse_message, ParamsOfParse, ParamsOfGetBocHash};
-use crate::crypto::{KeyPair, SigningBoxHandle, get_signing_box};
+#[cfg(not(feature = "wasm"))]
+use crate::crypto::{KeyPair, get_signing_box};
+use crate::crypto::SigningBoxHandle;
 use crate::encoding::decode_abi_number;
 use crate::error::{ClientError, ClientResult};
 use crate::processing::{
@@ -15,7 +17,9 @@ use crate::tvm::{run_executor, run_tvm, AccountForExecutor, ParamsOfRunExecutor,
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::sync::Arc;
-use ton_block::{Message, MsgAddressExt, MsgAddressInt};
+#[cfg(not(feature = "wasm"))]
+use ton_block::MsgAddressInt;
+use ton_block::{Message, MsgAddressExt};
 use ton_types::{BuilderData, IBitstring, SliceData};
 use crate::net::{query_transaction_tree, ParamsOfQueryTransactionTree};
 

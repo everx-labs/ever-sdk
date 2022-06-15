@@ -323,10 +323,12 @@ fn reduce_lines(lines: Vec<String>) -> Vec<String> {
         }
         reduced.push(line);
     }
-    if min_leading_spaces.is_some() && min_leading_spaces.unwrap() > 0 {
-        for line in &mut reduced {
-            if !line.is_empty() {
-                *line = line[min_leading_spaces.unwrap()..].into();
+    if let Some(min_leading_spaces) = min_leading_spaces {
+        if min_leading_spaces > 0 {
+            for line in &mut reduced {
+                if !line.is_empty() {
+                    *line = line[min_leading_spaces..].into();
+                }
             }
         }
     }
@@ -355,8 +357,8 @@ fn get_doc(element_summary: String, element_description: String) -> (String, Str
             if let Some(dot_pos) = line.find(". ").or(line.find(".\n")) {
                 summary.push_str(&line[0..(dot_pos + 1)]);
                 summary_complete = true;
-                description.push_str(&line[(dot_pos + 1)..].trim_start());
-                description.push_str(" ");
+                description.push_str(line[(dot_pos + 1)..].trim_start());
+                description.push(' ');
             } else {
                 summary.push_str(line);
             }
@@ -370,13 +372,13 @@ fn get_doc(element_summary: String, element_description: String) -> (String, Str
 }
 
 
-pub(crate) fn doc_from(attrs: &Vec<Attribute>) -> (Option<String>, Option<String>) {
+pub(crate) fn doc_from(attrs: &[Attribute]) -> (Option<String>, Option<String>) {
     let mut summary = String::new();
     let mut description = String::new();
 
     fn try_add(doc: &mut String, s: &str) {
         if !doc.is_empty() {
-            doc.push_str("\n");
+            doc.push('\n');
         }
         doc.push_str(s);
     }
@@ -415,21 +417,21 @@ impl DocAttr {
     fn from(attr: &Attribute) -> DocAttr {
         match attr.parse_meta() {
             Ok(Meta::NameValue(ref meta)) => {
-                return get_value_of("doc", meta)
-                    .map(|x| DocAttr::Doc(x))
-                    .unwrap_or(DocAttr::None);
+                if let Some(x) = get_value_of("doc", meta) {
+                    return DocAttr::Doc(x)
+                }
             }
             Ok(Meta::List(ref list)) => {
                 if path_is(&list.path, "doc") {
                     if let Some(NestedMeta::Meta(Meta::NameValue(meta))) = list.nested.first() {
-                        return get_value_of("summary", &meta)
-                            .map(|x| DocAttr::Summary(x))
-                            .unwrap_or(DocAttr::None);
+                        if let Some(x) = get_value_of("summary", &meta) {
+                            return DocAttr::Summary(x)
+                        }
                     }
                 }
             }
-            _ => (),
-        };
+            _ => ()
+        }
         DocAttr::None
     }
 }
@@ -501,7 +503,7 @@ fn unqualified_type_name(qualified_name: String) -> String {
 
 pub(crate) fn path_is(path: &Path, expected: &str) -> bool {
     if let Some(ident) = path.get_ident() {
-        ident.to_string() == expected
+        *ident == expected
     } else {
         false
     }

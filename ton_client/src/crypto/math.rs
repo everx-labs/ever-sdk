@@ -155,9 +155,7 @@ pub fn factorize(
         let mut p1 = g;
         let mut p2 = composite / g;
         if p1 > p2 {
-            let tmp = p1;
-            p1 = p2;
-            p2 = tmp;
+            std::mem::swap(&mut p1, &mut p2);
         }
         Ok(ResultOfFactorize {
             factors: [format!("{:X}", p1), format!("{:X}", p2)],

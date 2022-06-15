@@ -108,7 +108,7 @@ pub mod opt_cell {
         S: serde::Serializer,
     {
         if let Some(cell) = value {
-            let str_value = base64::encode(&ton_types::serialize_toc(&cell).map_err(|err| {
+            let str_value = base64::encode(&ton_types::serialize_toc(cell).map_err(|err| {
                 serde::ser::Error::custom(format!("Cannot serialize BOC: {}", err))
             })?);
             serializer.serialize_some(&str_value)

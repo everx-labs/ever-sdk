@@ -41,5 +41,5 @@ pub fn include_build_info(_input: TokenStream) -> TokenStream {
         Err(_e) => return quote!("").into(),
         Ok(content) => content,
     };
-    return quote!(#content).into();
+    quote!(#content).into()
 }

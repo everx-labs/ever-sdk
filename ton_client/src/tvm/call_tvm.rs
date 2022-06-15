@@ -17,11 +17,11 @@ use crate::error::ClientResult;
 use crate::tvm::Error;
 use std::sync::Arc;
 use ton_block::{
-    Account, CommonMsgInfo, ConfigParams, CurrencyCollection, Deserializable, GlobalCapabilities,
-    Message, MsgAddressInt, OutAction, OutActions, Serializable,
+    Account, CommonMsgInfo, Deserializable,
+    Message, OutAction, OutActions, Serializable,
 };
 use ton_types::dictionary::HashmapType;
-use ton_types::{Cell, SliceData, UInt256};
+use ton_types::SliceData;
 use ton_vm::executor::gas::gas_state::Gas;
 use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
 
@@ -46,29 +46,27 @@ pub(crate) fn call_tvm(
         .put(4, &mut StackItem::Cell(data))
         .map_err(|err| Error::internal_error(format!("can not put data to registers: {}", err)))?;
 
-    let sci = build_contract_info(
-        options.blockchain_config.raw_config(),
-        addr,
-        balance,
-        options.block_time,
-        options.block_lt,
-        options.transaction_lt,
-        code.clone(),
-        account.init_code_hash(),
-    );
+    let config_params = options.blockchain_config.raw_config();
+    let smci = ton_vm::SmartContractInfo {
+        capabilities: config_params.capabilities(),
+        myself: addr.serialize().unwrap_or_default().into(),
+        block_lt: options.block_lt,
+        trans_lt: options.transaction_lt,
+        unix_time: options.block_time,
+        balance: balance.clone(),
+        config_params: config_params.config_params.data().cloned(),
+        init_code_hash: account.init_code_hash().cloned().unwrap_or_default(),
+        mycode: code.clone(),
+        ..Default::default()
+    };
     ctrls
-        .put(7, &mut sci.into_temp_data())
-        .map_err(|err| Error::internal_error(format!("can not put SCI to registers: {}", err)))?;
+        .put(7, &mut smci.into_temp_data_item())
+        .map_err(|err| Error::internal_error(format!("can not put smartcontract info to registers: {}", err)))?;
 
     let gas_limit = 1_000_000_000;
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
-    let mut engine = ton_vm::executor::Engine::with_capabilities(
-        // TODO: use specific blockchain configs when they will be available 
-        // TODO: for now use maximum available capabilities 
-        // options.blockchain_config.capabilites()
-        (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapInitCodeHash as u64)
-    ).setup(
+    let mut engine = ton_vm::executor::Engine::with_capabilities(config_params.capabilities()).setup(
         SliceData::from(code),
         Some(ctrls),
         Some(stack),
@@ -153,31 +151,4 @@ pub(crate) fn call_tvm_msg(
 
     msgs.reverse();
     Ok(msgs)
-}
-
-fn build_contract_info(
-    config_params: &ConfigParams,
-    address: &MsgAddressInt,
-    balance: &CurrencyCollection,
-    block_unixtime: u32,
-    block_lt: u64,
-    tr_lt: u64,
-    code: Cell,
-    init_code_hash: Option<&UInt256>,
-) -> ton_vm::SmartContractInfo {
-    let mut info =
-        ton_vm::SmartContractInfo::with_myself(address.serialize().unwrap_or_default().into());
-    *info.block_lt_mut() = block_lt;
-    *info.trans_lt_mut() = tr_lt;
-    *info.unix_time_mut() = block_unixtime;
-    *info.balance_remaining_grams_mut() = balance.grams.as_u128();
-    *info.balance_remaining_other_mut() = balance.other_as_hashmap();
-    if let Some(data) = config_params.config_params.data() {
-        info.set_config_params(data.clone());
-    }
-    if let Some(hash) = init_code_hash {
-        info.set_init_code_hash(hash.clone());
-    }
-    info.set_mycode(code);
-    info
 }

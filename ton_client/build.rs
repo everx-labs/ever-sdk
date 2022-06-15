@@ -75,11 +75,11 @@ impl BuildInfo {
                 let name = x["name"].as_str().unwrap().to_string();
                 let version = x["version"].as_str().unwrap().to_string();
                 if build_number.is_empty() && name == "ton_client" {
-                    build_number = version.split(".").map(|x| format!("{:0>3}", x)).collect();
+                    build_number = version.split('.').map(|x| format!("{:0>3}", x)).collect();
                 }
                 let source = x["source"].as_str().unwrap_or("");
                 let git_commit = if !source.is_empty() {
-                    source.split("#").last().unwrap_or("").to_string()
+                    source.split('#').last().map_or_else(String::new, String::from)
                 } else {
                     git_commit.clone()
                 };
@@ -91,7 +91,7 @@ impl BuildInfo {
             })
             .collect();
         Ok(Self {
-            build_number: u32::from_str_radix(&build_number, 10)
+            build_number: build_number.parse()
                 .expect(&format!("Invalid build number [{}]", build_number)),
             dependencies,
         })

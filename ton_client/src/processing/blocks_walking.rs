@@ -112,19 +112,18 @@ pub(crate) async fn find_last_shard_block(
                     limit: Some(1),
                 }, endpoint)
                 .await?;
-            blocks[0]["id"]
-                .as_str()
-                .map(|val| val.to_owned().into())
-                .ok_or(Error::block_not_found(
+            match blocks[0]["id"].as_str() {
+                Some(val) => Ok(val.to_string().into()),
+                None => Err(Error::block_not_found(
                     "No starting Evernode SE block found".to_owned(),
                 ))
+            }
         } else {
-            let shards =
-                blocks[0]["master"]["shard_hashes"]
-                    .as_array()
-                    .ok_or(Error::invalid_data(
-                        "No `shard_hashes` field in masterchain block",
-                    ))?;
+            let shards = blocks[0]["master"]["shard_hashes"]
+                .as_array()
+                .ok_or(Error::invalid_data(
+                    "No `shard_hashes` field in masterchain block",
+                ))?;
 
             let shard_block =
                 ton_sdk::Contract::find_matching_shard(shards, address).map_err(|err| {
