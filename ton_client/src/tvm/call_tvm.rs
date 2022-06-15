@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2021 TON Labs LTD.
+ * Copyright 2018-2022 TON Labs LTD.
  *
  * Licensed under the SOFTWARE EVALUATION License (the "License"); you may not use
  * this file except in compliance with the License.
@@ -15,25 +15,25 @@
 use super::types::ResolvedExecutionOptions;
 use crate::error::ClientResult;
 use crate::tvm::Error;
-use std::sync::Arc;
 use ton_block::{
-    Account, CommonMsgInfo, Deserializable,
-    Message, OutAction, OutActions, Serializable,
+    Account, CommonMsgInfo, Deserializable, Message, OutAction, OutActions, Serializable,
 };
-use ton_types::dictionary::HashmapType;
-use ton_types::SliceData;
-use ton_vm::executor::gas::gas_state::Gas;
-use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
+use ton_types::HashmapType;
+use ton_vm::{
+    executor::{gas::gas_state::Gas, Engine},
+    stack::{savelist::SaveList, Stack, StackItem},
+    SmartContractInfo,
+};
 
 pub(crate) fn call_tvm(
     account: &mut Account,
     options: ResolvedExecutionOptions,
     stack: Stack,
-) -> ClientResult<ton_vm::executor::Engine> {
+) -> ClientResult<Engine> {
     let code = account.get_code().unwrap_or_default();
     let data = account
         .get_data()
-        .ok_or_else(|| Error::invalid_account_boc("Account has no code"))?;
+        .ok_or_else(|| Error::invalid_account_boc("Account has no data"))?;
     let addr = account
         .get_addr()
         .ok_or_else(|| Error::invalid_account_boc("Account has no address"))?;
@@ -43,11 +43,11 @@ pub(crate) fn call_tvm(
 
     let mut ctrls = SaveList::new();
     ctrls
-        .put(4, &mut StackItem::Cell(data))
-        .map_err(|err| Error::internal_error(format!("can not put data to registers: {}", err)))?;
+        .put(4, &mut StackItem::cell(data))
+        .map_err(|err| Error::internal_error(format!("can not put account data to c4: {}", err)))?;
 
     let config_params = options.blockchain_config.raw_config();
-    let smci = ton_vm::SmartContractInfo {
+    let smci = SmartContractInfo {
         capabilities: config_params.capabilities(),
         myself: addr.serialize().unwrap_or_default().into(),
         block_lt: options.block_lt,
@@ -61,13 +61,13 @@ pub(crate) fn call_tvm(
     };
     ctrls
         .put(7, &mut smci.into_temp_data_item())
-        .map_err(|err| Error::internal_error(format!("can not put smartcontract info to registers: {}", err)))?;
+        .map_err(|err| Error::internal_error(format!("can not put smartcontract info to c7: {}", err)))?;
 
     let gas_limit = 1_000_000_000;
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
-    let mut engine = ton_vm::executor::Engine::with_capabilities(config_params.capabilities()).setup(
-        SliceData::from(code),
+    let mut engine = Engine::with_capabilities(config_params.capabilities()).setup(
+        code.into(),
         Some(ctrls),
         Some(stack),
         Some(gas),
@@ -95,9 +95,9 @@ pub(crate) fn call_tvm(
                 true,
             ))
         }
-        Ok(_) => match engine.get_committed_state().get_root() {
-            StackItem::Cell(data) => {
-                account.set_data(data);
+        Ok(_) => match engine.get_committed_state().get_root().as_cell() {
+            Ok(data) => {
+                account.set_data(data.clone());
                 Ok(engine)
             }
             _ => Err(Error::internal_error("invalid committed state")),
@@ -117,15 +117,15 @@ pub(crate) fn call_tvm_msg(
     let mut stack = Stack::new();
     let balance = account.balance().map_or(0, |cc| cc.grams.as_u128());
     let function_selector = match msg.header() {
-        CommonMsgInfo::IntMsgInfo(_) => ton_vm::int!(0),
-        CommonMsgInfo::ExtInMsgInfo(_) => ton_vm::int!(-1),
+        CommonMsgInfo::IntMsgInfo(_) => StackItem::int(0),
+        CommonMsgInfo::ExtInMsgInfo(_) => StackItem::int(-1),
         CommonMsgInfo::ExtOutMsgInfo(_) => return Err(Error::invalid_message_type()),
     };
     stack
-        .push(ton_vm::int!(balance)) // token balance of contract
-        .push(ton_vm::int!(0)) // token balance of msg
-        .push(StackItem::Cell(msg_cell.into())) // message
-        .push(StackItem::Slice(msg.body().unwrap_or_default())) // message body
+        .push(StackItem::int(balance)) // token balance of contract
+        .push(StackItem::int(0)) // token balance of msg
+        .push(StackItem::cell(msg_cell.into())) // message
+        .push(StackItem::slice(msg.body().unwrap_or_default())) // message body
         .push(function_selector); // function selector
 
     let engine = call_tvm(account, options, stack)?;
@@ -151,31 +151,4 @@ pub(crate) fn call_tvm_msg(
 
     msgs.reverse();
     Ok(msgs)
-}
-
-fn build_contract_info(
-    config_params: &ConfigParams,
-    address: &MsgAddressInt,
-    balance: &CurrencyCollection,
-    block_unixtime: u32,
-    block_lt: u64,
-    tr_lt: u64,
-    code: Cell,
-    init_code_hash: Option<&UInt256>,
-) -> ton_vm::SmartContractInfo {
-    let mut info =
-        ton_vm::SmartContractInfo::with_myself(address.serialize().unwrap_or_default().into());
-    *info.block_lt_mut() = block_lt;
-    *info.trans_lt_mut() = tr_lt;
-    *info.unix_time_mut() = block_unixtime;
-    *info.balance_remaining_grams_mut() = balance.grams.as_u128();
-    *info.balance_remaining_other_mut() = balance.other_as_hashmap();
-    if let Some(data) = config_params.config_params.data() {
-        info.set_config_params(data.clone());
-    }
-    if let Some(hash) = init_code_hash {
-        info.set_init_code_hash(hash.clone());
-    }
-    info.set_mycode(code);
-    info
 }
