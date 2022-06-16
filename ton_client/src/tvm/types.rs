@@ -13,14 +13,17 @@
  */
 
 use super::Error;
-use crate::{boc::{
-    blockchain_config::{extract_config_from_block, extract_config_from_zerostate},
-    internal::{deserialize_object_from_base64, deserialize_object_from_boc},
-}, net::ServerLink};
-use crate::net::ParamsOfQueryCollection;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
+use crate::net::ParamsOfQueryCollection;
 use crate::net::{OrderBy, SortDirection};
+use crate::{
+    boc::{
+        blockchain_config::{extract_config_from_block, extract_config_from_zerostate},
+        internal::{deserialize_object_from_base64, deserialize_object_from_boc},
+    },
+    net::ServerLink,
+};
 use std::sync::Arc;
 use ton_block::Deserializable;
 use ton_executor::BlockchainConfig;
@@ -35,6 +38,9 @@ pub struct ExecutionOptions {
     pub block_lt: Option<u64>,
     /// transaction logical time
     pub transaction_lt: Option<u64>,
+    /// Overrides standard TVM behaviour.
+    /// If set to `true` then CHKSIG always will return `true`.
+    pub chksig_always_succeed: Option<bool>,
 }
 
 pub(crate) struct ResolvedExecutionOptions {
@@ -42,9 +48,13 @@ pub(crate) struct ResolvedExecutionOptions {
     pub block_time: u32,
     pub block_lt: u64,
     pub transaction_lt: u64,
+    pub chksig_always_succeed: bool,
 }
 
-pub(crate) async fn blockchain_config_from_boc(context: &ClientContext, b64: &str) -> ClientResult<BlockchainConfig> {
+pub(crate) async fn blockchain_config_from_boc(
+    context: &ClientContext,
+    b64: &str,
+) -> ClientResult<BlockchainConfig> {
     let config_params = deserialize_object_from_boc(context, b64, "blockchain config").await?;
     BlockchainConfig::with_config(config_params.object)
         .map_err(|err| Error::can_not_read_blockchain_config(err))
@@ -57,7 +67,7 @@ impl ResolvedExecutionOptions {
     ) -> ClientResult<Self> {
         let options = options.unwrap_or_default();
 
-        let config = resolve_blockchain_config(context,options.blockchain_config).await?;
+        let config = resolve_blockchain_config(context, options.blockchain_config).await?;
 
         let block_lt = options
             .block_lt
@@ -66,12 +76,12 @@ impl ResolvedExecutionOptions {
         let block_time = options
             .block_time
             .unwrap_or_else(|| (context.env.now_ms() / 1000) as u32);
-
         Ok(Self {
             block_lt,
             block_time,
             blockchain_config: config,
             transaction_lt,
+            chksig_always_succeed: options.chksig_always_succeed.unwrap_or(false),
         })
     }
 }
@@ -81,7 +91,9 @@ pub async fn resolve_blockchain_config(
     provided_config: Option<String>,
 ) -> ClientResult<Arc<BlockchainConfig>> {
     if let Some(config) = provided_config {
-        blockchain_config_from_boc(context, &config).await.map(Arc::new)
+        blockchain_config_from_boc(context, &config)
+            .await
+            .map(Arc::new)
     } else {
         get_default_config(context).await
     }
@@ -89,12 +101,13 @@ pub async fn resolve_blockchain_config(
 
 pub(crate) fn mainnet_config() -> BlockchainConfig {
     let bytes = include_bytes!("../mainnet_config_10660619.boc");
-    BlockchainConfig::with_config(
-        ton_block::ConfigParams::construct_from_bytes(bytes).unwrap()
-    ).unwrap()
+    BlockchainConfig::with_config(ton_block::ConfigParams::construct_from_bytes(bytes).unwrap())
+        .unwrap()
 }
 
-pub(crate) async fn get_default_config(context: &Arc<ClientContext>) -> ClientResult<Arc<BlockchainConfig>> {
+pub(crate) async fn get_default_config(
+    context: &Arc<ClientContext>,
+) -> ClientResult<Arc<BlockchainConfig>> {
     if let Some(config) = &*context.blockchain_config.read().await {
         return Ok(config.clone());
     }
@@ -119,37 +132,52 @@ pub(crate) async fn get_default_config(context: &Arc<ClientContext>) -> ClientRe
 }
 
 pub(crate) async fn get_network_config(link: &ServerLink) -> ClientResult<BlockchainConfig> {
-    let key_block = link.query_collection(ParamsOfQueryCollection {
-        collection: "blocks".to_owned(),
-        filter: Some(serde_json::json!({
-            "key_block": { "eq": true },
-            "workchain_id": { "eq": -1 },
-        })),
-        order: Some(vec![OrderBy { path: "seq_no".to_owned(), direction: SortDirection::DESC }]),
-        limit: Some(1),
-        result: "boc".to_owned(),
-    }, None).await?;
+    let key_block = link
+        .query_collection(
+            ParamsOfQueryCollection {
+                collection: "blocks".to_owned(),
+                filter: Some(serde_json::json!({
+                    "key_block": { "eq": true },
+                    "workchain_id": { "eq": -1 },
+                })),
+                order: Some(vec![OrderBy {
+                    path: "seq_no".to_owned(),
+                    direction: SortDirection::DESC,
+                }]),
+                limit: Some(1),
+                result: "boc".to_owned(),
+            },
+            None,
+        )
+        .await?;
 
     let config = if let Some(block_boc) = key_block[0]["boc"].as_str() {
         let block = deserialize_object_from_base64(block_boc, "block")?;
         extract_config_from_block(block.object)?
     } else {
-        let zerostate = link.query_collection(ParamsOfQueryCollection {
-            collection: "zerostates".to_owned(),
-            filter: Some(serde_json::json!({
-                "id": { "eq": "zerostate:-1" },
-            })),
-            result: "boc".to_owned(),
-            ..Default::default()
-        }, None).await?;
+        let zerostate = link
+            .query_collection(
+                ParamsOfQueryCollection {
+                    collection: "zerostates".to_owned(),
+                    filter: Some(serde_json::json!({
+                        "id": { "eq": "zerostate:-1" },
+                    })),
+                    result: "boc".to_owned(),
+                    ..Default::default()
+                },
+                None,
+            )
+            .await?;
 
-        let boc = zerostate[0]["boc"].as_str().ok_or(
-            Error::can_not_read_blockchain_config("Can not find key block or zerostate"))?;
+        let boc = zerostate[0]["boc"]
+            .as_str()
+            .ok_or(Error::can_not_read_blockchain_config(
+                "Can not find key block or zerostate",
+            ))?;
 
         let zerostate = deserialize_object_from_base64(boc, "block")?;
         extract_config_from_zerostate(zerostate.object)?
     };
 
-    BlockchainConfig::with_config(config)
-        .map_err(|err| Error::can_not_read_blockchain_config(err))
+    BlockchainConfig::with_config(config).map_err(|err| Error::can_not_read_blockchain_config(err))
 }
