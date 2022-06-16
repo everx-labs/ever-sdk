@@ -238,20 +238,20 @@ fn append_number(
 /// Append `size` high bits from the number that is represented as a `string`.
 fn parse_integer(builder: &mut BuilderData, string: &str, size: usize) -> ClientResult<()> {
     let mut num_str = string.trim();
-    let negative = if let Some(prefix) = num_str.strip_prefix("-") {
-        num_str = prefix;
+    let negative = if let Some(stripped) = num_str.strip_prefix("-") {
+        num_str = stripped;
         true
-    } else if let Some(prefix) = num_str.strip_prefix("+") {
-        num_str = prefix;
+    } else if let Some(stripped) = num_str.strip_prefix("+") {
+        num_str = stripped;
         false
     } else {
         false
     };
-    let radix = if let Some(prefix) = num_str.strip_prefix("0x") {
-        num_str = prefix;
+    let radix = if let Some(stripped) = num_str.strip_prefix("0x") {
+        num_str = stripped;
         16
-    } else if let Some(prefix) = num_str.strip_prefix("0X") {
-        num_str = prefix;
+    } else if let Some(stripped) = num_str.strip_prefix("0X") {
+        num_str = stripped;
         16
     } else {
         10
