@@ -27,6 +27,7 @@ use crate::{
 use std::sync::Arc;
 use ton_block::Deserializable;
 use ton_executor::BlockchainConfig;
+use ton_vm::executor::BehaviorModifiers;
 
 #[derive(Serialize, Deserialize, ApiType, Clone, Default)]
 pub struct ExecutionOptions {
@@ -48,7 +49,7 @@ pub(crate) struct ResolvedExecutionOptions {
     pub block_time: u32,
     pub block_lt: u64,
     pub transaction_lt: u64,
-    pub chksig_always_succeed: bool,
+    pub behavior_modifiers: BehaviorModifiers,
 }
 
 pub(crate) async fn blockchain_config_from_boc(
@@ -76,12 +77,16 @@ impl ResolvedExecutionOptions {
         let block_time = options
             .block_time
             .unwrap_or_else(|| (context.env.now_ms() / 1000) as u32);
+        let behavior_modifiers = BehaviorModifiers {
+            chksig_always_succeed: options.chksig_always_succeed.unwrap_or(false),
+            ..Default::default()
+        };
         Ok(Self {
             block_lt,
             block_time,
             blockchain_config: config,
             transaction_lt,
-            chksig_always_succeed: options.chksig_always_succeed.unwrap_or(false),
+            behavior_modifiers,
         })
     }
 }
