@@ -46,7 +46,7 @@ pub(crate) fn call_tvm(
         .put(4, &mut StackItem::Cell(data))
         .map_err(|err| Error::internal_error(format!("can not put data to registers: {}", err)))?;
 
-    let sci = build_contract_info(
+    let mut sci = build_contract_info(
         options.blockchain_config.raw_config(),
         addr,
         balance,
@@ -56,16 +56,17 @@ pub(crate) fn call_tvm(
         code.clone(),
         account.init_code_hash(),
     );
+    sci.capabilities |= GlobalCapabilities::CapInitCodeHash as u64 | GlobalCapabilities::CapMycode as u64;
     ctrls
-        .put(7, &mut sci.into_temp_data())
+        .put(7, &mut sci.into_temp_data_item())
         .map_err(|err| Error::internal_error(format!("can not put SCI to registers: {}", err)))?;
 
     let gas_limit = 1_000_000_000;
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
     let mut engine = ton_vm::executor::Engine::with_capabilities(
-        // TODO: use specific blockchain configs when they will be available 
-        // TODO: for now use maximum available capabilities 
+        // TODO: use specific blockchain configs when they will be available
+        // TODO: for now use maximum available capabilities
         // options.blockchain_config.capabilites()
         (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapInitCodeHash as u64)
     ).setup(
@@ -167,13 +168,13 @@ fn build_contract_info(
 ) -> ton_vm::SmartContractInfo {
     let mut info =
         ton_vm::SmartContractInfo::with_myself(address.serialize().unwrap_or_default().into());
-    *info.block_lt_mut() = block_lt;
-    *info.trans_lt_mut() = tr_lt;
-    *info.unix_time_mut() = block_unixtime;
-    *info.balance_remaining_grams_mut() = balance.grams.as_u128();
-    *info.balance_remaining_other_mut() = balance.other_as_hashmap();
+    info.block_lt = block_lt;
+    info.trans_lt = tr_lt;
+    info.unix_time = block_unixtime;
+    info.balance.grams = balance.grams.as_u128().into();
+    info.balance.other = balance.other_as_hashmap().into();
     if let Some(data) = config_params.config_params.data() {
-        info.set_config_params(data.clone());
+        info.config_params = Some(data.clone());
     }
     if let Some(hash) = init_code_hash {
         info.set_init_code_hash(hash.clone());
