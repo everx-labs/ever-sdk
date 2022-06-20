@@ -90,7 +90,7 @@ Let's paginate some account transactions from the very first one:
 ```graphql
 query {
   blockchain{
-   account(address:"0:653b9a6452c7a982c6dc92b2da9eba832ade1c467699ebb3b43dca6d77b780dd", first: 50){
+   account(address:"0:653b9a6452c7a982c6dc92b2da9eba832ade1c467699ebb3b43dca6d77b780dd"){
     transactions{
       edges{
         node{
