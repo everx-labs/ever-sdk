@@ -16,7 +16,8 @@ use crate::client::{core_version, ClientEnv, FetchMethod};
 use crate::error::ClientResult;
 use crate::net::{Error, NetworkConfig};
 use serde_json::Value;
-use std::sync::atomic::{AtomicI64, AtomicU32, AtomicU64, Ordering, AtomicBool};
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU32, AtomicU64, Ordering};
 
 const V_0_39_0: u32 = 39000;
 const V_0_51_0: u32 = 51000;
@@ -45,24 +46,32 @@ impl Clone for Endpoint {
             next_latency_detection_time: AtomicU64::new(
                 self.next_latency_detection_time.load(Ordering::Relaxed),
             ),
-            remp_enabled: AtomicBool::new(self.remp_enabled.load(Ordering::Relaxed))
+            remp_enabled: AtomicBool::new(self.remp_enabled.load(Ordering::Relaxed)),
         }
     }
 }
 
 const QUERY_INFO_SCHEMA: &str = "?query=%7Binfo%7Bversion%20time%7D%7D";
 const QUERY_INFO_METRICS: &str = "?query=%7Binfo%7Bversion%20time%20latency%7D%7D";
-const QUERY_INFO_METRICS_REMP: &str = "?query=%7Binfo%7Bversion%20time%20latency%20rempEnabled%7D%7D";
+const QUERY_INFO_METRICS_REMP: &str =
+    "?query=%7Binfo%7Bversion%20time%20latency%20rempEnabled%7D%7D";
 
 const HTTP_PROTOCOL: &str = "http://";
 const HTTPS_PROTOCOL: &str = "https://";
 
 impl Endpoint {
-    pub fn http_headers() -> Vec<(String, String)> {
-        vec![
+    pub fn http_headers(access_key: Option<&String>) -> Vec<(String, String)> {
+        let mut headers = vec![
             ("tonclient-core-version".to_string(), core_version()),
-            ("X-Evernode-Expected-Account-Boc-Version".to_string(), BOC_VERSION.to_owned()),
-        ]
+            (
+                "X-Evernode-Expected-Account-Boc-Version".to_string(),
+                BOC_VERSION.to_owned(),
+            ),
+        ];
+        if let Some(access_key) = access_key {
+            headers.push(("accessKey".into(), access_key.clone()));
+        }
+        headers
     }
 
     fn expand_address(base_url: &str) -> String {
@@ -86,12 +95,18 @@ impl Endpoint {
         query_url: &str,
         query: &str,
         timeout: u32,
+        access_key: Option<&String>,
     ) -> ClientResult<(Value, String, Option<String>)> {
+        let mut headers = HashMap::new();
+        headers.insert("content-type".to_owned(), "application/json".to_owned());
+        for (name, value) in Self::http_headers(access_key) {
+            headers.insert(name, value);
+        }
         let response = client_env
             .fetch(
                 &format!("{}{}", query_url, query),
                 FetchMethod::Get,
-                None,
+                Some(headers),
                 None,
                 timeout,
             )
@@ -108,8 +123,14 @@ impl Endpoint {
     ) -> ClientResult<Self> {
         let address = Self::expand_address(address);
         let info_request_time = client_env.now_ms();
-        let (info, query_url, ip_address) =
-            Self::fetch_info_with_url(client_env, &address, QUERY_INFO_SCHEMA, config.query_timeout).await?;
+        let (info, query_url, ip_address) = Self::fetch_info_with_url(
+            client_env,
+            &address,
+            QUERY_INFO_SCHEMA,
+            config.query_timeout,
+            config.access_key.as_ref(),
+        )
+        .await?;
         let subscription_url = query_url
             .replace("https://", "wss://")
             .replace("http://", "ws://");
@@ -140,13 +161,14 @@ impl Endpoint {
                 QUERY_INFO_METRICS
             };
             let info_request_time = client_env.now_ms();
-            let (info, _, _) = Self::fetch_info_with_url(
-                client_env,
-                &self.query_url,
-                query,
-                config.query_timeout,
-            )
-            .await?;
+            let (info, _, _) =
+                Self::fetch_info_with_url(
+                    client_env,
+                    &self.query_url,
+                    query,
+                    config.query_timeout,
+                    config.access_key.as_ref(),
+                ).await?;
             self.apply_server_info(client_env, config, info_request_time, &info)?;
         }
         Ok(())
@@ -190,7 +212,10 @@ impl Endpoint {
                 );
             }
         }
-        self.remp_enabled.store(info["rempEnabled"].as_bool().unwrap_or_default(), Ordering::Relaxed);
+        self.remp_enabled.store(
+            info["rempEnabled"].as_bool().unwrap_or_default(),
+            Ordering::Relaxed,
+        );
         Ok(())
     }
 
