@@ -17,6 +17,7 @@ pub enum ErrorCode {
     InvalidFunctionId = 312,
     InvalidData = 313,
     EncodeInitialDataFailed = 314,
+    InvalidFunctionName = 315,
 }
 
 pub struct Error;
@@ -116,6 +117,13 @@ impl Error {
         error(
             ErrorCode::EncodeInitialDataFailed,
             format!("Encode initial data failed: {}", err),
+        )
+    }
+
+    pub fn invalid_function_name(func_name: &str) -> ClientError {
+        error(
+            ErrorCode::InvalidFunctionName,
+            format!("Function {} is not found in contract ABI", func_name),
         )
     }
 }

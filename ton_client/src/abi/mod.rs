@@ -20,6 +20,7 @@ pub(crate) mod decode_message;
 pub(crate) mod encode_account;
 pub(crate) mod encode_boc;
 pub(crate) mod encode_message;
+pub(crate) mod function_id;
 pub(crate) mod init_data;
 
 mod errors;
@@ -49,6 +50,7 @@ pub use encode_message::{
     ResultOfEncodeInternalMessage, ResultOfEncodeMessage, ResultOfEncodeMessageBody,
 };
 pub use errors::{Error, ErrorCode};
+pub use function_id::{calc_function_id, ParamsOfCalcFunctionId, ResultOfCalcFunctionId};
 pub use init_data::{
     encode_initial_data, decode_initial_data, update_initial_data,
     ParamsOfEncodeInitialData, ParamsOfDecodeInitialData, ParamsOfUpdateInitialData,
