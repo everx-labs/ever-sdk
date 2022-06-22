@@ -1119,3 +1119,31 @@ fn test_encode_boc() {
 
     assert_eq!(boc, "te6ccgEBAQEANAAAY5/mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmAAAAAAAAAAAAAAAAACWtD4");
 }
+
+#[test]
+fn test_calc_function_id() {
+    let client = TestClient::new();
+    let abi = TestClient::abi("GiverV2", Some(2));
+
+    let result: ResultOfCalcFunctionId = client.request(
+        "abi.calc_function_id",
+        ParamsOfCalcFunctionId {
+            abi: abi.clone(),
+            function_name: "getMessages".to_owned(),
+            ..Default::default()
+        },
+    ).unwrap();
+
+    assert_eq!(result.function_id, 0x7744C7E2);
+
+    let result: ResultOfCalcFunctionId = client.request(
+        "abi.calc_function_id",
+        ParamsOfCalcFunctionId {
+            abi: abi.clone(),
+            function_name: "getMessages".to_owned(),
+            output: Some(true),
+        },
+    ).unwrap();
+
+    assert_eq!(result.function_id, 0xF744C7E2);
+}
