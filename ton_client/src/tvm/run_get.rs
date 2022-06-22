@@ -17,6 +17,7 @@ use super::stack;
 use super::types::{ExecutionOptions, ResolvedExecutionOptions};
 use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
+use crate::crypto::internal::ton_crc16;
 use crate::error::ClientResult;
 use crate::tvm::Error;
 use std::sync::Arc;
@@ -66,9 +67,8 @@ pub async fn run_get(
         return Err(Error::invalid_account_boc("Account is None"))
     }
 
-    let mut crc = crc_any::CRC::crc16xmodem();
-    crc.digest(params.function_name.as_bytes());
-    let function_id = ((crc.get_crc() as u32) & 0xffff) | 0x10000;
+    let crc = ton_crc16(params.function_name.as_bytes());
+    let function_id = ((crc as u32) & 0xffff) | 0x10000;
     let mut stack_in = Stack::new();
     if let Some(input) = params.input {
         if let Value::Array(array) = input {
