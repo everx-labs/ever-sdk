@@ -57,8 +57,7 @@ pub(crate) fn call_tvm(
         code.clone(),
         account.init_code_hash(),
     );
-    sci.capabilities |=
-        GlobalCapabilities::CapInitCodeHash as u64 | GlobalCapabilities::CapMycode as u64;
+    sci.capabilities |= GlobalCapabilities::CapInitCodeHash as u64 | GlobalCapabilities::CapMycode as u64;
     ctrls
         .put(7, &mut sci.into_temp_data_item())
         .map_err(|err| Error::internal_error(format!("can not put SCI to registers: {}", err)))?;
@@ -70,9 +69,13 @@ pub(crate) fn call_tvm(
         // TODO: use specific blockchain configs when they will be available
         // TODO: for now use maximum available capabilities
         // options.blockchain_config.capabilites()
-        (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapInitCodeHash as u64),
-    )
-    .setup(SliceData::from(code), Some(ctrls), Some(stack), Some(gas));
+        (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapInitCodeHash as u64)
+    ).setup(
+        SliceData::from(code),
+        Some(ctrls),
+        Some(stack),
+        Some(gas),
+    );
 
     engine.modify_behavior(options.behavior_modifiers);
 
