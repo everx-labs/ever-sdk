@@ -261,7 +261,7 @@ pub async fn run_executor_internal(
     let contract_info = move || async move {
         let account = deserialize_object_from_cell::<Account>(account_copy.clone(), "account")?;
         if let (Some(addr), Some(balance)) = (account.get_addr(), account.balance()) {
-            Ok((addr.clone(), balance.grams.as_u64()))
+            Ok((addr.clone(), balance.grams.as_u128() as u64))
         } else {
             Ok((msg_address.clone(), 0))
         }
@@ -391,6 +391,7 @@ where
         block_unixtime: options.block_time,
         block_lt: options.block_lt,
         last_tr_lt: Arc::new(AtomicU64::new(options.transaction_lt)),
+        behavior_modifiers: Some(options.behavior_modifiers),
         ..ExecuteParams::default()
     };
     let transaction = match executor.execute_with_libs_and_params(Some(&msg), &mut account_root, params) {

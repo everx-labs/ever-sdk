@@ -14,6 +14,7 @@
 #![allow(dead_code)]
 
 use crate::client;
+use crate::crypto::internal::ton_crc16;
 use crate::error::ClientResult;
 use std::str::FromStr;
 use num_bigint::BigInt;
@@ -74,10 +75,9 @@ pub(crate) fn decode_std_base64(data: &str) -> ClientResult<MsgAddressInt> {
     let vec = base64::decode(&data).map_err(|err| client::Error::invalid_address(err, &data))?;
 
     // check CRC and address tag
-    let mut crc = crc_any::CRC::crc16xmodem();
-    crc.digest(&vec[..34]);
+    let crc = ton_crc16(&vec[..34]).to_be_bytes();
 
-    if crc.get_crc_vec_be() != &vec[34..36] || vec[0] & 0x3f != 0x11 {
+    if crc != vec[34..36] || vec[0] & 0x3f != 0x11 {
         return Err(client::Error::invalid_address("CRC mismatch", &data).into());
     };
 
@@ -100,9 +100,8 @@ fn encode_base64(
         vec.extend_from_slice(&address.workchain_id.to_be_bytes());
         vec.append(&mut address.address.get_bytestring(0));
 
-        let mut crc = crc_any::CRC::crc16xmodem();
-        crc.digest(&vec);
-        vec.extend_from_slice(&crc.get_crc_vec_be());
+        let crc = ton_crc16(&vec);
+        vec.extend_from_slice(&crc.to_be_bytes());
 
         let result = base64::encode(&vec);
 

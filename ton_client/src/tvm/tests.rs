@@ -16,7 +16,7 @@ use super::types::resolve_blockchain_config;
 use super::*;
 use crate::abi::{
     encode_account::{ParamsOfEncodeAccount, StateInitSource},
-    Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
+    Abi, CallSet, DeploySet, FunctionHeader, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::boc::{
     internal::{deserialize_object_from_base64, serialize_cell_to_base64},
@@ -960,8 +960,12 @@ async fn test_run_executor_fees() {
     let (abi, tvc) = TestClient::package("Events", None);
 
     let keys = client.generate_sign_keys();
+    let pubkey = Some(keys.public.clone());
+    let signer = Signer::Keys { keys };
+    let keys = client.generate_sign_keys();
+    let bad_signer = Signer::Keys { keys };
 
-    let signer = Signer::Keys { keys: keys.clone() };
+    // use correct signature
     let deploy_message: ResultOfEncodeMessage = client
         .request_async(
             "abi.encode_message",
@@ -1009,13 +1013,14 @@ async fn test_run_executor_fees() {
                     })),
                     ..Default::default()
                 }),
-                signer: signer.clone(),
+                signer,
                 ..Default::default()
             },
         )
         .await
         .unwrap();
 
+    // first run - with correct signature
     let return_value: ResultOfRunExecutor = client
         .request_async(
             "tvm.run_executor",
@@ -1025,6 +1030,73 @@ async fn test_run_executor_fees() {
                     boc: deployed.account.clone(),
                     unlimited_balance: Some(true),
                 },
+                abi: Some(abi.clone()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(2354000, return_value.fees.ext_in_msg_fee);
+    assert_eq!(1166500, return_value.fees.account_fees/10);
+    assert_eq!(2000000, return_value.fees.total_fwd_fees);
+
+    // use wrong signature
+    let return_value_message: ResultOfEncodeMessage = client
+        .request_async(
+            "abi.encode_message",
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                address: Some(deploy_message.address.clone()),
+                call_set: Some(CallSet {
+                    function_name: "returnValue".into(),
+                    header: Some(FunctionHeader {
+                        pubkey,
+                        ..Default::default()
+                    }),
+                    input: Some(json!({
+                        "id": "0x1"
+                    })),
+                    ..Default::default()
+                }),
+                signer: bad_signer,
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    // second run - with wrong signature
+    let _err = client
+        .request_async::<_, ResultOfRunExecutor>(
+            "tvm.run_executor",
+            ParamsOfRunExecutor {
+                message: return_value_message.message.clone(),
+                account: AccountForExecutor::Account {
+                    boc: deployed.account.clone(),
+                    unlimited_balance: Some(true),
+                },
+                abi: Some(abi.clone()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap_err();
+
+    // third run - with wrong signature and with skipped signature checking
+    let return_value: ResultOfRunExecutor = client
+        .request_async(
+            "tvm.run_executor",
+            ParamsOfRunExecutor {
+                message: return_value_message.message.clone(),
+                account: AccountForExecutor::Account {
+                    boc: deployed.account.clone(),
+                    unlimited_balance: Some(true),
+                },
+                execution_options: Some(ExecutionOptions {
+                    chksig_always_succeed: Some(true),
+                    ..Default::default()
+                }),
                 abi: Some(abi.clone()),
                 ..Default::default()
             },
