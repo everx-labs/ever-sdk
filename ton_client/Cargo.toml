@@ -74,7 +74,7 @@ tiny-bip39 = '=0.7.3'
 zstd = { default-features = false, optional = true, version = '0.8.0' }
 
 # optional for std
-reqwest = { optional = true, version = '0.11' }
+reqwest = { optional = true, version = '0.11.11' }
 tokio-tungstenite = { features = [ 'native-tls' ], optional = true, version = '0.17.1' }
 
 # optional for wasm
