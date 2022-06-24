@@ -62,13 +62,10 @@ serde_derive = '1.0.91'
 serde_json = '1.0.41'
 serde_repr = '0.1.7'
 sha2 = '0.9.5'
+tiny-bip39 = '1.0.0'
 tokio = { default-features = false, features = [ 'sync', 'fs' ], version = '1.4' }
 tokio-stream = '0.1'
 zeroize = { features = [ 'zeroize_derive' ], version = '1.3' }
-# TODO: remove fixed versioning when indexmap compilation issue is resolved
-indexmap = '=1.6.2'
-# TODO: remove fixed versioning when tiny-bip39 compilation issue is resolved
-tiny-bip39 = '=0.7.3'
 
 # optional
 zstd = { default-features = false, optional = true, version = '0.8.0' }
