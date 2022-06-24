@@ -93,7 +93,7 @@ async fn remp_enabled(client: &TestClient) -> bool {
     info.result["data"]["info"]["rempEnabled"].as_bool().unwrap_or_default()
 }
 
-#[tokio::test(core_threads = 5)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 5)]
 async fn test_wait_message() {
     TestClient::init_log();
     let client = TestClient::new();
@@ -184,7 +184,7 @@ async fn test_wait_message() {
     assert_events(&events.lock().await, remp_enabled(&client).await);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_process_message() {
     TestClient::init_log();
     let client = TestClient::new();
@@ -308,7 +308,7 @@ async fn test_process_message() {
     assert_events(&events.lock().await, remp_enabled);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_error_resolving() {
     // skip on Evernode SE since it behaves different to real node
     if TestClient::node_se() {
@@ -424,7 +424,7 @@ async fn test_error_resolving() {
     // ABI version 1 messages don't expire so previous deploy message can be processed after
     // increasing balance. Need to wait until message will be rejected by all validators
     if TestClient::abi_version() == 1 {
-        tokio::time::delay_for(tokio::time::Duration::from_secs(40)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(40)).await;
     }
 
     // run before deploy
@@ -493,7 +493,7 @@ async fn test_error_resolving() {
     }
 }
 
-#[tokio::test(core_threads = 10)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 10)]
 async fn test_retries() {
     let client = TestClient::new_with_config(json!({
         "network": {
@@ -558,7 +558,7 @@ async fn test_retries() {
     }
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_fees() {
     let client = TestClient::new();
     let (abi, tvc) = TestClient::package(GIVER_V2, Some(2));

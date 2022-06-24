@@ -190,7 +190,7 @@ pub async fn unsubscribe(
     context: std::sync::Arc<ClientContext>,
     params: ResultOfSubscribeCollection,
 ) -> ClientResult<()> {
-    if let Some(mut sender) = extract_subscription_handle(&context, &params.handle).await {
+    if let Some(sender) = extract_subscription_handle(&context, &params.handle).await {
         let _ = sender.send(SubscriptionAction::Finish).await;
     }
     Ok(())

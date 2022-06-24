@@ -154,13 +154,13 @@ impl NetworkState {
 
     async fn suspend(&self, sender: &watch::Sender<bool>) {
         if !*self.suspended.borrow() {
-            let _ = sender.broadcast(true);
+            let _ = sender.send(true);
             *self.query_endpoint.write().await = None;
         }
     }
 
     async fn resume(sender: &watch::Sender<bool>) {
-        let _ = sender.broadcast(false);
+        let _ = sender.send(false);
     }
 
     pub async fn external_suspend(&self) {
@@ -339,7 +339,9 @@ impl NetworkState {
     pub async fn get_query_endpoint(&self) -> ClientResult<Arc<Endpoint>> {
         // wait for resume
         let mut suspended = self.suspended.clone();
-        while Some(true) == suspended.recv().await {}
+        while *suspended.borrow() {
+            let _ = suspended.changed().await;
+        }
 
         if let Some(endpoint) = &*self.query_endpoint.read().await {
             return Ok(endpoint.clone());
@@ -454,6 +456,7 @@ impl ServerLink {
                 table, filter, fields,
             ))
             .await?;
+        let event_receiver = tokio_stream::wrappers::ReceiverStream::new(event_receiver);
 
         let operation_id = Arc::new(Mutex::new(0u32));
         let unsubscribe_operation_id = operation_id.clone();
@@ -496,6 +499,7 @@ impl ServerLink {
             .websocket_link
             .start_operation(GraphQLQuery::with_subscription(subscription, variables))
             .await?;
+        let event_receiver = tokio_stream::wrappers::ReceiverStream::new(event_receiver);
 
         let operation_id = Arc::new(Mutex::new(0u32));
         let unsubscribe_operation_id = operation_id.clone();

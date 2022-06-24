@@ -9,7 +9,7 @@ use crate::json_interface::utils::{
 
 use super::*;
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_utils() {
     TestClient::init_log();
     let client = TestClient::new();
@@ -74,7 +74,7 @@ async fn test_utils() {
     assert_eq!(converted.address, hex);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_calc_storage_fee() {
     let client = TestClient::new();
 
