@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `abi.calc_function_id` function
+- `tokio` library is updated to 1.* version
 
 ## [1.34.3] – 2022-06-08
 
