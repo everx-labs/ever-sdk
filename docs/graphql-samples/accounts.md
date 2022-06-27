@@ -76,8 +76,6 @@ fields:
 
 ## Pagination of account transactions
 
-<mark style="color:orange;">**Attention! Pagination with cursor functionality is new and not yet supported in Evernode-DS. But will be soon!**</mark>&#x20;
-
 Use-cases:
 
 * Collect account operations with detailed fees information

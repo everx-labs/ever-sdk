@@ -25,7 +25,9 @@
   * [Networks](reference/ever-os-api/networks.md)
   * [Web Playground](reference/ever-os-api/web\_playground.md)
   * [Schema](reference/ever-os-api/schema.md)
-  * [Deprecated: Collection Query Language](reference/ever-os-api/query\_language.md)
+  * [Blockchain](reference/ever-os-api/blockchain.md)
+  * [Info](reference/ever-os-api/info.md)
+  * [Analytics: Query Language](reference/ever-os-api/query\_language.md)
   * [Field Descriptions](reference/ever-os-api/field\_descriptions.md)
   * [Samples](reference/ever-os-api/samples.md)
 
