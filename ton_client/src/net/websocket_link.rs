@@ -26,6 +26,7 @@ use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
 use tokio::sync::mpsc::{channel, Receiver, Sender};
+use tokio_stream::wrappers::ReceiverStream;
 
 type WSSender = Pin<Box<dyn Sink<String, Error = ClientError> + Send>>;
 
@@ -123,9 +124,9 @@ enum Phase {
 
 pub(crate) struct LinkHandler {
     client_env: Arc<ClientEnv>,
-    action_receiver: Fuse<Receiver<HandlerAction>>,
+    action_receiver: Fuse<ReceiverStream<HandlerAction>>,
     internal_action_sender: Sender<HandlerAction>,
-    internal_action_receiver: Fuse<Receiver<HandlerAction>>,
+    internal_action_receiver: Fuse<ReceiverStream<HandlerAction>>,
     last_operation_id: u32,
     operations: HashMap<u32, RunningOperation>,
     keep_alive: KeepAlive,
@@ -145,7 +146,9 @@ impl LinkHandler {
         config: NetworkConfig,
     ) -> Sender<HandlerAction> {
         let (action_sender, action_receiver) = channel(10);
+        let action_receiver = ReceiverStream::new(action_receiver);
         let (internal_action_sender, internal_action_receiver) = channel(10);
+        let internal_action_receiver = ReceiverStream::new(internal_action_receiver);
         client_env.clone().spawn(Box::pin(async move {
             LinkHandler {
                 client_env,
@@ -431,7 +434,7 @@ impl LinkHandler {
 
     fn start_keep_alive_timer(&mut self, timeout: u64) {
         log::debug!("WS keep alive timer {}", timeout);
-        let mut sender = self.internal_action_sender.clone();
+        let sender = self.internal_action_sender.clone();
         self.keep_alive = KeepAlive::WaitNext { timeout };
         let env = self.client_env.clone();
         env.clone().spawn(Box::pin(async move {

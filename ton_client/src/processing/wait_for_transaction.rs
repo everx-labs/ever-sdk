@@ -80,10 +80,10 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
     let message_id = message.cell.repr_hash().as_hex_string();
 
     let (sender, reciever) = mpsc::channel(10);
-    let mut reciever = reciever.fuse();
+    let mut reciever = tokio_stream::wrappers::ReceiverStream::new(reciever).fuse();
 
     let subscription_callback = move |event: ClientResult<ResultOfSubscription>| {
-        let mut sender = sender.clone();
+        let sender = sender.clone();
         async move { 
             let _ = sender.send(event.map(|mut result| result.result["rempReceipts"].take())).await;
         }
@@ -109,7 +109,7 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
         Ok(result) => Some(result),
         Err(error) => {
             if params.send_events { callback(ProcessingEvent::RempError { error }).await; }
-            notify.notify();
+            notify.notify_one();
             None
         }
     };
@@ -127,7 +127,7 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
                         error: Error::next_remp_status_timeout()
                     }).await;
                 }
-                notify.notify(); None
+                notify.notify_one(); None
             },
             fallback = fallback_fut => Some(fallback),
             remp_message = reciever.select_next_some() => {
@@ -141,7 +141,7 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
                 ).await {
                     Err(error) => {
                         if params.send_events { callback(ProcessingEvent::RempError { error }).await;} 
-                        notify.notify();
+                        notify.notify_one();
                         None
                     },
                     Ok(result) => result,

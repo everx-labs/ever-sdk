@@ -86,7 +86,7 @@ fn test_deferred_init() {
     assert_eq!(result.code, crate::net::ErrorCode::QueryFailed as u32);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_clock_sync() {
     let client = TestClient::new_with_config(json!({
         "network": {
