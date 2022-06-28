@@ -1,16 +1,16 @@
-# OLD: Collection Query Language
+---
+description: Learn how to do analytics queries with GraphQL API
+---
+
+# Analytics: Query Language
 
 ## Warning
 
 {% hint style="warning" %}
-<mark style="color:red;">**Please avoid using collection queries as much as possible. Soon we will restrict their execution time by 5 seconds. Use**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**`net.query`**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**+ root**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**`blockchain`**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**API  instead.**</mark>&#x20;
+<mark style="color:orange;">**Analytics API does not have any SLA response time and may vary depending on the API usage.**</mark>
 {% endhint %}
 
-`Collections` is the old API we had started providing when we didn't know what use-cases might be needed for developers and how to allow pagination of the sharded data the best way.&#x20;
 
-We created API that allowed to query basically anything which led to impossible data optimizations on our end to provide good quality of such functionality.
-
-Now we analyzed what use-cases users need and created a brand-new API called `blockchain`. You can find it in root `query` next to all collections. Use it with [net.query function](../../guides/queries\_and\_subscriptions/raw\_query.md).&#x20;
 
 ## Docs
 

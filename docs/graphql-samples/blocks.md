@@ -74,17 +74,9 @@ Result:
 
 ### About cursor
 
-<mark style="color:orange;">**Attention! Pagination functionality is new and not yet supported in Evernode-DS. But will be soon!**</mark>
-
-As Everscale is a multi-chain multi-threaded blockchain, to paginate blocks we need to paginate several parallel workchains each having several parallel threads, which can split and merge over time, simultaneously. This differs Everscale from other blockchains where you simply paginate one chain with one thread and that has one height in a single moment in time.
-
-This was really a challenge for us to solve this task. We needed to construct such a cursor that will be calculated from blockchain data and be the same across all Evernode Platform instances inside one network. So that if you switch from one endpoint to another - you keep the order. And the story stays really decentralized. And we did it.&#x20;
-
-We formed this cursor based on the fact that all workchain blocks are commited into masterchain blocks in some specific order. And masterchain is ordered by seq\_no and has 1 thread. In simple words, this cursor splits all blockchain blocks into ranges between masterchain blocks and sort them inside that range in an ambiguos order. And, by the way, we derived the cursor for all blockchain transactions - from cursor for blocks, so that it is possible to paginate them too (check transactions pagination section).&#x20;
+We formed this cursor based on the fact that all workchain blocks are commited into masterchain blocks in some specific order. And masterchain is ordered by seq\_no and has 1 thread. In simple words, this cursor splits all blockchain blocks into ranges between masterchain blocks and sort them inside that range in an ambiguous order. And, by the way, we derived the cursor for  blockchain transactions - from cursor for blocks - so that it is possible to paginate them too (check transactions pagination section).&#x20;
 
 ### Paginate by masterchain blocks seq\_no range <a href="#paginate_by_seqno" id="paginate_by_seqno"></a>
-
-Query:
 
 We specify **masterchain** blocks seq\_no range and that we want to paginate only 0 workchain blocks. If workchain parameter is omitted - you will get all workchains blocks. You can specify -1 to get masterchain blocks.
 
@@ -267,7 +259,7 @@ query{
 
 &#x20;In the result you will get the required seq\_no range.
 
-<mark style="color:orange;">**Attention! Specifying timestamp range does not mean that there will be no blocks outside this range in the result set: this happens due to the fact that some thread blocks that were generated outside this time range were committed to masterchain block generated within this time range. But anyway, this pagination allows us to get all blocks in a handy manner, these time deltas are very small and not significant and can be ignored.**</mark>
+<mark style="color:orange;">**Attention! Specifying timestamp range does not mean that there will be no blocks outside this range in the result set: this happens because some thread blocks that were generated outside this time range were committed to masterchain block generated within this time range. But anyway, this pagination allows us to get all blocks in a handy manner, these time deltas are very small and not significant and can be ignored.**</mark>
 
 ```graphql
 {
