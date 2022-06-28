@@ -157,6 +157,8 @@ Where:
 
 [encode_boc](mod\_abi.md#encode_boc) – Encodes given parameters in JSON into a BOC using param types from ABI.
 
+[calc_function_id](mod\_abi.md#calc_function_id) – Calculates contract function ID by contract ABI
+
 ## [boc](mod\_boc.md) – BOC manipulation module.
 
 [parse_message](mod\_boc.md#parse_message) – Parses message boc into a JSON

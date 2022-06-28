@@ -171,8 +171,8 @@ impl ClientEnv {
         onmessage_callback.forget();
 
         // on_open callback to get notification when websocket is ready to use
-        let (mut on_open_sender, mut on_open_receiver) = tokio::sync::mpsc::channel(1);
-        let mut on_open_sender_copy = on_open_sender.clone();
+        let (on_open_sender, mut on_open_receiver) = tokio::sync::mpsc::channel(1);
+        let on_open_sender_copy = on_open_sender.clone();
         let onopen_callback = Closure::once(move |_: JsValue| {
             log::trace!("Websocket opened");
             wasm_bindgen_futures::spawn_local(async move {

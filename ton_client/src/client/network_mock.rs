@@ -112,18 +112,16 @@ impl NetworkMock {
             let (client_sender, server_receiver) = futures::channel::mpsc::channel::<String>(10);
             let (mut server_sender, client_receiver) =
                 futures::channel::mpsc::channel::<ClientResult<String>>(10);
-            async_runtime_handle.enter(move || {
-                tokio::spawn(Box::pin(async move {
-                    let _ = server_receiver;
-                    while !messages.is_empty() {
-                        let message = messages.remove(0);
-                        println!("Send {}", message.message);
-                        if let Some(delay) = message.delay {
-                            tokio::time::delay_for(tokio::time::Duration::from_millis(delay)).await;
-                        }
-                        let _ = server_sender.send(Ok(message.message)).await;
+            async_runtime_handle.spawn(async move {
+                let _ = server_receiver;
+                while !messages.is_empty() {
+                    let message = messages.remove(0);
+                    println!("Send {}", message.message);
+                    if let Some(delay) = message.delay {
+                        tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
                     }
-                }))
+                    let _ = server_sender.send(Ok(message.message)).await;
+                }
             });
             Some(WebSocket {
                 receiver: Box::pin(client_receiver),

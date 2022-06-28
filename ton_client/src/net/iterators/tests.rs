@@ -114,7 +114,7 @@ async fn remove_iterator(client: &TestClient, iterator: u32) {
         .unwrap();
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn block_iterator() {
     if TestClient::node_se() {
         return;
@@ -165,7 +165,7 @@ async fn block_iterator() {
     assert_eq!(extra_ids, HashSet::default(), "Extra iterated");
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn transaction_iterator() {
     if TestClient::node_se() {
         return;

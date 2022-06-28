@@ -6,6 +6,8 @@ use sha2::Digest;
 use sha2::Sha512;
 use zeroize::Zeroize;
 
+const XMODEM: crc::Crc<u16> = crc::Crc::<u16>::new(&crc::CRC_16_XMODEM);
+
 #[derive(Serialize, Deserialize, Debug, PartialEq, Zeroize, ZeroizeOnDrop)]
 pub(crate) struct SecretString(pub String);
 
@@ -67,9 +69,7 @@ pub(crate) fn sha256(bytes: &[u8]) -> Vec<u8> {
 }
 
 pub(crate) fn ton_crc16(data: &[u8]) -> u16 {
-    let mut crc = crc_any::CRC::crc16xmodem();
-    crc.digest(data);
-    crc.get_crc() as u16
+    XMODEM.checksum(data)
 }
 
 pub(crate) fn decode_public_key(string: &String) -> ClientResult<PublicKey> {

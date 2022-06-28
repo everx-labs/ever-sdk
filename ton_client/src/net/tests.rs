@@ -15,7 +15,7 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::vec;
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn batch_query() {
     let client = TestClient::new();
 
@@ -56,7 +56,7 @@ async fn batch_query() {
     assert_eq!(batch.results.len(), 3);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn query() {
     let client = TestClient::new();
 
@@ -75,7 +75,7 @@ async fn query() {
     assert_eq!(version.split(".").count(), 3);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn block_signatures() {
     let client = TestClient::new();
 
@@ -94,7 +94,7 @@ async fn block_signatures() {
         .unwrap();
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn all_accounts() {
     let client = TestClient::new();
 
@@ -115,7 +115,7 @@ async fn all_accounts() {
     assert!(accounts.result.len() > 0);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn aggregates() {
     let client = TestClient::new();
 
@@ -138,7 +138,7 @@ async fn aggregates() {
     assert!(count > 0);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn ranges() {
     let client = TestClient::new();
 
@@ -161,7 +161,7 @@ async fn ranges() {
     assert!(accounts.result[0]["created_at"].as_u64().unwrap() > 1562342740);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn wait_for() {
     let now = ton_sdk::Contract::now();
     let request = tokio::spawn(async move {
@@ -183,7 +183,7 @@ async fn wait_for() {
         assert!(transactions.result["now"].as_u64().unwrap() > now as u64);
     });
 
-    tokio::time::delay_for(tokio::time::Duration::from_secs(1)).await;
+    tokio::time::sleep(tokio::time::Duration::from_secs(1)).await;
 
     let client = TestClient::new();
 
@@ -194,7 +194,7 @@ async fn wait_for() {
     request.await.unwrap();
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn message_sending_addresses() {
     let client = ClientContext::new(ClientConfig {
         network: NetworkConfig {
@@ -248,7 +248,7 @@ async fn message_sending_addresses() {
     assert!(a_good && e_good)
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn subscribe_for_transactions_with_addresses() {
     let client = TestClient::new_with_config(json!({
         "network": {
@@ -472,7 +472,7 @@ async fn subscribe_for_transactions_with_addresses() {
         .unwrap();
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn subscribe_for_messages() {
     let messages = std::sync::Arc::new(Mutex::new(Vec::new()));
     let messages_copy = messages.clone();
@@ -522,7 +522,7 @@ async fn subscribe_for_messages() {
         .unwrap();
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn find_last_shard_block() {
     let client = TestClient::new();
 
@@ -539,7 +539,7 @@ async fn find_last_shard_block() {
     println!("{}", block.block_id);
 }
 
-// #[tokio::test(core_threads = 2)]
+// #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 // async fn test_endpoints() {
 //     let client = TestClient::new_with_config(json!({
 //         "network": {
@@ -558,7 +558,7 @@ async fn find_last_shard_block() {
 //         .unwrap();
 // }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_wait_resume() {
     let client = std::sync::Arc::new(TestClient::new());
     let client_copy = client.clone();
@@ -576,14 +576,14 @@ async fn test_wait_resume() {
     });
 
     let timeout = 5000;
-    tokio::time::delay_for(tokio::time::Duration::from_millis(timeout)).await;
+    tokio::time::sleep(tokio::time::Duration::from_millis(timeout)).await;
 
     let _: () = client.request_async("net.resume", ()).await.unwrap();
 
     assert!(duration.await.unwrap() > timeout as u128);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_query_counterparties() {
     if TestClient::node_se() {
         return;
@@ -669,7 +669,7 @@ async fn get_query_url(client: &Arc<ClientContext>) -> String {
     url
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn retry_query_on_network_errors() {
     let client = Arc::new(
         ClientContext::new(ClientConfig {
@@ -734,7 +734,7 @@ async fn retry_query_on_network_errors() {
     assert_eq!(query_block_id(&client).await, "4");
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn querying_endpoint_selection() {
     let client = Arc::new(
         ClientContext::new(ClientConfig {
@@ -826,7 +826,7 @@ async fn querying_endpoint_selection() {
     );
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn latency_detection_with_queries() {
     let client = Arc::new(
         ClientContext::new(ClientConfig {
@@ -885,7 +885,7 @@ async fn latency_detection_with_queries() {
     assert_eq!(get_query_url(&client).await, "b");
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn latency_detection_with_websockets() {
     let client = Arc::new(
         ClientContext::new(ClientConfig {
@@ -948,7 +948,7 @@ async fn latency_detection_with_websockets() {
     client.get_server_link().unwrap().suspend().await;
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn get_endpoints() {
     let client = Arc::new(
         ClientContext::new(ClientConfig {
@@ -992,7 +992,7 @@ fn collect(loaded_messages: &Vec<Value>, messages: &mut Vec<Value>, transactions
     }
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn transaction_tree() {
     let client = TestClient::new();
 
@@ -1090,7 +1090,7 @@ async fn transaction_tree() {
     assert!(has_decoded_bodies);
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn order_by_fallback() {
     let params: ParamsOfQueryCollection = serde_json::from_str(
         r#"
@@ -1235,7 +1235,7 @@ fn test_subscription_gql() {
     );
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn low_level_subscribe() {
     let messages = std::sync::Arc::new(Mutex::new(Vec::new()));
     let messages_copy = messages.clone();
@@ -1292,7 +1292,7 @@ async fn low_level_subscribe() {
         .unwrap();
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn query_using_ws() {
     let client = TestClient::new_with_config(json!({
         "network": {

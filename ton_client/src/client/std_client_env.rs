@@ -24,6 +24,7 @@ use reqwest::{
     Client as HttpClient, ClientBuilder, Method,
 };
 use std::collections::HashMap;
+use std::convert::TryFrom;
 use std::path::PathBuf;
 use std::str::FromStr;
 use tokio::runtime::Runtime;
@@ -40,8 +41,7 @@ lazy_static! {
 }
 
 fn create_runtime() -> ClientResult<Runtime> {
-    tokio::runtime::Builder::new()
-        .threaded_scheduler()
+    tokio::runtime::Builder::new_multi_thread()
         .enable_io()
         .enable_time()
         .build()
@@ -112,14 +112,13 @@ impl ClientEnv {
 
     /// Sets timer for provided time interval
     pub async fn set_timer(&self, ms: u64) -> ClientResult<()> {
-        tokio::time::delay_for(tokio::time::Duration::from_millis(ms)).await;
+        tokio::time::sleep(tokio::time::Duration::from_millis(ms)).await;
         Ok(())
     }
 
     /// Sends asynchronous task to scheduler
     pub fn spawn(&self, future: impl Future<Output = ()> + Send + 'static) {
-        self.async_runtime_handle
-            .enter(move || tokio::spawn(future));
+        self.async_runtime_handle.spawn(future);
     }
 
     /// Executes asynchronous task blocking current thread
@@ -145,19 +144,18 @@ impl ClientEnv {
                 return Ok(ws);
             }
         }
-        let mut request = tokio_tungstenite::tungstenite::handshake::client::Request::builder()
-            .method("GET")
-            .uri(url);
+        let mut request = tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(url)
+            .map_err(|err| Error::websocket_connect_error(url, err))?;
 
         if let Some(headers) = headers {
             for (key, value) in headers {
-                request = request.header(&key, &value);
+                let key = tokio_tungstenite::tungstenite::http::header::HeaderName::try_from(key)
+                    .map_err(|err| Error::websocket_connect_error(url, err))?;
+                let value = tokio_tungstenite::tungstenite::http::HeaderValue::try_from(value)
+                    .map_err(|err| Error::websocket_connect_error(url, err))?;
+                request.headers_mut().insert(key, value);
             }
         }
-
-        let request = request
-            .body(())
-            .map_err(|err| Error::websocket_connect_error(url, err))?;
 
         let (client, _) = tokio_tungstenite::connect_async(request)
             .await

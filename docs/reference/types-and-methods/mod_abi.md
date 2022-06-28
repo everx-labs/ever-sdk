@@ -32,6 +32,8 @@ Provides message encoding and decoding according to the ABI specification.
 
 [encode_boc](mod\_abi.md#encode_boc) – Encodes given parameters in JSON into a BOC using param types from ABI.
 
+[calc_function_id](mod\_abi.md#calc_function_id) – Calculates contract function ID by contract ABI
+
 ## Types
 [AbiErrorCode](mod\_abi.md#abierrorcode)
 
@@ -142,6 +144,10 @@ Provides message encoding and decoding according to the ABI specification.
 [ParamsOfAbiEncodeBoc](mod\_abi.md#paramsofabiencodeboc)
 
 [ResultOfAbiEncodeBoc](mod\_abi.md#resultofabiencodeboc)
+
+[ParamsOfCalcFunctionId](mod\_abi.md#paramsofcalcfunctionid)
+
+[ResultOfCalcFunctionId](mod\_abi.md#resultofcalcfunctionid)
 
 
 # Functions
@@ -722,6 +728,36 @@ function encode_boc(
 - `boc`: _string_ – BOC encoded as base64
 
 
+## calc_function_id
+
+Calculates contract function ID by contract ABI
+
+```ts
+type ParamsOfCalcFunctionId = {
+    abi: Abi,
+    function_name: string,
+    output?: boolean
+}
+
+type ResultOfCalcFunctionId = {
+    function_id: number
+}
+
+function calc_function_id(
+    params: ParamsOfCalcFunctionId,
+): Promise<ResultOfCalcFunctionId>;
+```
+### Parameters
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
+- `function_name`: _string_ – Contract function name
+- `output`?: _boolean_ – If set to `true` output function ID will be returned which is used in contract response. Default is `false`
+
+
+### Result
+
+- `function_id`: _number_ – Contract function ID
+
+
 # Types
 ## AbiErrorCode
 ```ts
@@ -739,7 +775,8 @@ enum AbiErrorCode {
     InvalidAbi = 311,
     InvalidFunctionId = 312,
     InvalidData = 313,
-    EncodeInitialDataFailed = 314
+    EncodeInitialDataFailed = 314,
+    InvalidFunctionName = 315
 }
 ```
 One of the following value:
@@ -758,6 +795,7 @@ One of the following value:
 - `InvalidFunctionId = 312`
 - `InvalidData = 313`
 - `EncodeInitialDataFailed = 314`
+- `InvalidFunctionName = 315`
 
 
 ## AbiContractVariant
@@ -1619,5 +1657,27 @@ type ResultOfAbiEncodeBoc = {
 }
 ```
 - `boc`: _string_ – BOC encoded as base64
+
+
+## ParamsOfCalcFunctionId
+```ts
+type ParamsOfCalcFunctionId = {
+    abi: Abi,
+    function_name: string,
+    output?: boolean
+}
+```
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
+- `function_name`: _string_ – Contract function name
+- `output`?: _boolean_ – If set to `true` output function ID will be returned which is used in contract response. Default is `false`
+
+
+## ResultOfCalcFunctionId
+```ts
+type ResultOfCalcFunctionId = {
+    function_id: number
+}
+```
+- `function_id`: _number_ – Contract function ID
 
 
