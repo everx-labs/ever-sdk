@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.35.1] – 2022-06-28
+
+### Improved
+
+- `abi` module errors have been improved
+
 ## [1.35.0] – 2022-06-28
 
 ### New
