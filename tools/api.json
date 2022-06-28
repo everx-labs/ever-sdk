@@ -1,5 +1,5 @@
 {
-  "version": "1.34.3",
+  "version": "1.35.0",
   "modules": [
     {
       "name": "client",
@@ -5374,6 +5374,13 @@
               "value": "314",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "InvalidFunctionName",
+              "type": "Number",
+              "value": "315",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -6950,6 +6957,52 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfCalcFunctionId",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "abi.Abi",
+              "summary": "Contract ABI.",
+              "description": null
+            },
+            {
+              "name": "function_name",
+              "type": "String",
+              "summary": "Contract function name",
+              "description": null
+            },
+            {
+              "name": "output",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "If set to `true` output function ID will be returned which is used in contract response. Default is `false`",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfCalcFunctionId",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "function_id",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "Contract function ID",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -7480,6 +7533,44 @@
               {
                 "type": "Ref",
                 "ref_name": "abi.ResultOfAbiEncodeBoc"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "calc_function_id",
+          "summary": "Calculates contract function ID by contract ABI",
+          "description": null,
+          "params": [
+            {
+              "name": "_context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfCalcFunctionId",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "abi.ResultOfCalcFunctionId"
               }
             ]
           },
@@ -10511,6 +10602,15 @@
                 "number_size": 64
               },
               "summary": "transaction logical time",
+              "description": null
+            },
+            {
+              "name": "chksig_always_succeed",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Overrides standard TVM behaviour. If set to `true` then CHKSIG always will return `true`.",
               "description": null
             }
           ],
