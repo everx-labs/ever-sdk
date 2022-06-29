@@ -14,10 +14,6 @@ const platform = os.platform();
 const arch = os.arch();
 
 main(async () => {
-    if (!devMode) {
-        // await spawnProcess('cargo', ['clean']);
-        await spawnProcess('cargo', ['update']);
-    }
     await spawnProcess('cargo', ['build', '--release']);
     deleteFolderRecursive(root_path('bin'));
     fs.mkdirSync(root_path('bin'), { recursive: true });
