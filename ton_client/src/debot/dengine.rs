@@ -280,6 +280,7 @@ impl DEngine {
             processing_try_index: None,
             is_internal: true,
             call_set: CallSet::some_with_function_and_input(func_name, params).unwrap(),
+            address: Some(self.addr.clone())
         };
         let body = encode_message_body(self.ton.clone(), msg_params).await?.body;
         let (_, body_cell) = deserialize_cell_from_base64(&body, "message body")?;
