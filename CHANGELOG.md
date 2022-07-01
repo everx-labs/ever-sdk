@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [1.36.0] – 2022-07-01
+
+### New
+
+- ABI specification v2.3 is supported
+- parameter `address` is added to `abi.encode_message_body` function
+
 ## [1.35.1] – 2022-06-28
 
 ### Improved
