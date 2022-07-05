@@ -294,6 +294,7 @@ impl Contract {
             params.input,
             false,
             key_pair,
+            Some(address.to_string()),
         )?;
 
         let msg = Self::create_ext_in_message(address.clone(), msg_body.into_cell()?.into())?;
@@ -325,6 +326,7 @@ impl Contract {
             params.input,
             true,
             None,
+            Some(address.to_string()),
         )?;
 
         Self::construct_int_message_with_body(
@@ -368,6 +370,7 @@ impl Contract {
             params.func,
             params.header,
             params.input,
+            Some(address.to_string()),
         )?;
 
         let msg = Self::create_ext_in_message(address, msg_body.into_cell()?.into())?;
@@ -396,6 +399,7 @@ impl Contract {
             params.input,
             false,
             key_pair,
+            Some(image.msg_address(workchain_id).to_string()),
         )?;
 
         let cell: SliceData = msg_body.into_cell()?.into();
@@ -466,6 +470,7 @@ impl Contract {
             params.func,
             params.header,
             params.input,
+            Some(image.msg_address(workchain_id).to_string()),
         )?;
 
         let cell: SliceData = msg_body.into_cell()?.into();
@@ -494,6 +499,7 @@ impl Contract {
             params.input,
             true,
             None,
+            Some(image.msg_address(workchain_id).to_string()),
         )?;
 
         let cell: SliceData = msg_body.into_cell()?.into();

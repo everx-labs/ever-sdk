@@ -676,6 +676,13 @@ pub struct ParamsOfEncodeMessageBody {
     ///
     /// Default value is 0.
     pub processing_try_index: Option<u8>,
+
+    /// Destination address of the message
+    /// 
+    /// Since ABI version 2.3 destination address of external inbound message is used in message 
+    /// body signature calculation. Should be provided when signed external inbound message body is
+    /// created. Otherwise can be omitted.
+    pub address: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
@@ -717,6 +724,7 @@ pub async fn encode_message_body(
                 call.input.clone(),
                 params.is_internal,
                 None,
+                params.address,
             )
             .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?;
             (body, None)
@@ -730,6 +738,7 @@ pub async fn encode_message_body(
                     call.input,
                     true,
                     None,
+                    params.address,
                 ).map(|body| (body, None))
             } else {
                 ton_abi::prepare_function_call_for_sign(
@@ -737,6 +746,7 @@ pub async fn encode_message_body(
                     func.clone(),
                     call.header,
                     call.input,
+                    params.address,
                 ).map(|(body, data_to_sign)| (body, Some(data_to_sign)))
             }.map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?
         }
