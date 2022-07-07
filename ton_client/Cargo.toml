@@ -1,6 +1,6 @@
 [package]
 name = 'ton_client'
-version = '1.35.1'
+version = '1.36.0'
 authors = [ 'TON Labs LTD <support@tonlabs.io>' ]
 edition = '2018'
 license = 'Apache-2.0'
@@ -20,7 +20,7 @@ api_derive = { path = '../api/derive' }
 api_info = { path = '../api/info' }
 ton_sdk = { default-features = false, path = '../ton_sdk' }
 
-ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.2.12' }
+ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.3.0' }
 ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.53' }
 ton_block_json = { git = 'https://github.com/tonlabs/ton-labs-block-json.git', tag = '0.7.22' }
 ton_executor = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-executor.git', tag = '1.15.77' }

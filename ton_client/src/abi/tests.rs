@@ -165,6 +165,7 @@ fn encode_v2() {
         is_internal: false,
         processing_try_index: run_params.processing_try_index,
         signer: run_params.signer,
+        address: Some(address.into()),
     };
     let extract_body = |message| {
         let unsigned_parsed: crate::boc::ResultOfParse = client
