@@ -7,9 +7,9 @@ authors = [ 'TON Labs LTD <support@tonlabs.io>' ]
 
 [dependencies]
 ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.3.0' }
-ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.51' }
-ton_vm = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-vm.git', tag = '1.8.39' }
-ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.11.2' }
+ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.7.53' }
+ton_vm = { default-features = false, git = 'https://github.com/tonlabs/ton-labs-vm.git', tag = '1.8.40' }
+ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.11.3' }
 
 api_info = { path = '../api/info' }
 api_derive = { path = '../api/derive' }
