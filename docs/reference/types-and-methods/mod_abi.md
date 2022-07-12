@@ -161,7 +161,8 @@ type ParamsOfEncodeMessageBody = {
     call_set: CallSet,
     is_internal: boolean,
     signer: Signer,
-    processing_try_index?: number
+    processing_try_index?: number,
+    address?: string
 }
 
 type ResultOfEncodeMessageBody = {
@@ -181,6 +182,8 @@ function encode_message_body(
 - `signer`: _[Signer](mod\_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries.<br><br>Encoder uses the provided try index to calculate message<br>expiration time.<br><br>Expiration timeouts will grow with every retry.<br><br>Default value is 0.
+- `address`?: _string_ – Destination address of the message
+<br>Since ABI version 2.3 destination address of external inbound message is used in message<br>body signature calculation. Should be provided when signed external inbound message body is<br>created. Otherwise can be omitted.
 
 
 ### Result
@@ -1284,7 +1287,8 @@ type ParamsOfEncodeMessageBody = {
     call_set: CallSet,
     is_internal: boolean,
     signer: Signer,
-    processing_try_index?: number
+    processing_try_index?: number,
+    address?: string
 }
 ```
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
@@ -1294,6 +1298,8 @@ type ParamsOfEncodeMessageBody = {
 - `signer`: _[Signer](mod\_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries.<br><br>Encoder uses the provided try index to calculate message<br>expiration time.<br><br>Expiration timeouts will grow with every retry.<br><br>Default value is 0.
+- `address`?: _string_ – Destination address of the message
+<br>Since ABI version 2.3 destination address of external inbound message is used in message<br>body signature calculation. Should be provided when signed external inbound message body is<br>created. Otherwise can be omitted.
 
 
 ## ResultOfEncodeMessageBody

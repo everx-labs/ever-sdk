@@ -66,7 +66,7 @@ checksum = "bb07d2053ccdbe10e2af2995a2f116c1330396493dc1269f6a91d0ae82e19704"
 
 [[package]]
 name = "api_derive"
-version = "1.35.1"
+version = "1.36.0"
 dependencies = [
  "api_info",
  "quote",
@@ -76,7 +76,7 @@ dependencies = [
 
 [[package]]
 name = "api_info"
-version = "1.35.1"
+version = "1.36.0"
 dependencies = [
  "serde",
  "serde_derive",
@@ -85,7 +85,7 @@ dependencies = [
 
 [[package]]
 name = "api_test"
-version = "1.35.1"
+version = "1.36.0"
 dependencies = [
  "api_derive",
  "api_info",
@@ -2338,8 +2338,8 @@ dependencies = [
 
 [[package]]
 name = "ton_abi"
-version = "2.2.9"
-source = "git+https://github.com/tonlabs/ton-labs-abi.git?tag=2.2.9#c9d7823e74a1ac51359f48bd34ec74b566e3e972"
+version = "2.3.0"
+source = "git+https://github.com/tonlabs/ton-labs-abi.git?tag=2.3.0#1d533869f5d00aa53d94137b83de2c8de41453ee"
 dependencies = [
  "base64 0.10.1",
  "byteorder",
@@ -2354,14 +2354,14 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha2 0.8.2",
- "ton_block",
+ "ton_block 1.7.53",
  "ton_types",
 ]
 
 [[package]]
 name = "ton_api"
-version = "0.2.128"
-source = "git+https://github.com/tonlabs/ton-labs-tl?tag=0.2.128#f16ff19f5dd4ccf73f65d830ab6dc782ea2127dd"
+version = "0.2.129"
+source = "git+https://github.com/tonlabs/ton-labs-tl.git?tag=0.2.129#404e7b9f219fc20b04b773a9a3f3a481ed03a0bf"
 dependencies = [
  "byteorder",
  "extfmt",
@@ -2373,18 +2373,18 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "ton_block",
+ "ton_block 1.8.0",
  "ton_tl_codegen",
  "ton_types",
 ]
 
 [[package]]
 name = "ton_block"
-version = "1.7.51"
-source = "git+https://github.com/tonlabs/ton-labs-block.git?tag=1.7.51#7243ec8b0d827a6fab8ae2683cb7623d8ed2e93b"
+version = "1.7.53"
+source = "git+https://github.com/tonlabs/ton-labs-block.git?tag=1.7.53#1e44539c3ac26c7ef4b7dd67dbeec07477410d02"
 dependencies = [
  "base64 0.13.0",
- "crc 1.8.1",
+ "crc 3.0.0",
  "ed25519",
  "ed25519-dalek",
  "failure",
@@ -2393,14 +2393,32 @@ dependencies = [
  "num",
  "num-traits",
  "rand 0.7.3",
- "sha2 0.8.2",
+ "sha2 0.10.2",
+ "ton_types",
+]
+
+[[package]]
+name = "ton_block"
+version = "1.8.0"
+source = "git+https://github.com/tonlabs/ton-labs-block.git?tag=1.8.0#403010107636ec9cb2bcc75d09b75147c72b0d82"
+dependencies = [
+ "base64 0.13.0",
+ "crc 3.0.0",
+ "ed25519",
+ "ed25519-dalek",
+ "failure",
+ "hex 0.4.3",
+ "log",
+ "num",
+ "num-traits",
+ "sha2 0.10.2",
  "ton_types",
 ]
 
 [[package]]
 name = "ton_block_json"
-version = "0.7.19"
-source = "git+https://github.com/tonlabs/ton-labs-block-json.git?tag=0.7.19#19676b6fa48a4a3c0ebf26bc5b2b3c1d8c6504b5"
+version = "0.7.24"
+source = "git+https://github.com/tonlabs/ton-labs-block-json.git?tag=0.7.24#9bdcf709fc1f65756a4aa38ed5ab7889e03e2568"
 dependencies = [
  "base64 0.13.0",
  "failure",
@@ -2411,13 +2429,13 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "ton_api",
- "ton_block",
+ "ton_block 1.8.0",
  "ton_types",
 ]
 
 [[package]]
 name = "ton_client"
-version = "1.35.1"
+version = "1.36.0"
 dependencies = [
  "aes",
  "api_derive",
@@ -2467,7 +2485,7 @@ dependencies = [
  "tokio-stream",
  "tokio-tungstenite",
  "ton_abi",
- "ton_block",
+ "ton_block 1.8.0",
  "ton_block_json",
  "ton_executor",
  "ton_sdk",
@@ -2482,20 +2500,20 @@ dependencies = [
 
 [[package]]
 name = "ton_executor"
-version = "1.15.74"
-source = "git+https://github.com/tonlabs/ton-labs-executor.git?tag=1.15.74#78a2aa78ba3eca8fac38d7a8407f00b64e413884"
+version = "1.15.78"
+source = "git+https://github.com/tonlabs/ton-labs-executor.git?tag=1.15.78#abf3bcdce6194134fe00080303355dda78391c73"
 dependencies = [
  "failure",
  "lazy_static",
  "log",
- "ton_block",
+ "ton_block 1.8.0",
  "ton_types",
  "ton_vm",
 ]
 
 [[package]]
 name = "ton_sdk"
-version = "1.35.1"
+version = "1.36.0"
 dependencies = [
  "api_derive",
  "api_info",
@@ -2513,7 +2531,7 @@ dependencies = [
  "serde_json",
  "sha2 0.9.9",
  "ton_abi",
- "ton_block",
+ "ton_block 1.8.0",
  "ton_types",
  "ton_vm",
 ]
@@ -2521,7 +2539,7 @@ dependencies = [
 [[package]]
 name = "ton_tl_codegen"
 version = "0.0.2"
-source = "git+https://github.com/tonlabs/ton-labs-tl?tag=0.2.128#f16ff19f5dd4ccf73f65d830ab6dc782ea2127dd"
+source = "git+https://github.com/tonlabs/ton-labs-tl.git?tag=0.2.129#404e7b9f219fc20b04b773a9a3f3a481ed03a0bf"
 dependencies = [
  "crc 1.8.1",
  "failure",
@@ -2535,8 +2553,8 @@ dependencies = [
 
 [[package]]
 name = "ton_types"
-version = "1.11.2"
-source = "git+https://github.com/tonlabs/ton-labs-types.git?tag=1.11.2#1e8fab540649d4b0fe3713be64fa01ca73d2b9fe"
+version = "1.11.3"
+source = "git+https://github.com/tonlabs/ton-labs-types.git?tag=1.11.3#d62ead62339f17fda171fe45f19f5c7452e724bb"
 dependencies = [
  "base64 0.13.0",
  "crc 1.8.1",
@@ -2555,8 +2573,8 @@ dependencies = [
 
 [[package]]
 name = "ton_vm"
-version = "1.8.39"
-source = "git+https://github.com/tonlabs/ton-labs-vm.git?tag=1.8.39#b75d857c8d6c4f94be44abb3d3ae97cf7c027059"
+version = "1.8.40"
+source = "git+https://github.com/tonlabs/ton-labs-vm.git?tag=1.8.40#3bd45a44c3ca454e4f16f2de06994b404500cce2"
 dependencies = [
  "ed25519",
  "ed25519-dalek",
@@ -2568,13 +2586,13 @@ dependencies = [
  "num-traits",
  "rand 0.7.3",
  "sha2 0.9.9",
- "ton_block",
+ "ton_block 1.8.0",
  "ton_types",
 ]
 
 [[package]]
 name = "toncli"
-version = "1.35.1"
+version = "1.36.0"
 dependencies = [
  "api_info",
  "assert_cmd",

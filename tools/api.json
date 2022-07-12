@@ -1,5 +1,5 @@
 {
-  "version": "1.35.0",
+  "version": "1.36.0",
   "modules": [
     {
       "name": "client",
@@ -6118,6 +6118,15 @@
               },
               "summary": "Processing try index.",
               "description": "Used in message processing with retries.\n\nEncoder uses the provided try index to calculate message\nexpiration time.\n\nExpiration timeouts will grow with every retry.\n\nDefault value is 0."
+            },
+            {
+              "name": "address",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Destination address of the message",
+              "description": "Since ABI version 2.3 destination address of external inbound message is used in message\nbody signature calculation. Should be provided when signed external inbound message body is\ncreated. Otherwise can be omitted."
             }
           ],
           "summary": null,
