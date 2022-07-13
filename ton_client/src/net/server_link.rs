@@ -664,10 +664,10 @@ impl ServerLink {
             latency_detection_required,
             self.config.wait_for_timeout,
         );
-        let info_request_time = self.client_env.now_ms();
         let mut result = self.query(&query, endpoint.as_ref()).await?;
         if latency_detection_required {
             let current_endpoint = self.state.get_query_endpoint().await?;
+            let info_request_time = self.client_env.now_ms();
             let server_info = query.get_server_info(&params, &result)?;
             current_endpoint.apply_server_info(
                 &self.client_env,
