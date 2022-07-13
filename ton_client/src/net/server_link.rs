@@ -659,28 +659,16 @@ impl ServerLink {
             } else {
                 false
             };
-        let mut query = GraphQLQuery::build(
-            params,
-            latency_detection_required,
-            self.config.wait_for_timeout,
-        );
+        let mut query = GraphQLQuery::build(params, self.config.wait_for_timeout);
         let mut result = self.query(&query, endpoint.as_ref()).await?;
         if latency_detection_required {
             let current_endpoint = self.state.get_query_endpoint().await?;
-            let info_request_time = self.client_env.now_ms();
-            let server_info = query.get_server_info(&params, &result)?;
-            current_endpoint.apply_server_info(
-                &self.client_env,
-                &self.config,
-                info_request_time,
-                &server_info,
-            )?;
             current_endpoint
                 .refresh(&self.client_env, &self.config)
                 .await?;
             if current_endpoint.latency() > self.config.max_latency as u64 {
                 self.invalidate_querying_endpoint().await;
-                query = GraphQLQuery::build(params, false, self.config.wait_for_timeout);
+                query = GraphQLQuery::build(params, self.config.wait_for_timeout);
                 result = self.query(&query, endpoint.as_ref()).await?;
             }
         }

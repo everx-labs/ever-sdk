@@ -298,11 +298,6 @@ impl QueryOperationBuilder {
         self.end_op(&op.query_result());
     }
 
-    fn add_info(&mut self) {
-        self.start_op("info");
-        self.end_op("version time");
-    }
-
     fn add_agg_op_params(
         &mut self,
         filter_type: &str,
@@ -399,17 +394,9 @@ pub(crate) struct GraphQLQuery {
 }
 
 impl GraphQLQuery {
-    pub fn build(
-        params: &[ParamsOfQueryOperation],
-        include_info: bool,
-        default_wait_for_timeout: u32,
-    ) -> GraphQLQuery {
-        let param_count = params.len() + if include_info { 1 } else { 0 };
-        let mut builder = QueryOperationBuilder::new(param_count > 1, default_wait_for_timeout);
+    pub fn build(params: &[ParamsOfQueryOperation], default_wait_for_timeout: u32) -> GraphQLQuery {
+        let mut builder = QueryOperationBuilder::new(params.len() > 1, default_wait_for_timeout);
         builder.add_operations(params);
-        if include_info {
-            builder.add_info();
-        }
         builder.build()
     }
 
@@ -419,13 +406,11 @@ impl GraphQLQuery {
         index: usize,
         result: &Value,
     ) -> ClientResult<Value> {
-        let param = params.get(index);
+        let param = &params[index];
         let result_name = if self.is_batch {
             format!("q{}", index + 1)
-        } else if let Some(param) = param {
-            param.query_name()
         } else {
-            "info".to_string()
+            param.query_name()
         };
         let mut result_data = &result["data"][result_name.as_str()];
         if result_data.is_null() {
@@ -434,7 +419,7 @@ impl GraphQLQuery {
                 result_name, result
             )));
         }
-        if let Some(ParamsOfQueryOperation::WaitForCollection(_)) = param {
+        if let ParamsOfQueryOperation::WaitForCollection(_) = param {
             result_data = &result_data[0];
             if result_data.is_null() {
                 return Err(crate::net::Error::wait_for_timeout());
@@ -453,14 +438,6 @@ impl GraphQLQuery {
             results.push(self.get_result(params, i, result)?);
         }
         Ok(results)
-    }
-
-    pub fn get_server_info(
-        &self,
-        params: &[ParamsOfQueryOperation],
-        result: &Value,
-    ) -> ClientResult<Value> {
-        self.get_result(params, params.len(), result)
     }
 
     pub fn get_start_message(&self, id: String) -> GraphQLMessageFromClient {
