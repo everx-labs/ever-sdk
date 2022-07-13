@@ -675,9 +675,11 @@ impl ServerLink {
                 info_request_time,
                 &server_info,
             )?;
-            current_endpoint
-                .refresh(&self.client_env, &self.config)
-                .await?;
+            if current_endpoint.time_delta() > self.config.out_of_sync_threshold as i64 {
+                current_endpoint
+                    .refresh(&self.client_env, &self.config)
+                    .await?;
+            }
             if current_endpoint.latency() > self.config.max_latency as u64 {
                 self.invalidate_querying_endpoint().await;
                 query = GraphQLQuery::build(params, false, self.config.wait_for_timeout);
