@@ -19,9 +19,11 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, AtomicI64, AtomicU32, AtomicU64, Ordering};
 
-const V_0_39_0: u32 = 39000;
-const V_0_51_0: u32 = 51000;
-const BOC_VERSION: &str = "2";
+pub const V_0_39_0: u32 = 39000;
+pub const V_SUPPORTS_LATENCY: u32 = V_0_39_0;
+pub const V_0_51_0: u32 = 51000;
+pub const V_SUPPORTS_REMP: u32 = V_0_51_0;
+pub const BOC_VERSION: &str = "2";
 
 pub(crate) struct Endpoint {
     pub query_url: String,
@@ -51,9 +53,9 @@ impl Clone for Endpoint {
     }
 }
 
-const QUERY_INFO_SCHEMA: &str = "?query=%7Binfo%7Bversion%20time%7D%7D";
-const QUERY_INFO_METRICS: &str = "?query=%7Binfo%7Bversion%20time%20latency%7D%7D";
-const QUERY_INFO_METRICS_REMP: &str =
+const QUERY_INFO_VERSION_TIME: &str = "?query=%7Binfo%7Bversion%20time%7D%7D";
+const QUERY_INFO_VERSION_TIME_LATENCY: &str = "?query=%7Binfo%7Bversion%20time%20latency%7D%7D";
+const QUERY_INFO_VERSION_TIME_LATENCY_REMP: &str =
     "?query=%7Binfo%7Bversion%20time%20latency%20rempEnabled%7D%7D";
 
 const HTTP_PROTOCOL: &str = "http://";
@@ -126,7 +128,7 @@ impl Endpoint {
         let (info, query_url, ip_address) = Self::fetch_info_with_url(
             client_env,
             &address,
-            QUERY_INFO_SCHEMA,
+            QUERY_INFO_VERSION_TIME,
             config.query_timeout,
             config.access_key.as_ref(),
         )
@@ -154,21 +156,21 @@ impl Endpoint {
         client_env: &ClientEnv,
         config: &NetworkConfig,
     ) -> ClientResult<()> {
-        if self.version() >= V_0_39_0 {
-            let query = if self.version() >= V_0_51_0 {
-                QUERY_INFO_METRICS_REMP
+        if self.version() >= V_SUPPORTS_LATENCY {
+            let query = if self.version() >= V_SUPPORTS_REMP {
+                QUERY_INFO_VERSION_TIME_LATENCY_REMP
             } else {
-                QUERY_INFO_METRICS
+                QUERY_INFO_VERSION_TIME_LATENCY
             };
             let info_request_time = client_env.now_ms();
-            let (info, _, _) =
-                Self::fetch_info_with_url(
-                    client_env,
-                    &self.query_url,
-                    query,
-                    config.query_timeout,
-                    config.access_key.as_ref(),
-                ).await?;
+            let (info, _, _) = Self::fetch_info_with_url(
+                client_env,
+                &self.query_url,
+                query,
+                config.query_timeout,
+                config.access_key.as_ref(),
+            )
+            .await?;
             self.apply_server_info(client_env, config, info_request_time, &info)?;
         }
         Ok(())

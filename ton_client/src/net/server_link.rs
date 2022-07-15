@@ -99,7 +99,6 @@ pub(crate) struct NetworkState {
     suspend_regulation: Arc<Mutex<SuspendRegulation>>,
     resume_timeout: AtomicU32,
     query_endpoint: RwLock<Option<Arc<Endpoint>>>,
-    time_checked: AtomicBool,
 }
 
 async fn query_by_url(
@@ -144,7 +143,6 @@ impl NetworkState {
             suspend_regulation: Arc::new(Mutex::new(regulation)),
             resume_timeout: AtomicU32::new(0),
             query_endpoint: RwLock::new(None),
-            time_checked: AtomicBool::new(false),
         }
     }
 
@@ -263,34 +261,24 @@ impl NetworkState {
         self.query_endpoint.read().await.clone()
     }
 
-    async fn check_time_delta(
-        &self,
-        endpoint: &Endpoint,
-        out_of_sync_threshold: u32,
-    ) -> ClientResult<()> {
+    async fn check_sync_endpoint(&self, endpoint: &Endpoint) -> ClientResult<()> {
+        endpoint.refresh(&self.client_env, &self.config).await?;
         let server_time_delta = endpoint.time_delta().abs();
-        if server_time_delta >= out_of_sync_threshold as i64 {
-            Err(Error::clock_out_of_sync(
-                server_time_delta,
-                out_of_sync_threshold,
-            ))
+        let threshold = self.config.out_of_sync_threshold;
+        if server_time_delta >= threshold as i64 {
+            Err(Error::clock_out_of_sync(server_time_delta, threshold))
         } else {
             Ok(())
         }
     }
 
-    async fn check_sync(&self) -> ClientResult<()> {
-        if self.time_checked.load(Ordering::Relaxed) {
-            return Ok(());
+    async fn check_sync(&self, endpoint: Option<&Endpoint>) -> ClientResult<()> {
+        if let Some(endpoint) = endpoint {
+            self.check_sync_endpoint(endpoint).await
+        } else {
+            self.check_sync_endpoint(self.get_query_endpoint().await?.as_ref())
+                .await
         }
-
-        let endpoint = self.get_query_endpoint().await?;
-        self.check_time_delta(&endpoint, self.config.out_of_sync_threshold)
-            .await?;
-
-        self.time_checked.store(true, Ordering::Relaxed);
-
-        Ok(())
     }
 
     async fn select_querying_endpoint(&self) -> ClientResult<Endpoint> {
@@ -652,15 +640,20 @@ impl ServerLink {
         params: &[ParamsOfQueryOperation],
         endpoint: Option<Endpoint>,
     ) -> ClientResult<Vec<Value>> {
-        let latency_detection_required =
-            if endpoint.is_none() && self.state.has_multiple_endpoints() {
-                let endpoint = self.state.get_query_endpoint().await?;
-                self.client_env.now_ms() > endpoint.next_latency_detection_time()
-            } else {
-                false
-            };
+        let (server_version, latency_detection_required) = if let Some(ref endpoint) = endpoint {
+            (endpoint.version(), false)
+        } else if self.state.has_multiple_endpoints() {
+            let endpoint = self.state.get_query_endpoint().await?;
+            (
+                endpoint.version(),
+                self.client_env.now_ms() > endpoint.next_latency_detection_time(),
+            )
+        } else {
+            (0, false)
+        };
         let mut query = GraphQLQuery::build(
             params,
+            server_version,
             latency_detection_required,
             self.config.wait_for_timeout,
         );
@@ -675,14 +668,9 @@ impl ServerLink {
                 info_request_time,
                 &server_info,
             )?;
-            if current_endpoint.time_delta() > self.config.out_of_sync_threshold as i64 {
-                current_endpoint
-                    .refresh(&self.client_env, &self.config)
-                    .await?;
-            }
             if current_endpoint.latency() > self.config.max_latency as u64 {
                 self.invalidate_querying_endpoint().await;
-                query = GraphQLQuery::build(params, false, self.config.wait_for_timeout);
+                query = GraphQLQuery::build(params, 0, false, self.config.wait_for_timeout);
                 result = self.query(&query, endpoint.as_ref()).await?;
             }
         }
@@ -750,7 +738,7 @@ impl ServerLink {
             body: base64::encode(value),
         };
 
-        self.state.check_sync().await?;
+        self.state.check_sync(endpoint).await?;
 
         let result = self
             .query(&GraphQLQuery::with_post_requests(&[request]), endpoint)
