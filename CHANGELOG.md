@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.36.1] – 2022-07-18
+
+### Improvement
+
+- Time synchorization check between device and server improved:  calculation of timediff with server is  moved from batched query to send_message function and therefore now query execution time does not affect this time diff. 
+
 
 ## [1.36.0] – 2022-07-01
 

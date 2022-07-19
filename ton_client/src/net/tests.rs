@@ -862,6 +862,7 @@ async fn latency_detection_with_queries() {
                 "q2": {
                     "version": "0.39.0",
                     "time": 1000,
+                    "latency": 1000,
                 },
             }
         })
