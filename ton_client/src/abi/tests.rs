@@ -165,6 +165,7 @@ fn encode_v2() {
         is_internal: false,
         processing_try_index: run_params.processing_try_index,
         signer: run_params.signer,
+        address: Some(address.into()),
     };
     let extract_body = |message| {
         let unsigned_parsed: crate::boc::ResultOfParse = client
@@ -400,7 +401,7 @@ fn test_is_empty_pubkey() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_resolve_pubkey() -> Result<()> {
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let tvc = base64::encode(include_bytes!("../tests/contracts/abi_v2/Hello.tvc"));
@@ -445,7 +446,7 @@ async fn test_resolve_pubkey() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_encode_message_pubkey() -> Result<()> {
     let client = TestClient::new();
     let (abi, tvc) = TestClient::package(HELLO, None);
@@ -570,7 +571,7 @@ fn gen_pubkey() -> ed25519_dalek::PublicKey {
     ed25519_dalek::Keypair::generate(&mut rand::thread_rng()).public
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_encode_internal_message() -> Result<()> {
     let client = TestClient::new();
     let (abi, tvc) = TestClient::package(HELLO, None);
@@ -685,7 +686,7 @@ async fn test_encode_internal_message() -> Result<()> {
     .await
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_encode_internal_message_empty_body() -> Result<()> {
     let client = TestClient::new();
     let dst_address =
@@ -1118,4 +1119,32 @@ fn test_encode_boc() {
         .boc;
 
     assert_eq!(boc, "te6ccgEBAQEANAAAY5/mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmAAAAAAAAAAAAAAAAACWtD4");
+}
+
+#[test]
+fn test_calc_function_id() {
+    let client = TestClient::new();
+    let abi = TestClient::abi("GiverV2", Some(2));
+
+    let result: ResultOfCalcFunctionId = client.request(
+        "abi.calc_function_id",
+        ParamsOfCalcFunctionId {
+            abi: abi.clone(),
+            function_name: "getMessages".to_owned(),
+            ..Default::default()
+        },
+    ).unwrap();
+
+    assert_eq!(result.function_id, 0x7744C7E2);
+
+    let result: ResultOfCalcFunctionId = client.request(
+        "abi.calc_function_id",
+        ParamsOfCalcFunctionId {
+            abi: abi.clone(),
+            function_name: "getMessages".to_owned(),
+            output: Some(true),
+        },
+    ).unwrap();
+
+    assert_eq!(result.function_id, 0xF744C7E2);
 }

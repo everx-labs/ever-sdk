@@ -6,7 +6,7 @@ async fn main() {
         ton_client::ClientContext::new(ton_client::ClientConfig {
             network: ton_client::net::NetworkConfig {
                 //server_address: "http://localhost:80".to_owned(),
-                server_address: "cinet.tonlabs.io".to_owned(),
+                endpoints: Some(vec!["cinet.tonlabs.io".to_owned()]),
                 ..Default::default()
             },
             ..Default::default()

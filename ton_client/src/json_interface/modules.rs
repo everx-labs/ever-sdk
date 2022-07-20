@@ -377,6 +377,10 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::encode_boc,
         crate::abi::encode_boc::encode_boc_api,
     );
+    module.register_sync_fn(
+        crate::abi::calc_function_id,
+        crate::abi::function_id::calc_function_id_api,
+    );
     module.register();
 }
 

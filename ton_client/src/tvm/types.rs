@@ -13,17 +13,19 @@
  */
 
 use super::Error;
-use crate::{boc::{
-    blockchain_config::{extract_config_from_block, extract_config_from_zerostate},
-    internal::{deserialize_object_from_base64, deserialize_object_from_boc},
-}, net::ServerLink};
-use crate::net::ParamsOfQueryCollection;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
-use crate::net::{OrderBy, SortDirection};
+use crate::{
+    boc::{
+        blockchain_config::{extract_config_from_block, extract_config_from_zerostate},
+        internal::{deserialize_object_from_base64, deserialize_object_from_boc},
+    },
+    net::{OrderBy, ParamsOfQueryCollection, ServerLink, SortDirection},
+};
 use std::sync::Arc;
 use ton_block::Deserializable;
 use ton_executor::BlockchainConfig;
+use ton_vm::executor::BehaviorModifiers;
 
 #[derive(Serialize, Deserialize, ApiType, Clone, Default)]
 pub struct ExecutionOptions {
@@ -35,6 +37,9 @@ pub struct ExecutionOptions {
     pub block_lt: Option<u64>,
     /// transaction logical time
     pub transaction_lt: Option<u64>,
+    /// Overrides standard TVM behaviour.
+    /// If set to `true` then CHKSIG always will return `true`.
+    pub chksig_always_succeed: Option<bool>,
 }
 
 pub(crate) struct ResolvedExecutionOptions {
@@ -42,6 +47,7 @@ pub(crate) struct ResolvedExecutionOptions {
     pub block_time: u32,
     pub block_lt: u64,
     pub transaction_lt: u64,
+    pub behavior_modifiers: BehaviorModifiers,
 }
 
 pub(crate) async fn blockchain_config_from_boc(context: &ClientContext, b64: &str) -> ClientResult<BlockchainConfig> {
@@ -57,7 +63,7 @@ impl ResolvedExecutionOptions {
     ) -> ClientResult<Self> {
         let options = options.unwrap_or_default();
 
-        let config = resolve_blockchain_config(context,options.blockchain_config).await?;
+        let config = resolve_blockchain_config(context, options.blockchain_config).await?;
 
         let block_lt = options
             .block_lt
@@ -66,12 +72,16 @@ impl ResolvedExecutionOptions {
         let block_time = options
             .block_time
             .unwrap_or_else(|| (context.env.now_ms() / 1000) as u32);
-
+        let behavior_modifiers = BehaviorModifiers {
+            chksig_always_succeed: options.chksig_always_succeed.unwrap_or(false),
+            ..Default::default()
+        };
         Ok(Self {
             block_lt,
             block_time,
             blockchain_config: config,
             transaction_lt,
+            behavior_modifiers,
         })
     }
 }

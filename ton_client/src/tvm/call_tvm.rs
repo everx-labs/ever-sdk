@@ -20,16 +20,17 @@ use ton_block::{
     Account, CommonMsgInfo, ConfigParams, CurrencyCollection, Deserializable, GlobalCapabilities,
     Message, MsgAddressInt, OutAction, OutActions, Serializable,
 };
-use ton_types::dictionary::HashmapType;
-use ton_types::{Cell, SliceData, UInt256};
-use ton_vm::executor::gas::gas_state::Gas;
-use ton_vm::stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem};
+use ton_types::{Cell, HashmapType, SliceData, UInt256};
+use ton_vm::{
+    executor::{gas::gas_state::Gas, Engine},
+    stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem},
+};
 
 pub(crate) fn call_tvm(
     account: &mut Account,
     options: ResolvedExecutionOptions,
     stack: Stack,
-) -> ClientResult<ton_vm::executor::Engine> {
+) -> ClientResult<Engine> {
     let code = account.get_code().unwrap_or_default();
     let data = account
         .get_data()
@@ -75,6 +76,8 @@ pub(crate) fn call_tvm(
         Some(stack),
         Some(gas),
     );
+
+    engine.modify_behavior(options.behavior_modifiers);
 
     match engine.execute() {
         Err(err) => {
@@ -171,8 +174,7 @@ fn build_contract_info(
     info.block_lt = block_lt;
     info.trans_lt = tr_lt;
     info.unix_time = block_unixtime;
-    info.balance.grams = balance.grams.as_u128().into();
-    info.balance.other = balance.other_as_hashmap().into();
+    info.balance = balance.clone();
     if let Some(data) = config_params.config_params.data() {
         info.config_params = Some(data.clone());
     }

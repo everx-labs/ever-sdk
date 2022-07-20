@@ -756,7 +756,7 @@ fn hdkey() {
     );
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_signing_box() {
     let client = std::sync::Arc::new(TestClient::new());
     let client_copy = client.clone();
@@ -951,7 +951,7 @@ async fn test_aes_params(key: &str, data: &str, encrypted: &str) {
     ).await.unwrap();
 }
 
-#[tokio::test(core_threads = 2)]
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_aes_encryption_box() {
     test_aes_params(
         "src/crypto/test_data/aes128.key.bin",

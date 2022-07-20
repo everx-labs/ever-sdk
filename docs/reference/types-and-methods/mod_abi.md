@@ -32,6 +32,8 @@ Provides message encoding and decoding according to the ABI specification.
 
 [encode_boc](mod\_abi.md#encode_boc) – Encodes given parameters in JSON into a BOC using param types from ABI.
 
+[calc_function_id](mod\_abi.md#calc_function_id) – Calculates contract function ID by contract ABI
+
 ## Types
 [AbiErrorCode](mod\_abi.md#abierrorcode)
 
@@ -143,6 +145,10 @@ Provides message encoding and decoding according to the ABI specification.
 
 [ResultOfAbiEncodeBoc](mod\_abi.md#resultofabiencodeboc)
 
+[ParamsOfCalcFunctionId](mod\_abi.md#paramsofcalcfunctionid)
+
+[ResultOfCalcFunctionId](mod\_abi.md#resultofcalcfunctionid)
+
 
 # Functions
 ## encode_message_body
@@ -155,7 +161,8 @@ type ParamsOfEncodeMessageBody = {
     call_set: CallSet,
     is_internal: boolean,
     signer: Signer,
-    processing_try_index?: number
+    processing_try_index?: number,
+    address?: string
 }
 
 type ResultOfEncodeMessageBody = {
@@ -175,6 +182,8 @@ function encode_message_body(
 - `signer`: _[Signer](mod\_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries.<br><br>Encoder uses the provided try index to calculate message<br>expiration time.<br><br>Expiration timeouts will grow with every retry.<br><br>Default value is 0.
+- `address`?: _string_ – Destination address of the message
+<br>Since ABI version 2.3 destination address of external inbound message is used in message<br>body signature calculation. Should be provided when signed external inbound message body is<br>created. Otherwise can be omitted.
 
 
 ### Result
@@ -722,6 +731,36 @@ function encode_boc(
 - `boc`: _string_ – BOC encoded as base64
 
 
+## calc_function_id
+
+Calculates contract function ID by contract ABI
+
+```ts
+type ParamsOfCalcFunctionId = {
+    abi: Abi,
+    function_name: string,
+    output?: boolean
+}
+
+type ResultOfCalcFunctionId = {
+    function_id: number
+}
+
+function calc_function_id(
+    params: ParamsOfCalcFunctionId,
+): Promise<ResultOfCalcFunctionId>;
+```
+### Parameters
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
+- `function_name`: _string_ – Contract function name
+- `output`?: _boolean_ – If set to `true` output function ID will be returned which is used in contract response. Default is `false`
+
+
+### Result
+
+- `function_id`: _number_ – Contract function ID
+
+
 # Types
 ## AbiErrorCode
 ```ts
@@ -739,7 +778,8 @@ enum AbiErrorCode {
     InvalidAbi = 311,
     InvalidFunctionId = 312,
     InvalidData = 313,
-    EncodeInitialDataFailed = 314
+    EncodeInitialDataFailed = 314,
+    InvalidFunctionName = 315
 }
 ```
 One of the following value:
@@ -758,6 +798,7 @@ One of the following value:
 - `InvalidFunctionId = 312`
 - `InvalidData = 313`
 - `EncodeInitialDataFailed = 314`
+- `InvalidFunctionName = 315`
 
 
 ## AbiContractVariant
@@ -1246,7 +1287,8 @@ type ParamsOfEncodeMessageBody = {
     call_set: CallSet,
     is_internal: boolean,
     signer: Signer,
-    processing_try_index?: number
+    processing_try_index?: number,
+    address?: string
 }
 ```
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
@@ -1256,6 +1298,8 @@ type ParamsOfEncodeMessageBody = {
 - `signer`: _[Signer](mod\_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries.<br><br>Encoder uses the provided try index to calculate message<br>expiration time.<br><br>Expiration timeouts will grow with every retry.<br><br>Default value is 0.
+- `address`?: _string_ – Destination address of the message
+<br>Since ABI version 2.3 destination address of external inbound message is used in message<br>body signature calculation. Should be provided when signed external inbound message body is<br>created. Otherwise can be omitted.
 
 
 ## ResultOfEncodeMessageBody
@@ -1619,5 +1663,27 @@ type ResultOfAbiEncodeBoc = {
 }
 ```
 - `boc`: _string_ – BOC encoded as base64
+
+
+## ParamsOfCalcFunctionId
+```ts
+type ParamsOfCalcFunctionId = {
+    abi: Abi,
+    function_name: string,
+    output?: boolean
+}
+```
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
+- `function_name`: _string_ – Contract function name
+- `output`?: _boolean_ – If set to `true` output function ID will be returned which is used in contract response. Default is `false`
+
+
+## ResultOfCalcFunctionId
+```ts
+type ResultOfCalcFunctionId = {
+    function_id: number
+}
+```
+- `function_id`: _number_ – Contract function ID
 
 
