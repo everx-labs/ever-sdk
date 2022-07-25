@@ -1,22 +1,58 @@
 ---
-description: Learn how to do analytics queries with GraphQL API
+description: >-
+  This document provides documentation for Collection Filter Language developed
+  by EverX
 ---
 
-# Analytics: Query Language
+# Collections: Query Language
 
-## Warning
+## What is a collection
 
-{% hint style="warning" %}
-<mark style="color:orange;">**Analytics API does not have any SLA response time and may vary depending on the API usage.**</mark>
-{% endhint %}
+Collection is a data set of one document type.
+
+There are 4 types of documents:
+
+* blocks
+* accounts
+* transactions
+* messages
+* block signatures
+
+All [Evernode Platform](https://docs.everos.dev/evernode-platform/products/functionality-comparison) products provide query, analytics and subscription functionality for these collections.
+
+```graphql
+query{
+    # Query collections
+    accounts
+    blocks
+    transactions
+    messages
+    block_signatures
+    # Calculate analytics (COUNT, MIN, MAX, SUM, AVERAGE)
+    aggregate_accounts
+    aggregate_blocks
+    aggregate_transactions
+    aggregate_messages
+    aggregate_block_signatures
+}
+
+subscription{
+    # Subscribe to data updates
+    accounts
+    blocks
+    transactions
+    messages
+    block_signatures
+}
+```
+
+## Support in Client Libraries
+
+**``**[**`ever-sdk`**](../types-and-methods/) provides wrappers for convenient work with collections from applications: `net.query_collection`, `net.aggregate_collection`, `net.subscribe_collection.`
 
 
 
-## Docs
-
-This document provides query language syntax examples and documentation
-
-Check out (../mod\_net.md) - the official TON Labs wrapper over GraphQL API for root queries and subscriptions.
+## Content table
 
 * [Query a collection](query\_language.md#query-a-collection)
 * [Aggregate a collection](query\_language.md#aggregate-a-collection)

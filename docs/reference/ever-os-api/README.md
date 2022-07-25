@@ -1,12 +1,12 @@
-# API
+---
+description: About GraphQL API
+---
 
-## EVER OS API
+# GraphQL API
 
-Access Blockchain via GraphQL API
+GraphQL API is shared by all [Evernode Platform](https://docs.everos.dev/evernode-platform) products.
 
-## Overview
-
-GraphQL Server is a major Everscale Operating System component that provides API and runtime to access Everscale Blockchain
+Due to the GraphQL ability to stitch its schemas, GraphQL API is in fact a set of "stitched" APIs behind it. Meanwhile all Evernode Platform products share the same core API that allows to communicate with Everscale network, [each product has its own subset](https://docs.everos.dev/evernode-platform/products/functionality-comparison) of APIs corresponding to the Product use-cases.
 
 ## Use-cases
 

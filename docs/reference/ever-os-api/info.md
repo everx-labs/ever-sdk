@@ -1,8 +1,8 @@
 ---
-description: Info query
+description: Endpoint info
 ---
 
-# Info
+# Info API
 
 Info query is used to get API version, as well as health parameters of the API, such as latency of blocks, messages and transactions
 

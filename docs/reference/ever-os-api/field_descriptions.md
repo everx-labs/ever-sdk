@@ -5,7 +5,7 @@ description: Below you can find some key types descriptions.
 # Field Descriptions
 
 {% hint style="info" %}
-All types descriptions can be found in GraphQL schema as it is self-descriptive. Just go to playground and click "DOCS":
+All types descriptions can be found in GraphQL schema as it is self-descriptive. Just go to playground and click "DOCS". Docs in Playground are the latest.
 {% endhint %}
 
 ![](../../.gitbook/assets/image.png)
