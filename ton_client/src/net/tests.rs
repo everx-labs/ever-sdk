@@ -16,6 +16,34 @@ use std::sync::Arc;
 use std::vec;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn auth_header() {
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "access_key": "secret"
+        }
+    }));
+    assert_eq!(
+        Some((
+            "Authorization".to_string(),
+            "Basic OnNlY3JldA==".to_string()
+        )),
+        client.context().config.network.get_auth_header()
+    );
+    let jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "access_key": jwt
+        }
+    }));
+    assert_eq!(
+        Some(("Authorization".to_string(), format!("Bearer {}", jwt))),
+        client.context().config.network.get_auth_header()
+    );
+    let client = TestClient::new();
+    assert_eq!(None, client.context().config.network.get_auth_header());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn batch_query() {
     let client = TestClient::new();
 
@@ -1331,4 +1359,3 @@ async fn query_using_ws() {
 
     assert!(messages.result.len() > 0);
 }
-
