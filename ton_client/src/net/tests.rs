@@ -44,6 +44,45 @@ async fn auth_header() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn endpoints_with_graphql_suffix() {
+    let url = TestClient::endpoints()[0].clone();
+    let url = if let Some(url) = url.strip_suffix("/graphql") {
+        url.to_string()
+    } else {
+        url
+    };
+
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": vec![format!("{}/graphql", url)]
+        }
+    }));
+    let endpoint = client
+        .context()
+        .get_server_link()
+        .unwrap()
+        .get_query_endpoint()
+        .await
+        .unwrap();
+
+    assert_eq!(endpoint.query_url, "http://localhost/graphql");
+
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": vec![url.clone()]
+        }
+    }));
+    let endpoint = client
+        .context()
+        .get_server_link()
+        .unwrap()
+        .get_query_endpoint()
+        .await
+        .unwrap();
+    assert_eq!(endpoint.query_url, "http://localhost/graphql");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn batch_query() {
     let client = TestClient::new();
 

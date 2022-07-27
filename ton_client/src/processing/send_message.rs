@@ -149,9 +149,9 @@ impl SendingMessage {
 
         let addresses = context.get_server_link()?.get_addresses_for_sending().await;
         let mut last_result = None::<ClientResult<String>>;
-        let succedeed_limit = context.config.network.sending_endpoint_count as usize;
+        let succeeded_limit = context.config.network.sending_endpoint_count as usize;
         let mut succeeded = Vec::new();
-        'sending: for selected_addresses in addresses.chunks(succedeed_limit) {
+        'sending: for selected_addresses in addresses.chunks(succeeded_limit) {
             let mut futures = vec![];
             for address in selected_addresses {
                 let context = context.clone();
@@ -163,7 +163,7 @@ impl SendingMessage {
             for result in futures::future::join_all(futures).await {
                 if let Ok(address) = &result {
                     succeeded.push(address.clone());
-                    if succeeded.len() >= succedeed_limit {
+                    if succeeded.len() >= succeeded_limit {
                         break 'sending;
                     }
                 }
