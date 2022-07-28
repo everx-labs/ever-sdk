@@ -9,6 +9,10 @@ All notable changes to this project will be documented in this file.
 - client sends `config.network.access_key` as `Authorization: Basic ...` or `Authorization: Bearer ...` header. 
 - client accepts endpoints with `/graphql` suffixes specified in config.
 
+### Fixed
+
+- Updated zstd in order to fix building.
+
 ## [1.36.1] – 2022-07-18
 
 ### Improvement
