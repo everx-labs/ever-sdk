@@ -62,7 +62,7 @@ const HTTP_PROTOCOL: &str = "http://";
 const HTTPS_PROTOCOL: &str = "https://";
 
 impl Endpoint {
-    pub fn http_headers(access_key: Option<&String>) -> Vec<(String, String)> {
+    pub fn http_headers(config: &NetworkConfig) -> Vec<(String, String)> {
         let mut headers = vec![
             ("tonclient-core-version".to_string(), core_version()),
             (
@@ -70,8 +70,8 @@ impl Endpoint {
                 BOC_VERSION.to_owned(),
             ),
         ];
-        if let Some(access_key) = access_key {
-            headers.push(("accessKey".into(), access_key.clone()));
+        if let Some(auth) = config.get_auth_header() {
+            headers.push(auth);
         }
         headers
     }
@@ -88,8 +88,11 @@ impl Endpoint {
             };
             format!("{}{}", protocol, base_url)
         };
-
-        format!("{}/graphql", base_url.trim_end_matches("/"))
+        if base_url.ends_with("/graphql") {
+            base_url
+        } else {
+            format!("{}/graphql", base_url)
+        }
     }
 
     async fn fetch_info_with_url(
@@ -97,11 +100,11 @@ impl Endpoint {
         query_url: &str,
         query: &str,
         timeout: u32,
-        access_key: Option<&String>,
+        config: &NetworkConfig,
     ) -> ClientResult<(Value, String, Option<String>)> {
         let mut headers = HashMap::new();
         headers.insert("content-type".to_owned(), "application/json".to_owned());
-        for (name, value) in Self::http_headers(access_key) {
+        for (name, value) in Self::http_headers(config) {
             headers.insert(name, value);
         }
         let response = client_env
@@ -130,7 +133,7 @@ impl Endpoint {
             &address,
             QUERY_INFO_VERSION_TIME,
             config.query_timeout,
-            config.access_key.as_ref(),
+            config,
         )
         .await?;
         let subscription_url = query_url
@@ -168,7 +171,7 @@ impl Endpoint {
                 &self.query_url,
                 query,
                 config.query_timeout,
-                config.access_key.as_ref(),
+                config,
             )
             .await?;
             self.apply_server_info(client_env, config, info_request_time, &info)?;
