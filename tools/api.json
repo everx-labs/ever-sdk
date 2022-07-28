@@ -1,5 +1,5 @@
 {
-  "version": "1.36.0",
+  "version": "1.36.1",
   "modules": [
     {
       "name": "client",
@@ -540,7 +540,7 @@
                 "type": "String"
               },
               "summary": "Access key to GraphQL API.",
-              "description": "At the moment is not used in production."
+              "description": "You can specify here Evercloud project secret ot serialized JWT."
             }
           ],
           "summary": null,

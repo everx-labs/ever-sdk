@@ -321,7 +321,7 @@ type NetworkConfig = {
 - `next_remp_status_timeout`?: _number_ – UNSTABLE.
 <br>Subsequent REMP status awaiting timeout. If no status recieved during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 5000 (5 sec).
 - `access_key`?: _string_ – Access key to GraphQL API.
-<br>At the moment is not used in production.
+<br>You can specify here Evercloud project secret ot serialized JWT.
 
 
 ## NetworkQueriesProtocol
