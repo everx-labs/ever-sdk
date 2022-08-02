@@ -122,9 +122,7 @@ fn deserialize_reconnect_timeout<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_reconnect_timeout()))
 }
 
-fn deserialize_max_latency<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<u32, D::Error> {
+fn deserialize_max_latency<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u32, D::Error> {
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_max_latency()))
 }
 
@@ -134,9 +132,7 @@ fn deserialize_latency_detection_frequency<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_latency_detection_frequency()))
 }
 
-fn deserialize_query_timeout<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<u32, D::Error> {
+fn deserialize_query_timeout<'de, D: Deserializer<'de>>(deserializer: D) -> Result<u32, D::Error> {
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_query_timeout()))
 }
 
@@ -174,7 +170,7 @@ pub enum NetworkQueriesProtocol {
     HTTP,
 
     /// All GraphQL queries will be served using single web socket connection.
-    WS
+    WS,
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
@@ -307,7 +303,7 @@ pub struct NetworkConfig {
     )]
     pub queries_protocol: NetworkQueriesProtocol,
 
-    /// UNSTABLE. First REMP status awaiting timeout. If no status recieved during the timeout than fallback 
+    /// UNSTABLE. First REMP status awaiting timeout. If no status recieved during the timeout than fallback
     /// transaction scenario is activated.
     ///
     /// Must be specified in milliseconds. Default is 1000 (1 sec).
@@ -317,7 +313,7 @@ pub struct NetworkConfig {
     )]
     pub first_remp_status_timeout: u32,
 
-    /// UNSTABLE. Subsequent REMP status awaiting timeout. If no status recieved during the timeout than fallback 
+    /// UNSTABLE. Subsequent REMP status awaiting timeout. If no status recieved during the timeout than fallback
     /// transaction scenario is activated.
     ///
     /// Must be specified in milliseconds. Default is 5000 (5 sec).
@@ -327,8 +323,26 @@ pub struct NetworkConfig {
     )]
     pub next_remp_status_timeout: u32,
 
-    /// Access key to GraphQL API. At the moment is not used in production.
+    /// Access key to GraphQL API.
+    ///
+    /// You can specify here Evercloud project secret ot serialized JWT.
     pub access_key: Option<String>,
+}
+
+impl NetworkConfig {
+    pub fn get_auth_header(&self) -> Option<(String, String)> {
+        if let Some(key) = &self.access_key {
+            let is_jwt = key.contains('.');
+            let auth = if is_jwt {
+                format!("Bearer {}", key)
+            } else {
+                format!("Basic {}", base64::encode(format!(":{}", key).as_bytes()))
+            };
+            Some(("Authorization".into(), auth))
+        } else {
+            None
+        }
+    }
 }
 
 impl Default for NetworkConfig {

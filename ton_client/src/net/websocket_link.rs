@@ -22,6 +22,7 @@ use crate::net::{Error, NetworkConfig};
 use futures::stream::{Fuse, FusedStream};
 use futures::Sink;
 use futures::{SinkExt, StreamExt};
+use serde_json::Value;
 use std::collections::HashMap;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -256,7 +257,7 @@ impl LinkHandler {
         let endpoint = self.state.get_query_endpoint().await?;
         let mut headers = HashMap::new();
         headers.insert("Sec-WebSocket-Protocol".into(), "graphql-ws".into());
-        for (name, value) in Endpoint::http_headers(self.config.access_key.as_ref()) {
+        for (name, value) in Endpoint::http_headers(&self.config) {
             headers.insert(name, value);
         }
         let mut ws = self
@@ -265,8 +266,8 @@ impl LinkHandler {
             .await;
         if let Ok(ref mut ws) = ws {
             let mut connection_params = json!({});
-            if let Some(access_key) = &self.config.access_key {
-                connection_params["accessKey"] = access_key.as_str().into();
+            if let Some((name, value)) = &self.config.get_auth_header() {
+                connection_params[name] = Value::String(value.clone());
             }
             let init_message = GraphQLMessageFromClient::ConnectionInit { connection_params };
             ws_send(&mut ws.sender, init_message).await;

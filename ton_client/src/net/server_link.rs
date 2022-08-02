@@ -547,7 +547,7 @@ impl ServerLink {
 
         let mut headers = HashMap::new();
         headers.insert("content-type".to_owned(), "application/json".to_owned());
-        for (name, value) in Endpoint::http_headers(self.config.access_key.as_ref()) {
+        for (name, value) in Endpoint::http_headers(&self.config) {
             headers.insert(name, value);
         }
 
