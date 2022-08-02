@@ -1,33 +1,292 @@
 # Networks
 
-Each Everscale Operating System (EVER OS) instance has a single GraphQL API endpoint. Each Cloud has several EVER OS instances running for reliability.
+Each Evernode Platform instance has a single GraphQL API endpoint.&#x20;
 
-## Networks
+**To get access to Evercloud please** [**follow this guide.**](https://docs.everos.dev/evernode-platform/products/evercloud/get-started)****
 
-> **Attention!**
->
-> **You need to specify ALL the endpoints in your configuration, not just one from the list. We do not guarantee availability of each endpoint all the time, but we guarantee that at least 1 endpoint is operational at the moment.**
+## Network endpoints
 
-| EVER OS                                                            | Description                             | Web Playground URLs                                                                                                                                                                                                                                                                                                                                                                                                                                                                  | HTTP Endpoints                                                                                                                                                                                                                                                                                                                                                                                       | Websocket Endpoints                                                                                                                                                                      |
-| ------------------------------------------------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| EVER OS Cloud for Everscale                                        | Access to Everscale network             | <p><a href="https://eri01.main.everos.dev/graphql">https://eri01.main.everos.dev/graphql</a><br><a href="https://gra01.main.everos.dev/graphql">https://gra01.main.everos.dev/graphql</a><br><a href="https://gra02.main.everos.dev/graphql">https://gra02.main.everos.dev/graphql</a><br><a href="https://lim01.main.everos.dev/graphql">https://lim01.main.everos.dev/graphql</a><br><a href="https://rbx01.main.everos.dev/graphql">https://rbx01.main.everos.dev/graphql</a></p> | <p><a href="https://eri01.main.everos.dev">https://eri01.main.everos.dev</a><br><a href="https://gra01.main.everos.dev">https://gra01.main.everos.dev</a><br><a href="https://gra02.main.everos.dev">https://gra02.main.everos.dev</a><br><a href="https://lim01.main.everos.dev">https://lim01.main.everos.dev</a><br><a href="https://rbx01.main.everos.dev">https://rbx01.main.everos.dev</a></p> | wss://eri01.main.everos.dev/graphql  wss://gra01.main.everos.dev/graphql  wss://gra02.main.everos.dev/graphql  wss://lim01.main.everos.dev/graphql  wss://rbx01.main.everos.dev/graphql  |
-| EVER OS Cloud for Developer network                                | Access to TON Labs Development Network  | <p><a href="https://eri01.net.everos.dev/graphql">https://eri01.net.everos.dev/graphql</a><br><a href="https://rbx01.net.everos.dev/graphql">https://rbx01.net.everos.dev/graphql</a><br><a href="https://gra01.net.everos.dev/graphql">https://gra01.net.everos.dev/graphql</a></p>                                                                                                                                                                                                 | <p><a href="https://eri01.net.everos.dev">https://eri01.net.everos.dev</a><br><a href="https://rbx01.net.everos.dev">https://rbx01.net.everos.dev</a><br><a href="https://gra01.net.everos.dev">https://gra01.net.everos.dev</a></p>                                                                                                                                                                 | wss://eri01.net.everos.dev/graphql  wss://rbx01.net.everos.dev/graphql  wss://gra01.net.everos.dev/graphql                                                                               |
-| [Evernode Startup Edition](https://github.com/tonlabs/evernode-se) | Access to Evernode SE for local testing | <p><a href="http://localhost/graphql">http://localhost/graphql</a><br><a href="http://127.0.0.1/graphql">http://127.0.0.1/graphql</a><br><a href="http://0.0.0.0/graphql">http://0.0.0.0/graphql</a> (*nix only)</p>                                                                                                                                                                                                                                                                 | <p><a href="http://localhost">http://localhost</a><br><a href="http://127.0.0.1">http://127.0.0.1</a><br><a href="http://0.0.0.0">http://0.0.0.0</a></p>                                                                                                                                                                                                                                             | wss://localhost                                                                                                                                                                          |
+| Network                       | Platform                                                                             | Web Playground URLs                                                                                                                                                                                                  | HTTP Endpoints                                                                          | Websocket Endpoints                           |
+| ----------------------------- | ------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------- |
+| Everscale Main Network        | [Evercloud](https://docs.everos.dev/evernode-platform/products/evercloud)            | https://mainnet.evercloud.dev/projectID/graphql                                                                                                                                                                      | https://mainnet.evercloud.dev/projectID/graphql                                         | wss://mainnet.evercloud.dev/projectID/graphql |
+| Everscale Development Network | [Evercloud](https://docs.everos.dev/evernode-platform/products/evercloud)            | https://devnet.evercloud.io/projectID/graphql                                                                                                                                                                        | https://devnet.evercloud.io/projectID/graphql                                           | wss://devnet.evercloud.dev/projectID/graphql  |
+| Everscale Test Network        | [Evercloud](https://docs.everos.dev/evernode-platform/products/evercloud)            | SOON                                                                                                                                                                                                                 | SOON                                                                                    | SOON                                          |
+| Any Everscale network         | [Evernode-DS](https://docs.everos.dev/evernode-platform/products/dapp-server-ds)     | your DApp Server URL                                                                                                                                                                                                 | your DApp Server URL                                                                    | your DApp Server URL                          |
+| Local Network                 | [Evernode-SE](https://docs.everos.dev/evernode-platform/products/simple-emulator-se) | <p><a href="http://localhost/graphql">http://localhost/graphql</a><br><a href="http://127.0.0.1/graphql">http://127.0.0.1/graphql</a><br><a href="http://0.0.0.0/graphql">http://0.0.0.0/graphql</a> (*nix only)</p> | <p>http://localhost/graphql<br>http://127.0.0.1/graphql <br>http://0.0.0.0/graphql </p> | wss://localhost/graphql                       |
 
-## Connect your application to GraphQL API
+## Connect to GraphQL
 
-Find out how to [connect your JS application to EVER OS](../../guides/installation/configure\_sdk.md).
+### HTTPS
 
-## Connect TONOS-CLI to GraphQL API
+#### Without secret
+
+{% tabs %}
+{% tab title="Curl" %}
+```bash
+curl --location --request POST 'endpoint' \
+--header 'Content-Type: application/json' \
+--data-raw '{"query":"query($address: String!){\n  blockchain{\n    account(address:$address){\n      info{\n        balance(format:DEC)\n      }\n    }\n  }\n}","variables":{"address":"0:e17ac4e77f46626579c7c4fefe35286117384c5ccfc8745c9780cdf056c378bf"}}'
+```
+{% endtab %}
+
+{% tab title="ever-sdk-js" %}
+```javascript
+const {TonClient} = require("@eversdk/core");
+const {libNode} = require("@eversdk/lib-node");
+
+TonClient.useBinaryLibrary(libNode)
+
+const client = new TonClient({
+    network: {
+        endpoints: [
+            "endpoint"
+        ],
+    },
+});
+
+(async () => {
+    try {
+        queryString = `
+            query{
+                blockchain{
+                blocks(workchain:-1, last:1){
+                    edges{
+                    node{
+                        hash
+                        seq_no
+                    }
+                    }
+                }
+                }
+            }
+        `
+        let {seq_no, hash} = (await client.net.query({ 
+            "query": queryString }))
+        .result.data.blockchain.blocks.edges[0].node;
+        console.log("The last masterchain block seqNo is " + seq_no+ '\n' + "the hash is" + hash);
+        client.close();
+}
+    catch (error) {
+            console.error(error);
+    }
+}
+)()
+```
+{% endtab %}
+
+{% tab title="JS fetch" %}
+```javascript
+var myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/json");
+
+var graphql = JSON.stringify({
+  query: "query{\n  blockchain{\n    blocks(workchain:-1, last:1){\n      edges{\n        node{\n          hash\n          seq_no\n        }\n      }\n    }\n  }\n}",
+  variables: {}
+})
+var requestOptions = {
+  method: 'POST',
+  headers: myHeaders,
+  body: graphql,
+  redirect: 'follow'
+};
+
+fetch("endpoint", requestOptions)
+  .then(response => response.text())
+  .then(result => console.log(result))
+  .catch(error => console.log('error', error));
+```
+{% endtab %}
+
+{% tab title="Postman" %}
+```
+URL: endpoint
+Body: GraphQL
+Query:
+
+query{
+  blockchain{
+    blocks(workchain:-1, last:1){
+      edges{
+        node{
+          hash
+          seq_no
+        }
+      }
+    }
+  }
+}
+```
+{% endtab %}
+{% endtabs %}
+
+#### With secret
+
+{% tabs %}
+{% tab title="Curl" %}
+```bash
+curl --location --request POST 'endpoint' \
+--header 'Authorization: Basic OmM1NWY3Y2Q4YzZmZTRjNTBhMDRjOTM0ODE0NTg3OWRi' \
+--header 'Content-Type: application/json' \
+--data-raw '{"query":"query{\n  blockchain{\n    blocks(workchain:-1, last:1){\n      edges{\n        node{\n          hash\n          seq_no\n        }\n      }\n    }\n  }\n}","variables":{}}'
+```
+{% endtab %}
+
+{% tab title="ever-sdk-js" %}
+```javascript
+WIP
+Support of Project Secret is in development
+```
+{% endtab %}
+
+{% tab title="JS fetch" %}
+```javascript
+var myHeaders = new Headers();
+myHeaders.append("Authorization", "Basic OmM1NWY3Y2Q4YzZmZTRjNTBhMDRjOTM0ODE0NTg3OWRi");
+myHeaders.append("Content-Type", "application/json");
+
+var graphql = JSON.stringify({
+  query: "query{\n  blockchain{\n    blocks(workchain:-1, last:1){\n      edges{\n        node{\n          hash\n          seq_no\n        }\n      }\n    }\n  }\n}",
+  variables: {}
+})
+var requestOptions = {
+  method: 'POST',
+  headers: myHeaders,
+  body: graphql,
+  redirect: 'follow'
+};
+
+fetch("endpoint", requestOptions)
+  .then(response => response.text())
+  .then(result => console.log(result))
+  .catch(error => console.log('error', error));
+```
+{% endtab %}
+
+{% tab title="Postman" %}
+```
+URL: endpoint
+Authorization: Basic Auth
+Username: empty
+Password: <Project Secret>
+Body: GraphQL
+Query:
+
+query{
+  blockchain{
+    blocks(workchain:-1, last:1){
+      edges{
+        node{
+          hash
+          seq_no
+        }
+      }
+    }
+  }
+}
+```
+{% endtab %}
+{% endtabs %}
+
+### WSS
+
+#### Without secret
+
+{% tabs %}
+{% tab title="ever-sdk-js" %}
+```javascript
+const {TonClient} = require("@eversdk/core");
+const {libNode} = require("@eversdk/lib-node");
+
+TonClient.useBinaryLibrary(libNode)
+
+const client = new TonClient({
+    network: {
+        endpoints: [
+            "endpoint"
+        ],
+    },
+});
+
+async function _callback(response, responseType){
+       /*
+         * Where responseType:
+         * 100 - GraphQL data received
+         * 101 - GraphQL error received
+         */
+
+        if (responseType === 100) {
+            if (response.result) {
+                console.log("New block seq_no: "+ response.result.blocks.seq_no);
+
+            }
+        } else {
+            console.log("Subscription failed with result: "+ JSON.stringify(response))
+        }
+    }
+
+(async () => {
+    try {
+        subscriptionString = `
+            subscription{
+                blocks(filter:{
+                workchain_id:{
+                    eq:-1
+                }
+                }){
+                seq_no
+                id
+                }
+            }
+        `
+        const subscriptionHandler =  await client.net.subscribe({ 
+            "subscription": subscriptionString }, _callback);        
+        
+        await new Promise(r => setTimeout(r, 10000));
+
+        await client.net.unsubscribe(subscriptionHandler);
+
+            
+        client.close();
+}
+    catch (error) {
+            console.error(error);
+    }
+}
+)()
+```
+{% endtab %}
+
+{% tab title="wscat" %}
+```bash
+wscat -c endpoint -s graphql-ws
+{"id":"1","type":"start","payload":{"variables":{},"extensions":{},"operationName":null,"query":"subscription{\n  blocks(filter:{\n    workchain_id:{\n      eq:-1\n    }\n  }){\n    seq_no\n    id\n  }\n}"}}
+```
+{% endtab %}
+
+{% tab title="Postman" %}
+```json
+URL: endpoint
+Sec-WebSocket-Protocol: graphql-ws
+
+message
+{
+  "id": "1",
+  "type": "start",
+  "payload": {
+    "variables": {},
+    "extensions": {},
+    "operationName": null,
+    "query": "subscription{\n  blocks(filter:{\n    workchain_id:{\n      eq:-1\n    }\n  }){\n    seq_no\n    id\n  }\n}"
+  }
+}
+```
+{% endtab %}
+{% endtabs %}
+
+## Connect TONOS-CLI to GraphQL
 
 Find out how to [connect TONOS-CLI to EVER OS](https://github.com/tonlabs/tonos-cli#21-set-the-network-and-parameter-values).
 
-## Other Clients
 
-If you use another language check the official GraphQL documentation how to connect:
-
-* via [other GraphQL Clients](https://graphql.org/code/)
-* via [HTTP requests](https://graphql.org/learn/serving-over-http/)
-* via websocket protocol [https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md](https://github.com/apollographql/subscriptions-transport-ws/blob/master/PROTOCOL.md)
 
 In the next section find out how to work with GraphQL Web playground and easily explore blockchain data with it.
