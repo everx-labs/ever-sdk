@@ -186,11 +186,6 @@ async fn test_pinned_cache() {
     let client = TestClient::new();
     let cache_set = client.wrap_async(cache_set, BocModule::api(), super::cache::cache_set_api());
     let cache_get = client.wrap_async(cache_get, BocModule::api(), super::cache::cache_get_api());
-    let cache_pin = client.wrap_async(
-        cache_pin,
-        BocModule::api(),
-        super::cache::cache_pin_api(),
-    );
     let cache_unpin = client.wrap_async(
         cache_unpin,
         BocModule::api(),
@@ -305,10 +300,10 @@ async fn test_pinned_cache() {
 
     // pin boc1 again with pin2 to increase counter and then check that it is removed from cache after 2 unpins
 
-    cache_pin
-        .call(ParamsOfBocCachePin {
-            boc_ref: ref1.clone(),
-            pin: pin2.clone(),
+    cache_set
+        .call(ParamsOfBocCacheSet {
+            boc: ref1.clone(),
+            cache_type: BocCacheType::Pinned { pin: pin2.clone() },
         })
         .await
         .unwrap();

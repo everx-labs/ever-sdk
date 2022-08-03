@@ -134,14 +134,6 @@ impl Bocs {
             .or_insert_with(|| PinnedBoc { pins: HashMap::from_iter([(pin, 1)]), cell });
     }
 
-    async fn add_pin(&self, hash: UInt256, pin: String) -> ClientResult<()> {
-        let mut lock = self.pinned.write().await;
-        let entry = lock.get_mut(&hash)
-            .ok_or_else(|| Error::boc_ref_not_found(&hash.to_hex_string()))?;
-        entry.pins.entry(pin).and_modify(|refs| *refs += 1).or_insert(1);
-        Ok(())
-    }
-
     pub(crate) async fn unpin(&self, pin: &str, hash: Option<UInt256>) {
         let mut to_remove = vec![];
         let mut lock = self.pinned.write().await;
@@ -261,7 +253,7 @@ pub struct ResultOfBocCacheSet {
     pub boc_ref: String,
 }
 
-/// Save BOC into cache
+/// Save BOC into cache or increase pin counter for existing pinned BOC
 #[api_function]
 pub async fn cache_set(
     context: Arc<ClientContext>, 
@@ -304,25 +296,6 @@ pub async fn cache_get(
         .transpose()?;
     
     Ok( ResultOfBocCacheGet { boc })
-}
-
-#[derive(Serialize, Deserialize, Clone, ApiType, Default)]
-pub struct ParamsOfBocCachePin {
-    /// Pin name
-    pub pin: String,
-    /// Reference to the cached BOC. BOC must be in pinned cache
-    pub boc_ref: String,
-}
-
-/// Pin the cached BOC with the new pin or increase pin counter for existing pin
-#[api_function]
-pub async fn cache_pin(
-    context: Arc<ClientContext>, 
-    params: ParamsOfBocCachePin,
-) -> ClientResult<()> {
-    let hash = parse_boc_ref(&params.boc_ref)?;
-    context.bocs.add_pin(hash, params.pin).await?;
-    Ok(())
 }
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
