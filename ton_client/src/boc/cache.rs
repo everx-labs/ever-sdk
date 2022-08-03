@@ -310,7 +310,7 @@ pub async fn cache_get(
 pub struct ParamsOfBocCachePin {
     /// Pin name
     pub pin: String,
-    /// Reference to the cached BOC
+    /// Reference to the cached BOC. BOC must be in pinned cache
     pub boc_ref: String,
 }
 
