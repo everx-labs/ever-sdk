@@ -18,6 +18,7 @@ use super::Error;
 
 use lru::LruCache;
 use std::collections::{HashMap, HashSet};
+use std::iter::FromIterator;
 use std::sync::Arc;
 #[allow(unused_imports)]
 use std::str::FromStr;
@@ -74,8 +75,13 @@ fn calc_tree_size(cell: &ton_types::Cell) -> usize {
 #[serde(tag="type")]
 pub enum BocCacheType {
     /// Pin the BOC with `pin` name. Such BOC will not be removed from cache until it is unpinned
+    /// BOCs can have several pins and each of the pins has reference counter indicating how many
+    /// times the BOC was pinned with the pin. BOC is removed from cache after all references for all
+    /// pins are unpinned with `cache_unpin` function calls.
     Pinned{ pin: String },
-    /// 
+    /// BOC is placed into a common BOC pool with limited size regulated by LRU 
+    /// (least recently used) cache lifecycle. BOC resides there until it is replaced 
+    /// with other BOCs if it is not used
     Unpinned
 }
 
@@ -86,7 +92,7 @@ impl Default for BocCacheType {
 }
 
 pub struct PinnedBoc {
-    pins: HashSet<String>,
+    pins: HashMap<String, u32>,
     cell: Cell,
 }
 
@@ -121,21 +127,11 @@ impl Bocs {
         }
     }
 
-    async fn add_pinned(&self, hash: UInt256, pin: String, cell: Cell) {
-        if let Some(entry) = self.pinned.read().await.get(&hash) {
-            if entry.pins.contains(&pin) {
-                return;
-            }
-        }
-
+    async fn add_new_pinned(&self, hash: UInt256, pin: String, cell: Cell) {
         let mut lock = self.pinned.write().await;
-        if let Some(entry) = lock.get_mut(&hash) {
-            entry.pins.insert(pin);
-            return;
-        }
-        let mut pins = HashSet::new();
-        pins.insert(pin);
-        lock.insert(hash.clone(), PinnedBoc { pins, cell });
+        lock.entry(hash)
+            .and_modify(|entry| { entry.pins.entry(pin.clone()).and_modify(|refs| *refs += 1).or_insert(1); })
+            .or_insert_with(|| PinnedBoc { pins: HashMap::from_iter([(pin, 1)]), cell });
     }
 
     pub(crate) async fn unpin(&self, pin: &str, hash: Option<UInt256>) {
@@ -144,14 +140,18 @@ impl Bocs {
 
         if let Some(hash) = hash {
             if let Some(entry) = lock.get_mut(&hash) {
-                entry.pins.remove(pin);
+                if let Some(0) = entry.pins.get_mut(pin).map(|refs| {*refs -= 1; *refs}) {
+                    entry.pins.remove(pin);
+                }
                 if entry.pins.is_empty() {
                     to_remove.push(hash);
                 }
             }
         } else {
             for (key, entry) in lock.iter_mut() {
-                entry.pins.remove(pin);
+                if let Some(0) = entry.pins.get_mut(pin).map(|refs| {*refs -= 1; *refs}) {
+                    entry.pins.remove(pin);
+                }
                 if entry.pins.is_empty() {
                     to_remove.push(key.clone());
                 }
@@ -211,7 +211,7 @@ impl Bocs {
         let hash = cell.repr_hash();
         log::debug!("Bocs::add {:x}", hash);
         match cache_type {
-            BocCacheType::Pinned { pin } => self.add_pinned(hash.clone(), pin, cell).await,
+            BocCacheType::Pinned { pin } => self.add_new_pinned(hash.clone(), pin, cell).await,
             BocCacheType::Unpinned => {
                 if let Some(_) = self.get_cached(&hash).await {
                     return Ok(hash);
@@ -253,7 +253,7 @@ pub struct ResultOfBocCacheSet {
     pub boc_ref: String,
 }
 
-/// Save BOC into cache
+/// Save BOC into cache or increase pin counter for existing pinned BOC
 #[api_function]
 pub async fn cache_set(
     context: Arc<ClientContext>, 
@@ -306,7 +306,8 @@ pub struct ParamsOfBocCacheUnpin {
     pub boc_ref: Option<String>,
 }
 
-/// Unpin BOCs with specified pin. BOCs which don't have another pins will be removed from cache
+/// Decrease pin reference counter for BOCs with specified pin.
+/// BOCs which have only 1 pin and its reference counter become 0 will be removed from cache
 #[api_function]
 pub async fn cache_unpin(
     context: Arc<ClientContext>, 
