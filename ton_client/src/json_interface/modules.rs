@@ -428,6 +428,7 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
     );
     module.register_async_fn(crate::boc::cache_get, crate::boc::cache::cache_get_api);
     module.register_async_fn(crate::boc::cache_set, crate::boc::cache::cache_set_api);
+    module.register_async_fn(crate::boc::cache_pin, crate::boc::cache::cache_pin_api);
     module.register_async_fn(crate::boc::cache_unpin, crate::boc::cache::cache_unpin_api);
     module.register_type::<BuilderOp>();
     module.register_async_fn(crate::boc::encode_boc, crate::boc::encode::encode_boc_api);

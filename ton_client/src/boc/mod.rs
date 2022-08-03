@@ -33,8 +33,8 @@ pub use blockchain_config::{
     get_blockchain_config, ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig,
 };
 pub use cache::{
-    cache_get, cache_set, cache_unpin, BocCacheType, ParamsOfBocCacheGet, ParamsOfBocCacheSet,
-    ParamsOfBocCacheUnpin, ResultOfBocCacheGet, ResultOfBocCacheSet,
+    cache_get, cache_set, cache_pin, cache_unpin, BocCacheType, ParamsOfBocCacheGet, ParamsOfBocCacheSet,
+    ParamsOfBocCachePin, ParamsOfBocCacheUnpin, ResultOfBocCacheGet, ResultOfBocCacheSet,
 };
 pub use encode::{encode_boc, BuilderOp, ParamsOfEncodeBoc, ResultOfEncodeBoc};
 pub use errors::{Error, ErrorCode};
