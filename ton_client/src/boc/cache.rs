@@ -305,8 +305,9 @@ pub struct ParamsOfBocCacheUnpin {
     /// Reference to the cached BOC. If it is provided then only referenced BOC is unpinned
     pub boc_ref: Option<String>,
 }
+/// Unpin BOCs with specified pin defined in the `cache_set`.
 
-/// Decrease pin reference counter for BOCs with specified pin.
+/// Decrease pin reference counter for BOCs with specified pin defined in the `cache_set`.
 /// BOCs which have only 1 pin and its reference counter become 0 will be removed from cache
 #[api_function]
 pub async fn cache_unpin(
