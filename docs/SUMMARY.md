@@ -2,6 +2,7 @@
 
 * [Ever SDK](../README.md)
 * [Quick start (JavaScript)](quick\_start.md)
+* [Add EVER to your Exchane](./guides/add_to_exchange.md)
 
 ## Reference
 
