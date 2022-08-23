@@ -1,36 +1,37 @@
-# Add EVER to your exchange
-
+# Add EVER to your Exchane
 
 ## Introduction
 
-This document describes the various ways to accomplish the most important tasks of running a crypto exchange that supports EVER. 
+This document describes the various ways to accomplish the most important tasks of running a crypto exchange that supports EVER.
 
 There are a few different ways to accomplish the necessary tasks:
 
-- Blockchain access may be set up either through the  EVER OS cloud or through your own node - the DApp server.
-- Deposit account management can be accomplished either through the TONOS-CLI command line tool or integrated into your backend with TON SDK. Both of these approaches are compatible with either of the blockchain access setups.
+* Blockchain access may be set up either through the [Evercloud](https://docs.everos.dev/evernode-platform/products/evercloud/get-started) or through your own  node - the [DApp server](https://docs.everos.dev/evernode-platform/products/dapp-server-ds).
+* Deposit account management can be accomplished either through the [TONOS-CLI ](https://github.com/tonlabs/tonos-cli)command line tool or integrate into your backend with  EVER-SDK client libraries. Both of these approaches are compatible with either of the blockchain access setups.
 
 ## Setting up Blockchain Access
 
-There are two ways you can set up access to the Everscale blockchain: you may use Evercloud, or set up your own DApp server.
+There are two ways you can set up access to the Everscale blockchain: you may use [Evercloud](https://docs.everos.dev/evernode-platform/products/evercloud/get-started), or set up your own DApp server.
 
-Using Everdloud
-EVER OS Cloud allows you to work with Everscale blockchain and the Development Network without having to run your own node. TONOS-CLI and SDK can connect to it, as if it were a regular node. It has the same API as a node, and provides all capabilities required for running an exchange.
+### Using Evercloud
 
+Using [Evercloud](https://docs.everos.dev/evernode-platform/products/evercloud/get-started) allows you to work with Everscale blockchain and the Development Network without having to run your own node. TONOS-CLI and SDK can connect to it, as if it were a regular node. It has the same API as a node, and provides all capabilities required for running an exchange.
 
+This page lists the [cloud endpoints](https://docs.everos.dev/ever-sdk/reference/ever-os-api/networks). To get access credentials go through this [guide](https://docs.everos.dev/evernode-platform/products/evercloud/get-started).
 
-This page lists the endpoints for both clouds.
+Whenever you have to specify a network endpoint in the examples given below, use the endpoints you receive in the [Evercloud dashboard](https://dashboard.evercloud.dev/projects).
 
-Whenever you have to specify a network in the examples given below, you may use them.
-
+{% hint style="info" %}
 Note: We highly recommend testing out the full setup on the developer network first.
-Using DApp Server
-If you prefer to run your own node, rather than using EVER OS Cloud, you may set up your own DApp server. It is a full node, that may be set up on your own servers and provide full access to either Everscale or the Developer network. To connect to to it with TONOS-CLI or SDK, it needs to have a domain name and a DNS record. You can specify its URL whenever you have to set the network in the examples given below.
+{% endhint %}
 
-Get the setup scripts in this repository: https://github.com/tonlabs/TON-OS-DApp-Server
+### Using DApp Server&#x20;
 
-1. System Requirements
-Configuration
+If you prefer to run your own node, you may set up your own DApp server. It is a client node, that may be set up on your own servers and provide full access to either Everscale or the Developer network. To connect to it with TONOS-CLI or SDK, it needs to have a domain name and a DNS record. You can specify its URL whenever you have to set the network in the examples given below.
+
+Get the setup scripts in this repository: [https://github.com/tonlabs/evernode-ds](https://github.com/tonlabs/evernode-ds)
+
+1. System Requirements Configuration
 
 CPU (cores)
 
@@ -52,61 +53,37 @@ Recommended
 
 SSD disks are recommended for storage.
 
-2. Prerequisites
-2.1 Set the Environment
-Set the network in /scripts/env.sh: use main.ton.dev for the main network and net.ton.dev for the developer network.
+1. Prerequisites 2.1 Set the Environment Set the network in /scripts/env.sh: use main.ton.dev for the main network and net.ton.dev for the developer network.
 
-Note: We highly recommend testing out the full setup on the developer network first.
-$ cd TON-OS-DApp-Server/scripts/
-$ . ./env.sh
-2.2 Install Dependencies
-Ubuntu 20.04:
+Note: We highly recommend testing out the full setup on the developer network first. $ cd TON-OS-DApp-Server/scripts/ $ . ./env.sh 2.2 Install Dependencies Ubuntu 20.04:
 
-$ ./install_deps.sh
-Note: Make sure to add your user to the docker group, or run deploy command as superuser:
-sudo usermod -a -G docker $USER
-3. Deploy Node
-Deploy node:
+$ ./install\_deps.sh Note: Make sure to add your user to the docker group, or run deploy command as superuser: sudo usermod -a -G docker $USER 3. Deploy Node Deploy node:
 
-$ ./deploy.sh 2>&1 | tee ./deploy.log
-Note: the log generated by this command will be located in the TON-OS-DApp-Server/scripts/ folder and can be useful for troubleshooting.
+$ ./deploy.sh 2>&1 | tee ./deploy.log Note: the log generated by this command will be located in the TON-OS-DApp-Server/scripts/ folder and can be useful for troubleshooting.
 
-
-
-Setting up Deposit Account
-Currently we can recommend the formally verified SafeMultisig contract for use in deposit accounts. It is well tested and secure, supports multiple custodians, and can be set up to require several independent signatures for any transfers. However it has certain limitations, that may prove problematic for exchanges: it is not possible to send tokens transfers in batches to multiple addresses.
+Setting up Deposit Account Currently we can recommend the formally verified SafeMultisig contract for use in deposit accounts. It is well tested and secure, supports multiple custodians, and can be set up to require several independent signatures for any transfers. However it has certain limitations, that may prove problematic for exchanges: it is not possible to send tokens transfers in batches to multiple addresses.
 
 If this functionality is required, you can develop a contract with the needed capabilities or get one developed by someone in the Everscale community.
 
-Using command line tool
-TONOS-CLI, the command line tool for the Everscale blockchain, allows to deploy any smart contracts to the blockchain, call all contract methods, sign transactions, and generally manage an account.
+Using command line tool TONOS-CLI, the command line tool for the Everscale blockchain, allows to deploy any smart contracts to the blockchain, call all contract methods, sign transactions, and generally manage an account.
 
 TONOS-CLI has versions for Linux, Windows and Mac.
 
 It supports the EVER OS cloud and DApp server-based approaches both.
 
-1. Install TONOS-CLI
-You can use EVERDEV to install the latest version of TONOS-CLI:
+1. Install TONOS-CLI You can use EVERDEV to install the latest version of TONOS-CLI:
 
-everdev tonos-cli install
-The installer requires NPM to be installed, so it can install packages globally without using sudo. In case of error, manually set the environment variable
+everdev tonos-cli install The installer requires NPM to be installed, so it can install packages globally without using sudo. In case of error, manually set the environment variable
 
-PATH=$PATH:$HOME./everdev/solidity
-2. Set the network
-Use the following command to set the network:
+PATH=$PATH:$HOME./everdev/solidity 2. Set the network Use the following command to set the network:
 
-tonos-cli config --url <https://network_url>
-You may specify either your DApp Server URL, or one of the cloud endpoints:
+tonos-cli config --url [https://network\_url](https://network\_url) You may specify either your DApp Server URL, or one of the cloud endpoints:
 
-developer network for testing with test tokens. By default, TONOS-CLI connects to the developer network. We highly recommend testing out the full setup on this network first.
-main Everscale network. Switch to it for working with EVERS.
-Refer to this list for network URLs.
+developer network for testing with test tokens. By default, TONOS-CLI connects to the developer network. We highly recommend testing out the full setup on this network first. main Everscale network. Switch to it for working with EVERS. Refer to this list for network URLs.
 
 You need to set the network only once before you start using the utility.
 
-Note: You should run the TONOS-CLI utility only from the folder where the tonos-cli.conf.json file is located.
-3. Get contract files
-To use the recommended SafeMultisig, get the contract files:
+Note: You should run the TONOS-CLI utility only from the folder where the tonos-cli.conf.json file is located. 3. Get contract files To use the recommended SafeMultisig, get the contract files:
 
 .tvc - Compiled contract code
 
@@ -120,227 +97,106 @@ SafeMultisigWallet.tvc direct link:
 
 https://github.com/tonlabs/ton-labs-contracts/raw/master/solidity/safemultisig/SafeMultisigWallet.tvc
 
-4. Create account seed phrase
-To generate your seed phrase enter the following command:
+1. Create account seed phrase To generate your seed phrase enter the following command:
 
-tonos-cli genphrase
-Terminal displays the generated seed phrase:
+tonos-cli genphrase Terminal displays the generated seed phrase:
 
-$ tonos-cli genphrase
-Config: default
-Succeeded.
-Seed phrase: "spoon doll recipe regular list window cage joke stock clown mass glare"
-If the deposit account needs to have multiple custodians, each of them has to generate their own seed phrase.
+$ tonos-cli genphrase Config: default Succeeded. Seed phrase: "spoon doll recipe regular list window cage joke stock clown mass glare" If the deposit account needs to have multiple custodians, each of them has to generate their own seed phrase.
 
-5. Generate public key
-To generate your public key enter the following command with your previously generated seed phrase in quotes:
+1. Generate public key To generate your public key enter the following command with your previously generated seed phrase in quotes:
 
-tonos-cli genpubkey "<seed_phrase>"
-If the deposit account needs to have several custodians, each of them should generate their public key and send it to whomever will be deploying the account.
+tonos-cli genpubkey "\<seed\_phrase>" If the deposit account needs to have several custodians, each of them should generate their public key and send it to whomever will be deploying the account.
 
-$ tonos-cli genpubkey "spoon doll recipe regular list window cage joke stock clown mass glare"
-Config: default
-Succeeded.
-Public key: 352a248222c18d5c87d0e998d3c44ab324d21578f4068028af9b49005d2c9859
-6. Generate deployment key pair file
-Any custodian who has received the public keys of all other custodians can deploy the contract to the blockchain.
+$ tonos-cli genpubkey "spoon doll recipe regular list window cage joke stock clown mass glare" Config: default Succeeded. Public key: 352a248222c18d5c87d0e998d3c44ab324d21578f4068028af9b49005d2c9859 6. Generate deployment key pair file Any custodian who has received the public keys of all other custodians can deploy the contract to the blockchain.
 
 To create the key pair file from the seed phrase use the following command:
 
-tonos-cli getkeypair <deploy.keys.json> "<seed_phrase>"
-<deploy.keys.json> - the file the key pair will be written to.
+tonos-cli getkeypair \<deploy.keys.json> "\<seed\_phrase>" \<deploy.keys.json> - the file the key pair will be written to.
 
 The utility generates the file that contains the key pair produced from seed phrase.
 
-$ tonos-cli getkeypair deploy.keys.json "spoon doll recipe regular list window cage joke stock clown mass glare"
-Config: default
-Input arguments:
-key_file: deploy.keys.json
-  phrase: spoon doll recipe regular list window cage joke stock clown mass glare
-Succeeded.
-7. Generate account address
-Use deployment key pair file to generate your address:
+$ tonos-cli getkeypair deploy.keys.json "spoon doll recipe regular list window cage joke stock clown mass glare" Config: default Input arguments: key\_file: deploy.keys.json phrase: spoon doll recipe regular list window cage joke stock clown mass glare Succeeded. 7. Generate account address Use deployment key pair file to generate your address:
 
-tonos-cli genaddr SafeMultisigWallet.tvc SafeMultisigWallet.abi.json --setkey <deploy.keys.json>
-<deploy.keys.json> - the file the key pair is read from.
+tonos-cli genaddr SafeMultisigWallet.tvc SafeMultisigWallet.abi.json --setkey \<deploy.keys.json> \<deploy.keys.json> - the file the key pair is read from.
 
 The utility displays the new deposit account address (Raw address).
 
-$ tonos-cli genaddr SafeMultisigWallet.tvc SafeMultisigWallet.abi.json --setkey deploy.keys.json
-Config: default
-Input arguments:
-     tvc: SafeMultisigWallet.tvc
-      wc: None
-    keys: deploy.keys.json
-init_data: None
-is_update_tvc: None
+$ tonos-cli genaddr SafeMultisigWallet.tvc SafeMultisigWallet.abi.json --setkey deploy.keys.json Config: default Input arguments: tvc: SafeMultisigWallet.tvc wc: None keys: deploy.keys.json init\_data: None is\_update\_tvc: None
 
-Raw address: 0:703546ac78f2b9d58f1072d131ff9fc23f29aeddcc85fd30bcba64f475b306a2
-testnet:
-Non-bounceable address (for init): 0QBwNUasePK51Y8QctEx_5_CPymu3cyF_TC8umT0dbMGot4F
-Bounceable address (for later access): kQBwNUasePK51Y8QctEx_5_CPymu3cyF_TC8umT0dbMGooPA
-mainnet:
-Non-bounceable address (for init): UQBwNUasePK51Y8QctEx_5_CPymu3cyF_TC8umT0dbMGomWP
-Bounceable address (for later access): EQBwNUasePK51Y8QctEx_5_CPymu3cyF_TC8umT0dbMGojhK
-Succeeded
-8. Send tokens to the new address from another account
-Before deployment, an account needs to be sponsored with a small amount of tokens. You may use any convenient method to send tokens to the calculated address. For example, sending tokens from multisig wallets through TONOS-CLI is described here. Note, that if the wallet has multiple custodians, the transaction may require confirmation from the other custodians.
+Raw address: 0:703546ac78f2b9d58f1072d131ff9fc23f29aeddcc85fd30bcba64f475b306a2 testnet: Non-bounceable address (for init): 0QBwNUasePK51Y8QctEx\_5\_CPymu3cyF\_TC8umT0dbMGot4F Bounceable address (for later access): kQBwNUasePK51Y8QctEx\_5\_CPymu3cyF\_TC8umT0dbMGooPA mainnet: Non-bounceable address (for init): UQBwNUasePK51Y8QctEx\_5\_CPymu3cyF\_TC8umT0dbMGomWP Bounceable address (for later access): EQBwNUasePK51Y8QctEx\_5\_CPymu3cyF\_TC8umT0dbMGojhK Succeeded 8. Send tokens to the new address from another account Before deployment, an account needs to be sponsored with a small amount of tokens. You may use any convenient method to send tokens to the calculated address. For example, sending tokens from multisig wallets through TONOS-CLI is described here. Note, that if the wallet has multiple custodians, the transaction may require confirmation from the other custodians.
 
-9. Deploy the contract to blockchain
-Use the following command:
+1. Deploy the contract to blockchain Use the following command:
 
-tonos-cli deploy SafeMultisigWallet.tvc '{"owners":["0x...", ...],"reqConfirms":N}' --abi SafeMultisigWallet.abi.json --sign <deploy_seed_or_keyfile>
-Configuration parameters:
+tonos-cli deploy SafeMultisigWallet.tvc '{"owners":\["0x...", ...],"reqConfirms":N}' --abi SafeMultisigWallet.abi.json --sign \<deploy\_seed\_or\_keyfile> Configuration parameters:
 
 owners - array of custodian public keys generated by all account custodians at step 5 as uint256 numbers. Make sure all public keys are enclosed in quotes and start with 0x....
 
-Example of how to specify custodian keys: 
+Example of how to specify custodian keys:
 
-"owners":["0x8868adbf012ebc349ced852fdcf5b9d55d1873a68250fae1be609286ddb962582","0xa0e16ccff0c7bf4f29422b33ec1c9187200e9bd949bb2dd4c7841f5009d50778a"]
-reqConfirms - number of signatures needed to confirm a transaction ( 0 < N ≤ custodian count). For accounts with a single custodian set reqConfirms:1
+"owners":\["0x8868adbf012ebc349ced852fdcf5b9d55d1873a68250fae1be609286ddb962582","0xa0e16ccff0c7bf4f29422b33ec1c9187200e9bd949bb2dd4c7841f5009d50778a"] reqConfirms - number of signatures needed to confirm a transaction ( 0 < N ≤ custodian count). For accounts with a single custodian set reqConfirms:1
 
-<deploy_seed_or_keyfile> - can either be the seed phrase used in step 6 to generate the deployment key pair file or the deploy.keys.json file itself. If seed phrase is used, enclose it in double quotes.
+\<deploy\_seed\_or\_keyfile> - can either be the seed phrase used in step 6 to generate the deployment key pair file or the deploy.keys.json file itself. If seed phrase is used, enclose it in double quotes.
 
 Example:
 
-$ tonos-cli deploy --sign deploy.keys.json --abi SafeMultisigWallet.abi.json SafeMultisigWallet.tvc '{"owners":["0x88c541e9a1c173069c89bcbcc21fa2a073158c1bd21ca56b3eb264bba12d9340"],"reqConfirms":1}'
-Config: /home/user/tonos-cli.conf.json
-Input arguments:
-     tvc: SafeMultisigWallet.tvc
-  params: {"owners":["0x88c541e9a1c173069c89bcbcc21fa2a073158c1bd21ca56b3eb264bba12d9340"],"reqConfirms":1}
-     abi: SafeMultisigWallet.abi.json
-    keys: deploy.keys.json
-      wc: 0
-Connecting to net.ton.dev
-Deploying...
-Transaction succeeded.
-Contract deployed at address: 0:703546ac78f2b9d58f1072d131ff9fc23f29aeddcc85fd30bcba64f475b306a2
-Using SDK
-You may integrate above described process of deposit account deployment into your exchange backend. The functionality is supported in SDK. 
+$ tonos-cli deploy --sign deploy.keys.json --abi SafeMultisigWallet.abi.json SafeMultisigWallet.tvc '{"owners":\["0x88c541e9a1c173069c89bcbcc21fa2a073158c1bd21ca56b3eb264bba12d9340"],"reqConfirms":1}' Config: /home/user/tonos-cli.conf.json Input arguments: tvc: SafeMultisigWallet.tvc params: {"owners":\["0x88c541e9a1c173069c89bcbcc21fa2a073158c1bd21ca56b3eb264bba12d9340"],"reqConfirms":1} abi: SafeMultisigWallet.abi.json keys: deploy.keys.json wc: 0 Connecting to net.ton.dev Deploying... Transaction succeeded. Contract deployed at address: 0:703546ac78f2b9d58f1072d131ff9fc23f29aeddcc85fd30bcba64f475b306a2 Using SDK You may integrate above described process of deposit account deployment into your exchange backend. The functionality is supported in SDK.
 
 A sample is available in this repository and an overview is given below.
 
-Bindings for a large number of languages have been developed for SDK.
-Note, that similar to the TONOS-CLI approach described above, you have to sponsor a deposit account before deploying contract code. The sample requires you to input the data for a preexisting multisig account on the developer network to server as a giver. 
+Bindings for a large number of languages have been developed for SDK. Note, that similar to the TONOS-CLI approach described above, you have to sponsor a deposit account before deploying contract code. The sample requires you to input the data for a preexisting multisig account on the developer network to server as a giver.
 
 The recommended SafeMultisig contract is used.
 
 async function main(client) {
 
-  // Сonfigures the specified multisig wallet as a wallet to sponsor deploy operation
-  // Read more about deploy and other basic concepts here https://ton.dev/faq/blockchain-basic
-  	 const giver = await ensureGiver(client);
-  	
-  
+// Сonfigures the specified multisig wallet as a wallet to sponsor deploy operation // Read more about deploy and other basic concepts here https://ton.dev/faq/blockchain-basic const giver = await ensureGiver(client);
 
-  console.log("Generate new wallet keys");
-  const walletKeys = await client.crypto.generate_random_sign_keys();
-  	
-  const wallet = await getAccount(client, SafeMultisigContract, signerKeys(walletKeys));
-  const walletAddress = wallet.address;
-  	
+console.log("Generate new wallet keys"); const walletKeys = await client.crypto.generate\_random\_sign\_keys();
 
-  const startBlockTime = seconds(Date.now());
-  	
-  console.log(`Sending deploy fee from giver wallet ${giver.address} to the new wallet at ${walletAddress}`);
- await depositAccount(walletAddress, 2000000000, client);
-  
- console.log(`Deploying new wallet at ${walletAddress}ions
- await deployAccount(wallet,  {
-  	     owners: [`0x${walletKeys.public}`], // constructor parameters of multisig
-  	     reqConfirms: 1,
+const wallet = await getAccount(client, SafeMultisigContract, signerKeys(walletKeys)); const walletAddress = wallet.address;
+
+const startBlockTime = seconds(Date.now());
+
+console.log(`Sending deploy fee from giver wallet ${giver.address} to the new wallet at ${walletAddress}`); await depositAccount(walletAddress, 2000000000, client);
+
+console.log(`Deploying new wallet at ${walletAddress}ions await deployAccount(wallet, { owners: [`0x${walletKeys.public}\`], // constructor parameters of multisig reqConfirms: 1, });
+
+console.log("Depositing 2 tokens..."); await depositAccount(walletAddress, 2000000000, client);
+
+const giverAddress = await giver.address; console.log(`Withdrawing 2 tokens from ${wallet.walletAddress} to ${giverAddress}...`); await walletWithdraw(wallet, giverAddress, 1000000000);
+
+console.log(`Transactions for ${walletAddress} account since ${startBlockTime}`); let result = await queryAccountTransactions(client, walletAddress, { startTime: startBlockTime, // endTime: endBlockTime, // You can set an upper time boundary @endTime to 2 minutes before now – to avoid data eventually consistency.
+
+```
   	    });
-  	
- 
-  console.log("Depositing 2 tokens...");
-  await depositAccount(walletAddress, 2000000000, client);
-      	
-  const giverAddress = await giver.address;
-  console.log(`Withdrawing 2 tokens from ${wallet.walletAddress} to ${giverAddress}...`);
-  await walletWithdraw(wallet, giverAddress, 1000000000);
-      	
-   console.log(`Transactions for ${walletAddress} account since ${startBlockTime}`);
-  let result = await queryAccountTransactions(client, walletAddress, {
-      	        startTime: startBlockTime,
-      	        // endTime: endBlockTime,     // You can set an upper time boundary @endTime to 2 minutes before now – to avoid data eventually consistency.
-      	
-      
-      	    });
-   const countLimit = 200;
-   let count = 0;
-   while (count < countLimit && result.transactions.length > 0) {
-      	  for (const transaction of result.transactions) {
-      	      printTransfers(transaction);
-      	      count += 1;
-        	 } 
-        result = await queryAccountTransactions(client, walletAddress, {
-        	            after: result.last,
-          	        });
-          	    }
+```
 
-  console.log(`Transactions of all accounts since ${startBlockTime}`);
-  result = await queryAllTransactions(client, {
-              	        startTime: startBlockTime,
-              	        endTime: seconds(Date.now()) - 20, // we use 20 so that we catch the transactions generated in this sample. Replace with 120.
-              	    });
-  count = 0;
-  while (count < countLimit && result.transactions.length > 0) {
-    for (const transaction of result.transactions) {
-        printTransfers(transaction);
-        count += 1;
-    }
-    result = await queryAllTransactions(client, {
-      	            after: result.last,
-      	            endTime: seconds(Date.now()) - 20
-      	        });
-     }
-  }
-Monitoring Deposit Account
-An exchange needs to reliably know when customers deposit funds into its exchange accounts. This functionality has been integrated into SDK. A sample is available in this repository and an overview of the relevant part is given below.
+const countLimit = 200; let count = 0; while (count < countLimit && result.transactions.length > 0) { for (const transaction of result.transactions) { printTransfers(transaction); count += 1; } result = await queryAccountTransactions(client, walletAddress, { after: result.last, }); }
 
-In this sample  JS SDK is used. Bindings for a large number of languages have been developed for SDK. 
-The script iterates over all blocks since the specified time and looks for transfers according to the set up filters. Transfers may be filtered by one or all accounts. 
+console.log(`Transactions of all accounts since ${startBlockTime}`); result = await queryAllTransactions(client, { startTime: startBlockTime, endTime: seconds(Date.now()) - 20, // we use 20 so that we catch the transactions generated in this sample. Replace with 120. }); count = 0; while (count < countLimit && result.transactions.length > 0) { for (const transaction of result.transactions) { printTransfers(transaction); count += 1; } result = await queryAllTransactions(client, { after: result.last, endTime: seconds(Date.now()) - 20 }); } } Monitoring Deposit Account An exchange needs to reliably know when customers deposit funds into its exchange accounts. This functionality has been integrated into SDK. A sample is available in this repository and an overview of the relevant part is given below.
 
-...    
-console.log(`Transactions of all accounts since ${startBlockTime}`);
-	    result = await queryAllTransactions(client, {
-	        startTime: startBlockTime,
-	        endTime: seconds(Date.now()) - 20, // we use 20 so that we catch the transactions generated in this sample. Replace with 120.
-	    });
-	    count = 0;
-	    while (count < countLimit && result.transactions.length > 0) {
-	        for (const transaction of result.transactions) {
-	            printTransfers(transaction);
-	            count += 1;
-	        }
-	        result = await queryAllTransactions(client, {
-	            after: result.last,
-	            endTime: seconds(Date.now()) - 20, // we use 20 so that we catch the transactions generated in this sample. Replace with 120.
-	        });
-	    }
+In this sample JS SDK is used. Bindings for a large number of languages have been developed for SDK. The script iterates over all blocks since the specified time and looks for transfers according to the set up filters. Transfers may be filtered by one or all accounts.
+
+...\
+console.log(`Transactions of all accounts since ${startBlockTime}`); result = await queryAllTransactions(client, { startTime: startBlockTime, endTime: seconds(Date.now()) - 20, // we use 20 so that we catch the transactions generated in this sample. Replace with 120. }); count = 0; while (count < countLimit && result.transactions.length > 0) { for (const transaction of result.transactions) { printTransfers(transaction); count += 1; } result = await queryAllTransactions(client, { after: result.last, endTime: seconds(Date.now()) - 20, // we use 20 so that we catch the transactions generated in this sample. Replace with 120. }); }
 
 ...
 
 You may test out the demo application running this process on the developer network by cloning the sdk-samples repository, and running the following commands in the /demo/exchange folder:
 
-npm i
-node index
-Prerequisites: latest Node.js
+npm i node index Prerequisites: latest Node.js
 
-Withdrawing from deposit accounts
-The specific function that is used to send the funds to the user depends on the contract chosen for the deposit account. Below are provided the examples for the SafeMultisig contract.
+Withdrawing from deposit accounts The specific function that is used to send the funds to the user depends on the contract chosen for the deposit account. Below are provided the examples for the SafeMultisig contract.
 
-Using command line tool
-TONOS-CLI tool may be used to implement withdrawals from deposit account.
+Using command line tool TONOS-CLI tool may be used to implement withdrawals from deposit account.
 
 The simplest way that bypasses any verification and places all risks entirely on the user is to send the full requested amount with a single transfer to the specified address. If the user made a mistake in the address, and has no control over it, these funds will be lost. If the account does not exist, and the user makes mistakes deploying it after the funds are transferred, they may end up being lost as well.
 
 To perform a simple transfer to any account, whether it already exists or not, use the following TONOS-CLI command:
 
-tonos-cli call <deposit_account_address> submitTransaction '{"dest":"recipient_address","value":<nanotokens>,"bounce":false,"allBalance":false,"payload":""}' --abi SafeMultisigWallet.abi.json --sign <seed_or_keyfile>
-"recipient_address" - raw address of the recipient smart contract. Example: "0:f22e02a1240dd4b5201f8740c38f2baf5afac3cedf8f97f3bd7cbaf23c7261e3"
+tonos-cli call \<deposit\_account\_address> submitTransaction '{"dest":"recipient\_address","value":,"bounce":false,"allBalance":false,"payload":""}' --abi SafeMultisigWallet.abi.json --sign \<seed\_or\_keyfile> "recipient\_address" - raw address of the recipient smart contract. Example: "0:f22e02a1240dd4b5201f8740c38f2baf5afac3cedf8f97f3bd7cbaf23c7261e3"
 
-"value":<nanotokens> - amount of tokens to transfer in nanotokens (Example: "value":10000000000 sets up a transfer of 10 tokens).
+"value": - amount of tokens to transfer in nanotokens (Example: "value":10000000000 sets up a transfer of 10 tokens).
 
 "bounce" - use false to transfer funds to any account regardless of whether it exists.
 
@@ -348,250 +204,156 @@ tonos-cli call <deposit_account_address> submitTransaction '{"dest":"recipient_a
 
 "allBalance" - used to transfer all funds in the wallet. Use false for a simple transfer.
 
-Note: Due to a bug setting allBalance to true currently causes errors. Single-custodian multisig wallets may use sendTransaction method with flag 130 and value 0 instead:
-tonos-cli call <multisig_address> sendTransaction '{"dest":"raw_address","value":0,"bounce":true,"flags":130,"payload":""}' --abi <MultisigWallet.abi.json> --sign <seed_or_keyfile>
-<seed_or_keyfile> - can either be the custodian seed phrase or the corresponding custodian key pair file. If seed phrase is used, enclose it in double quotes.
+Note: Due to a bug setting allBalance to true currently causes errors. Single-custodian multisig wallets may use sendTransaction method with flag 130 and value 0 instead: tonos-cli call \<multisig\_address> sendTransaction '{"dest":"raw\_address","value":0,"bounce":true,"flags":130,"payload":""}' --abi \<MultisigWallet.abi.json> --sign \<seed\_or\_keyfile> \<seed\_or\_keyfile> - can either be the custodian seed phrase or the corresponding custodian key pair file. If seed phrase is used, enclose it in double quotes.
 
 Example:
 
---sign "flip uncover dish sense hazard smile gun mom vehicle chapter order enact"
+\--sign "flip uncover dish sense hazard smile gun mom vehicle chapter order enact"
 
 or
 
---sign keyfile.json
+\--sign keyfile.json
 
 Example:
 
-$ tonos-cli call 0:a4629d617df931d8ad86ed24f4cac3d321788ba082574144f5820f2894493fbc submitTransaction '{"dest":"0:0c5d5215317ec8eef1b84c43cbf08523c33f69677365de88fe3d96a0b31b59c6","value":234000000,"bounce":false,"allBalance":false,"payload":""}' --abi SafeMultisigWallet.abi.json --sign k1.keys.json
-Config: /home/user/tonos-cli.conf.json
-Input arguments:
- address: 0:a4629d617df931d8ad86ed24f4cac3d321788ba082574144f5820f2894493fbc
-  method: submitTransaction
-  params: {"dest":"0:0c5d5215317ec8eef1b84c43cbf08523c33f69677365de88fe3d96a0b31b59c6","value":234000000,"bounce":false,"allBalance":false,"payload":""}
-     abi: SafeMultisigWallet.abi.json
-    keys: k1.keys.json
-lifetime: None
-  output: None
-Connecting to net.ton.dev
-Generating external inbound message...
+$ tonos-cli call 0:a4629d617df931d8ad86ed24f4cac3d321788ba082574144f5820f2894493fbc submitTransaction '{"dest":"0:0c5d5215317ec8eef1b84c43cbf08523c33f69677365de88fe3d96a0b31b59c6","value":234000000,"bounce":false,"allBalance":false,"payload":""}' --abi SafeMultisigWallet.abi.json --sign k1.keys.json Config: /home/user/tonos-cli.conf.json Input arguments: address: 0:a4629d617df931d8ad86ed24f4cac3d321788ba082574144f5820f2894493fbc method: submitTransaction params: {"dest":"0:0c5d5215317ec8eef1b84c43cbf08523c33f69677365de88fe3d96a0b31b59c6","value":234000000,"bounce":false,"allBalance":false,"payload":""} abi: SafeMultisigWallet.abi.json keys: k1.keys.json lifetime: None output: None Connecting to net.ton.dev Generating external inbound message...
 
-MessageId: c6baac843fefe6b9e8dc3609487a63ef21207e4fdde9ec253b9a47f7f5a88d01
-Expire at: Sat, 08 May 2021 14:52:23 +0300
-Processing... 
-Succeeded.
-Result: {
-  "transId": "6959885776551137793"
-}
-Note, that if your deposit account has multiple custodians, the transaction has to be confirmed by the required number of signatures to be executed. In this case transaction ID will be displayed as transaction result, when creating it. This transaction ID should be communicated to other custodians, who should use it to confirm the transaction.
+MessageId: c6baac843fefe6b9e8dc3609487a63ef21207e4fdde9ec253b9a47f7f5a88d01 Expire at: Sat, 08 May 2021 14:52:23 +0300 Processing... Succeeded. Result: { "transId": "6959885776551137793" } Note, that if your deposit account has multiple custodians, the transaction has to be confirmed by the required number of signatures to be executed. In this case transaction ID will be displayed as transaction result, when creating it. This transaction ID should be communicated to other custodians, who should use it to confirm the transaction.
 
-(Optional) Confirm transaction
-To confirm a transaction, use the following command:
+(Optional) Confirm transaction To confirm a transaction, use the following command:
 
-tonos-cli call <deposit_account_address> confirmTransaction '{"transactionId":"<id>"}' --abi SafeMultisigWallet.abi.json --sign <seed_or_keyfile>
-transactionId – the ID of the transaction can be acquired from the custodian who created it.
+tonos-cli call \<deposit\_account\_address> confirmTransaction '{"transactionId":""}' --abi SafeMultisigWallet.abi.json --sign \<seed\_or\_keyfile> transactionId – the ID of the transaction can be acquired from the custodian who created it.
 
-<seed_or_keyfile> - can either be the custodian seed phrase or the corresponding custodian key pair file. If seed phrase is used, enclose it in double quotes.
+\<seed\_or\_keyfile> - can either be the custodian seed phrase or the corresponding custodian key pair file. If seed phrase is used, enclose it in double quotes.
 
 Example:
 
---sign "flip uncover dish sense hazard smile gun mom vehicle chapter order enact"
+\--sign "flip uncover dish sense hazard smile gun mom vehicle chapter order enact"
 
 or
 
---sign keyfile.json
+\--sign keyfile.json
 
 Basic checks of the address format will be performed by the TONOS-CLI utility automatically, only addresses of a valid Everscale format will be accepted.
 
-Mitigating risks of token loss due to user error
-The are two main cases regarding transfers to user accounts: a user may already have an active account to which they want to withdraw funds, or they may want to withdraw funds to a completely new account, that doesn't exist at the time withdraw is requested.
+Mitigating risks of token loss due to user error The are two main cases regarding transfers to user accounts: a user may already have an active account to which they want to withdraw funds, or they may want to withdraw funds to a completely new account, that doesn't exist at the time withdraw is requested.
 
 The status of the account provided by the user may be checked with the following TONOS-CLI command:
 
-tonos-cli account <accound_address>
-Example of existing account:
+tonos-cli account \<accound\_address> Example of existing account:
 
-$ tonos-cli account 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3
-Config: default
-Input arguments:
- address: 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3
-Connecting to <https://net.ton.dev>
-Processing...
-Succeeded.
-acc_type:      Active
-balance:       542692817630
-last_paid:     1622198835
-last_trans_lt: 0x50cef81af04
-data(boc): b5ee9c720101020100980001df8534c46f7a135058773fa1298cb3a299a5ddd40dafe41cb06c64f274da360bfb00000179b295c60dc29a6237bd09a82c3b9fd094c659d14cd2eeea06d7f20e583632793a6d1b05fd80000000000000000000000000000000000000000000000000000000000000002020000000001018010045a010a6988def426a0b0ee7f4253196745334bbba81b5fc83960d8c9e4e9b46c17f6010
-code_hash: 207dc560c5956de1a2c1479356f8f3ee70a59767db2bf4788b1d61ad42cdad82
-Example of account that doesn't exist yet:
+$ tonos-cli account 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3 Config: default Input arguments: address: 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3 Connecting to [https://net.ton.dev](https://net.ton.dev) Processing... Succeeded. acc\_type: Active balance: 542692817630 last\_paid: 1622198835 last\_trans\_lt: 0x50cef81af04 data(boc): b5ee9c720101020100980001df8534c46f7a135058773fa1298cb3a299a5ddd40dafe41cb06c64f274da360bfb00000179b295c60dc29a6237bd09a82c3b9fd094c659d14cd2eeea06d7f20e583632793a6d1b05fd80000000000000000000000000000000000000000000000000000000000000002020000000001018010045a010a6988def426a0b0ee7f4253196745334bbba81b5fc83960d8c9e4e9b46c17f6010 code\_hash: 207dc560c5956de1a2c1479356f8f3ee70a59767db2bf4788b1d61ad42cdad82 Example of account that doesn't exist yet:
 
-$ tonos-cli account 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f4
-Config: default
-Input arguments:
- address: 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f4
-Connecting to <https://net.ton.dev>
-Processing...
-Succeeded.
-Account not found.
-The possible results are the following:
+$ tonos-cli account 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f4 Config: default Input arguments: address: 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f4 Connecting to [https://net.ton.dev](https://net.ton.dev) Processing... Succeeded. Account not found. The possible results are the following:
 
 Account not found - account does not exist. It needs to be sponsored, then deployed, and only then will it be active.
 
-acc_type: Uninit - account already has some funds on it but contract code has not been deployed yet. User needs to deploy it.
+acc\_type: Uninit - account already has some funds on it but contract code has not been deployed yet. User needs to deploy it.
 
-acc_type: Active - account already exists, and its code is deployed.
+acc\_type: Active - account already exists, and its code is deployed.
 
-In the first to cases, the exchange might first transfer a small portion of the requested amount (~1 EVER) and request that the user deploys their contract. Upon the user's confirmation that the account is deployed, its status may be rechecked, and if it became active, the remaining amount of requested funds may be safely transferred.
+In the first to cases, the exchange might first transfer a small portion of the requested amount (\~1 EVER) and request that the user deploys their contract. Upon the user's confirmation that the account is deployed, its status may be rechecked, and if it became active, the remaining amount of requested funds may be safely transferred.
 
 If the account is already active, a small portion of the requested amount may be transferred to the user, and the user may be asked what amount they received (note: a small amount of the transfer, usually less than 0.05 EVER, will be spent on fees, so it's best to ask for the whole number of tokens transferred). If the amounts match, the rest of the requested funds may be transferred as well.
 
-PIN code verification
-Additionally, for users that use the Surf app to store their tokens, PIN code verification is possible.
+PIN code verification Additionally, for users that use the Surf app to store their tokens, PIN code verification is possible.
 
 The following TONOS-CLI command may be used to send a transaction with an encrypted PIN code, which the user will be able to see in Surf:
 
-tonos-cli multisig send --addr <deposit_account_address> --dest <recipient_address> --purpose <"PIN_code"> --sign <path_to_keys_or_seed_phrase> --value *number*
-<deposit_account_address> - address of the deposit account address that tokens are sent from.
+tonos-cli multisig send --addr \<deposit\_account\_address> --dest \<recipient\_address> --purpose <"PIN\_code"> --sign \<path\_to\_keys\_or\_seed\_phrase> --value _number_ \<deposit\_account\_address> - address of the deposit account address that tokens are sent from.
 
-<recipient_address> - address of the account tokens are sent to.
+\<recipient\_address> - address of the account tokens are sent to.
 
-<"PIN_code"> - accompanying message containing the PIN code. Only the recipient will be able to decrypt and read it. should be enclosed in double quotes.
+<"PIN\_code"> - accompanying message containing the PIN code. Only the recipient will be able to decrypt and read it. should be enclosed in double quotes.
 
-<path_to_keys_or_seed_phrase> - path to sender wallet key file of the corresponding seed phrase in quotes.
+\<path\_to\_keys\_or\_seed\_phrase> - path to sender wallet key file of the corresponding seed phrase in quotes.
 
---value *number* - value to be transferred (in tokens).
+\--value _number_ - value to be transferred (in tokens).
 
 Example:
 
-$ tonos-cli multisig send --addr 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3 --dest 0:a4629d617df931d8ad86ed24f4cac3d321788ba082574144f5820f2894493fbc --purpose "339" --sign key.json --value 6
-Config: /home/user/tonos-cli.conf.json
-Connecting to net.ton.dev
-Generating external inbound message...
+$ tonos-cli multisig send --addr 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3 --dest 0:a4629d617df931d8ad86ed24f4cac3d321788ba082574144f5820f2894493fbc --purpose "339" --sign key.json --value 6 Config: /home/user/tonos-cli.conf.json Connecting to net.ton.dev Generating external inbound message...
 
-MessageId: 62b1420ac98e586f29bf79bc2917a0981bb3f15c4757e8dca65370c19146e327
-Expire at: Thu, 13 May 2021 13:26:06 +0300
-Processing... 
-Succeeded.
-Result: {
-  "transId": "0"
-}.
-Using SDK
-You may integrate withdrawals from deposit account into your backend using SDK as well. A sample is available in this repository and an overview of the relevant part is given below.
+MessageId: 62b1420ac98e586f29bf79bc2917a0981bb3f15c4757e8dca65370c19146e327 Expire at: Thu, 13 May 2021 13:26:06 +0300 Processing... Succeeded. Result: { "transId": "0" }. Using SDK You may integrate withdrawals from deposit account into your backend using SDK as well. A sample is available in this repository and an overview of the relevant part is given below.
 
-In this sample JS SDK is used. Bindings for a large number of languages have been developed for SDK.
-This example shows how to generate a withdrawal transaction from a Multisig wallet, using its sendTransaction method. Note, that if Multisig has multiple custodians, the transaction will have to be confirmed with the confirmTransaction method.
+In this sample JS SDK is used. Bindings for a large number of languages have been developed for SDK. This example shows how to generate a withdrawal transaction from a Multisig wallet, using its sendTransaction method. Note, that if Multisig has multiple custodians, the transaction will have to be confirmed with the confirmTransaction method.
 
 You may choose from which account (sender or recipient), the forward fees will be charged.
 
 In this example tokens are withdrawn from the deposit account to the giver, that initially sponsored it. In a proper implementation, the account given by user should be used instead.
 
-    ...
-    console.log(`Withdrawing 2 tokens from ${wallet.walletAddress} to ${giverAddress}...`);
-    await walletWithdraw(wallet, giverAddress, 1000000000);
-    ...
+```
+...
+console.log(`Withdrawing 2 tokens from ${wallet.walletAddress} to ${giverAddress}...`);
+await walletWithdraw(wallet, giverAddress, 1000000000);
+...
 
-    async function walletWithdraw(wallet, address, amount) {
-	    const transactions = await runAndWaitForRecipientTransactions(wallet, "submitTransaction", {
-	        dest: address,
-	        value: amount,
-	        bounce: false,
-	        allBalance: false,
-	        payload: "",
-	    });
-	    if (transactions.length > 0) {
-	        console.log(`Recipient received transfer. The recipient's transaction is: ${transactions[0].id}`);
-	    }
-	}
-
-async function runAndWaitForRecipientTransactions(account, functionName, input) {
-	    const runResult = await account.client.processing.process_message({
-	        message_encode_params: {
-	            address: account.address,
-	            abi: account.abi,
-	            signer: account.signer,
-	            call_set: {
-	                function_name: functionName,
-	                input,
-	            },
-	        },
-	        send_events: false,
-	    });
-	
-
-	    const transactions = [];
-	
-
-// This step is only required if you want to know when the recipient actually receives their tokens.
-// In Free TON blockchain, transfer consists of 2 transactions (because the blockchain is asynchronous):
-//  1. Sender sends tokens - this transaction is returned by `Run` method
-//  2. Recipient receives tokens - this transaction can be caught with `query_transaction_tree method`
-// Read more about transactions and messages here
-// https://ton.dev/faq/blockchain-basic
-  for (const messageId of runResult.transaction.out_msgs) {
-  	   const tree = await account.client.net.query_transaction_tree({
-        	            in_msg: messageId,
-            	    });
-       transactions.push(...tree.transactions);
-  }
-  return transactions;
+async function walletWithdraw(wallet, address, amount) {
+    const transactions = await runAndWaitForRecipientTransactions(wallet, "submitTransaction", {
+        dest: address,
+        value: amount,
+        bounce: false,
+        allBalance: false,
+        payload: "",
+    });
+    if (transactions.length > 0) {
+        console.log(`Recipient received transfer. The recipient's transaction is: ${transactions[0].id}`);
+    }
 }
-User account verification with SDK
-Same as described above, users of the Surf app can be offered additional verification with a PIN code.
+```
+
+async function runAndWaitForRecipientTransactions(account, functionName, input) { const runResult = await account.client.processing.process\_message({ message\_encode\_params: { address: account.address, abi: account.abi, signer: account.signer, call\_set: { function\_name: functionName, input, }, }, send\_events: false, });
+
+```
+    const transactions = [];
+```
+
+// This step is only required if you want to know when the recipient actually receives their tokens. // In Free TON blockchain, transfer consists of 2 transactions (because the blockchain is asynchronous): // 1. Sender sends tokens - this transaction is returned by `Run` method // 2. Recipient receives tokens - this transaction can be caught with `query_transaction_tree method` // Read more about transactions and messages here // https://ton.dev/faq/blockchain-basic for (const messageId of runResult.transaction.out\_msgs) { const tree = await account.client.net.query\_transaction\_tree({ in\_msg: messageId, }); transactions.push(...tree.transactions); } return transactions; } User account verification with SDK Same as described above, users of the Surf app can be offered additional verification with a PIN code.
 
 Below is a snippet of the SDK sample demonstrating how to generate a transaction with an encrypted comment. A PIN code can be transmitted to the user in this comment attached to a small amount of tokens, and only after the user provides the PIN code, thus proving they have access to their account, may the rest of the withdrawal amount be transferred.
 
-// Prepare body with comment
-        // For that we need to prepare internal message with transferAbi and then extract body from it
-        const body = (await client.abi.encode_message_body({
-            abi: abiContract(transferAbi),
-            call_set: {
-                function_name: "transfer",
-                input: {
-                    comment: Buffer.from("My comment").toString("hex"),
-                },
-            },
-            is_internal: true,
-            signer: signerNone(),
-        })).body;
+// Prepare body with comment // For that we need to prepare internal message with transferAbi and then extract body from it const body = (await client.abi.encode\_message\_body({ abi: abiContract(transferAbi), call\_set: { function\_name: "transfer", input: { comment: Buffer.from("My comment").toString("hex"), }, }, is\_internal: true, signer: signerNone(), })).body;
 
-        const multisig = new Account(MultisigContract, {
-            signer: signerKeys(keyPair),
-            client,
-        });
+```
+    const multisig = new Account(MultisigContract, {
+        signer: signerKeys(keyPair),
+        client,
+    });
 
-        // Run 'submitTransaction' method of multisig wallet
-        // Create run message
+    // Run 'submitTransaction' method of multisig wallet
+    // Create run message
 
-        console.log("Call `submitTransaction` function");
-        const transactionInfo = (await multisig.run("submitTransaction", {
-            dest: recipient,
-            value: 100_000_000,
-            bounce: false,
-            allBalance: false,
-            payload: body,
-        }));
-        console.log(transactionInfo);
-        console.log("Transaction info:");
+    console.log("Call `submitTransaction` function");
+    const transactionInfo = (await multisig.run("submitTransaction", {
+        dest: recipient,
+        value: 100_000_000,
+        bounce: false,
+        allBalance: false,
+        payload: body,
+    }));
+    console.log(transactionInfo);
+    console.log("Transaction info:");
 
-        console.log("Id:");
-        console.log(transactionInfo.transaction.id);
-        console.log("messages:");
-        console.log(transactionInfo.out_messages);
-        const messages = transactionInfo.out_messages;
+    console.log("Id:");
+    console.log(transactionInfo.transaction.id);
+    console.log("messages:");
+    console.log(transactionInfo.out_messages);
+    const messages = transactionInfo.out_messages;
 
-        const decodedMessage1 = (await tonClient.abi.decode_message({
-            abi: abiContract(transferAbi),
-            message: messages[0],
-        }));
+    const decodedMessage1 = (await tonClient.abi.decode_message({
+        abi: abiContract(transferAbi),
+        message: messages[0],
+    }));
 
-        // Decode comment from hex to string
-        decodedMessage1.value.comment = Buffer.from(decodedMessage1.value.comment, "hex").toString("utf8");
+    // Decode comment from hex to string
+    decodedMessage1.value.comment = Buffer.from(decodedMessage1.value.comment, "hex").toString("utf8");
 
-        console.log("Decoded message 1:", decodedMessage1.value);
+    console.log("Decoded message 1:", decodedMessage1.value);
 
-        const decodedMessage2 = (await tonClient.abi.decode_message({
-            abi: abiContract(multisigContractPackage.abi),
-            message: messages[1],
-        }));
+    const decodedMessage2 = (await tonClient.abi.decode_message({
+        abi: abiContract(multisigContractPackage.abi),
+        message: messages[1],
+    }));
 
-        console.log("Decoded message 2:", decodedMessage2);
+    console.log("Decoded message 2:", decodedMessage2);
+```
