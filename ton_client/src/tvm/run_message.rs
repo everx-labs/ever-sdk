@@ -30,7 +30,7 @@ use std::sync::{atomic::AtomicU64, Arc};
 use ton_block::{Account, Message, Serializable, MsgAddressInt, CurrencyCollection, Transaction};
 use ton_executor::{ExecutorError, ExecuteParams, OrdinaryTransactionExecutor, TransactionExecutor};
 use ton_sdk::TransactionFees;
-use ton_types::Cell;
+use ton_types::{Cell, UInt256};
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
 #[serde(tag = "type")]
@@ -392,6 +392,7 @@ where
         block_lt: options.block_lt,
         last_tr_lt: Arc::new(AtomicU64::new(options.transaction_lt)),
         behavior_modifiers: Some(options.behavior_modifiers),
+        seed_block: UInt256::rand(),
         ..ExecuteParams::default()
     };
     let transaction = match executor.execute_with_libs_and_params(Some(&msg), &mut account_root, params) {
