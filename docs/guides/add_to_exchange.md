@@ -51,7 +51,7 @@ Set the network in `/scripts/env.sh`: use `main.ton.dev` for the main network an
 **Note**: We highly recommend testing out the full setup on the developer network first.&#x20;
 {% endhint %}
 
-```
+```shell
 $ cd TON-OS-DApp-Server/scripts/ 
 $ . ./env.sh 
 ```
@@ -60,13 +60,13 @@ $ . ./env.sh
 
 Ubuntu 20.04:
 
-```
+```shell
 $ ./install_deps.sh
 ```
 
 **Note**: Make sure to add your user to the docker group, or run subsequent command as superuser:
 
-```
+```shell
 sudo usermod -a -G docker $USER
 ```
 
@@ -74,7 +74,7 @@ sudo usermod -a -G docker $USER
 
 Deploy full node:
 
-```
+```shell
 $ ./deploy.sh 2>&1 | tee ./deploy.log
 ```
 
@@ -98,13 +98,13 @@ It supports the Evercloud and DApp server-based approaches both.
 
 You can use [EVERDEV](https://docs.everos.dev/everdev/) to install the latest version of TONOS-CLI:
 
-```
+```shell
 everdev tonos-cli install
 ```
 
 It requires [NPM](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) to be installed, so it can install packages globally without using sudo. In case of error, manually set the environment variable
 
-```
+```shell
 PATH=$PATH:$HOME./everdev/solidity 
 ```
 
@@ -112,7 +112,7 @@ PATH=$PATH:$HOME./everdev/solidity
 
 Use the following command to set the network:
 
-```
+```shell
 tonos-cli config --url <https://network_url>
 
 ```
@@ -148,13 +148,13 @@ SafeMultisigWallet.abi.json direct link:
 
 To generate your seed phrase enter the following command:
 
-```
+```shell
 tonos-cli genphrase 
 ```
 
 Terminal displays the generated seed phrase:
 
-```
+```shell
 $ tonos-cli genphrase
 Config: default
 Succeeded.
@@ -167,13 +167,13 @@ If the deposit account needs to have multiple custodians, each of them has to ge
 
 To generate your public key enter the following command with your previously generated seed phrase in quotes:
 
-```
+```shell
 tonos-cli genpubkey "<seed_phrase>"
 ```
 
 If the deposit account needs to have several custodians, each of them should generate their public key and send it to whomever will be deploying the account.
 
-```
+```shell
 $ tonos-cli genpubkey "spoon doll recipe regular list window cage joke stock clown mass glare"
 Config: default
 Succeeded.
@@ -186,7 +186,7 @@ Any custodian who has received the public keys of all other custodians can deplo
 
 To create the key pair file from the seed phrase use the following command:
 
-```
+```shell
 tonos-cli getkeypair <deploy.keys.json> "<seed_phrase>" 
 ```
 
@@ -194,7 +194,7 @@ tonos-cli getkeypair <deploy.keys.json> "<seed_phrase>"
 
 The utility generates the file that contains the key pair produced from seed phrase.
 
-```
+```shell
 $ tonos-cli getkeypair deploy.keys.json "spoon doll recipe regular list window cage joke stock clown mass glare"
 Config: default
 Input arguments:
@@ -207,7 +207,7 @@ Succeeded.
 
 Use deployment key pair file to generate your address:
 
-```
+```shell
 tonos-cli genaddr SafeMultisigWallet.tvc SafeMultisigWallet.abi.json --setkey <deploy.keys.json>
 ```
 
@@ -215,7 +215,7 @@ tonos-cli genaddr SafeMultisigWallet.tvc SafeMultisigWallet.abi.json --setkey <d
 
 The utility displays the new deposit account address (Raw address).
 
-```
+```shell
 $ tonos-cli genaddr SafeMultisigWallet.tvc SafeMultisigWallet.abi.json --setkey deploy.keys.json
 Config: default
 Input arguments:
@@ -241,7 +241,7 @@ Before deployment, an account needs to be sponsored with a small amount of token
 
 #### 9. Deploy the contract to blockchain Use the following command:
 
-```
+```shell
 tonos-cli deploy SafeMultisigWallet.tvc '{"owners":["0x...", ...],"reqConfirms":N}' --abi SafeMultisigWallet.abi.json --sign <deploy_seed_or_keyfile>
 ```
 
@@ -251,7 +251,7 @@ Configuration parameters:
 
 Example of how to specify custodian keys:
 
-```
+```shell
 "owners":["0x8868adbf012ebc349ced852fdcf5b9d55d1873a68250fae1be609286ddb962582","0xa0e16ccff0c7bf4f29422b33ec1c9187200e9bd949bb2dd4c7841f5009d50778a"]
 ```
 
@@ -261,7 +261,7 @@ Example of how to specify custodian keys:
 
 Example:
 
-```
+```shell
 $ tonos-cli deploy --sign deploy.keys.json --abi SafeMultisigWallet.abi.json SafeMultisigWallet.tvc '{"owners":["0x88c541e9a1c173069c89bcbcc21fa2a073158c1bd21ca56b3eb264bba12d9340"],"reqConfirms":1}'
 Config: /home/user/tonos-cli.conf.json
 Input arguments:
@@ -292,7 +292,7 @@ Note, that similar to the TONOS-CLI approach described above, you have to sponso
 
 The recommended [SafeMultisig](https://github.com/tonlabs/ton-labs-contracts/tree/master/solidity/safemultisig) contract is used.
 
-```
+```javascript
 async function main(client) {
 
   // Сonfigures the specified multisig wallet as a wallet to sponsor deploy operation
@@ -375,7 +375,7 @@ In this sample JS SDK is used. [Bindings](https://github.com/tonlabs/sdk-samples
 
 The script iterates over all blocks since the specified time and looks for transfers according to the set up filters. Transfers may be filtered by one or all accounts.
 
-```
+```javascript
 ...    
 console.log(`Transactions of all accounts since ${startBlockTime}`);
 	    result = await queryAllTransactions(client, {
@@ -399,7 +399,7 @@ console.log(`Transactions of all accounts since ${startBlockTime}`);
 
 You may test out the demo application running this process on the developer network by cloning the [sdk-samples](https://github.com/tonlabs/sdk-samples) repository, and running the following commands in the /demo/exchange folder:
 
-```
+```shell
 npm i
 node index
 ```
@@ -416,7 +416,7 @@ The simplest way that bypasses any verification and places all risks entirely on
 
 To perform a simple transfer to any account, whether it already exists or not, use the following TONOS-CLI command:
 
-```
+```shell
 tonos-cli call <deposit_account_address> submitTransaction '{"dest":"recipient_address","value":<nanotokens>,"bounce":false,"allBalance":false,"payload":""}' --abi SafeMultisigWallet.abi.json --sign <seed_or_keyfile>
 ```
 
@@ -434,7 +434,7 @@ tonos-cli call <deposit_account_address> submitTransaction '{"dest":"recipient_a
 **Note**: Due to a bug setting `allBalance` to `true` currently causes errors. Single-custodian multisig wallets may use `sendTransaction` method with flag `130` and value `0` instead:
 {% endhint %}
 
-```
+```shell
 tonos-cli call <multisig_address> sendTransaction '{"dest":"raw_address","value":0,"bounce":true,"flags":130,"payload":""}' --abi <MultisigWallet.abi.json> --sign <seed_or_keyfile>
 ```
 
@@ -450,7 +450,7 @@ or
 
 Example:
 
-```
+```shell
 $ tonos-cli call 0:a4629d617df931d8ad86ed24f4cac3d321788ba082574144f5820f2894493fbc submitTransaction '{"dest":"0:0c5d5215317ec8eef1b84c43cbf08523c33f69677365de88fe3d96a0b31b59c6","value":234000000,"bounce":false,"allBalance":false,"payload":""}' --abi SafeMultisigWallet.abi.json --sign k1.keys.json
 Config: /home/user/tonos-cli.conf.json
 Input arguments:
@@ -479,7 +479,7 @@ Note, that if your deposit account has multiple custodians, the transaction has 
 
 To confirm a transaction, use the following command:
 
-```
+```shell
 tonos-cli call <deposit_account_address> confirmTransaction '{"transactionId":"<id>"}' --abi SafeMultisigWallet.abi.json --sign <seed_or_keyfile>
 ```
 
@@ -503,13 +503,13 @@ The are two main cases regarding transfers to user accounts: a user may already 
 
 The status of the account provided by the user may be checked with the following TONOS-CLI command:
 
-```
+```shell
 tonos-cli account <accound_address>
 ```
 
 Example of existing account:
 
-```
+```shell
 $ tonos-cli account 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3
 Config: default
 Input arguments:
@@ -529,9 +529,9 @@ code_hash: 207dc560c5956de1a2c1479356f8f3ee70a59767db2bf4788b1d61ad42cdad82
 
 Example of account that doesn't exist yet:
 
-```
+```shell
 $ tonos-cli account 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f4
-Config: default
+Config: defaultsh
 Input arguments:
  address: 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f4
 Connecting to <https://net.ton.dev>
@@ -558,8 +558,8 @@ Additionally, for users that use the [Surf](https://ever.surf/) app to store the
 
 The following TONOS-CLI command may be used to send a transaction with an encrypted PIN code, which the user will be able to see in Surf:
 
-```
-tonos-cli multisig send --addr <deposit_account_address> --dest <recipient_address> --purpose <"PIN_code"> --sign <path_to_keys_or_seed_phrase> --value *number*
+```shell
+tonos-cli multisig send --addr <deposit_account_address> --dest <recipient_address> --purpose <"PIN_code"> --sign <path_to_keys_or_seed_phrase> --value *number*js
 ```
 
 `<deposit_account_address>` - address of the deposit account address that tokens are sent from.
@@ -574,7 +574,7 @@ tonos-cli multisig send --addr <deposit_account_address> --dest <recipient_addre
 
 Example:
 
-```
+```shell
 $ tonos-cli multisig send --addr 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3 --dest 0:a4629d617df931d8ad86ed24f4cac3d321788ba082574144f5820f2894493fbc --purpose "339" --sign key.json --value 6
 Config: /home/user/tonos-cli.conf.json
 Connecting to net.ton.dev
@@ -601,7 +601,7 @@ You may choose from which account (sender or recipient), the forward fees will b
 
 In this example tokens are withdrawn from the deposit account to the giver, that initially sponsored it. In a proper implementation, the account given by user should be used instead.
 
-```
+```javascript
     ...
     console.log(`Withdrawing 2 tokens from ${wallet.walletAddress} to ${giverAddress}...`);
     await walletWithdraw(wallet, giverAddress, 1000000000);
@@ -660,7 +660,7 @@ Same as described above, users of the [Surf](https://ever.surf/) app can be offe
 
 Below is a snippet of the [SDK sample](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/transfer-with-comment) demonstrating how to generate a transaction with an encrypted comment. A PIN code can be transmitted to the user in this comment attached to a small amount of tokens, and only after the user provides the PIN code, thus proving they have access to their account, may the rest of the withdrawal amount be transferred.
 
-```
+```javascript
 // Prepare body with comment
         // For that we need to prepare internal message with transferAbi and then extract body from it
         const body = (await client.abi.encode_message_body({
