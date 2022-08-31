@@ -4,6 +4,7 @@
 
 * [Configure SDK](configure\_sdk.md#configure-sdk)
   * [Create TONClient](configure\_sdk.md#create-tonclient)
+  * [Endpoints](configure\_sdk.md#endpoints)
   * [Configure Client](configure\_sdk.md#configure-client)
     * [Network Config](configure\_sdk.md#network-config)
       * [endpoints](configure\_sdk.md#endpoints)
@@ -30,13 +31,13 @@ Make sure you completed the previous step and [installed SDK properly](add\_sdk\
 
 `TONClient` is the main class of Ever SDK Library. To start using library one needs to create and setup a TONClient instance.
 
-The simplest initialization code can look like this: we just specify the Developer Network endpoints, other parameters are used by default. See the defaults below.
+The simplest initialization code can look like this: we just specify the endpoint and access\_key, other parameters are used by default. See the defaults and other params below.
 
 ```javascript
 const client = new TonClient({
 network: { 
     endpoints: [
-        'ENDPOINT'
+        'ENDPOINT_URL'
     ] 
     // Optional, if security settings are configured
     access_key: "Basic Auth secret or JWT token" 
@@ -44,13 +45,23 @@ network: {
 });
 ```
 
+## Endpoints
+
+### Local node&#x20;
+
 If you are working with [local blockchain Evernode-SE](https://github.com/tonlabs/evernode-se), specify [http://localhost](http://localhost) in the `endpoints`
 
-with no `access_key`.
+**with no `access_key`.**
 
-Get your free Evercloud endpoint and configure security settings here [https://docs.everos.dev/evernode-platform/products/evercloud/get-started](https://docs.everos.dev/evernode-platform/products/evercloud/get-started).
+### Evercloud
 
-Check the full list of [supported network endpoints](../../reference/ever-os-api/networks.md).
+If you want to access public API - you can get your free Evercloud endpoints to Mainnet and Devnet and configure security settings here [https://docs.everos.dev/evernode-platform/products/evercloud/get-started](https://docs.everos.dev/evernode-platform/products/evercloud/get-started).
+
+Check the full list of [supported network](../../reference/ever-os-api/networks.md)s.&#x20;
+
+### Dedicated node
+
+See the[ Evernode-DS documentation ](https://docs.everos.dev/evernode-platform/products/dapp-server-ds)how to run your dedicaded node.
 
 You can find reference guide to `TonClient` here: [Ever-SDK API Documentation](../../reference/types-and-methods/modules.md).
 
