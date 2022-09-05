@@ -18,7 +18,7 @@ use crate::types::StringId;
 use crate::{Message, MessageId};
 
 use ton_block::{
-    AccStatusChange, AddSub, ComputeSkipReason, GetRepresentationHash, TrComputePhase,
+    AccStatusChange, ComputeSkipReason, GetRepresentationHash, TrComputePhase,
     TransactionDescr, TransactionProcessingStatus,
 };
 use ton_types::Result;
@@ -79,11 +79,6 @@ pub struct Transaction {
     pub action: Option<ActionPhase>,
     #[serde(with = "json_helper::uint")]
     pub total_fees: u64,
-
-    #[serde(with = "json_helper::uint")]
-    ext_in_msg_fee: u64,
-    #[serde(with = "json_helper::uint")]
-    account_fees: u64,
 }
 
 impl TryFrom<&ton_block::Transaction> for Transaction {
@@ -98,11 +93,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
             .into());
         };
 
-        let account_fees = transaction.total_fees().grams.clone();
-        let mut in_msg_fee = account_fees.clone();
-
         let storage_phase = if let Some(phase) = descr.storage_ph {
-            in_msg_fee.sub(&phase.storage_fees_collected)?;
             Some(StoragePhase {
                 status_change: phase.status_change,
                 storage_fees_collected: grams_to_u64(&phase.storage_fees_collected)?,
@@ -121,7 +112,6 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
                 gas_used: 0,
             },
             TrComputePhase::Vm(ph) => {
-                in_msg_fee.sub(&ph.gas_fees)?;
                 ComputePhase {
                     skipped_reason: None,
                     exit_code: Some(ph.exit_code),
@@ -134,10 +124,6 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
         };
 
         let action_phase = if let Some(phase) = descr.action {
-            if let Some(fees) = phase.total_action_fees.as_ref() {
-                in_msg_fee.sub(fees)?;
-            }
-
             Some(ActionPhase {
                 success: phase.success,
                 valid: phase.valid,
@@ -164,11 +150,6 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
             Ok(true)
         })?;
 
-        let is_ext_in = if let Some(msg) = transaction.in_msg.as_ref() {
-            msg.read_struct()?.is_inbound_external()
-        } else {
-            false
-        };
         Ok(Transaction {
             id: transaction.hash()?.into(),
             status: TransactionProcessingStatus::Finalized,
@@ -181,20 +162,13 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
             storage: storage_phase,
             compute: compute_phase,
             action: action_phase,
-            ext_in_msg_fee: if is_ext_in {
-                grams_to_u64(&in_msg_fee)?
-            } else {
-                0
-            },
-            account_fees: grams_to_u64(&account_fees)?,
         })
     }
 }
 
 #[derive(Serialize, Deserialize, ApiType, Debug, PartialEq, Clone, Default)]
 pub struct TransactionFees {
-    /// Deprecated. Left for backward compatibility. 
-    /// Does not participate in account transaction fees calculation.
+    /// Deprecated. Contains the same data as ext_in_msg_fee field
     pub in_msg_fwd_fee: u64,
     /// Fee for account storage
     pub storage_fee: u64,
@@ -203,13 +177,7 @@ pub struct TransactionFees {
     /// Deprecated. Contains the same data as total_fwd_fees field. Deprecated because of
     /// its confusing name, that is not the same with GraphQL API Transaction type's field.
     pub out_msgs_fwd_fee: u64,
-    /// Deprecated. This is the field that is named as `total_fees` in GraphQL API Transaction type.
-    /// `total_account_fees` name is misleading, because it does not mean account fees, instead it means 
-    /// validators total fees received for the transaction execution. It does not include some forward fees that account
-    /// actually pays now, but validators will receive later during value delivery to another account (not even in the receiving
-    /// transaction). 
-    /// Because of all of this, this field is not interesting for those who wants to understand
-    /// the real account fees, this is why it is deprecated and left for backward compatibility.
+    /// Deprecated. Contains the same data as account_fees field
     pub total_account_fees: u64,
     /// Deprecated because it means total value sent in the transaction, which does not relate to any fees.
     pub total_output: u64,
@@ -297,8 +265,8 @@ impl Transaction {
             0
         };
 
-        fees.ext_in_msg_fee = self.ext_in_msg_fee;
-        fees.account_fees = self.account_fees;
+        fees.ext_in_msg_fee = fees.in_msg_fwd_fee;
+        fees.account_fees = fees.total_account_fees;
         fees
     }
 }
