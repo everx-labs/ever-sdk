@@ -1,9 +1,10 @@
 # Configure SDK
 
-Find out how to create and configure `TONClient` object to start interacting with blockchain
+&#x20;Find out how to create and configure `TONClient` object to start interacting with blockchain
 
 * [Configure SDK](configure\_sdk.md#configure-sdk)
   * [Create TONClient](configure\_sdk.md#create-tonclient)
+  * [Endpoints](configure\_sdk.md#endpoints)
   * [Configure Client](configure\_sdk.md#configure-client)
     * [Network Config](configure\_sdk.md#network-config)
       * [endpoints](configure\_sdk.md#endpoints)
@@ -30,29 +31,43 @@ Make sure you completed the previous step and [installed SDK properly](add\_sdk\
 
 `TONClient` is the main class of Ever SDK Library. To start using library one needs to create and setup a TONClient instance.
 
-The simplest initialization code can look like this: we just specify the Developer Network endpoints, other parameters are used by default. See the defaults below.
+The simplest initialization code can look like this: we just specify the endpoint and access\_key, other parameters are used by default. See the defaults and other params below.
 
-```graphql
+```javascript
 const client = new TonClient({
 network: { 
     endpoints: [
-        'https://eri01.net.everos.dev',
-        'https://rbx01.net.everos.dev',
-        'https://gra01.net.everos.dev'
-] 
+        'ENDPOINT_URL'
+    ] 
+    // Optional, if security settings are configured
+    access_key: "Basic Auth secret or JWT token" 
     } 
 });
 ```
 
-If you are working with [local blockchain Evernode SE](https://github.com/tonlabs/evernode-se), specify [http://localhost](http://localhost) in the `endpoints`.
+## Endpoints
 
-Check the full list of [supported network endpoints](../../reference/ever-os-api/networks.md).
+### Local node&#x20;
+
+If you are working with [local blockchain Evernode-SE](https://github.com/tonlabs/evernode-se), specify [http://localhost](http://localhost) in the `endpoints`
+
+**with no `access_key`.**
+
+### Evercloud
+
+If you want to access public API - you can get your free Evercloud endpoints to Mainnet and Devnet and configure security settings here [https://docs.everos.dev/evernode-platform/products/evercloud/get-started](https://docs.everos.dev/evernode-platform/products/evercloud/get-started).
+
+Check the full list of [supported network](../../reference/ever-os-api/networks.md)s.&#x20;
+
+### Dedicated node
+
+See the[ Evernode-DS documentation ](https://docs.everos.dev/evernode-platform/products/dapp-server-ds)how to run your dedicaded node.
 
 You can find reference guide to `TonClient` here: [Ever-SDK API Documentation](../../reference/types-and-methods/modules.md).
 
 ## Configure Client
 
-SDK provides a list of configuration parameters that can influence the behavior of the client. Use them when you create `TONClient` for more specific setup.
+SDK provides a list of configuration parameters that can influence the behaviour of the client. Use them when you create `TONClient` for more specific setup.
 
 ```graphql
 export type TONConfigData = {
@@ -65,7 +80,7 @@ network?: {
     wait_for_timeout?: number, // default = 40000 ms
     out_of_sync_threshold?: number, // default = 15000 ms
     reconnect_timeout?: number, // default = 12000 ms
-      access_key?: string
+    access_key?: string
     },
 crypto?:{
     mnemonic_dictionary?: number, // default = 1
@@ -127,7 +142,7 @@ Timeout between reconnect attempts.
 
 #### access\_key
 
-Access key to GraphQL API. At the moment is not used in production.
+&#x20;`Authorization: Basic ...` or `Authorization: Bearer ...` header.
 
 ### Crypto Config
 

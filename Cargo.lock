@@ -86,6 +86,7 @@ dependencies = [
 [[package]]
 name = "api_test"
 version = "1.37.1"
+>>>>>>> origin/master
 dependencies = [
  "api_derive",
  "api_info",
