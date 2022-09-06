@@ -10681,7 +10681,7 @@
               "number_type": "UInt",
               "number_size": 64,
               "summary": "Deprecated.",
-              "description": "Left for backward compatibility. Does not participate in account transaction fees calculation."
+              "description": "Contains the same data as ext_in_msg_fee field"
             },
             {
               "name": "storage_fee",
@@ -10713,7 +10713,7 @@
               "number_type": "UInt",
               "number_size": 64,
               "summary": "Deprecated.",
-              "description": "This is the field that is named as `total_fees` in GraphQL API Transaction type. `total_account_fees` name is misleading, because it does not mean account fees, instead it means\nvalidators total fees received for the transaction execution. It does not include some forward fees that account\nactually pays now, but validators will receive later during value delivery to another account (not even in the receiving\ntransaction).\nBecause of all of this, this field is not interesting for those who wants to understand\nthe real account fees, this is why it is deprecated and left for backward compatibility."
+              "description": "Contains the same data as account_fees field"
             },
             {
               "name": "total_output",
