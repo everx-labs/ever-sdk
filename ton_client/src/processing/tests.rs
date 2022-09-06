@@ -639,4 +639,7 @@ async fn test_fees() {
     assert!(local_result.fees.out_msgs_fwd_fee > 0);
     assert!(local_result.fees.in_msg_fwd_fee > 0);
     assert!(local_result.fees.total_account_fees > 0);
+    assert_eq!(local_result.fees.total_account_fees, local_result.fees.account_fees);
+    assert_eq!(local_result.fees.ext_in_msg_fee, local_result.fees.in_msg_fwd_fee);
+    assert_eq!(local_result.fees.total_fwd_fees, local_result.fees.out_msgs_fwd_fee);
 }
