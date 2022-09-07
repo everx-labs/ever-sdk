@@ -1,5 +1,5 @@
 {
-  "version": "1.37.0",
+  "version": "1.37.1",
   "modules": [
     {
       "name": "client",
@@ -7608,14 +7608,14 @@
                 }
               ],
               "summary": "Pin the BOC with `pin` name.",
-              "description": "Such BOC will not be removed from cache until it is unpinned"
+              "description": "Such BOC will not be removed from cache until it is unpinned BOCs can have several pins and each of the pins has reference counter indicating how many\ntimes the BOC was pinned with the pin. BOC is removed from cache after all references for all\npins are unpinned with `cache_unpin` function calls."
             },
             {
               "name": "Unpinned",
               "type": "Struct",
               "struct_fields": [],
-              "summary": " ",
-              "description": null
+              "summary": "BOC is placed into a common BOC pool with limited size regulated by LRU (least recently used) cache lifecycle.",
+              "description": "BOC resides there until it is replaced with other BOCs if it is not used"
             }
           ],
           "summary": null,
@@ -8867,7 +8867,7 @@
         },
         {
           "name": "cache_set",
-          "summary": "Save BOC into cache",
+          "summary": "Save BOC into cache or increase pin counter for existing pinned BOC",
           "description": null,
           "params": [
             {
@@ -8905,8 +8905,8 @@
         },
         {
           "name": "cache_unpin",
-          "summary": "Unpin BOCs with specified pin.",
-          "description": "BOCs which don't have another pins will be removed from cache",
+          "summary": "Unpin BOCs with specified pin defined in the `cache_set`. Decrease pin reference counter for BOCs with specified pin defined in the `cache_set`. BOCs which have only 1 pin and its reference counter become 0 will be removed from cache",
+          "description": null,
           "params": [
             {
               "name": "context",
@@ -10681,7 +10681,7 @@
               "number_type": "UInt",
               "number_size": 64,
               "summary": "Deprecated.",
-              "description": "Left for backward compatibility. Does not participate in account transaction fees calculation."
+              "description": "Contains the same data as ext_in_msg_fee field"
             },
             {
               "name": "storage_fee",
@@ -10713,7 +10713,7 @@
               "number_type": "UInt",
               "number_size": 64,
               "summary": "Deprecated.",
-              "description": "This is the field that is named as `total_fees` in GraphQL API Transaction type. `total_account_fees` name is misleading, because it does not mean account fees, instead it means\nvalidators total fees received for the transaction execution. It does not include some forward fees that account\nactually pays now, but validators will receive later during value delivery to another account (not even in the receiving\ntransaction).\nBecause of all of this, this field is not interesting for those who wants to understand\nthe real account fees, this is why it is deprecated and left for backward compatibility."
+              "description": "Contains the same data as account_fees field"
             },
             {
               "name": "total_output",
@@ -12554,7 +12554,7 @@
         {
           "name": "subscribe",
           "summary": "Creates a subscription",
-          "description": "The subscription is a persistent communication channel between\nclient and Everscale Network.\n\n### Important Notes on Subscriptions\n\nUnfortunately sometimes the connection with the network brakes down.\nIn this situation the library attempts to reconnect to the network.\nThis reconnection sequence can take significant time.\nAll of this time the client is disconnected from the network.\n\nBad news is that all changes that happened while\nthe client was disconnected are lost.\n\nGood news is that the client report errors to the callback when\nit loses and resumes connection.\n\nSo, if the lost changes are important to the application then\nthe application must handle these error reports.\n\nLibrary reports errors with `responseType` == 101\nand the error object passed via `params`.\n\nWhen the library has successfully reconnected\nthe application receives callback with\n`responseType` == 101 and `params.code` == 614 (NetworkModuleResumed).\n\nApplication can use several ways to handle this situation:\n- If application monitors changes for the single\nobject (for example specific account):  application\ncan perform a query for this object and handle actual data as a\nregular data from the subscription.\n- If application monitors sequence of some objects\n(for example transactions of the specific account): application must\nrefresh all cached (or visible to user) lists where this sequences presents.",
+          "description": "The subscription is a persistent communication channel between\nclient and Everscale Network.\n\n### Important Notes on Subscriptions\n\nUnfortunately sometimes the connection with the network breakes down.\nIn this situation the library attempts to reconnect to the network.\nThis reconnection sequence can take significant time.\nAll of this time the client is disconnected from the network.\n\nBad news is that all changes that happened while\nthe client was disconnected are lost.\n\nGood news is that the client report errors to the callback when\nit loses and resumes connection.\n\nSo, if the lost changes are important to the application then\nthe application must handle these error reports.\n\nLibrary reports errors with `responseType` == 101\nand the error object passed via `params`.\n\nWhen the library has successfully reconnected\nthe application receives callback with\n`responseType` == 101 and `params.code` == 614 (NetworkModuleResumed).\n\nApplication can use several ways to handle this situation:\n- If application monitors changes for the single\nobject (for example specific account):  application\ncan perform a query for this object and handle actual data as a\nregular data from the subscription.\n- If application monitors sequence of some objects\n(for example transactions of the specific account): application must\nrefresh all cached (or visible to user) lists where this sequences presents.",
           "params": [
             {
               "name": "context",

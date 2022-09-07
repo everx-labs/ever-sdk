@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.37.1] – 2022-08-03
+
+### Fixed
+
+- Pinned BOC cache now has reference counter for each pin in BOC. BOC can be pinned several times 
+with the same pin. BOC is removed from cache after all references for all pins are unpinned with
+`cache_unpin` function calls.
+- Fixed error resolving in case when account state was modified after message expiration time. Now 
+appropriate error text is added to error message instead of executor internal error
+
 ## [1.37.0] – 2022-07-28
 
 ### New

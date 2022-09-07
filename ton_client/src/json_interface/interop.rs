@@ -22,13 +22,20 @@ use std::ptr::null;
 
 pub type ContextHandle = u32;
 
+
 #[derive(Serialize, Deserialize, Clone, num_derive::FromPrimitive)]
+
+/// Response types, handled by the response handlers of the library.
+///
+/// See the full description here https://github.com/tonlabs/ever-sdk/blob/master/docs/for-binding-developers/json_interface.md#responses
+/// In case of `subscribe` and `subscribe_collection` functions
+/// there are only 2 types of ResponseType: 100 - OK, 101 - Error
 pub enum ResponseType {
     Success = 0,
     Error = 1,
     Nop = 2,
     AppRequest = 3,
-    AppNotify = 4,
+    AppNotify = 4,    
     Custom = 100,
 }
 

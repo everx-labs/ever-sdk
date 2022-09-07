@@ -24,9 +24,9 @@ BOC manipulation module.
 
 [cache_get](mod\_boc.md#cache_get) – Get BOC from cache
 
-[cache_set](mod\_boc.md#cache_set) – Save BOC into cache
+[cache_set](mod\_boc.md#cache_set) – Save BOC into cache or increase pin counter for existing pinned BOC
 
-[cache_unpin](mod\_boc.md#cache_unpin) – Unpin BOCs with specified pin.
+[cache_unpin](mod\_boc.md#cache_unpin) – Unpin BOCs with specified pin defined in the `cache_set`. Decrease pin reference counter for BOCs with specified pin defined in the `cache_set`. BOCs which have only 1 pin and its reference counter become 0 will be removed from cache
 
 [encode_boc](mod\_boc.md#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type.
 
@@ -45,7 +45,7 @@ BOC manipulation module.
 ## Types
 [BocCacheTypePinnedVariant](mod\_boc.md#boccachetypepinnedvariant) – Pin the BOC with `pin` name.
 
-[BocCacheTypeUnpinnedVariant](mod\_boc.md#boccachetypeunpinnedvariant) –  
+[BocCacheTypeUnpinnedVariant](mod\_boc.md#boccachetypeunpinnedvariant) – BOC is placed into a common BOC pool with limited size regulated by LRU (least recently used) cache lifecycle.
 
 [BocCacheType](mod\_boc.md#boccachetype)
 
@@ -401,7 +401,7 @@ function cache_get(
 
 ## cache_set
 
-Save BOC into cache
+Save BOC into cache or increase pin counter for existing pinned BOC
 
 ```ts
 type ParamsOfBocCacheSet = {
@@ -429,9 +429,7 @@ function cache_set(
 
 ## cache_unpin
 
-Unpin BOCs with specified pin.
-
-BOCs which don't have another pins will be removed from cache
+Unpin BOCs with specified pin defined in the `cache_set`. Decrease pin reference counter for BOCs with specified pin defined in the `cache_set`. BOCs which have only 1 pin and its reference counter become 0 will be removed from cache
 
 ```ts
 type ParamsOfBocCacheUnpin = {
@@ -699,7 +697,9 @@ function get_compiler_version(
 ## BocCacheTypePinnedVariant
 Pin the BOC with `pin` name.
 
-Such BOC will not be removed from cache until it is unpinned
+Such BOC will not be removed from cache until it is unpinned BOCs can have several pins and each of the pins has reference counter indicating how many
+times the BOC was pinned with the pin. BOC is removed from cache after all references for all
+pins are unpinned with `cache_unpin` function calls.
 
 ```ts
 type BocCacheTypePinnedVariant = {
@@ -710,7 +710,9 @@ type BocCacheTypePinnedVariant = {
 
 
 ## BocCacheTypeUnpinnedVariant
- 
+BOC is placed into a common BOC pool with limited size regulated by LRU (least recently used) cache lifecycle.
+
+BOC resides there until it is replaced with other BOCs if it is not used
 
 ```ts
 type BocCacheTypeUnpinnedVariant = {
@@ -733,13 +735,17 @@ When _type_ is _'Pinned'_
 
 Pin the BOC with `pin` name.
 
-Such BOC will not be removed from cache until it is unpinned
+Such BOC will not be removed from cache until it is unpinned BOCs can have several pins and each of the pins has reference counter indicating how many
+times the BOC was pinned with the pin. BOC is removed from cache after all references for all
+pins are unpinned with `cache_unpin` function calls.
 
 - `pin`: _string_
 
 When _type_ is _'Unpinned'_
 
- 
+BOC is placed into a common BOC pool with limited size regulated by LRU (least recently used) cache lifecycle.
+
+BOC resides there until it is replaced with other BOCs if it is not used
 
 
 

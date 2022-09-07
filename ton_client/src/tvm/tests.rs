@@ -18,6 +18,7 @@ use crate::abi::{
     encode_account::{ParamsOfEncodeAccount, StateInitSource},
     Abi, CallSet, DeploySet, FunctionHeader, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
+use crate::tests::GIVER_V2;
 use crate::boc::{
     internal::{deserialize_object_from_base64, serialize_cell_to_base64},
     BocCacheType,
@@ -956,8 +957,8 @@ async fn test_my_code() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_run_executor_fees() {
-    let client = TestClient::new();
-    let (abi, tvc) = TestClient::package("Events", None);
+    let client = TestClient::new_with_config(json!({}));
+    let (abi, tvc) = TestClient::package(GIVER_V2, Some(2));
 
     let keys = client.generate_sign_keys();
     let pubkey = Some(keys.public.clone());
@@ -985,6 +986,8 @@ async fn test_run_executor_fees() {
         )
         .await
         .unwrap();
+    
+    let address = deploy_message.address.clone();
 
     let deployed: ResultOfRunExecutor = client
         .request_async(
@@ -1000,19 +1003,20 @@ async fn test_run_executor_fees() {
         .await
         .unwrap();
 
-    let return_value_message: ResultOfEncodeMessage = client
+    let send_message: ResultOfEncodeMessage = client
         .request_async(
             "abi.encode_message",
             ParamsOfEncodeMessage {
                 abi: abi.clone(),
-                address: Some(deploy_message.address.clone()),
-                call_set: Some(CallSet {
-                    function_name: "returnValue".into(),
-                    input: Some(json!({
-                        "id": "0x1"
-                    })),
-                    ..Default::default()
-                }),
+                address: Some(address.clone()),
+                call_set: CallSet::some_with_function_and_input(
+                    "sendTransaction",
+                    json!({
+                        "dest": address.clone(),
+                        "value": 100_000_000u64,
+                        "bounce": false
+                    })
+                ),
                 signer,
                 ..Default::default()
             },
@@ -1025,7 +1029,7 @@ async fn test_run_executor_fees() {
         .request_async(
             "tvm.run_executor",
             ParamsOfRunExecutor {
-                message: return_value_message.message.clone(),
+                message: send_message.message.clone(),
                 account: AccountForExecutor::Account {
                     boc: deployed.account.clone(),
                     unlimited_balance: Some(true),
@@ -1037,25 +1041,27 @@ async fn test_run_executor_fees() {
         .await
         .unwrap();
 
-    assert_eq!(2354000, return_value.fees.ext_in_msg_fee);
-    assert_eq!(1166500, return_value.fees.account_fees/10);
-    assert_eq!(2000000, return_value.fees.total_fwd_fees);
+    assert_eq!(2237000, return_value.fees.ext_in_msg_fee);
+    assert_eq!(1311900, return_value.fees.account_fees/10);
+    assert_eq!(1000000, return_value.fees.total_fwd_fees);
 
     // use wrong signature
-    let return_value_message: ResultOfEncodeMessage = client
+    let send_message: ResultOfEncodeMessage = client
         .request_async(
             "abi.encode_message",
             ParamsOfEncodeMessage {
                 abi: abi.clone(),
-                address: Some(deploy_message.address.clone()),
+                address: Some(address.clone()),
                 call_set: Some(CallSet {
-                    function_name: "returnValue".into(),
+                    function_name: "sendTransaction".into(),
                     header: Some(FunctionHeader {
                         pubkey,
                         ..Default::default()
                     }),
                     input: Some(json!({
-                        "id": "0x1"
+                        "dest": address.clone(),
+                        "value": 100_000_000u64,
+                        "bounce": false
                     })),
                     ..Default::default()
                 }),
@@ -1071,7 +1077,7 @@ async fn test_run_executor_fees() {
         .request_async::<_, ResultOfRunExecutor>(
             "tvm.run_executor",
             ParamsOfRunExecutor {
-                message: return_value_message.message.clone(),
+                message: send_message.message.clone(),
                 account: AccountForExecutor::Account {
                     boc: deployed.account.clone(),
                     unlimited_balance: Some(true),
@@ -1088,7 +1094,7 @@ async fn test_run_executor_fees() {
         .request_async(
             "tvm.run_executor",
             ParamsOfRunExecutor {
-                message: return_value_message.message.clone(),
+                message: send_message.message.clone(),
                 account: AccountForExecutor::Account {
                     boc: deployed.account.clone(),
                     unlimited_balance: Some(true),
@@ -1104,7 +1110,7 @@ async fn test_run_executor_fees() {
         .await
         .unwrap();
 
-    assert_eq!(2354000, return_value.fees.ext_in_msg_fee);
-    assert_eq!(1166500, return_value.fees.account_fees/10);
-    assert_eq!(2000000, return_value.fees.total_fwd_fees);
+    assert_eq!(2237000, return_value.fees.ext_in_msg_fee);
+    assert_eq!(1311900, return_value.fees.account_fees/10);
+    assert_eq!(1000000, return_value.fees.total_fwd_fees);
 }
