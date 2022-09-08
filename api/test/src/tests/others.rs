@@ -1,23 +1,18 @@
-#[macro_use]
-extern crate api_derive;
-
-use api_info;
-
-use api_info::{ApiModule, ApiType};
 use serde_derive::{Deserialize, Serialize};
+use crate::tests::{reflect, reflect_module};
 
 #[derive(Serialize, Deserialize, Default, Clone, Debug, PartialEq)]
 pub struct StringId(String);
 pub type BlockId = StringId;
 
 #[derive(Serialize, Deserialize, ApiType)]
-pub enum EnumWithValues {
+pub enum EnumConsts {
     Foo = 2,
     Bar,
 }
 
 #[derive(Serialize, Deserialize, ApiType)]
-pub enum EnumWithTypes {
+pub enum EnumTypes {
     Foo(String, String),
     Bar(u32),
     Baz { a: String, b: String },
@@ -64,23 +59,15 @@ fn _foo(_params: Foo) -> Result<Bar, Foo> {
     Ok(Bar::default())
 }
 
-fn reflect<T: ApiType>() {
-    let info = serde_json::to_string_pretty(&T::api()).unwrap();
-    println!("{}", info);
-}
-
-fn reflect_module<T: ApiModule>() {
-    let info = serde_json::to_string_pretty(&T::api()).unwrap();
-    println!("{}", info);
-}
-
-fn main() {
+#[test]
+fn test_dev() {
     let _ = Module {};
     reflect_module::<Module>();
     reflect::<Foo>();
     reflect::<Bar>();
-    reflect::<EnumWithValues>();
-    reflect::<EnumWithTypes>();
+    reflect::<EnumConsts>();
+    reflect::<EnumTypes>();
     reflect::<FooHandle>();
     println!("{}", serde_json::to_string_pretty(&_foo_api()).unwrap());
 }
+

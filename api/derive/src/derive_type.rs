@@ -1,7 +1,7 @@
-use crate::utils::{doc_from, field_from, field_to_tokens, fields_from};
+use crate::utils::{doc_from, field_from, field_to_tokens, fields_from, find_attr_value};
 use api_info;
 use quote::quote;
-use syn::{Data, DataEnum, DeriveInput, Expr, Lit, Variant};
+use syn::{Attribute, Data, DataEnum, DeriveInput, Expr, Lit, Variant};
 
 pub fn impl_api_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream {
     let input = syn::parse::<DeriveInput>(input).expect("Derive input");
@@ -9,7 +9,7 @@ pub fn impl_api_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
         Data::Struct(ref data) => api_info::Type::Struct {
             fields: fields_from(&data.fields),
         },
-        Data::Enum(ref data) => enum_type(data),
+        Data::Enum(ref data) => enum_type(data, &input.attrs),
         _ => panic!("ApiType can only be derived for structures"),
     };
     let field = field_from(Some(&input.ident), &input.attrs, ty);
@@ -25,23 +25,35 @@ pub fn impl_api_type(input: proc_macro::TokenStream) -> proc_macro::TokenStream 
     tokens.into()
 }
 
-fn enum_type(data: &DataEnum) -> api_info::Type {
+fn enum_type(data: &DataEnum, attrs: &Vec<Attribute>) -> api_info::Type {
     if data
         .variants
         .iter()
         .find(|v| !v.fields.is_empty())
         .is_some()
     {
-        enum_of_types(data)
+        enum_of_types(data, attrs)
     } else {
         enum_of_consts(data)
     }
 }
 
-fn enum_of_types(data: &DataEnum) -> api_info::Type {
+fn enum_of_types(data: &DataEnum, attrs: &Vec<Attribute>) -> api_info::Type {
+    let content = find_attr_value("serde", "content", attrs);
     let types = data.variants.iter().map(|v| {
         let fields = fields_from(&v.fields);
-        field_from(Some(&v.ident), &v.attrs, api_info::Type::Struct { fields })
+        let mut variant_type = api_info::Type::Struct { fields };
+        if let Some(content) = &content {
+            variant_type = api_info::Type::Struct {
+                fields: vec![api_info::Field {
+                    name: content.clone(),
+                    summary: None,
+                    description: None,
+                    value: variant_type,
+                }],
+            };
+        }
+        field_from(Some(&v.ident), &v.attrs, variant_type)
     });
     api_info::Type::EnumOfTypes {
         types: types.collect(),

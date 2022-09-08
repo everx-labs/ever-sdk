@@ -43,37 +43,6 @@ fn find_type<'a>(
     fallback
 }
 
-fn can_be_serialized_as_struct(ty: &Type, module: &Module, api: &API) -> bool {
-    match &ty {
-        Type::Struct { fields } => {
-            if fields.is_empty() {
-                true
-            } else if fields.len() == 1 && fields[0].name.is_empty() {
-                can_be_serialized_as_struct(&fields[0].value, module, api)
-            } else {
-                fields.iter().find(|x| x.name.is_empty()).is_none()
-            }
-        }
-        Type::Ref { name } => {
-            if let Some((ref_module, ref_type)) = find_type(&name, module, api) {
-                can_be_serialized_as_struct(&ref_type.value, ref_module, api)
-            } else {
-                false
-            }
-        }
-        _ => false,
-    }
-}
-
-fn detect_separated_content(variants: &Vec<Field>, module: &Module, api: &API) -> bool {
-    for variant in variants {
-        if !can_be_serialized_as_struct(&variant.value, module, api) {
-            return true;
-        }
-    }
-    false
-}
-
 fn reduce_type(ty: &Type, module: &Module, api: &API) -> Type {
     match ty {
         Type::Array { item } => Type::Array {
@@ -113,26 +82,9 @@ fn reduce_type(ty: &Type, module: &Module, api: &API) -> Type {
             }
         }
         Type::EnumOfTypes { types } => {
-            let is_content_separated = detect_separated_content(types, module, api);
             let mut reduced_types = Vec::new();
             for variant in types {
-                reduced_types.push(if is_content_separated {
-                    Field {
-                        name: variant.name.clone(),
-                        summary: variant.summary.clone(),
-                        description: variant.description.clone(),
-                        value: Type::Struct {
-                            fields: vec![Field {
-                                name: "value".into(),
-                                summary: None,
-                                description: None,
-                                value: reduce_type(&variant.value, module, api),
-                            }],
-                        },
-                    }
-                } else {
-                    reduce_field(variant, module, api)
-                });
+                reduced_types.push(reduce_field(variant, module, api));
             }
             Type::EnumOfTypes {
                 types: reduced_types,

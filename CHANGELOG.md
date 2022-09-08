@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.37.2] – 2022-08-10
+
+### Fixed
+
+- Some enum types wasn't properly presented in api.json (some types that uses serde(content="value"))
+
 ## [1.37.1] – 2022-08-03
 
 ### Fixed
