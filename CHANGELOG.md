@@ -7,17 +7,17 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `create_crypto_box` optimisation.
-  When user creates crypto box, SDK encrypts provided secret information using provided password 
-  and salt.
-  When SDK encrypts secret, it derives encryption key from password and salt using `scrypt` 
-  function which takes a lot of CPU time (about 1 second).
-  So when the user creates many crypto boxes using same password and salt, it is required a lot 
-  of time (about 12 seconds for 10 crypto boxes).
-  With optimisations introduced in this version the SDK caches mapping (password+salt => encryption key) 
-  for approximately 2 seconds.
-  So when the user creates many crypto boxes using same password and salt, it is required only 
-  a 1.2 seconds for 10 crypto boxes.
-  
+  When user creates crypto box, SDK encrypts provided secret information using provided 
+  password and salt.
+  When SDK encrypts secret, it calculates encryption key from password and salt 
+  using `scrypt` function which takes a lot of CPU time (about 1 second).
+  So when the user creates many crypto boxes using same password and salt, 
+  it is required a lot of time (about 12 seconds for 10 crypto boxes).
+  With an optimisations introduced in this version the SDK stores 
+  pair (password+salt => encryption key) in internal cache for approximately 2 seconds.
+  So when the user creates many crypto boxes at a time using the same password and salt, 
+  SDK uses cached information to skip heavy calculations. As a result there are only 
+  a single second required to create 10 crypto boxes.  
 
 ### Fixed
 
