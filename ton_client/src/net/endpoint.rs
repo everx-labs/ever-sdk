@@ -77,16 +77,14 @@ impl Endpoint {
     }
 
     fn expand_address(base_url: &str) -> String {
-        let url = base_url.trim_end_matches("/").to_lowercase();
-        let base_url = if url.starts_with(HTTP_PROTOCOL) || url.starts_with(HTTPS_PROTOCOL) {
-            base_url.to_owned()
-        } else {
-            let protocol = if url == "localhost" || url == "127.0.0.1" || url == "0.0.0.0" {
+        let mut base_url = base_url.trim_end_matches("/").to_lowercase();
+        if !base_url.starts_with(HTTP_PROTOCOL) && !base_url.starts_with(HTTPS_PROTOCOL) {
+            let protocol = if base_url == "localhost" || base_url == "127.0.0.1" || base_url == "0.0.0.0" {
                 HTTP_PROTOCOL
             } else {
                 HTTPS_PROTOCOL
             };
-            format!("{}{}", protocol, base_url)
+            base_url = format!("{}{}", protocol, base_url);
         };
         if base_url.ends_with("/graphql") {
             base_url
