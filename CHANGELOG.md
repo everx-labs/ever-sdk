@@ -19,6 +19,9 @@ All notable changes to this project will be documented in this file.
   SDK uses cached information to skip heavy calculations. As a result there are only 
   a single second required to create 10 crypto boxes.  
 
+- `crypto.encryption_box_get_info` returns nacl box public key in `info.public` field.
+
+
 ### Fixed
 
 - Some enum types wasn't properly presented in api.json (some types that uses serde(content="value"))
