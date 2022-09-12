@@ -181,9 +181,9 @@ Where:
 
 [cache_get](mod\_boc.md#cache_get) – Get BOC from cache
 
-[cache_set](mod\_boc.md#cache_set) – Save BOC into cache
+[cache_set](mod\_boc.md#cache_set) – Save BOC into cache or increase pin counter for existing pinned BOC
 
-[cache_unpin](mod\_boc.md#cache_unpin) – Unpin BOCs with specified pin.
+[cache_unpin](mod\_boc.md#cache_unpin) – Unpin BOCs with specified pin defined in the `cache_set`. Decrease pin reference counter for BOCs with specified pin defined in the `cache_set`. BOCs which have only 1 pin and its reference counter become 0 will be removed from cache
 
 [encode_boc](mod\_boc.md#encode_boc) – Encodes bag of cells (BOC) with builder operations. This method provides the same functionality as Solidity TvmBuilder. Resulting BOC of this method can be passed into Solidity and C++ contracts as TvmCell type.
 

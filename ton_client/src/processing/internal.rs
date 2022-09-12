@@ -1,3 +1,4 @@
+use super::ErrorCode;
 use super::fetching::fetch_account;
 use crate::abi::{Abi, ParamsOfDecodeMessage};
 use crate::client::ClientContext;
@@ -72,26 +73,36 @@ pub(crate) async fn get_message_expiration_time(
     Ok(time)
 }
 
+#[derive(Deserialize)]
+struct Account {
+    boc: String,
+    last_paid: Option<u32>,
+}
+
 async fn get_local_error(
     context: Arc<ClientContext>,
     address: &MsgAddressInt,
     message: String,
     time: u32,
     show_tips_on_error: bool,
-) -> ClientResult<()> {
-    let account = fetch_account(context.clone(), address, "boc").await?;
+) -> ClientResult<String> {
+    let account = fetch_account(context.clone(), address, "boc last_paid").await?;
 
-    let boc = account["boc"]
-        .as_str()
-        .ok_or(Error::invalid_data("Account doesn't contain 'boc'"))?
-        .to_owned();
+    let account: Account = serde_json::from_value(account)
+        .map_err(|err| Error::invalid_data(format!("Can not parse account for error resolving: {}", err)))?;
+
+    if let Some(last_paid) = account.last_paid {
+        if last_paid > time {
+            return Ok("Can not resolve error due to modified account state".to_owned());
+        }
+    }
 
     crate::tvm::run_executor_internal(
         context,
         ParamsOfRunExecutor {
             abi: None,
             account: AccountForExecutor::Account {
-                boc,
+                boc: account.boc,
                 unlimited_balance: None,
             },
             execution_options: Some(ExecutionOptions {
@@ -104,7 +115,7 @@ async fn get_local_error(
         show_tips_on_error,
     )
     .await
-    .map(|_| ())
+    .map(|_| "Local contract call emulation was successful".to_owned())
 }
 
 pub(crate) async fn resolve_error(
@@ -156,11 +167,18 @@ pub(crate) async fn resolve_error(
 
             Err(original_error)
         }
-        Ok(_) => {
+        Ok(message) => {
             original_error.message = format!(
-                "{}. Local contract call emulation was successful. Possible reason: message has not been delivered.",
+                "{}. {}. Possible reason: message has not been delivered",
                 original_error.message.trim_end_matches("."),
+                message,
             );
+            if original_error.code == ErrorCode::MessageExpired as u32 {
+                original_error.message = format!(
+                    "{}. Try to send it again",
+                    original_error.message,
+                );
+            }
             Err(original_error)
         }
     }

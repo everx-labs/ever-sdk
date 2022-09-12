@@ -298,6 +298,31 @@ async fn test_pinned_cache() {
         .unwrap();
     assert_eq!(boc.boc, None);
 
+    // pin boc1 again with pin2 to increase counter and then check that it is removed from cache after 2 unpins
+
+    cache_set
+        .call(ParamsOfBocCacheSet {
+            boc: ref1.clone(),
+            cache_type: BocCacheType::Pinned { pin: pin2.clone() },
+        })
+        .await
+        .unwrap();
+
+    cache_unpin
+        .call(ParamsOfBocCacheUnpin {
+            boc_ref: None,
+            pin: pin2.clone(),
+        })
+        .await
+        .unwrap();
+    let boc = cache_get
+        .call(ParamsOfBocCacheGet {
+            boc_ref: ref1.clone(),
+        })
+        .await
+        .unwrap();
+    assert_eq!(boc.boc, Some(boc1));
+
     cache_unpin
         .call(ParamsOfBocCacheUnpin {
             boc_ref: None,
@@ -313,6 +338,7 @@ async fn test_pinned_cache() {
         .unwrap();
     assert_eq!(boc.boc, None);
 }
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_unpinned_cache() {
     let boc1 = TestClient::tvc(crate::tests::TEST_DEBOT, None);

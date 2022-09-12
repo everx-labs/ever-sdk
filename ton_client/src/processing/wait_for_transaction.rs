@@ -6,6 +6,7 @@ use crate::net::{EndpointStat, ResultOfSubscription};
 use crate::processing::internal::{get_message_expiration_time, resolve_error};
 use crate::processing::{fetching, internal, Error};
 use crate::processing::{ProcessingEvent, ResultOfProcessMessage};
+use std::convert::TryInto;
 use std::sync::Arc;
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
@@ -298,7 +299,7 @@ async fn wait_by_block_walking<F: futures::Future<Output = ()> + Send>(
     loop {
         let now = context.env.now_ms();
         let fetch_block_timeout =
-            (std::cmp::max(max_block_time, now) - now) as u32 + processing_timeout;
+            (std::cmp::max(max_block_time, now) - now).try_into().unwrap_or(u32::MAX) + processing_timeout;
         log::debug!("fetch_block_timeout {}", fetch_block_timeout);
 
         let block = fetching::fetch_next_shard_block(
