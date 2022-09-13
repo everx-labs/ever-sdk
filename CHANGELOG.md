@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `crypto.encryption_box_get_info` returns nacl box public key in `info.public` field.
+- Gosh instruction are supported in local VM and executor.
 
 ### Improvement
 

@@ -1199,14 +1199,3 @@ async fn test_gosh() {
             .unwrap();
     }
 }
-
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn add_caps() {
-    let bytes = include_bytes!("../mainnet_config_10660619.boc");
-    let mut config = <ton_block::ConfigParams as ton_block::Deserializable>::construct_from_bytes(bytes).unwrap();
-    let mut caps = config.get_global_version().unwrap();
-    caps.capabilities |=  ton_block::GlobalCapabilities::CapDiff as u64 |
-        ton_block::GlobalCapabilities::CapStorageFeeToTvm as u64;
-    config.set_config(ton_block::ConfigParamEnum::ConfigParam8(ton_block::ConfigParam8 {global_version: caps} )).unwrap();
-    ton_block::Serializable::write_to_file(&config, "src/mainnet_config_10660619.boc").unwrap();
-}
