@@ -109,7 +109,7 @@ pretty_assertions = '1.2'
 
 [features]
 default = [ 'std' ]
-include-zstd = [  ]
+include-zstd = [ 'ton_block/gosh', 'ton_vm/gosh' ]
 std = [
     'tokio/rt-multi-thread',
     'tokio/macros',
