@@ -47,6 +47,12 @@ pub(crate) fn call_tvm(
         .put(4, &mut StackItem::Cell(data))
         .map_err(|err| Error::internal_error(format!("can not put data to registers: {}", err)))?;
 
+    let capabilities = GlobalCapabilities::CapInitCodeHash as u64 |
+        GlobalCapabilities::CapMycode as u64 |
+        GlobalCapabilities::CapStorageFeeToTvm as u64;
+    #[cfg(feature = "include-zstd")]
+    let capabilities = capabilities | GlobalCapabilities::CapDiff as u64;
+
     let mut sci = build_contract_info(
         options.blockchain_config.raw_config(),
         addr,
@@ -57,7 +63,7 @@ pub(crate) fn call_tvm(
         code.clone(),
         account.init_code_hash(),
     );
-    sci.capabilities |= GlobalCapabilities::CapInitCodeHash as u64 | GlobalCapabilities::CapMycode as u64;
+    sci.capabilities |= capabilities;
     ctrls
         .put(7, &mut sci.into_temp_data_item())
         .map_err(|err| Error::internal_error(format!("can not put SCI to registers: {}", err)))?;
@@ -69,7 +75,7 @@ pub(crate) fn call_tvm(
         // TODO: use specific blockchain configs when they will be available
         // TODO: for now use maximum available capabilities
         // options.blockchain_config.capabilites()
-        (GlobalCapabilities::CapMycode as u64) | (GlobalCapabilities::CapInitCodeHash as u64)
+        capabilities
     ).setup(
         SliceData::from(code),
         Some(ctrls),
