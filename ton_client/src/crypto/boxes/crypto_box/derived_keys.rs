@@ -2,7 +2,7 @@ use crate::client::ClientEnv;
 use crate::crypto;
 use crate::crypto::internal::SecretBuf;
 use crate::error::ClientResult;
-use std::sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard};
+use std::sync::{Arc, RwLock};
 
 struct SecretHash(u64);
 
@@ -46,7 +46,6 @@ impl DerivedKeysCache {
     fn touch(&mut self, hash: &SecretHash) -> Option<&SecretBuf> {
         for key in &mut self.keys {
             if key.hash.0 == hash.0 {
-                println!("use cached key");
                 key.expired_at = self.env.now_ms() + key.ttl_ms;
                 return Some(&key.key);
             }
@@ -71,7 +70,6 @@ impl DerivedKeysCache {
             ttl_ms,
             expired_at: self.env.now_ms() + ttl_ms,
         });
-        println!("put key to cache with ttl {}", ttl_ms);
         self.keys.len() == 1
     }
 
@@ -79,7 +77,6 @@ impl DerivedKeysCache {
         let now = self.env.now_ms();
         for i in (0..self.keys.len()).rev() {
             if self.keys[i].expired_at <= now {
-                println!("remove expired key");
                 self.keys.remove(i);
             }
         }
@@ -89,12 +86,14 @@ impl DerivedKeysCache {
 
 #[derive(Clone)]
 pub(crate) struct DerivedKeys {
+    env: Arc<ClientEnv>,
     cache: Arc<RwLock<DerivedKeysCache>>,
 }
 
 impl DerivedKeys {
     pub(crate) fn new(env: Arc<ClientEnv>) -> Self {
         Self {
+            env: env.clone(),
             cache: Arc::new(RwLock::new(DerivedKeysCache {
                 keys: Vec::new(),
                 env,
@@ -104,38 +103,36 @@ impl DerivedKeys {
 
     pub(crate) fn derive(&self, password: &[u8], salt: &str) -> ClientResult<SecretBuf> {
         let hash = DerivedKey::calc_hash(password, salt);
-        if let Some(existing) = { self.write_cache().touch(&hash).map(|x| x.clone()) } {
+        if let Some(existing) = self.touch(&hash) {
             return Ok(existing);
         }
-        let calculation_start = { self.read_cache().env.now_ms() };
+        let calculation_start = self.env.now_ms();
         let key = DerivedKey::calc_key(password, salt)?;
-        let calculation_time = { self.read_cache().env.now_ms() - calculation_start };
-        let start_timer = {
-            self.write_cache()
-                .put_and_check_start_timer(&hash, &key, calculation_time)
-        };
+        let calculation_time = self.env.now_ms() - calculation_start;
+        let start_timer = self.put_and_check_start_timer(&hash, &key, calculation_time);
         if start_timer {
             let keys = self.clone();
-            let env = { self.read_cache().env.clone() };
-            let inner_env = env.clone();
-            env.spawn(async move {
+            let env = self.env.clone();
+            self.env.spawn(async move {
                 let mut stop_timer = false;
-                println!("start clean timer");
                 while !stop_timer {
-                    let _ = inner_env.set_timer(1000u64).await;
-                    stop_timer = keys.write_cache().clean_and_check_stop_timer();
+                    let _ = env.set_timer(1000u64).await;
+                    stop_timer = keys.clean_and_check_stop_timer();
                 }
-                println!("stop clean timer");
             });
         }
         Ok(key)
     }
 
-    fn read_cache(&self) -> RwLockReadGuard<DerivedKeysCache> {
-        self.cache.read().unwrap()
+    fn touch(&self, hash: &SecretHash) -> Option<SecretBuf> {
+        self.cache.write().unwrap().touch(&hash).map(|x| x.clone())
     }
 
-    fn write_cache(&self) -> RwLockWriteGuard<DerivedKeysCache> {
-        self.cache.write().unwrap()
+    fn clean_and_check_stop_timer(&self) -> bool {
+        self.cache.write().unwrap().clean_and_check_stop_timer()
+    }
+
+    fn put_and_check_start_timer(&self, hash: &SecretHash, key: &SecretBuf, calculation_time: u64) -> bool {
+        self.cache.write().unwrap().put_and_check_start_timer(&hash, &key, calculation_time)
     }
 }
