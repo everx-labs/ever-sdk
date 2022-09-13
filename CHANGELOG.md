@@ -4,9 +4,24 @@ All notable changes to this project will be documented in this file.
 
 ## [1.37.2] – 2022-08-10
 
+### Improvement
+
+- `create_crypto_box` optimisation.
+  When a user creates a crypto box, library encrypts provided secret information using provided 
+  password and salt.
+  When library encrypts the secret, it calculates encryption key from password and salt 
+  using `scrypt` function which takes a lot of CPU time (about 1 second).
+  So when a user creates many crypto boxes using the same password and salt, 
+  it takes a lot of time (about 12 seconds for 10 crypto boxes).
+  With the optimisations introduced in this version the library stores the 
+  pair (password+salt => encryption key) in internal cache for approximately 2 seconds.
+  So when a user creates many crypto boxes at a time using the same password and salt, 
+  library uses cached information to skip heavy calculations. As a result now it takes only 
+  a second to create 10 crypto boxes.  
+
 ### Fixed
 
-- Some enum types wasn't properly presented in api.json (some types that uses serde(content="value"))
+- Some enum types were not properly presented in api.json (some types that use serde(content="value"))
 
 ## [1.37.1] – 2022-08-03
 

@@ -1,10 +1,12 @@
+use crate::ClientContext;
 use chacha20::cipher::{NewStreamCipher, SyncStreamCipher};
 use rand::RngCore;
 use sodalite::{BOX_NONCE_LEN, BOX_PUBLIC_KEY_LEN, BOX_SECRET_KEY_LEN};
+use std::sync::Arc;
 use zeroize::Zeroize;
 
-use crate::crypto::{boxes::crypto_box::SecretInternal, internal::SecretBuf};
 use crate::crypto::nacl::nacl_box_open_internal;
+use crate::crypto::{boxes::crypto_box::SecretInternal, internal::SecretBuf};
 use crate::error::ClientResult;
 
 use super::{Error, PasswordProvider};
@@ -22,24 +24,15 @@ fn generate_nonce() -> SecretBuf {
     nonce
 }
 
-fn derive_key(password: &[u8], salt: &str) -> ClientResult<SecretBuf> {
-    let scrypt_params = scrypt::Params::new(14, 8, 1)
-        .expect("Scrypt params setup failed");
-    let mut key = SecretBuf(vec![0;32]);
-    scrypt::scrypt(password, salt.as_bytes(), &scrypt_params, &mut key.0)
-        .map_err(|err| Error::scrypt_failed(err))?;
-
-    Ok(key)
-}
-
 async fn apply_chacha20(
+    context: Arc<ClientContext>,
     secret: &[u8],
     password_provider: &PasswordProvider,
     salt: &str,
     nonce: &[u8],
 ) -> ClientResult<SecretBuf> {
     let password = get_password(password_provider).await?;
-    let key = derive_key(&password.0, salt)?;
+    let key = context.derived_keys.derive(&password.0, salt)?;
     let mut cipher = chacha20::ChaCha20::new(
         chacha20::Key::from_slice(&key.0),
         chacha20::Nonce::from_slice(nonce),
@@ -51,14 +44,18 @@ async fn apply_chacha20(
 }
 
 pub(crate) async fn encrypt_secret(
+    context: Arc<ClientContext>,
     secret: &SecretInternal,
     password_provider: &PasswordProvider,
     salt: &str,
 ) -> ClientResult<SecretBuf> {
     let mut result = generate_nonce();
-    let serialized = SecretBuf(bincode::serialize(secret)
-        .map_err(|err| Error::crypto_box_secret_serialization_error(err))?);
-    apply_chacha20(&serialized.0, password_provider, salt, &result.0).await
+    let serialized = SecretBuf(
+        bincode::serialize(secret)
+            .map_err(|err| Error::crypto_box_secret_serialization_error(err))?,
+    );
+    apply_chacha20(context, &serialized.0, password_provider, salt, &result.0)
+        .await
         .map(|mut output| {
             result.0.append(&mut output.0);
             result
@@ -66,31 +63,27 @@ pub(crate) async fn encrypt_secret(
 }
 
 pub(crate) async fn decrypt_secret(
+    context: Arc<ClientContext>,
     encrypted_secret: &[u8],
     password_provider: &PasswordProvider,
     salt: &str,
 ) -> ClientResult<SecretInternal> {
     let (nonce, encrypted_secret) = encrypted_secret.split_at(NONCE_LEN);
-    let data = apply_chacha20(encrypted_secret, password_provider, salt, nonce).await?;
-    bincode::deserialize(&data.0)
-        .map_err(|err| Error::crypto_box_secret_deserialization_error(err))
+    let data = apply_chacha20(context, encrypted_secret, password_provider, salt, nonce).await?;
+    bincode::deserialize(&data.0).map_err(|err| Error::crypto_box_secret_deserialization_error(err))
 }
 
-async fn get_password(
-    password_provider: &PasswordProvider,
-) -> ClientResult<SecretBuf> {
+async fn get_password(password_provider: &PasswordProvider) -> ClientResult<SecretBuf> {
     let (secret_key, public_key) = gen_nacl_box_keypair();
 
     let password_data = password_provider.get_password(&public_key).await?;
 
-    Ok(SecretBuf(
-        nacl_box_open_internal(
-            &password_data.encrypted_password,
-            &public_key[..BOX_NONCE_LEN],
-            &password_data.app_encryption_pubkey,
-            &secret_key.0,
-        )?
-    ))
+    Ok(SecretBuf(nacl_box_open_internal(
+        &password_data.encrypted_password,
+        &public_key[..BOX_NONCE_LEN],
+        &password_data.app_encryption_pubkey,
+        &secret_key.0,
+    )?))
 }
 
 fn gen_nacl_box_keypair() -> (SecretKey, sodalite::BoxPublicKey) {
