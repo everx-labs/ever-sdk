@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [1.37.2] – 2022-08-10
 
+### New
+
+- `crypto.encryption_box_get_info` returns nacl box public key in `info.public` field.
+
 ### Improvement
 
 - `create_crypto_box` optimisation.
@@ -19,9 +23,10 @@ All notable changes to this project will be documented in this file.
   library uses cached information to skip heavy calculations. As a result now it takes only 
   a second to create 10 crypto boxes.  
 
+
 ### Fixed
 
-- Some enum types were not properly presented in api.json (some types that use serde(content="value"))
+- Some enum types were not properly presented in api.json (types that uses serde(content="value"))
 
 ## [1.37.1] – 2022-08-03
 
