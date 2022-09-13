@@ -13,9 +13,7 @@
 
 use crate::client::ClientContext;
 use crate::crypto;
-use crate::crypto::internal::{
-    decode_public_key, decode_secret_key, sign_using_keys, ton_crc16,
-};
+use crate::crypto::internal::{decode_public_key, decode_secret_key, sign_using_keys, ton_crc16};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 use base64::URL_SAFE;
@@ -62,7 +60,12 @@ impl KeyPair {
 
 impl Debug for KeyPair {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, r#"KeyPair {{ public: "{}", secret: {} }}"#, self.public, strip_secret(&self.secret))
+        write!(
+            f,
+            r#"KeyPair {{ public: "{}", secret: {} }}"#,
+            self.public,
+            strip_secret(&self.secret)
+        )
     }
 }
 

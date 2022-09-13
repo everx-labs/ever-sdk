@@ -1067,10 +1067,11 @@ async fn test_chacha20_encryption_box() {
 #[tokio::test]
 async fn test_nacl_encryption_box() {
     let client = Arc::new(TestClient::new());
-
-    const THEIR_PUBLIC: &str = "c4e2d9fe6a6baf8d1812b799856ef2a306291be7a7024837ad33a8530db79c6b";
     const NONCE: &str = "cd7f99924bf422544046e83595dd5803f17536f5c9a11746";
     const SECRET: &str = "d9b9dc5033fb416134e5d2107fdbacab5aadb297cb82dbdcd137d663bac59f7f";
+    const PUBLIC: &str = "c4e2d9fe6a6baf8d1812b799856ef2a306291be7a7024837ad33a8530db79c6b";
+    // const THEIR_SECRET: &str = "1b843d37249fdf235f17b200f5033ada1fbea88b19106b3c8be89d70a3db7b8d";
+    const THEIR_PUBLIC: &str = "ecd5620fa18704ee7a55d8af9577bdff60ea009a5a298ca7433850643160ef2d";
 
     let box_handle = client
         .request_async::<_, RegisteredEncryptionBox>(
@@ -1100,7 +1101,7 @@ async fn test_nacl_encryption_box() {
         .await
         .unwrap();
 
-    assert_eq!(result.data, "li4XED4kx/pjQ2qdP0eR2d/K30uN94voNADxwA==");
+    assert_eq!(result.data, "yPi4Xsgg2FCwpKiaNguf/DDHepE9aKbDCGla6A==");
 
     let result: ResultOfEncryptionBoxDecrypt = client
         .request_async(
@@ -1131,10 +1132,10 @@ async fn test_nacl_encryption_box() {
             hdpath: None,
             algorithm: Some("NaclBox".to_string()),
             options: Some(json!({
-                "their_public": THEIR_PUBLIC,
+                "their_public": THEIR_PUBLIC.to_string(),
                 "nonce": NONCE,
             })),
-            public: None,
+            public: Some(PUBLIC.into()),
         },
     );
 }

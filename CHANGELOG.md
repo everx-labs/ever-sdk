@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [1.37.2] – 2022-08-10
 
+### New
+
+- `crypto.encryption_box_get_info` returns nacl box public key in `info.public` field.
+
 ### Improvement
 
 - `create_crypto_box` optimisation.
