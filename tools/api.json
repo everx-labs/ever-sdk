@@ -540,7 +540,7 @@
                 "type": "String"
               },
               "summary": "Access key to GraphQL API.",
-              "description": "You can specify here Evercloud project secret ot serialized JWT."
+              "description": "You can specify here Basic Auth secret (Evercloud project secret) in hex string\nor serialized JWT in base64 string.\nWill be passed on as Authorization: Basic ... or Authorization: Bearer ... header."
             }
           ],
           "summary": null,
