@@ -7,7 +7,19 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `crypto.encryption_box_get_info` returns nacl box public key in `info.public` field.
-- Gosh instruction are supported in local VM and executor.
+- Gosh instruction are supported in local VM and executor:
+    - execute_diff
+    - execute_diff_patch_not_quiet
+    - execute_zip
+    - execute_unzip
+    - execute_diff_zip
+    - execute_diff_patch_zip_not_quiet
+    - execute_diff_patch_quiet
+    - execute_diff_patch_zip_quiet
+    - execute_diff_patch_binary_not_quiet
+    - execute_diff_patch_binary_zip_not_quiet
+    - execute_diff_patch_binary_quiet
+    - execute_diff_patch_binary_zip_quiet
 
 ### Improvement
 
