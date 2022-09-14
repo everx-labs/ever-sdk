@@ -54,7 +54,8 @@ appropriate error text is added to error message instead of executor internal er
 
 ### New
 
-- client sends `config.network.access_key` as `Authorization: Basic ...` or `Authorization: Bearer ...` header. 
+- client sends `config.network.access_key` as `Authorization: Basic ...` or `Authorization: Bearer ...` header depending on the value passed:
+  if value is in hex, then it is processed as project secret (basic), if in base64 - then as JWT token (bearer). 
 - client accepts endpoints with `/graphql` suffixes specified in config.
 
 ### Fixed
