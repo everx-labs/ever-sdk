@@ -1401,20 +1401,21 @@ async fn test_debot_json_parse() {
         keys,
         abi,
     } = init_simple_debot(client.clone(), "testDebot15").await;
+    let mut info = build_info(
+        abi,
+        15,
+        vec![
+            format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
+            format!("0x442288826041d564ccedc579674f17c1b0a3452df799656a9167a41ab270ec19"),
+        ]);
+    info.dabi_version = format!("2.2");
     TestBrowser::execute_with_details(
         client.clone(),
         debot_addr.clone(),
         keys,
         vec![],
         vec![],
-        build_info(
-            abi,
-            15,
-            vec![
-                format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
-                format!("0x442288826041d564ccedc579674f17c1b0a3452df799656a9167a41ab270ec19"),
-            ],
-        ),
+        info,
         vec![],
     )
     .await;
