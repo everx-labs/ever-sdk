@@ -1,5 +1,5 @@
 use super::calltype::{ContractCall};
-use super::dinterface::{get_arg, DebotInterface, InterfaceResult};
+use super::dinterface::{get_arg, get_opt_arg, get_opt_num_arg, DebotInterface, InterfaceResult};
 use crate::abi::{decode_message, Abi, ParamsOfDecodeMessage};
 use crate::crypto::{get_signing_box, KeyPair};
 use crate::debot::BrowserCallbacks;
@@ -28,6 +28,23 @@ const ABI: &str = r#"
 				{"name":"sec","type":"uint256"}
 			],
 			"outputs": [
+			]
+		},
+        {
+			"name": "sendWithHeader",
+            "id": "0x73379c82",
+			"inputs": [
+				{"name":"message","type":"cell"},
+				{"components":[
+                    {"name":"timestamp","type":"optional(uint64)"},
+                    {"name":"expire","type":"optional(uint32)"},
+                    {"name":"pubkey","type":"optional(uint256)"}
+                    ],
+                 "name":"header","type":"tuple"
+                }
+			],
+			"outputs": [
+				{"name":"id","type":"uint256"}
 			]
 		},
 		{
@@ -160,6 +177,52 @@ impl MsgInterface {
             .get_input_id();
         Ok((answer_id, result.value.unwrap_or_default()))
     }
+
+    async fn send_with_header(&self, args: &Value) -> InterfaceResult {
+        let timestamp = get_opt_num_arg::<u64>(&args["header"], "timestamp")?;
+        let expire = get_opt_num_arg::<u32>(&args["header"], "expire")?;
+        let pubkey = get_opt_arg(&args["header"], "pubkey")?;
+        let message = get_arg(args, "message")?;
+        let parsed_msg = parse_message(self.ton.clone(), ParamsOfParse { boc: message.clone() })
+            .await
+            .map_err(|e| format!("{}", e))?
+            .parsed;
+        let dest = parsed_msg["dst"].as_str().ok_or(format!("failed to parse dst address"))?.to_owned();
+        let target_state = DEngine::load_state(self.ton.clone(), dest)
+            .await
+            .map_err(|e| format!("{}", e))?;
+        let mut callobj = ContractCall::new(
+            self.browser.clone(),
+            self.ton.clone(),
+            message,
+            Signer::None,
+            target_state,
+            self.debot_addr.clone(),
+            false,
+        ).await.map_err(|e| format!("{}", e))?;
+        callobj.set_ex_meta(timestamp,expire,pubkey);
+        let answer_msg = callobj.execute(false)
+            .await
+            .map_err(|e| format!("{}", e))?;
+
+        let result = decode_message(
+            self.ton.clone(),
+            ParamsOfDecodeMessage {
+                abi: self.debot_abi.clone(),
+                message: answer_msg,
+                allow_partial: false,
+            },
+        )
+        .await
+        .map_err(|e| format!("failed to decode message: {}", e))?;
+        let abi_str = self.debot_abi.json_string().unwrap();
+        let contract = Contract::load(abi_str.as_bytes()).map_err(|e| format!("{}", e))?;
+        let answer_id = contract
+            .function(&result.name)
+            .map_err(|e| format!("{}", e))?
+            .get_input_id();
+        Ok((answer_id, result.value.unwrap_or_default()))
+    }
 }
 
 #[async_trait::async_trait]
@@ -176,6 +239,7 @@ impl DebotInterface for MsgInterface {
         match func {
             "sendWithKeypair" => self.send_with_keypair(args).await,
             "sendAsync" => self.send_async(args).await,
+            "sendWithHeader"  => self.send_with_header(args).await,
             _ => Err(format!("function \"{}\" is not implemented", func)),
 
         }

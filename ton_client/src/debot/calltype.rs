@@ -40,6 +40,9 @@ struct Metadata {
     is_expire: bool,
     is_pubkey: bool,
     signing_box_handle: Option<SigningBoxHandle>,
+    ex_provided_timestamp: Option<u64>,
+    ex_provided_expire: Option<u32>,
+    ex_provided_pubkey: Option<String>,
 }
 
 impl TryFrom<MsgAddressExt> for Metadata {
@@ -78,6 +81,9 @@ impl TryFrom<MsgAddressExt> for Metadata {
                     is_expire,
                     is_pubkey,
                     signing_box_handle,
+                    ex_provided_timestamp: None,
+                    ex_provided_expire: None,
+                    ex_provided_pubkey: None,
                 })
             }
         }
@@ -161,8 +167,14 @@ async fn decode_and_fix_ext_msg(
 
     let mut new_body = BuilderData::new();
     let pubkey = signer.resolve_public_key(ton.clone()).await?;
-    if meta.is_pubkey {
-        if let Some(ref key) = pubkey {
+    if meta.is_pubkey ||  meta.ex_provided_pubkey.is_some() {
+        if let Some(ref ex_key) = meta.ex_provided_pubkey {
+            new_body
+                .append_bit_one()
+                .and_then(|b| b.append_raw(&hex::decode(ex_key).unwrap(), 256))
+                .map_err(msg_err)?;
+        }
+        else if let Some(ref key) = pubkey {
             new_body
                 .append_bit_one()
                 .and_then(|b| b.append_raw(&hex::decode(key).unwrap(), 256))
@@ -172,12 +184,20 @@ async fn decode_and_fix_ext_msg(
             new_body.append_bit_zero().map_err(msg_err)?;
         }
     }
-    let expired_at = ((now_ms / 1000) as u32) + ton.config.abi.message_expiration_timeout;
-    if meta.is_timestamp {
-        new_body.append_u64(now_ms).map_err(msg_err)?;
+    if meta.is_timestamp ||  meta.ex_provided_timestamp.is_some() {
+        if let Some(ex_timestamp) = meta.ex_provided_timestamp {
+            new_body.append_u64(ex_timestamp).map_err(msg_err)?;
+        } else {
+            new_body.append_u64(now_ms).map_err(msg_err)?;
+        }
     }
-    if meta.is_expire {
-        new_body.append_u32(expired_at).map_err(msg_err)?;
+    if meta.is_expire ||  meta.ex_provided_expire.is_some() {
+        if let Some(ex_exipre) = meta.ex_provided_expire {
+            new_body.append_u32(ex_exipre).map_err(msg_err)?;
+        } else {
+            let expired_at = ((now_ms / 1000) as u32) + ton.config.abi.message_expiration_timeout;
+            new_body.append_u32(expired_at).map_err(msg_err)?;
+        }
     }
     new_body
         .append_u32(func_id)
@@ -264,6 +284,12 @@ impl ContractCall {
         } else {
             self.send_ext_msg(func_id, fixed_msg, wait_tx).await
         }
+    }
+
+    pub fn set_ex_meta(&mut self, timestamp: Option<u64>, expire: Option<u32>, pubkey: Option<String>)  {
+        self.meta.ex_provided_timestamp = timestamp;
+        self.meta.ex_provided_expire = expire;
+        self.meta.ex_provided_pubkey = pubkey;
     }
 
     async fn run_get_method(&self, func_id: u32, fixed_msg: String) -> ClientResult<String> {
