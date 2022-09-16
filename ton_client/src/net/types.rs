@@ -325,7 +325,9 @@ pub struct NetworkConfig {
 
     /// Access key to GraphQL API.
     ///
-    /// You can specify here Evercloud project secret ot serialized JWT.
+    /// You can specify here Basic Auth secret (Evercloud project secret) in hex string 
+    /// or serialized JWT in base64 string.
+    /// Will be passed on as Authorization: Basic ... or Authorization: Bearer ... header.
     pub access_key: Option<String>,
 }
 

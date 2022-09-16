@@ -1,0 +1,59 @@
+{
+	"ABI version": 2,
+	"version": "2.3",
+	"header": ["time"],
+	"functions": [
+		{
+			"name": "f",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "fZip",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "f2",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "ff",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"value0","type":"uint64"}
+			]
+		},
+		{
+			"name": "fff",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		},
+		{
+			"name": "constructor",
+			"inputs": [
+			],
+			"outputs": [
+			]
+		}
+	],
+	"data": [
+	],
+	"events": [
+	],
+	"fields": [
+		{"name":"_pubkey","type":"uint256"},
+		{"name":"_timestamp","type":"uint64"},
+		{"name":"_constructorFlag","type":"bool"}
+	]
+}

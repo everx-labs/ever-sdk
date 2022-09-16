@@ -3,7 +3,7 @@ use std::sync::Arc;
 use zeroize::Zeroize;
 
 use crate::ClientContext;
-use crate::crypto::{EncryptionBox, EncryptionBoxInfo, nacl_box, nacl_box_open, ParamsOfNaclBox, ParamsOfNaclBoxOpen};
+use crate::crypto::{EncryptionBox, EncryptionBoxInfo, nacl_box, nacl_box_keypair_from_secret_key, nacl_box_open, ParamsOfNaclBox, ParamsOfNaclBoxKeyPairFromSecret, ParamsOfNaclBoxOpen};
 use crate::error::ClientResult;
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, Zeroize, ZeroizeOnDrop)]
@@ -30,11 +30,14 @@ impl NaclEncryptionBox {
 
 #[async_trait::async_trait]
 impl EncryptionBox for NaclEncryptionBox {
-    async fn get_info(&self, _context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
+    async fn get_info(&self, context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
+        let keys = nacl_box_keypair_from_secret_key(context, ParamsOfNaclBoxKeyPairFromSecret {
+            secret: self.params.secret.clone(),
+        })?;
         Ok(EncryptionBoxInfo {
             algorithm: Some("NaclBox".to_owned()),
             hdpath: self.hdpath.clone(),
-            public: None,
+            public: Some(keys.public.into()),
             options: Some(json!({
                 "their_public": &self.params.their_public,
                 "nonce": &self.params.nonce,

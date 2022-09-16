@@ -136,7 +136,7 @@ pub(crate) struct LinkHandler {
 }
 
 async fn ws_send(ws: &mut WSSender, message: GraphQLMessageFromClient) {
-    log::debug!("Send WS message\n{}", message.get_message());
+    log::trace!("Send WS message\n{}", message.get_message());
     let _ = ws.send(message.get_message()).await;
 }
 
@@ -434,7 +434,7 @@ impl LinkHandler {
     }
 
     fn start_keep_alive_timer(&mut self, timeout: u64) {
-        log::debug!("WS keep alive timer {}", timeout);
+        log::trace!("WS keep alive timer {}", timeout);
         let sender = self.internal_action_sender.clone();
         self.keep_alive = KeepAlive::WaitNext { timeout };
         let env = self.client_env.clone();

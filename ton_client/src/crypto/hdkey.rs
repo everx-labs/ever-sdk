@@ -258,7 +258,7 @@ impl HDPrivateKey {
 
         let public = self.public();
         let mut sha_hasher = sha2::Sha256::new();
-        sha_hasher.update(&public.as_ref());
+        sha_hasher.update(&public.0);
         let sha: Key256 = <[u8; 32]>::from(sha_hasher.finalize()).into();
         let fingerprint = Ripemd160::new().update(&sha).digest();
 
