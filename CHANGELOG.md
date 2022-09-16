@@ -39,6 +39,8 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Some enum types were not properly presented in api.json (some types that use serde(content="value"))
+- **Debot module**:
+    - test for `parce` function at `Json` interface.
 
 ## [1.37.1] – 2022-08-03
 
