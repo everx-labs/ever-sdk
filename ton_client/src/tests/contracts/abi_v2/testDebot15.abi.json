@@ -1,5 +1,6 @@
 {
 	"ABI version": 2,
+	"version": "2.2",
 	"header": ["pubkey", "time", "expire"],
 	"functions": [
 		{
@@ -33,15 +34,15 @@
 			"inputs": [
 			],
 			"outputs": [
-				{"name":"name","type":"bytes"},
-				{"name":"version","type":"bytes"},
-				{"name":"publisher","type":"bytes"},
-				{"name":"caption","type":"bytes"},
-				{"name":"author","type":"bytes"},
+				{"name":"name","type":"string"},
+				{"name":"version","type":"string"},
+				{"name":"publisher","type":"string"},
+				{"name":"caption","type":"string"},
+				{"name":"author","type":"string"},
 				{"name":"support","type":"address"},
-				{"name":"hello","type":"bytes"},
-				{"name":"language","type":"bytes"},
-				{"name":"dabi","type":"bytes"},
+				{"name":"hello","type":"string"},
+				{"name":"language","type":"string"},
+				{"name":"dabi","type":"string"},
 				{"name":"icon","type":"bytes"}
 			]
 		},
@@ -59,15 +60,15 @@
 			],
 			"outputs": [
 				{"name":"options","type":"uint8"},
-				{"name":"debotAbi","type":"bytes"},
-				{"name":"targetAbi","type":"bytes"},
+				{"name":"debotAbi","type":"string"},
+				{"name":"targetAbi","type":"string"},
 				{"name":"targetAddr","type":"address"}
 			]
 		},
 		{
 			"name": "setABI",
 			"inputs": [
-				{"name":"dabi","type":"bytes"}
+				{"name":"dabi","type":"string"}
 			],
 			"outputs": [
 			]
@@ -83,5 +84,14 @@
 	"data": [
 	],
 	"events": [
+	],
+	"fields": [
+		{"name":"_pubkey","type":"uint256"},
+		{"name":"_timestamp","type":"uint64"},
+		{"name":"_constructorFlag","type":"bool"},
+		{"name":"m_options","type":"uint8"},
+		{"name":"m_debotAbi","type":"optional(string)"},
+		{"name":"m_targetAbi","type":"optional(string)"},
+		{"name":"m_target","type":"optional(address)"}
 	]
 }
