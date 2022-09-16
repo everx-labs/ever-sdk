@@ -200,6 +200,14 @@ pub fn get_arg(args: &Value, name: &str) -> Result<String, String> {
         .map(|v| v.to_string())
 }
 
+pub fn get_opt_arg(args: &Value, name: &str) -> Result<Option<String>, String> {
+    if args.get(name).ok_or(format!("Optional \"{}\" not found", name))?.is_null() {
+        Ok(None)
+    } else {
+        Ok(Some(get_arg(args, name)?))
+    }
+}
+
 pub fn get_num_arg<T>(args: &Value, name: &str) -> Result<T, String>
 where
     T: NumCast,
@@ -207,6 +215,17 @@ where
     let num_str = get_arg(args, name)?;
     decode_abi_number::<T>(&num_str)
         .map_err(|e| format!("failed to parse integer \"{}\": {}", num_str, e))
+}
+
+pub fn get_opt_num_arg<T>(args: &Value, name: &str) -> Result<Option<T>, String>
+where
+    T: NumCast,
+{
+    if args.get(name).ok_or(format!("Optional \"{}\" not found", name))?.is_null() {
+        Ok(None)
+    } else {
+        Ok(Some(get_num_arg::<T>(args, name)?))
+    }
 }
 
 pub fn get_bool_arg(args: &Value, name: &str) -> Result<bool, String> {
