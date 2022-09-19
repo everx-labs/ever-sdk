@@ -16,6 +16,24 @@ use std::sync::Arc;
 use std::vec;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn not_authorized() {
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": [TestClient::with_project("main")]
+        }
+    }));
+    let context = client.context().clone();
+    let link = context.net.server_link.as_ref().unwrap();
+    let result = link.query_http(&GraphQLQuery {
+        query: "query { info { version } }".to_string(),
+        timeout: None,
+        variables: None,
+        is_batch: false,
+    }, None).await;
+    println!("{:?}", result)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn auth_header() {
     let client = TestClient::new_with_config(json!({
         "network": {
