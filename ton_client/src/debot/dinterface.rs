@@ -200,14 +200,6 @@ pub fn get_arg(args: &Value, name: &str) -> Result<String, String> {
         .map(|v| v.to_string())
 }
 
-pub fn get_opt_arg(args: &Value, name: &str) -> Result<Option<String>, String> {
-    if args.get(name).ok_or(format!("Optional \"{}\" not found", name))?.is_null() {
-        Ok(None)
-    } else {
-        Ok(Some(get_arg(args, name)?))
-    }
-}
-
 pub fn get_num_arg<T>(args: &Value, name: &str) -> Result<T, String>
 where
     T: NumCast,
@@ -221,10 +213,9 @@ pub fn get_opt_num_arg<T>(args: &Value, name: &str) -> Result<Option<T>, String>
 where
     T: NumCast,
 {
-    if args.get(name).ok_or(format!("Optional \"{}\" not found", name))?.is_null() {
-        Ok(None)
-    } else {
-        Ok(Some(get_num_arg::<T>(args, name)?))
+    match args.get(name).ok_or(format!("Optional \"{}\" not found", name))? {
+        serde_json::Value::Null => Ok(None),
+        _ => Ok(Some(get_num_arg::<T>(args, name)?)),
     }
 }
 

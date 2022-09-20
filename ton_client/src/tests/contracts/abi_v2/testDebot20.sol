@@ -12,7 +12,6 @@ import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Sdk/S
 struct AbiHeader {
 	optional(uint64) timestamp;
 	optional(uint32) expire;
-	optional(uint256) pubkey;
 }
 interface IMsg {
     function sendWithKeypair(uint32 answerId, TvmCell message, uint256 pub, uint256 sec) external;
@@ -102,8 +101,7 @@ contract MsgTestDebot is Debot, ARecieverDebot {
         });
         AbiHeader header = AbiHeader({
             timestamp: m_sendTimestamp,
-            expire: m_sendExpire,
-            pubkey: null
+            expire: m_sendExpire
         });
         Msg.sendWithHeader(m_sendMsg, header);
     }

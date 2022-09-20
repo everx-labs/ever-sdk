@@ -1,5 +1,5 @@
 use super::calltype::{ContractCall};
-use super::dinterface::{get_arg, get_opt_arg, get_opt_num_arg, DebotInterface, InterfaceResult};
+use super::dinterface::{get_arg, get_opt_num_arg, DebotInterface, InterfaceResult};
 use crate::abi::{decode_message, Abi, ParamsOfDecodeMessage};
 use crate::crypto::{get_signing_box, KeyPair};
 use crate::debot::BrowserCallbacks;
@@ -32,13 +32,12 @@ const ABI: &str = r#"
 		},
         {
 			"name": "sendWithHeader",
-            "id": "0x73379c82",
+            "id": "0x2fd0a5c1",
 			"inputs": [
 				{"name":"message","type":"cell"},
 				{"components":[
                     {"name":"timestamp","type":"optional(uint64)"},
-                    {"name":"expire","type":"optional(uint32)"},
-                    {"name":"pubkey","type":"optional(uint256)"}
+                    {"name":"expire","type":"optional(uint32)"}
                     ],
                  "name":"header","type":"tuple"
                 }
@@ -181,7 +180,6 @@ impl MsgInterface {
     async fn send_with_header(&self, args: &Value) -> InterfaceResult {
         let timestamp = get_opt_num_arg::<u64>(&args["header"], "timestamp")?;
         let expire = get_opt_num_arg::<u32>(&args["header"], "expire")?;
-        let pubkey = get_opt_arg(&args["header"], "pubkey")?;
         let message = get_arg(args, "message")?;
         let parsed_msg = parse_message(self.ton.clone(), ParamsOfParse { boc: message.clone() })
             .await
@@ -200,7 +198,7 @@ impl MsgInterface {
             self.debot_addr.clone(),
             false,
         ).await.map_err(|e| format!("{}", e))?;
-        callobj.set_ex_meta(timestamp,expire,pubkey);
+        callobj.override_message_header(timestamp,expire);
         let answer_msg = callobj.execute(false)
             .await
             .map_err(|e| format!("{}", e))?;
