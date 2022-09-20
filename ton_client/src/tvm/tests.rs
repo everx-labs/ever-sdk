@@ -1114,3 +1114,88 @@ async fn test_run_executor_fees() {
     assert_eq!(1311900, return_value.fees.account_fees/10);
     assert_eq!(1000000, return_value.fees.total_fwd_fees);
 }
+
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_gosh() {
+    let client = TestClient::new_with_config(json!({}));
+    let (abi, tvc) = TestClient::package("test_gosh", Some(2));
+
+    let keys = client.generate_sign_keys();
+    let signer = Signer::Keys { keys };
+
+    let deploy_message: ResultOfEncodeMessage = client
+        .request_async(
+            "abi.encode_message",
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                call_set: CallSet::some_with_function("constructor"),
+                deploy_set: DeploySet::some_with_tvc(tvc.clone()),
+                signer: signer.clone(),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    
+    let address = deploy_message.address.clone();
+
+    let deployed: ResultOfRunExecutor = client
+        .request_async(
+            "tvm.run_executor",
+            ParamsOfRunExecutor {
+                message: deploy_message.message,
+                account: AccountForExecutor::Uninit,
+                return_updated_account: Some(true),
+                abi: Some(abi.clone()),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    for function in abi.abi().unwrap().functions().keys().filter(|f| *f != "constructor") {
+        let call_message: ResultOfEncodeMessage = client
+            .request_async(
+                "abi.encode_message",
+                ParamsOfEncodeMessage {
+                    abi: abi.clone(),
+                    address: Some(address.clone()),
+                    call_set: CallSet::some_with_function(function.as_str()),
+                    signer: signer.clone(),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+
+        let _: ResultOfRunExecutor = client
+            .request_async(
+                "tvm.run_executor",
+                ParamsOfRunExecutor {
+                    message: call_message.message.clone(),
+                    account: AccountForExecutor::Account {
+                        boc: deployed.account.clone(),
+                        unlimited_balance: Some(true),
+                    },
+                    abi: Some(abi.clone()),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+
+        let _: ResultOfRunTvm = client
+            .request_async(
+                "tvm.run_tvm",
+                ParamsOfRunTvm {
+                    message: call_message.message,
+                    account:  deployed.account.clone(),
+                    abi: Some(abi.clone()),
+                    ..Default::default()
+                },
+            )
+            .await
+            .unwrap();
+    }
+}

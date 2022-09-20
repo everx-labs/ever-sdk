@@ -19,25 +19,23 @@ use std::sync::Arc;
 use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
 use ton_types::UInt256;
 
-use super::{AppRequestResult, Error, ParamsOfAppRequest};
-use crate::abi::AbiConfig;
-use crate::boc::{BocConfig, cache::Bocs};
-use crate::client::storage::KeyValueStorage;
-use crate::crypto::CryptoConfig;
-use crate::crypto::boxes::{signing_box::SigningBox, encryption_box::EncryptionBox};
-use crate::crypto::boxes::crypto_box::CryptoBox;
-use crate::debot::DEngine;
-use crate::error::ClientResult;
-use crate::json_interface::interop::ResponseType;
-use crate::json_interface::request::Request;
-use crate::net::{
-    subscriptions::SubscriptionAction, ChainIterator, NetworkConfig, ServerLink,
-};
-use crate::proofs::ProofsConfig;
 #[cfg(not(feature = "wasm-base"))]
 use super::std_client_env::ClientEnv;
 #[cfg(feature = "wasm-base")]
 use super::wasm_client_env::ClientEnv;
+use super::{AppRequestResult, Error, ParamsOfAppRequest};
+use crate::abi::AbiConfig;
+use crate::boc::{cache::Bocs, BocConfig};
+use crate::client::storage::KeyValueStorage;
+use crate::crypto::boxes::crypto_box::{CryptoBox, DerivedKeys};
+use crate::crypto::boxes::{encryption_box::EncryptionBox, signing_box::SigningBox};
+use crate::crypto::CryptoConfig;
+use crate::debot::DEngine;
+use crate::error::ClientResult;
+use crate::json_interface::interop::ResponseType;
+use crate::json_interface::request::Request;
+use crate::net::{subscriptions::SubscriptionAction, ChainIterator, NetworkConfig, ServerLink};
+use crate::proofs::ProofsConfig;
 
 #[derive(Default)]
 pub struct Boxes {
@@ -70,6 +68,7 @@ pub struct ClientContext {
 
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
     pub(crate) proofs_storage: RwLock<Option<Arc<dyn KeyValueStorage>>>,
+    pub(crate) derived_keys: DerivedKeys,
 
     next_id: AtomicU32,
 }
@@ -114,13 +113,14 @@ Note that default values are used if parameters are omitted in config"#,
                 network_uid: Default::default(),
             },
             config,
-            env,
+            env: env.clone(),
             debots: LockfreeMap::new(),
             boxes: Default::default(),
             bocs,
             blockchain_config: RwLock::new(None),
             app_requests: Mutex::new(HashMap::new()),
             proofs_storage: Default::default(),
+            derived_keys: DerivedKeys::new(env),
             next_id: AtomicU32::new(1),
         })
     }

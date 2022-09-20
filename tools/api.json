@@ -1,5 +1,5 @@
 {
-  "version": "1.37.1",
+  "version": "1.37.2",
   "modules": [
     {
       "name": "client",
@@ -540,7 +540,7 @@
                 "type": "String"
               },
               "summary": "Access key to GraphQL API.",
-              "description": "You can specify here Evercloud project secret ot serialized JWT."
+              "description": "You can specify here Basic Auth secret (Evercloud project secret) in hex string\nor serialized JWT in base64 string.\nWill be passed on as Authorization: Basic ... or Authorization: Bearer ... header."
             }
           ],
           "summary": null,
@@ -1310,29 +1310,61 @@
           "enum_types": [
             {
               "name": "AES",
-              "type": "Ref",
-              "ref_name": "crypto.AesParamsEB",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "Ref",
+                  "ref_name": "crypto.AesParamsEB",
+                  "summary": null,
+                  "description": null
+                }
+              ],
               "summary": null,
               "description": null
             },
             {
               "name": "ChaCha20",
-              "type": "Ref",
-              "ref_name": "crypto.ChaCha20ParamsEB",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "Ref",
+                  "ref_name": "crypto.ChaCha20ParamsEB",
+                  "summary": null,
+                  "description": null
+                }
+              ],
               "summary": null,
               "description": null
             },
             {
               "name": "NaclBox",
-              "type": "Ref",
-              "ref_name": "crypto.NaclBoxParamsEB",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "Ref",
+                  "ref_name": "crypto.NaclBoxParamsEB",
+                  "summary": null,
+                  "description": null
+                }
+              ],
               "summary": null,
               "description": null
             },
             {
               "name": "NaclSecretBox",
-              "type": "Ref",
-              "ref_name": "crypto.NaclSecretBoxParamsEB",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "Ref",
+                  "ref_name": "crypto.NaclSecretBoxParamsEB",
+                  "summary": null,
+                  "description": null
+                }
+              ],
               "summary": null,
               "description": null
             }
@@ -1588,22 +1620,46 @@
           "enum_types": [
             {
               "name": "ChaCha20",
-              "type": "Ref",
-              "ref_name": "crypto.ChaCha20ParamsCB",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "Ref",
+                  "ref_name": "crypto.ChaCha20ParamsCB",
+                  "summary": null,
+                  "description": null
+                }
+              ],
               "summary": null,
               "description": null
             },
             {
               "name": "NaclBox",
-              "type": "Ref",
-              "ref_name": "crypto.NaclBoxParamsCB",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "Ref",
+                  "ref_name": "crypto.NaclBoxParamsCB",
+                  "summary": null,
+                  "description": null
+                }
+              ],
               "summary": null,
               "description": null
             },
             {
               "name": "NaclSecretBox",
-              "type": "Ref",
-              "ref_name": "crypto.NaclSecretBoxParamsCB",
+              "type": "Struct",
+              "struct_fields": [
+                {
+                  "name": "value",
+                  "type": "Ref",
+                  "ref_name": "crypto.NaclSecretBoxParamsCB",
+                  "summary": null,
+                  "description": null
+                }
+              ],
               "summary": null,
               "description": null
             }

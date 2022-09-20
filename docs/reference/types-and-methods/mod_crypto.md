@@ -115,6 +115,14 @@ Crypto functions.
 
 [EncryptionBoxInfo](mod\_crypto.md#encryptionboxinfo) – Encryption box information.
 
+[EncryptionAlgorithmAESVariant](mod\_crypto.md#encryptionalgorithmaesvariant)
+
+[EncryptionAlgorithmChaCha20Variant](mod\_crypto.md#encryptionalgorithmchacha20variant)
+
+[EncryptionAlgorithmNaclBoxVariant](mod\_crypto.md#encryptionalgorithmnaclboxvariant)
+
+[EncryptionAlgorithmNaclSecretBoxVariant](mod\_crypto.md#encryptionalgorithmnaclsecretboxvariant)
+
 [EncryptionAlgorithm](mod\_crypto.md#encryptionalgorithm)
 
 [CipherMode](mod\_crypto.md#ciphermode)
@@ -138,6 +146,12 @@ Crypto functions.
 [CryptoBoxSecret](mod\_crypto.md#cryptoboxsecret) – Crypto Box Secret.
 
 [CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)
+
+[BoxEncryptionAlgorithmChaCha20Variant](mod\_crypto.md#boxencryptionalgorithmchacha20variant)
+
+[BoxEncryptionAlgorithmNaclBoxVariant](mod\_crypto.md#boxencryptionalgorithmnaclboxvariant)
+
+[BoxEncryptionAlgorithmNaclSecretBoxVariant](mod\_crypto.md#boxencryptionalgorithmnaclsecretboxvariant)
 
 [BoxEncryptionAlgorithm](mod\_crypto.md#boxencryptionalgorithm)
 
@@ -1918,55 +1932,80 @@ type EncryptionBoxInfo = {
 - `public`?: _any_ – Public information, depends on algorithm
 
 
+## EncryptionAlgorithmAESVariant
+```ts
+type EncryptionAlgorithmAESVariant = {
+    value: AesParamsEB
+}
+```
+- `value`: _[AesParamsEB](mod\_crypto.md#aesparamseb)_
+
+
+## EncryptionAlgorithmChaCha20Variant
+```ts
+type EncryptionAlgorithmChaCha20Variant = {
+    value: ChaCha20ParamsEB
+}
+```
+- `value`: _[ChaCha20ParamsEB](mod\_crypto.md#chacha20paramseb)_
+
+
+## EncryptionAlgorithmNaclBoxVariant
+```ts
+type EncryptionAlgorithmNaclBoxVariant = {
+    value: NaclBoxParamsEB
+}
+```
+- `value`: _[NaclBoxParamsEB](mod\_crypto.md#naclboxparamseb)_
+
+
+## EncryptionAlgorithmNaclSecretBoxVariant
+```ts
+type EncryptionAlgorithmNaclSecretBoxVariant = {
+    value: NaclSecretBoxParamsEB
+}
+```
+- `value`: _[NaclSecretBoxParamsEB](mod\_crypto.md#naclsecretboxparamseb)_
+
+
 ## EncryptionAlgorithm
 ```ts
 type EncryptionAlgorithm = ({
     type: 'AES'
-} & AesParamsEB) | ({
+} & EncryptionAlgorithmAESVariant) | ({
     type: 'ChaCha20'
-} & ChaCha20ParamsEB) | ({
+} & EncryptionAlgorithmChaCha20Variant) | ({
     type: 'NaclBox'
-} & NaclBoxParamsEB) | ({
+} & EncryptionAlgorithmNaclBoxVariant) | ({
     type: 'NaclSecretBox'
-} & NaclSecretBoxParamsEB)
+} & EncryptionAlgorithmNaclSecretBoxVariant)
 ```
 Depends on value of the  `type` field.
 
 When _type_ is _'AES'_
 
-- `mode`: _[CipherMode](mod\_crypto.md#ciphermode)_
-- `key`: _string_
-- `iv`?: _string_
+- `value`: _[AesParamsEB](mod\_crypto.md#aesparamseb)_
 
 When _type_ is _'ChaCha20'_
 
-- `key`: _string_ – 256-bit key.
-<br>Must be encoded with `hex`.
-- `nonce`: _string_ – 96-bit nonce.
-<br>Must be encoded with `hex`.
+- `value`: _[ChaCha20ParamsEB](mod\_crypto.md#chacha20paramseb)_
 
 When _type_ is _'NaclBox'_
 
-- `their_public`: _string_ – 256-bit key.
-<br>Must be encoded with `hex`.
-- `secret`: _string_ – 256-bit key.
-<br>Must be encoded with `hex`.
-- `nonce`: _string_ – 96-bit nonce.
-<br>Must be encoded with `hex`.
+- `value`: _[NaclBoxParamsEB](mod\_crypto.md#naclboxparamseb)_
 
 When _type_ is _'NaclSecretBox'_
 
-- `key`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
-- `nonce`: _string_ – Nonce in `hex`
+- `value`: _[NaclSecretBoxParamsEB](mod\_crypto.md#naclsecretboxparamseb)_
 
 
 Variant constructors:
 
 ```ts
-function encryptionAlgorithmAES(params: AesParamsEB): EncryptionAlgorithm;
-function encryptionAlgorithmChaCha20(params: ChaCha20ParamsEB): EncryptionAlgorithm;
-function encryptionAlgorithmNaclBox(params: NaclBoxParamsEB): EncryptionAlgorithm;
-function encryptionAlgorithmNaclSecretBox(params: NaclSecretBoxParamsEB): EncryptionAlgorithm;
+function encryptionAlgorithmAES(value: AesParamsEB): EncryptionAlgorithm;
+function encryptionAlgorithmChaCha20(value: ChaCha20ParamsEB): EncryptionAlgorithm;
+function encryptionAlgorithmNaclBox(value: NaclBoxParamsEB): EncryptionAlgorithm;
+function encryptionAlgorithmNaclSecretBox(value: NaclSecretBoxParamsEB): EncryptionAlgorithm;
 ```
 
 ## CipherMode
@@ -2175,41 +2214,64 @@ type CryptoBoxHandle = number
 ```
 
 
+## BoxEncryptionAlgorithmChaCha20Variant
+```ts
+type BoxEncryptionAlgorithmChaCha20Variant = {
+    value: ChaCha20ParamsCB
+}
+```
+- `value`: _[ChaCha20ParamsCB](mod\_crypto.md#chacha20paramscb)_
+
+
+## BoxEncryptionAlgorithmNaclBoxVariant
+```ts
+type BoxEncryptionAlgorithmNaclBoxVariant = {
+    value: NaclBoxParamsCB
+}
+```
+- `value`: _[NaclBoxParamsCB](mod\_crypto.md#naclboxparamscb)_
+
+
+## BoxEncryptionAlgorithmNaclSecretBoxVariant
+```ts
+type BoxEncryptionAlgorithmNaclSecretBoxVariant = {
+    value: NaclSecretBoxParamsCB
+}
+```
+- `value`: _[NaclSecretBoxParamsCB](mod\_crypto.md#naclsecretboxparamscb)_
+
+
 ## BoxEncryptionAlgorithm
 ```ts
 type BoxEncryptionAlgorithm = ({
     type: 'ChaCha20'
-} & ChaCha20ParamsCB) | ({
+} & BoxEncryptionAlgorithmChaCha20Variant) | ({
     type: 'NaclBox'
-} & NaclBoxParamsCB) | ({
+} & BoxEncryptionAlgorithmNaclBoxVariant) | ({
     type: 'NaclSecretBox'
-} & NaclSecretBoxParamsCB)
+} & BoxEncryptionAlgorithmNaclSecretBoxVariant)
 ```
 Depends on value of the  `type` field.
 
 When _type_ is _'ChaCha20'_
 
-- `nonce`: _string_ – 96-bit nonce.
-<br>Must be encoded with `hex`.
+- `value`: _[ChaCha20ParamsCB](mod\_crypto.md#chacha20paramscb)_
 
 When _type_ is _'NaclBox'_
 
-- `their_public`: _string_ – 256-bit key.
-<br>Must be encoded with `hex`.
-- `nonce`: _string_ – 96-bit nonce.
-<br>Must be encoded with `hex`.
+- `value`: _[NaclBoxParamsCB](mod\_crypto.md#naclboxparamscb)_
 
 When _type_ is _'NaclSecretBox'_
 
-- `nonce`: _string_ – Nonce in `hex`
+- `value`: _[NaclSecretBoxParamsCB](mod\_crypto.md#naclsecretboxparamscb)_
 
 
 Variant constructors:
 
 ```ts
-function boxEncryptionAlgorithmChaCha20(params: ChaCha20ParamsCB): BoxEncryptionAlgorithm;
-function boxEncryptionAlgorithmNaclBox(params: NaclBoxParamsCB): BoxEncryptionAlgorithm;
-function boxEncryptionAlgorithmNaclSecretBox(params: NaclSecretBoxParamsCB): BoxEncryptionAlgorithm;
+function boxEncryptionAlgorithmChaCha20(value: ChaCha20ParamsCB): BoxEncryptionAlgorithm;
+function boxEncryptionAlgorithmNaclBox(value: NaclBoxParamsCB): BoxEncryptionAlgorithm;
+function boxEncryptionAlgorithmNaclSecretBox(value: NaclSecretBoxParamsCB): BoxEncryptionAlgorithm;
 ```
 
 ## ChaCha20ParamsCB
