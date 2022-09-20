@@ -293,76 +293,188 @@ Note, that similar to the TONOS-CLI approach described above, you have to sponso
 The recommended [SafeMultisig](https://github.com/tonlabs/ton-labs-contracts/tree/master/solidity/safemultisig) contract is used.
 
 ```javascript
-async function main(client) {
 
-  // Сonfigures the specified multisig wallet as a wallet to sponsor deploy operation
-  // Read more about deploy and other basic concepts here https://everos.dev/faq/blockchain-basic
-  	 const giver = await ensureGiver(client);
-  	
+ async function main(client) {
+    // Сonfigures the specified multisig wallet as a wallet to sponsor deploy operation
+    const giver = await ensureGiver(client);
+
+    // Generate a key pair for a wallet that we will deploy
+    console.log("Generate new wallet keys");
+    const walletKeys = await client.crypto.generate_random_sign_keys();
+
+    // In this example we will deploy safeMultisig wallet.
+    // Read about it here https://github.com/tonlabs/ton-labs-contracts/tree/master/solidity/safemultisig
+
+    // The first step - initialize new account object with ABI,
+    // target network (client) and previously generated key pair (signer) and 
+    // calculate future wallet address so that we can sponsor it before deploy.
+    // Read more about deploy and other basic concepts here https://everos.dev/faq/blockchain-basic
+    const wallet = await getAccount(client, SafeMultisigContract, signerKeys(walletKeys));
+
+    // Save last master block seq_no before we send the first transaction.
+    // It will be used later as starting point for pagination reqest.
+    const lastSeqNo = await getLastMasterBlockSeqNoByTime(client, seconds());
+
+    // Prepay contract before deploy.
+    console.log(`Sending deploy fee from giver wallet ${giver.address} to the new account at ${wallet.address}`);
+    await depositAccount(wallet.address, 500_000_000, client);
+
+    console.log(`Deploying new wallet at ${wallet.address}`);
+    // Now lets deploy safeMultisig wallet
+    // Here we specify 1 custodian and 1 reqConfirms
+    // but in real life there can be many custodians as well and more than 1 required confirmations
+    await deployAccount(wallet,  {
+        owners: [`0x${walletKeys.public}`], // constructor parameters of multisig
+        reqConfirms: 1,
+    });
   
-
-  console.log("Generate new wallet keys");
-  const walletKeys = await client.crypto.generate_random_sign_keys();
-  	
-  const wallet = await getAccount(client, SafeMultisigContract, signerKeys(walletKeys));
-  const walletAddress = wallet.address;
-  	
-
-  const startBlockTime = seconds(Date.now());
-  	
-  console.log(`Sending deploy fee from giver wallet ${giver.address} to the new wallet at ${walletAddress}`);
- await depositAccount(walletAddress, 2000000000, client);
-  
- console.log(`Deploying new wallet at ${walletAddress}ions
- await deployAccount(wallet,  {
-  	     owners: [`0x${walletKeys.public}`], // constructor parameters of multisig
-  	     reqConfirms: 1,
-  	    });
-  	
- 
-  console.log("Depositing 2 tokens...");
-  await depositAccount(walletAddress, 2000000000, client);
-      	
-  const giverAddress = await giver.address;
-  console.log(`Withdrawing 2 tokens from ${wallet.walletAddress} to ${giverAddress}...`);
-  await walletWithdraw(wallet, giverAddress, 1000000000);
-      	
-   console.log(`Transactions for ${walletAddress} account since ${startBlockTime}`);
-  let result = await queryAccountTransactions(client, walletAddress, {
-      	        startTime: startBlockTime,
-      	        // endTime: endBlockTime,     // You can set an upper time boundary @endTime to 2 minutes before now – to avoid data eventually consistency.
-      	
-      
-      	    });
-   const countLimit = 200;
-   let count = 0;
-   while (count < countLimit && result.transactions.length > 0) {
-      	  for (const transaction of result.transactions) {
-      	      printTransfers(transaction);
-      	      count += 1;
-        	 } 
-        result = await queryAccountTransactions(client, walletAddress, {
-        	            after: result.last,
-          	        });
-          	    }
-
-  console.log(`Transactions of all accounts since ${startBlockTime}`);
-  result = await queryAllTransactions(client, {
-              	        startTime: startBlockTime,
-              	        endTime: seconds(Date.now()) - 20, // we use 20 so that we catch the transactions generated in this sample. Replace with 120.
-              	    });
-  count = 0;
-  while (count < countLimit && result.transactions.length > 0) {
-    for (const transaction of result.transactions) {
-        printTransfers(transaction);
-        count += 1;
+ /**
+ * Initializes Giver Account that will be used to topup other accounts before deploy.
+ *
+ * SafeMultisig wallet is used. If you want to use another contract as Giver -
+ * read more about how to add a contract to a project here
+ * https://docs.everos.dev/ever-sdk/guides/work_with_contracts/add_contract_to_your_app
+ */
+async function ensureGiver(client) {
+    if (_giver) {
+        return _giver;
     }
-    result = await queryAllTransactions(client, {
-      	            after: result.last,
-      	            endTime: seconds(Date.now()) - 20
-      	        });
-     }
-  }
+    const address = process.argv[2];
+    const secret = process.argv[3];
+    if (!address || !secret) {
+        console.log("USE: node index <giver-address> <giver-secret-key>");
+        console.log("Giver must be a multisig wallet");
+        process.exit(1);
+    }
+    _giver = await getAccount(
+        client,
+        SafeMultisigContract,
+        signerKeys({
+            public: (await client.crypto.nacl_sign_keypair_from_secret_key({ secret }))
+                .secret.substr(64),
+            secret,
+        }),
+    );
+    _giver.address = address;
+    return _giver;
+}
+    
+async function getAccount(client, contract, signer) {
+    const abi = abiContract(contract.abi);
+
+    // Let's create deploy message to calculate future contract address
+    // We do not use `call_set` parameter here because it does not affect address calculation
+    const address = (await client.abi.encode_message({
+        abi,
+        signer: signer,
+        deploy_set: {
+            tvc: contract.tvc,
+        },
+    })).address;
+    return {
+        client,
+        address,
+        abi,
+        tvc: contract.tvc,
+        signer,
+    };
+}
+
+async function getLastMasterBlockSeqNoByTime(client, utime) {
+    return (await client.net.query({
+        query: `query MyQuery($utime: Int){
+            blockchain {
+                master_seq_no_range(time_end: $utime) { end }
+            }
+        }`,
+        variables: {utime},
+    })).result.data.blockchain.master_seq_no_range.end
+}
+
+/**
+ * Topup an account for deploy operation.
+ *
+ * We need an account which can be used to deposit other accounts.
+ * We call it "giver".
+ *
+ * This sample uses already deployed multisig wallet with positive balance as a giver.
+ *
+ * In production you can use any other contract that can transfer funds, as a giver.
+ */
+async function depositAccount(address, amount, client) {
+    return await walletSend(await ensureGiver(client), address, amount);
+}
+
+/**
+ * Sends some tokens from msig wallet to specified address.
+ */
+async function walletSend(wallet, address, amount) {
+    return await runAndWaitForRecipientTransactions(wallet, "sendTransaction", {
+        dest: address,
+        value: amount,
+        bounce: false,
+        flags: 1,
+        payload: "",
+    });
+}
+
+async function runAndWaitForRecipientTransactions(account, functionName, input) {
+    const runResult = await account.client.processing.process_message({
+        message_encode_params: {
+            address: account.address,
+            abi: account.abi,
+            signer: account.signer,
+            call_set: {
+                function_name: functionName,
+                input,
+            },
+        },
+        send_events: false,
+    });
+
+    const transactions = [];
+
+    // This step is only required if you want to know when the recipient actually receives their tokens.
+    // In Everscale blockchain, transfer consists of 2 transactions (because the blockchain is asynchronous):
+    //  1. Sender sends tokens - this transaction is returned by `Run` method
+    //  2. Recipient receives tokens - this transaction can be caught with `query_transaction_tree method`
+    // Read more about transactions and messages here
+    // https://everos.dev/faq/blockchain-basic
+    let countCallingApi = 0;
+    while(transactions.length === 0 && countCallingApi < 100) {
+        for (const messageId of runResult.transaction.out_msgs) {
+            const tree = await account.client.net.query_transaction_tree({
+                in_msg: messageId,
+            });
+            transactions.push(...tree.transactions);
+            if (countCallingApi++) {
+                await sleep(200); // don't spam API
+            }
+        }
+    }
+    return transactions;
+}
+
+
+async function deployAccount(
+    account,
+    constructorInput,
+) {
+    return await account.client.processing.process_message({
+        message_encode_params: {
+            abi: account.abi,
+            signer: account.signer,
+            deploy_set: {
+                tvc: account.tvc,
+            },
+            call_set: {
+                function_name: "constructor",
+                input: constructorInput,
+            },
+        },
+        send_events: false,
+    });
+}
 ```
 
 
@@ -376,35 +488,149 @@ In this sample JS SDK is used. [Bindings](https://github.com/tonlabs/sdk-samples
 The script iterates over all blocks since the specified time and looks for transfers according to the set up filters. Transfers may be filtered by one or all accounts.
 
 ```javascript
-...    
-console.log(`Transactions of all accounts since ${startBlockTime}`);
-	    result = await queryAllTransactions(client, {
-	        startTime: startBlockTime,
-	        endTime: seconds(Date.now()) - 20, // we use 20 so that we catch the transactions generated in this sample. Replace with 120.
-	    });
-	    count = 0;
-	    while (count < countLimit && result.transactions.length > 0) {
-	        for (const transaction of result.transactions) {
-	            printTransfers(transaction);
-	            count += 1;
-	        }
-	        result = await queryAllTransactions(client, {
-	            after: result.last,
-	            endTime: seconds(Date.now()) - 20, // we use 20 so that we catch the transactions generated in this sample. Replace with 120.
-	        });
-	    }
+    ...
+    // To build a query with pagination, let's limit the count of transactions
+    // which will be obtained by one request
+    const countLimit = 10;
 
-...
+    // And here we retrieve all the wallet's transactions since the specified block seq_no
+    // Due to blockchain multi-sharded nature its data needs some time to reach consistency
+    // for reliable pagination. This is why we use `for` here, waiting for the last transaction
+    // in the list
+    let size = 0;
+    console.log(`\nTransactions for ${wallet.address} account since block(seq_no):${lastSeqNo}`);
+    for await (let transactions of queryAccountTransactions(client, wallet.address, {seq_no: lastSeqNo, count: countLimit})) {
+        transactions.forEach(printTransfers);
+        size += transactions.length;
+        if (size >= 4) {
+            // Wait 4 transactions:
+            //   1. Sending deploy fee
+            //   2. Deploying new wallet
+            //   3. Depositing 2 tokens
+            //   4. Withdrawing 1 token
+            break;
+        }
+    }
+    ...
+    
+    // Now let's iterate all blockchain transactions with value transfers.
+    // Starting from master seq_no which was generated 10 minuts ago.
+    const afterSeqNo = await getLastMasterBlockSeqNoByTime(client, seconds(Date.now() - 10*60*1000));
+    console.log(`\nTransactions of all accounts`);
+    for await (let transactions of queryAllTransactions(client, {seq_no: afterSeqNo, count: countLimit})) {
+        // Trying get next trnsactions which contain any valuable transfers
+        if (!hasTransfersOnTransactions(transactions)) {
+            continue;
+        }
+
+        transactions.forEach(printTransfers);
+
+        try {
+            await keyPress();
+        } catch(_) {
+            // If pressed Ctrl+C exits from iteration
+            break;
+        }
+    }
+    
+    async function getLastMasterBlockSeqNoByTime(client, utime) {
+    return (await client.net.query({
+        query: `query MyQuery($utime: Int){
+            blockchain {
+                master_seq_no_range(time_end: $utime) { end }
+            }
+        }`,
+        variables: {utime},
+    })).result.data.blockchain.master_seq_no_range.end
+    }
+    
+    
+/**
+ * Iterator to query account transactions by using cursor-based pagination.
+ */
+async function *queryAccountTransactions(
+    client,
+    address,
+    options,
+) {
+    const variables = {
+        address,
+        cursor: null,
+        ...options,
+    }
+    while (true) { // <-- !WARNING! Infinity loop, you need to implement condition to exit from iterator
+        const transactions = await internalQueryTransactions(client, variables);
+        yield transactions.edges.map(_ => _.node);
+        variables.cursor = transactions.pageInfo.endCursor || variables.cursor;
+        await sleep(200); // don't spam API
+    }
+}
+    
+    async function internalQueryTransactions(client, variables) {
+    const isAccount = "address" in variables;
+    const query = isAccount ? queryAccouont : queryAll;
+    const response = await client.net.query({query, variables});
+    return isAccount ?
+        response.result.data.blockchain.account.transactions
+        :
+        response.result.data.blockchain.transactions;
+}
+
+// This API has additional consistency checks to ensure consistent pagination, which can lead to additional delay
+const queryAccouont = `query MyQuery($address: String!, $cursor: String, $count: Int, $seq_no: Int) {
+    blockchain {
+        account(address: $address){
+            transactions(
+                master_seq_no_range: {
+                    start: $seq_no
+                }
+                first: $count
+                after: $cursor
+            ){
+                edges{
+                    node{
+                        ${TRANSACTION_FIELDS}
+                    }
+                }
+                pageInfo{
+                    endCursor
+                }
+            }
+        }
+    }
+}`;
+
+// This API has additional consistency checks to ensure consistent pagination, which can lead to additional delay
+const queryAll = `query MyQuery($cursor: String, $count: Int, $seq_no: Int) {
+    blockchain {
+        transactions(
+            master_seq_no_range: {
+                start: $seq_no
+            }
+            first: $count
+            after: $cursor
+        ){
+            edges{
+                node{
+                    ${TRANSACTION_FIELDS}
+                }
+            }
+            pageInfo{
+                endCursor
+            }
+        }
+    }
+}`;
 ```
 
-You may test out the demo application running this process on the developer network by cloning the [sdk-samples](https://github.com/tonlabs/sdk-samples) repository, and running the following commands in the /demo/exchange folder:
+You may test out the demo application running this process on the developer network by cloning the [sdk-samples](https://github.com/tonlabs/sdk-samples) repository, and running the following commands in the /demo/exchange folder
 
 ```shell
 npm i
-node index
+node index giverAddress giverPrivateKey
 ```
 
-Prerequisites: latest [Node.js](https://nodejs.org/)
+Read more about giverAddress and giverPrivateKey parameters in the sample readme.&#x20;
 
 ## Withdrawing from deposit accounts&#x20;
 
@@ -602,55 +828,30 @@ You may choose from which account (sender or recipient), the forward fees will b
 In this example tokens are withdrawn from the deposit account to the giver, that initially sponsored it. In a proper implementation, the account given by user should be used instead.
 
 ```javascript
-    ...
-    console.log(`Withdrawing 2 tokens from ${wallet.walletAddress} to ${giverAddress}...`);
-    await walletWithdraw(wallet, giverAddress, 1000000000);
-    ...
-
-    async function walletWithdraw(wallet, address, amount) {
-	    const transactions = await runAndWaitForRecipientTransactions(wallet, "submitTransaction", {
-	        dest: address,
-	        value: amount,
-	        bounce: false,
-	        allBalance: false,
-	        payload: "",
-	    });
-	    if (transactions.length > 0) {
-	        console.log(`Recipient received transfer. The recipient's transaction is: ${transactions[0].id}`);
-	    }
-	}
-
-async function runAndWaitForRecipientTransactions(account, functionName, input) {
-	    const runResult = await account.client.processing.process_message({
-	        message_encode_params: {
-	            address: account.address,
-	            abi: account.abi,
-	            signer: account.signer,
-	            call_set: {
-	                function_name: functionName,
-	                input,
-	            },
-	        },
-	        send_events: false,
-	    });
-	
-
-	    const transactions = [];
-	
-
-// This step is only required if you want to know when the recipient actually receives their tokens.
-// In Everscale blockchain, transfer consists of 2 transactions (because the blockchain is asynchronous):
-//  1. Sender sends tokens - this transaction is returned by `Run` method
-//  2. Recipient receives tokens - this transaction can be caught with `query_transaction_tree method`
-// Read more about transactions and messages here
-// https://everos.dev/faq/blockchain-basic
-  for (const messageId of runResult.transaction.out_msgs) {
-  	   const tree = await account.client.net.query_transaction_tree({
-        	            in_msg: messageId,
-            	    });
-       transactions.push(...tree.transactions);
-  }
-  return transactions;
+/**
+ * Withdraws some tokens from Multisig wallet to a specified address.
+ *
+ * In case of 1 custodian `submitTransaction` method performs full withdraw operation.
+ *
+ * In case of several custodians, `submitTransaction` creates a transaction inside the wallet
+ * for other custodians to confirm.
+ * Other custodians need to invoke  `confirmTransaction` method for confirmation.
+ * Once enough custodians confirm the transaction it will be withdrawn.
+ * Read more how to work with multisig here
+ * https://github.com/tonlabs/ton-labs-contracts/tree/master/solidity/safemultisig
+ */
+async function walletWithdraw(wallet, address, amount) {
+    const transactions = await runAndWaitForRecipientTransactions(wallet, "submitTransaction", {
+        dest: address,
+        value: amount,
+        bounce: false,
+        allBalance: false,
+        payload: "",
+    });
+    if (transactions.length > 0) {
+        console.log(`Recipient received transfer. The recipient's transaction is: ${transactions[0].id}`);
+    }
+    return transactions
 }
 ```
 
