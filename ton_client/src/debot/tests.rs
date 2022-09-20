@@ -11,7 +11,7 @@
 * limitations under the License.
 */
 
-use crate::abi::{CallSet, DeploySet, ParamsOfEncodeMessage, Signer, Abi,
+use crate::abi::{CallSet, DeploySet, FunctionHeader, ParamsOfEncodeMessage, Signer, Abi,
     ParamsOfDecodeMessageBody, DecodedMessageBody, ResultOfEncodeInternalMessage, ParamsOfEncodeInternalMessage};
 use crate::boc::{ParamsOfParse, ResultOfParse, ParamsOfGetCodeFromTvc, ResultOfGetCodeFromTvc,
     ResultOfGetBocHash, ParamsOfGetBocHash};
@@ -376,7 +376,11 @@ impl TestBrowser {
                 } else if SUPPORTED_INTERFACES[1] == interface_id {
                     Abi::Json(TERMINAL_ABI.to_owned())
                 } else if SUPPORTED_INTERFACES[2] == interface_id {
-                    Abi::Json(SIGNING_BOX_ABI.to_owned())
+                    if state.info.dabi_version == "2.2" {
+                        Abi::Json(SIGNING_BOX_ABI_2_2.to_owned())
+                    } else {
+                        Abi::Json(SIGNING_BOX_ABI.to_owned())
+                    }
                 } else if SUPPORTED_INTERFACES[3] == interface_id {
                     Abi::Json(ENCRYPTION_BOX_ABI.to_owned())
                 } else {
@@ -1422,6 +1426,66 @@ async fn test_debot_json_parse() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_debot_send_with_header() {
+    let client = std::sync::Arc::new(TestClient::new());
+    //deply CustomReplayProtection contract
+    let keys = client.generate_sign_keys();
+    let abi = TestClient::abi("CustomReplayProtection", Some(2));
+    let call_set = Some(CallSet {
+        function_name: "constructor".into(),
+        input: None,
+        header: Some(FunctionHeader {
+            expire: None,
+            time: Some(1),
+            pubkey: None,
+        }),
+    });
+    let deploy_params = ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        deploy_set: DeploySet::some_with_tvc(TestClient::tvc("CustomReplayProtection", Some(2))),
+        signer: Signer::Keys { keys: keys.clone() },
+        processing_try_index: None,
+        address: None,
+        call_set,
+    };
+    let replay_contract = client.deploy_with_giver_async(deploy_params, Some(1_000_000_000u64)).await;
+    //deploy debot
+    let DebotData {
+        debot_addr,
+        target_addr: _,
+        keys,
+        abi,
+    } = init_simple_debot(client.clone(), "testDebot20").await;
+    let info = build_info_abi2_2(
+        abi,
+        20,
+        vec![
+            format!("0xc13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a"),
+            format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3"),
+        ]);
+    //set address of CustomReplayProtection to DeBot
+    let debot_abi = TestClient::abi("testDebot20", Some(2));
+    let _ = client.net_process_function(
+        debot_addr.clone(),
+        debot_abi.clone(),
+        "setRollingId",
+        json!({ "a":replay_contract }),
+        Signer::Keys { keys: keys.clone() },
+    ).await.unwrap();
+    //run DeBot
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        vec![],
+        vec![],
+        info,
+        vec![],
+    )
+    .await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_debot_target_abi() {
     let client = std::sync::Arc::new(TestClient::new());
     let DebotData {debot_addr, target_addr: _, keys, abi} =
@@ -1510,6 +1574,24 @@ fn build_info(abi: String, n: u32, interfaces: Vec<String>) -> DebotInfo {
         icon: Some(format!("")),
         interfaces,
         dabi_version: format!("2.0"),
+    }
+}
+
+fn build_info_abi2_2(abi: String, n: u32, interfaces: Vec<String>) -> DebotInfo {
+    let name = format!("TestDeBot{}", n);
+    DebotInfo {
+        name: Some(name.clone()),
+        version: Some("0.1.0".to_owned()),
+        publisher: Some("EverX".to_owned()),
+        caption: Some(name.clone()),
+        author: Some("EverX".to_owned()),
+        support: Some("0:0000000000000000000000000000000000000000000000000000000000000000".to_owned()),
+        hello: Some(name.clone()),
+        language: Some("en".to_owned()),
+        dabi: Some(abi),
+        icon: Some(format!("")),
+        interfaces,
+        dabi_version: format!("2.2"),
     }
 }
 
