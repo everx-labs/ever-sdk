@@ -312,8 +312,8 @@ The recommended [SafeMultisig](https://github.com/tonlabs/ton-labs-contracts/tre
     const wallet = await getAccount(client, SafeMultisigContract, signerKeys(walletKeys));
 
     // Save last master block seq_no before we send the first transaction.
-    // It will be used later as starting point for pagination reqest.
-    const lastSeqNo = await getLastMasterBlockSeqNoByTime(client, seconds());
+    // It will be used later as starting point for pagination request.
+    const lastSeqNo = await getLastMasterBlockSeqNo(client);
 
     // Prepay contract before deploy.
     console.log(`Sending deploy fee from giver wallet ${giver.address} to the new account at ${wallet.address}`);
@@ -327,6 +327,11 @@ The recommended [SafeMultisig](https://github.com/tonlabs/ton-labs-contracts/tre
         owners: [`0x${walletKeys.public}`], // constructor parameters of multisig
         reqConfirms: 1,
     });
+
+    // Lets make a deposit
+    console.log("Depositing 2 tokens...");
+    await depositAccount(wallet.address, 2_000_000_000, client);
+
   
  /**
  * Initializes Giver Account that will be used to topup other accounts before deploy.
@@ -380,15 +385,22 @@ async function getAccount(client, contract, signer) {
     };
 }
 
-async function getLastMasterBlockSeqNoByTime(client, utime) {
+async function getLastMasterBlockSeqNo(client) {
     return (await client.net.query({
-        query: `query MyQuery($utime: Int){
-            blockchain {
-                master_seq_no_range(time_end: $utime) { end }
+        query: `
+            query{
+              blockchain{
+                blocks(workchain:-1, last:1 ){
+                  edges{
+                    node{
+                      seq_no
+                    }
+                  }
+                }
+              }
             }
-        }`,
-        variables: {utime},
-    })).result.data.blockchain.master_seq_no_range.end
+        `
+    })).result.data.blockchain.blocks.edges[0].node.seq_no
 }
 
 /**
@@ -489,7 +501,7 @@ The script iterates over all blocks since the specified time and looks for trans
 
 ```javascript
     ...
-    // To build a query with pagination, let's limit the count of transactions
+   // To build a query with pagination, let's limit the count of transactions
     // which will be obtained by one request
     const countLimit = 10;
 
@@ -511,10 +523,14 @@ The script iterates over all blocks since the specified time and looks for trans
             break;
         }
     }
-    ...
     
     // Now let's iterate all blockchain transactions with value transfers.
-    // Starting from master seq_no which was generated 10 minuts ago.
+    // 
+    // Attention! If you try to get the latest master seq_no for `now` you may receive `null` because 
+    // the database is not yet consistent. So you can desrease timestamp by, say 30 seconds, or wait in a cycle until 
+    // your request returns positive value. 
+    // We will iterate data starting from master seq_no which was generated 10 minutes ago.
+
     const afterSeqNo = await getLastMasterBlockSeqNoByTime(client, seconds(Date.now() - 10*60*1000));
     console.log(`\nTransactions of all accounts`);
     for await (let transactions of queryAllTransactions(client, {seq_no: afterSeqNo, count: countLimit})) {
@@ -532,19 +548,20 @@ The script iterates over all blocks since the specified time and looks for trans
             break;
         }
     }
-    
-    async function getLastMasterBlockSeqNoByTime(client, utime) {
-    return (await client.net.query({
-        query: `query MyQuery($utime: Int){
-            blockchain {
-                master_seq_no_range(time_end: $utime) { end }
-            }
-        }`,
-        variables: {utime},
-    })).result.data.blockchain.master_seq_no_range.end
-    }
-    
-    
+}
+
+async function getLastMasterBlockSeqNoByTime(client, utime) {
+return (await client.net.query({
+    query: `query MyQuery($utime: Int){
+        blockchain {
+            master_seq_no_range(time_end: $utime) { end }
+        }
+    }`,
+    variables: {utime},
+})).result.data.blockchain.master_seq_no_range.end
+}
+
+
 /**
  * Iterator to query account transactions by using cursor-based pagination.
  */
@@ -558,26 +575,41 @@ async function *queryAccountTransactions(
         cursor: null,
         ...options,
     }
-    while (true) { // <-- !WARNING! Infinity loop, you need to implement condition to exit from iterator
-        const transactions = await internalQueryTransactions(client, variables);
+    for (;;) { // <-- !WARNING! Infinity loop, you need to implement condition to exit from iterator
+        const { result } = await client.net.query({query: queryAccount, variables});
+        const { transactions } = result.data.blockchain.account;
+
         yield transactions.edges.map(_ => _.node);
         variables.cursor = transactions.pageInfo.endCursor || variables.cursor;
         await sleep(200); // don't spam API
     }
 }
-    
-    async function internalQueryTransactions(client, variables) {
-    const isAccount = "address" in variables;
-    const query = isAccount ? queryAccouont : queryAll;
-    const response = await client.net.query({query, variables});
-    return isAccount ?
-        response.result.data.blockchain.account.transactions
-        :
-        response.result.data.blockchain.transactions;
+
+/**
+ * Iterator to query ALL blockchain transactions by using cursor-based pagination.
+ */
+async function *queryAllTransactions(
+    client,
+    options,
+) {
+    const variables = {
+        cursor: null,
+        ...options,
+    }
+    for (;;) { // <-- !WARNING! Infinity loop, you need to implement condition to exit from iterator
+        consoleWrite(`Requesting transactions...`)
+        const { result } = await client.net.query({query: queryAll, variables});
+        const { transactions } = result.data.blockchain;
+        consoleClear()
+        yield transactions.edges.map(_ => _.node);
+        variables.cursor = transactions.pageInfo.endCursor || variables.cursor;
+        await sleep(200); // don't spam API
+    }
 }
 
+
 // This API has additional consistency checks to ensure consistent pagination, which can lead to additional delay
-const queryAccouont = `query MyQuery($address: String!, $cursor: String, $count: Int, $seq_no: Int) {
+const queryAccount = `query MyQuery($address: String!, $cursor: String, $count: Int, $seq_no: Int) {
     blockchain {
         account(address: $address){
             transactions(
