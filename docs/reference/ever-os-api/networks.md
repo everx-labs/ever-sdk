@@ -16,6 +16,10 @@ Each Evernode Platform instance has a single GraphQL API endpoint.&#x20;
 
 ## Connect to GraphQL
 
+{% hint style="warning" %}
+If you received "Unauthorized access" error, please check that you specified the Evercloud access credentials correctly. Follow the Guide [https://docs.everos.dev/evernode-platform/products/evercloud/get-started](https://docs.everos.dev/evernode-platform/products/evercloud/get-started) for more info.&#x20;
+{% endhint %}
+
 ### HTTPS
 
 #### Without secret
