@@ -24,6 +24,7 @@
 * [Rust Reference](https://github.com/tonlabs/ever-sdk/tree/master/docs/reference/rust-api)
 * [GraphQL API](reference/ever-os-api/README.md)
   * [Networks](reference/ever-os-api/networks.md)
+  * [Connect to GraphQL API](reference/ever-os-api/connect-to-graphql-api.md)
   * [Explore API (Playground)](reference/ever-os-api/web\_playground.md)
   * [Schema](reference/ever-os-api/schema.md)
   * [Blockchain API](reference/ever-os-api/blockchain.md)

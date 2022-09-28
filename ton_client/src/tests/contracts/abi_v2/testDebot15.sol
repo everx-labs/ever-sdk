@@ -83,7 +83,7 @@ contract TestDebot15 is Debot {
 
         val = jsonObj.get("value2");
         string value2 = val.get().as_string().get();
-        require(value2 == "11", 212);
+        require(value2 == "11.0", 212);
 
         val = jsonObj.get("value3");
         string value3 = val.get().as_string().get();
