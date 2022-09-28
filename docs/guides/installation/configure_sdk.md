@@ -48,7 +48,9 @@ network: {
 
 ### Local node&#x20;
 
-If you are working with [local blockchain Evernode-SE](https://github.com/tonlabs/evernode-se), specify [http://localhost](http://localhost) in the `endpoints`.
+If you are working with [local blockchain Evernode-SE](https://github.com/tonlabs/evernode-se), specify [http://localhost](http://localhost) in the `endpoints`
+
+**with no `access_key`.**
 
 ### Evercloud
 
