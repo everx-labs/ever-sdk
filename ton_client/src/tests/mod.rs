@@ -71,10 +71,6 @@ mod env {
         str("EVERCLOUD_AUTH_PROJECT", None)
     }
 
-    pub(crate) fn auth_secret() -> Option<String> {
-        str("EVERCLOUD_AUTH_SECRET", None)
-    }
-
     pub(crate) fn endpoints() -> String {
         str("EVERCLOUD_ENDPOINTS", Some("TON_NETWORK_ADDRESS"))
             .unwrap_or_else(|| "http://localhost".into())
@@ -329,17 +325,13 @@ impl TestClient {
         env::auth_project()
     }
 
-    pub fn auth_secret() -> Option<String> {
-        env::auth_secret()
-    }
-
     pub fn with_project(endpoint: &str) -> String {
         match Self::auth_project() {
             Some(project) => {
                 if endpoint.ends_with('/') {
-                    format!("{}/{}", endpoint, project)
-                } else {
                     format!("{}{}", endpoint, project)
+                } else {
+                    format!("{}/{}", endpoint, project)
                 }
             }
             None => endpoint.to_string(),
@@ -351,7 +343,7 @@ impl TestClient {
             .split(",")
             .map(|x| x.trim())
             .filter(|x| !x.is_empty())
-            .map(|x| Self::with_project(x))
+            .map(|x| x.to_string())
             .collect()
     }
 

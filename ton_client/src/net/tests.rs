@@ -1257,59 +1257,6 @@ async fn order_by_fallback() {
 }
 
 #[test]
-fn test_endpoints_replacement() {
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": ["main.ton.dev", "net.ton.dev"],
-        }
-    }));
-
-    let endpoints: ResultOfGetEndpoints = client.request("net.get_endpoints", json!({})).unwrap();
-
-    assert_eq!(
-        endpoints.endpoints,
-        vec![
-            "eri01.main.everos.dev",
-            "gra01.main.everos.dev",
-            "gra02.main.everos.dev",
-            "lim01.main.everos.dev",
-            "rbx01.main.everos.dev",
-            "eri01.net.everos.dev",
-            "rbx01.net.everos.dev",
-            "gra01.net.everos.dev",
-        ]
-    );
-
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": [
-                "https://main2.ton.dev",
-                "https://main.ton.dev/",
-                "http://main3.ton.dev",
-                "main2.ton.dev",
-                "https://lim01.main.everos.dev",
-                "gra02.main.everos.dev",
-            ],
-        }
-    }));
-
-    let endpoints: ResultOfGetEndpoints = client.request("net.get_endpoints", json!({})).unwrap();
-
-    assert_eq!(
-        endpoints.endpoints,
-        vec![
-            "https://main2.ton.dev",
-            "http://main3.ton.dev",
-            "https://lim01.main.everos.dev",
-            "gra02.main.everos.dev",
-            "eri01.main.everos.dev",
-            "gra01.main.everos.dev",
-            "rbx01.main.everos.dev",
-        ]
-    );
-}
-
-#[test]
 fn test_subscription_gql() {
     let query = GraphQLQuery::with_collection_subscription("counterparties", &Value::Null, "id");
     assert_eq!(query.query, "subscription counterparties($filter: CounterpartyFilter) { counterparties(filter: $filter) { id } }");
