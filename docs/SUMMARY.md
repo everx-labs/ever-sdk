@@ -29,6 +29,7 @@
   * [Schema](reference/ever-os-api/schema.md)
   * [Blockchain API](reference/ever-os-api/blockchain.md)
   * [Info API](reference/ever-os-api/info.md)
+  * [Token API](reference/ever-os-api/token-api.md)
   * [Collections: Query Language](reference/ever-os-api/query\_language.md)
   * [Field Descriptions](reference/ever-os-api/field\_descriptions.md)
   * [Samples](reference/ever-os-api/samples.md)
