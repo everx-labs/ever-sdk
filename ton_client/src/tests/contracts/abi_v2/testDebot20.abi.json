@@ -1,6 +1,6 @@
 {
 	"ABI version": 2,
-	"version": "2.2",
+	"version": "2.3",
 	"header": ["pubkey", "time", "expire"],
 	"functions": [
 		{
@@ -70,6 +70,14 @@
 			]
 		},
 		{
+			"name": "onFoo",
+			"inputs": [
+				{"name":"addr","type":"address"}
+			],
+			"outputs": [
+			]
+		},
+		{
 			"name": "printQueryStatus",
 			"inputs": [
 				{"name":"status","type":"uint8"}
@@ -128,6 +136,14 @@
 			],
 			"outputs": [
 				{"name":"interfaces","type":"uint256[]"}
+			]
+		},
+		{
+			"name": "foo",
+			"inputs": [
+			],
+			"outputs": [
+				{"name":"addr","type":"address"}
 			]
 		},
 		{
