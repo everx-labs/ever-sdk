@@ -12,6 +12,10 @@ You can optionally filter by symbol substring.&#x20;
 
 Use `cursor`, {`first`, `after`} or  {`last`, `before`} filters for pagination.
 
+{% hint style="success" %}
+We followed GraphQL best practices and implemented Relay Cursor Connections Specification for pagination for all list types. You can read more here [https://relay.dev/graphql/connections.htm](https://relay.dev/graphql/connections.htm)&#x20;
+{% endhint %}
+
 ```graphql
 query{
   ft{
