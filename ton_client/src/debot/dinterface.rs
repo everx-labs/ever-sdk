@@ -209,16 +209,6 @@ where
         .map_err(|e| format!("failed to parse integer \"{}\": {}", num_str, e))
 }
 
-pub fn get_opt_num_arg<T>(args: &Value, name: &str) -> Result<Option<T>, String>
-where
-    T: NumCast,
-{
-    match args.get(name).ok_or(format!("Optional \"{}\" not found", name))? {
-        serde_json::Value::Null => Ok(None),
-        _ => Ok(Some(get_num_arg::<T>(args, name)?)),
-    }
-}
-
 pub fn get_bool_arg(args: &Value, name: &str) -> Result<bool, String> {
     args[name]
         .as_bool()
