@@ -1426,7 +1426,7 @@ async fn test_debot_json_parse() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn test_debot_send_with_header() {
+async fn test_debot_custom_header() {
     let client = std::sync::Arc::new(TestClient::new());
     //deply CustomReplayProtection contract
     let keys = client.generate_sign_keys();

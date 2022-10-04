@@ -1,4 +1,4 @@
-pragma ton-solidity >=0.47.0;
+pragma ton-solidity ^0.65.0;
 pragma AbiHeader expire;
 pragma AbiHeader time;
 pragma AbiHeader pubkey;
@@ -8,35 +8,6 @@ import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Signi
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Query/Query.sol";
 import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
-
-struct AbiHeader {
-	optional(uint64) timestamp;
-	optional(uint32) expire;
-}
-interface IMsg {
-    function sendWithKeypair(uint32 answerId, TvmCell message, uint256 pub, uint256 sec) external;
-    function sendAsync(TvmCell message) external returns(uint256 id);
-	function sendWithHeader(TvmCell message, AbiHeader header) external returns(uint256 id);
-}
-library Msg {
-	uint256 constant ID = 0x475a5d1729acee4601c2a8cb67240e4da5316cc90a116e1b181d905e79401c51;
-	int8 constant DEBOT_WC = -31;
-
-	function sendWithKeypair(uint32 answerId, TvmCell message, uint256 pub, uint256 sec) public {
-		address addr = address.makeAddrStd(DEBOT_WC, ID);
-		IMsg(addr).sendWithKeypair(answerId, message, pub, sec);
-	}
-
-	function sendAsync(TvmCell message) public {
-		address addr = address.makeAddrStd(DEBOT_WC, ID);
-		IMsg(addr).sendAsync(message);
-	}
-
-	function sendWithHeader(TvmCell message, AbiHeader header) public {
-		address addr = address.makeAddrStd(DEBOT_WC, ID);
-		IMsg(addr).sendWithHeader(message, header);
-	}
-}
 
 abstract contract ARollingId {
     function answer(address dst) public {}
@@ -51,6 +22,10 @@ contract MsgTestDebot is Debot, ARecieverDebot {
     using JsonLib for JsonLib.Value;
     using JsonLib for mapping(uint256 => TvmCell);
 
+    uint8 constant OVERRIDE_TS = 1;
+    uint8 constant OVERRIDE_EXPT = 2;
+    uint8 constant ASYNC_CALL = 4;
+
     address m_rollingId;
     TvmCell m_sendMsg;
     uint64 m_timestamp;
@@ -58,6 +33,10 @@ contract MsgTestDebot is Debot, ARecieverDebot {
     uint64 m_sendTimestamp;
     uint32 m_sendExpire;
     uint32 m_handle;
+
+    function _abiver(uint8 maj, uint8 min) private pure inline returns (uint8) {
+        return (min << 4 | maj);
+    }
 
     function getData() external view returns (uint64,uint32) {
         return (m_timestamp,m_expire);
@@ -88,22 +67,35 @@ contract MsgTestDebot is Debot, ARecieverDebot {
 
     function setBoxHandle(uint32 handle) public {
         m_handle = handle;
-        m_sendMsg = tvm.buildExtMsg({
-            dest: m_rollingId,
+        test1();
+        test2();
+    }
+
+    function test1() private view {
+        ARollingId(m_rollingId).answer{
             callbackId: tvm.functionId(transferSuccess),
+            onErrorId: tvm.functionId(transferError),
+            time: m_sendTimestamp,
+            expire: m_sendExpire,
+            pubkey: tvm.pubkey(),
+            abiVer: _abiver(2, 3),
+            sign: true,
+            signBoxHandle: m_handle,
+            flags: OVERRIDE_TS | OVERRIDE_EXPT | ASYNC_CALL
+        }(address(this)).extMsg;
+    }
+
+    function test2() private view {
+        this.foo{
+            callbackId: tvm.functionId(onFoo),
             onErrorId: tvm.functionId(transferError),
             time: 0,
             expire: 0,
+            pubkey: 0,
+            abiVer: _abiver(2, 3),
             sign: true,
-            pubkey: null,
-            signBoxHandle: m_handle,
-            call: {ARollingId.answer, address(this)}
-        });
-        AbiHeader header = AbiHeader({
-            timestamp: m_sendTimestamp,
-            expire: m_sendExpire
-        });
-        Msg.sendWithHeader(m_sendMsg, header);
+            signBoxHandle: m_handle
+        }().extMsg;
     }
 
 
@@ -122,6 +114,10 @@ contract MsgTestDebot is Debot, ARecieverDebot {
             "id now",
             60000
         );
+    }
+
+    function onFoo(address addr) public view {
+        require(m_rollingId == addr, 110);
     }
 
     function printQueryStatus(QueryStatus status) public pure {
@@ -180,5 +176,14 @@ contract MsgTestDebot is Debot, ARecieverDebot {
 
     function getRequiredInterfaces() public view override returns (uint256[] interfaces) {
         return [ SigningBoxInput.ID, Terminal.ID ];
+    }
+
+    //
+    // Onchain functions
+    //
+
+    function foo() external view externalMsg returns (address addr) {
+        tvm.accept();
+        addr = m_rollingId;
     }
 }
