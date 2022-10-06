@@ -16,6 +16,24 @@ use std::sync::Arc;
 use std::vec;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn not_authorized() {
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": [TestClient::with_project("main")]
+        }
+    }));
+    let context = client.context().clone();
+    let link = context.net.server_link.as_ref().unwrap();
+    let result = link.query_http(&GraphQLQuery {
+        query: "query { info { version } }".to_string(),
+        timeout: None,
+        variables: None,
+        is_batch: false,
+    }, None).await;
+    println!("{:?}", result)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn auth_header() {
     let client = TestClient::new_with_config(json!({
         "network": {
@@ -1236,59 +1254,6 @@ async fn order_by_fallback() {
         println!("{:?}", err);
     }
     assert!(result.is_err());
-}
-
-#[test]
-fn test_endpoints_replacement() {
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": ["main.ton.dev", "net.ton.dev"],
-        }
-    }));
-
-    let endpoints: ResultOfGetEndpoints = client.request("net.get_endpoints", json!({})).unwrap();
-
-    assert_eq!(
-        endpoints.endpoints,
-        vec![
-            "eri01.main.everos.dev",
-            "gra01.main.everos.dev",
-            "gra02.main.everos.dev",
-            "lim01.main.everos.dev",
-            "rbx01.main.everos.dev",
-            "eri01.net.everos.dev",
-            "rbx01.net.everos.dev",
-            "gra01.net.everos.dev",
-        ]
-    );
-
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": [
-                "https://main2.ton.dev",
-                "https://main.ton.dev/",
-                "http://main3.ton.dev",
-                "main2.ton.dev",
-                "https://lim01.main.everos.dev",
-                "gra02.main.everos.dev",
-            ],
-        }
-    }));
-
-    let endpoints: ResultOfGetEndpoints = client.request("net.get_endpoints", json!({})).unwrap();
-
-    assert_eq!(
-        endpoints.endpoints,
-        vec![
-            "https://main2.ton.dev",
-            "http://main3.ton.dev",
-            "https://lim01.main.everos.dev",
-            "gra02.main.everos.dev",
-            "eri01.main.everos.dev",
-            "gra01.main.everos.dev",
-            "rbx01.main.everos.dev",
-        ]
-    );
 }
 
 #[test]

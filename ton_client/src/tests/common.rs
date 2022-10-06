@@ -64,7 +64,7 @@ fn test_parallel_requests() {
 fn test_deferred_init() {
     let client = TestClient::new_with_config(json!({
         "network": {
-            "server_address": "123"
+            "endpoints": ["123"]
         }
     }));
 

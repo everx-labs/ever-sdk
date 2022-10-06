@@ -31,7 +31,7 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{watch, Mutex, RwLock};
 
-pub const MAX_TIMEOUT: u32 = std::i32::MAX as u32;
+pub const MAX_TIMEOUT: u32 = i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
 pub const MAX_RESUME_TIMEOUT: u32 = 3000;
 
@@ -298,6 +298,7 @@ impl NetworkState {
                 }));
             }
             let mut selected = Err(crate::client::Error::net_module_not_init());
+            let mut unauthorised = true;
             while futures.len() != 0 {
                 let (result, _, remain_futures) = futures::future::select_all(futures).await;
                 if let Ok(endpoint) = &result {
@@ -306,12 +307,20 @@ impl NetworkState {
                     }
                 }
                 futures = remain_futures;
+                if let Err(err) = &result {
+                    if !err.is_unauthorized() {
+                        unauthorised = false;
+                    }
+                }
                 if is_better(&result, &selected) {
                     selected = result;
                 }
             }
             if selected.is_ok() {
                 return selected;
+            }
+            if unauthorised {
+                return Err(Error::unauthorized());
             }
             retry_count += 1;
             if retry_count > self.config.network_retries_count {
@@ -574,13 +583,19 @@ impl ServerLink {
 
             let result = match result {
                 Err(err) => Err(err),
-                Ok(response) => match response.body_as_json() {
-                    Err(err) => Err(err),
-                    Ok(value) => match Self::try_extract_error(&value) {
-                        Some(err) => Err(err),
-                        None => Ok(value),
-                    },
-                },
+                Ok(response) => {
+                    if response.status == 401 {
+                        Err(Error::unauthorized())
+                    } else {
+                        match response.body_as_json() {
+                            Err(err) => Err(err),
+                            Ok(value) => match Self::try_extract_error(&value) {
+                                Some(err) => Err(err),
+                                None => Ok(value),
+                            },
+                        }
+                    }
+                }
             };
 
             if let Err(err) = &result {

@@ -79,11 +79,12 @@ impl Endpoint {
     fn expand_address(base_url: &str) -> String {
         let mut base_url = base_url.trim_end_matches("/").to_lowercase();
         if !base_url.starts_with(HTTP_PROTOCOL) && !base_url.starts_with(HTTPS_PROTOCOL) {
-            let protocol = if base_url == "localhost" || base_url == "127.0.0.1" || base_url == "0.0.0.0" {
-                HTTP_PROTOCOL
-            } else {
-                HTTPS_PROTOCOL
-            };
+            let protocol =
+                if base_url == "localhost" || base_url == "127.0.0.1" || base_url == "0.0.0.0" {
+                    HTTP_PROTOCOL
+                } else {
+                    HTTPS_PROTOCOL
+                };
             base_url = format!("{}{}", protocol, base_url);
         };
         if base_url.ends_with("/graphql") {
@@ -114,6 +115,9 @@ impl Endpoint {
                 timeout,
             )
             .await?;
+        if response.status == 401 {
+            return Err(Error::unauthorized());
+        }
         let query_url = response.url.trim_end_matches(query).to_owned();
         let info = response.body_as_json()?["data"]["info"].to_owned();
         Ok((info, query_url, response.remote_address))
