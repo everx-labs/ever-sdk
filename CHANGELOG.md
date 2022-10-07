@@ -6,21 +6,17 @@ All notable changes to this project will be documented in this file.
 
 ### New
 
-- Supported cookies in net module for std mode (not wasm)
-- Removed network aliases (main, dev, main.ton.dev, net.ton.dev)
-- Removed separate rempEnabled query.
-- Changed 401 error message to response text (was "Unauthorized").
-
 **Debot module**:
     - ABI specification v2.3 is supported in DEngine.
     - Supported flags `OVERRIDE_TS`, `OVERRIDE_EXPT`, `ASYNC_CALL` for external messages in DEngine.
     
 ### Improvement
+
 - Support cookies in net module for std mode (not wasm)
 - Remove network aliases (main, dev, main.ton.dev, net.ton.dev)
 - Removed the check of REMP support on backend during client initialization. 
   It will make client initialization faster -> CLI tools that use SDK will work faster, web pages will load initial data faster.
-
+- Changed 401 error message to response message from API
 
 ## [1.37.2] – 2022-08-10
 
