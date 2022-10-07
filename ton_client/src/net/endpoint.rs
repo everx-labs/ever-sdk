@@ -109,7 +109,7 @@ impl Endpoint {
             )
             .await?;
         if response.status == 401 {
-            return Err(Error::unauthorized());
+            return Err(Error::unauthorized(&response));
         }
         let query_url = response.url.trim_end_matches(query).to_owned();
         let info = response.body_as_json()?["data"]["info"].to_owned();
