@@ -19,17 +19,23 @@ use std::vec;
 async fn not_authorized() {
     let client = TestClient::new_with_config(json!({
         "network": {
-            "endpoints": [TestClient::with_project("main")]
+            "endpoints": [TestClient::with_project("mainnet.evercloud.dev")]
         }
     }));
     let context = client.context().clone();
     let link = context.net.server_link.as_ref().unwrap();
-    let result = link.query_http(&GraphQLQuery {
-        query: "query { info { version } }".to_string(),
-        timeout: None,
-        variables: None,
-        is_batch: false,
-    }, None).await;
+    let result = link
+        .query_http(
+            &GraphQLQuery {
+                query: "query { info { version } }".to_string(),
+                timeout: None,
+                variables: None,
+                is_batch: false,
+            },
+            None,
+        )
+        .await
+        .unwrap();
     println!("{:?}", result)
 }
 
