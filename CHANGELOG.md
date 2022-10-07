@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.38.0] – 2022-10-06
+
+### New
+
+- support cookies in net module for std mode (not wasm)
+
+
 ## [1.37.2] – 2022-08-10
 
 ### New
