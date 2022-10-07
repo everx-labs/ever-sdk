@@ -655,20 +655,16 @@ impl ServerLink {
         params: &[ParamsOfQueryOperation],
         endpoint: Option<Endpoint>,
     ) -> ClientResult<Vec<Value>> {
-        let (server_version, latency_detection_required) = if let Some(ref endpoint) = endpoint {
-            (endpoint.version(), false)
+        let latency_detection_required = if endpoint.is_some() {
+            false
         } else if self.state.has_multiple_endpoints() {
             let endpoint = self.state.get_query_endpoint().await?;
-            (
-                endpoint.version(),
-                self.client_env.now_ms() > endpoint.next_latency_detection_time(),
-            )
+            self.client_env.now_ms() > endpoint.next_latency_detection_time()
         } else {
-            (0, false)
+            false
         };
         let mut query = GraphQLQuery::build(
             params,
-            server_version,
             latency_detection_required,
             self.config.wait_for_timeout,
         );
@@ -685,7 +681,7 @@ impl ServerLink {
             )?;
             if current_endpoint.latency() > self.config.max_latency as u64 {
                 self.invalidate_querying_endpoint().await;
-                query = GraphQLQuery::build(params, 0, false, self.config.wait_for_timeout);
+                query = GraphQLQuery::build(params, false, self.config.wait_for_timeout);
                 result = self.query(&query, endpoint.as_ref()).await?;
             }
         }

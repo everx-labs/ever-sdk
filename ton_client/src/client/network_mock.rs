@@ -181,6 +181,17 @@ impl NetworkMock {
             .map(|x| x.len())
             .unwrap_or(0)
     }
+
+    #[cfg(not(feature = "wasm-base"))]
+    #[cfg(test)]
+    pub async fn assert_is_empty(client: &ClientContext) {
+        let mock = client.env.network_mock.read().await;
+        if let Some(fetches) = &mock.fetches {
+            if !fetches.is_empty() {
+                panic!("Mock fetches is not empty: {:?}", fetches);
+            }
+        }
+    }
 }
 
 pub(crate) struct NetworkMockBuilder {
@@ -294,25 +305,14 @@ impl NetworkMockBuilder {
         network_mock.messages = Some(self.messages.clone());
     }
 
-    pub fn schema(&mut self, time: u64) -> &mut Self {
-        self.ok(&json!({
-            "data": {
-                "info": {
-                    "version": "0.39.0",
-                    "time": time,
-                }
-            }
-        })
-        .to_string())
-    }
-
-    pub fn metrics(&mut self, time: u64, latency: u64) -> &mut Self {
+    pub fn info(&mut self, time: u64, latency: u64, remp_enabled: bool) -> &mut Self {
         self.ok(&json!({
             "data": {
                 "info": {
                     "version": "0.39.0",
                     "time": time,
                     "latency": latency,
+                    "rempEnabled": remp_enabled,
                 }
             }
         })
@@ -320,11 +320,11 @@ impl NetworkMockBuilder {
     }
 
     pub fn election(&mut self, time: u64, latency: u64) -> &mut Self {
-        self.schema(time).metrics(time, latency)
+        self.info(time, latency, false)
     }
 
     pub fn election_loose(&mut self, time: u64) -> &mut Self {
-        self.schema(time)
+        self.info(time, 0, false)
     }
 
     pub fn blocks(&mut self, id: &str) -> &mut Self {

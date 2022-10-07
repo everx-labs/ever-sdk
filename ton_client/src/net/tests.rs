@@ -948,11 +948,11 @@ async fn latency_detection_with_queries() {
                     "version": "0.39.0",
                     "time": 1000,
                     "latency": 1000,
+                    "rempEnabled": false,
                 },
             }
         })
         .to_string()) // query with latency checking, returns bad latency
-        .metrics(1000, 900)
         .url("a")
         .delay(20)
         .election_loose(now) // looser
@@ -967,8 +967,8 @@ async fn latency_detection_with_queries() {
     assert_eq!(get_query_url(&client).await, "a");
     assert_eq!(query_block_id(&client).await, "1");
     assert_eq!(query_block_id(&client).await, "2");
-    assert_eq!(NetworkMock::get_len(&client).await, 0);
     assert_eq!(get_query_url(&client).await, "b");
+    NetworkMock::assert_is_empty(&client).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -1006,7 +1006,7 @@ async fn latency_detection_with_websockets() {
         .ws_ack()
         .url("a")
         .delay(20)
-        .metrics(now, 700) // check latency, bad
+        .info(now, 700, false) // check latency, bad
         .delay(20)
         .election_loose(now) // looser
         .url("b")
