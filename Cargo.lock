@@ -2479,8 +2479,8 @@ dependencies = [
 
 [[package]]
 name = "ton_api"
-version = "0.2.131"
-source = "git+https://github.com/tonlabs/ton-labs-tl.git?tag=0.2.131#f723789f6e48facdb53898c31f5c8ed2dda2df00"
+version = "0.2.132"
+source = "git+https://github.com/tonlabs/ton-labs-tl.git?tag=0.2.132#1b59c748469f85f53df7762be210334f531dd0a2"
 dependencies = [
  "byteorder",
  "extfmt",
@@ -2517,8 +2517,8 @@ dependencies = [
 
 [[package]]
 name = "ton_block_json"
-version = "0.7.31"
-source = "git+https://github.com/tonlabs/ton-labs-block-json.git?tag=0.7.31#21e6c2d234672d3f2f12d72eaadfa571b44558fb"
+version = "0.7.33"
+source = "git+https://github.com/tonlabs/ton-labs-block-json.git?tag=0.7.33#04cd85e67446e0cdb78c163433c9fba01f074aaa"
 dependencies = [
  "base64 0.13.0",
  "failure",
@@ -2639,7 +2639,7 @@ dependencies = [
 [[package]]
 name = "ton_tl_codegen"
 version = "0.0.2"
-source = "git+https://github.com/tonlabs/ton-labs-tl.git?tag=0.2.131#f723789f6e48facdb53898c31f5c8ed2dda2df00"
+source = "git+https://github.com/tonlabs/ton-labs-tl.git?tag=0.2.132#1b59c748469f85f53df7762be210334f531dd0a2"
 dependencies = [
  "crc 1.8.1",
  "failure",
