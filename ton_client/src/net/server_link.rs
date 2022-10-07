@@ -35,44 +35,6 @@ pub const MAX_TIMEOUT: u32 = i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
 pub const MAX_RESUME_TIMEOUT: u32 = 3000;
 
-struct EndpointsReplacement<'a> {
-    url: &'a str,
-    aliases: &'a [&'a str],
-}
-
-const MAIN_ALIASES: [&str; 5] = [
-    "eri01.main.everos.dev",
-    "gra01.main.everos.dev",
-    "gra02.main.everos.dev",
-    "lim01.main.everos.dev",
-    "rbx01.main.everos.dev",
-];
-
-const DEV_ALIASES: [&str; 3] = [
-    "eri01.net.everos.dev",
-    "rbx01.net.everos.dev",
-    "gra01.net.everos.dev",
-];
-
-const ENDPOINTS_REPLACE: [EndpointsReplacement; 4] = [
-    EndpointsReplacement {
-        url: "main.ton.dev",
-        aliases: &MAIN_ALIASES,
-    },
-    EndpointsReplacement {
-        url: "net.ton.dev",
-        aliases: &DEV_ALIASES,
-    },
-    EndpointsReplacement {
-        url: "main",
-        aliases: &MAIN_ALIASES,
-    },
-    EndpointsReplacement {
-        url: "dev",
-        aliases: &DEV_ALIASES,
-    },
-];
-
 pub(crate) struct Subscription {
     pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
     pub data_stream: Pin<Box<dyn Stream<Item = ClientResult<Value>> + Send>>,
@@ -373,28 +335,15 @@ fn strip_endpoint(endpoint: &str) -> &str {
         .trim_end_matches("\\")
 }
 
-fn replace_endpoints(mut endpoints: Vec<String>) -> Vec<String> {
-    for entry in &ENDPOINTS_REPLACE {
-        let len = endpoints.len();
-        endpoints.retain(|endpoint| strip_endpoint(&endpoint) != entry.url);
-        if len != endpoints.len() {
-            endpoints.extend_from_slice(
-                &entry
-                    .aliases
-                    .iter()
-                    .map(|val| (*val).to_owned())
-                    .collect::<Vec<String>>(),
-            );
-        }
-    }
+fn same_endpoint(a: &str, b: &str) -> bool {
+    strip_endpoint(a) == strip_endpoint(b)
+}
 
+fn replace_endpoints(endpoints: Vec<String>) -> Vec<String> {
     let mut result: Vec<String> = vec![];
 
     for endpoint in endpoints {
-        if !result
-            .iter()
-            .any(|val| strip_endpoint(val) == strip_endpoint(&endpoint))
-        {
+        if !result.iter().any(|val| same_endpoint(val, &endpoint)) {
             result.push(endpoint);
         }
     }

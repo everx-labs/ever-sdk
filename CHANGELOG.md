@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.38.0] – 2022-10-06
+
+### New
+
+- remove network aliases (main, dev, main.ton.dev, net.ton.dev)
+
 ## [1.37.2] – 2022-08-10
 
 ### New
