@@ -16,6 +16,36 @@ use std::sync::Arc;
 use std::vec;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn not_authorized_response_text() {
+    // Query failed: Can not send http request: Server responded with code 401
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": ["mainnet.evercloud.dev"]
+        }
+    }));
+    let context = client.context().clone();
+    let link = context.net.server_link.as_ref().unwrap();
+    let result = link
+        .query_http(
+            &GraphQLQuery {
+                query: "query { info { version } }".to_string(),
+                timeout: None,
+                variables: None,
+                is_batch: false,
+            },
+            None,
+        )
+        .await;
+    if let Err(err) = result {
+        println!("{}", err.message);
+        assert_ne!(err.message, "Unauthorized");
+        assert_ne!(err.message, "Query failed: Can not send http request: Server responded with code 401");
+    } else {
+        panic!("Error expected");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn not_authorized() {
     let client = TestClient::new_with_config(json!({
         "network": {

@@ -260,7 +260,7 @@ impl NetworkState {
                 }));
             }
             let mut selected = Err(crate::client::Error::net_module_not_init());
-            let mut unauthorised = true;
+            let mut unauthorised = None;
             while futures.len() != 0 {
                 let (result, _, remain_futures) = futures::future::select_all(futures).await;
                 if let Ok(endpoint) = &result {
@@ -271,7 +271,7 @@ impl NetworkState {
                 futures = remain_futures;
                 if let Err(err) = &result {
                     if !err.is_unauthorized() {
-                        unauthorised = false;
+                        unauthorised = Some(err.clone());
                     }
                 }
                 if is_better(&result, &selected) {
@@ -281,8 +281,8 @@ impl NetworkState {
             if selected.is_ok() {
                 return selected;
             }
-            if unauthorised {
-                return Err(Error::unauthorized());
+            if let Some(unauthorised) = unauthorised {
+                return Err(unauthorised);
             }
             retry_count += 1;
             if retry_count > self.config.network_retries_count {
@@ -476,22 +476,6 @@ impl ServerLink {
         })
     }
 
-    pub fn try_extract_error(value: &Value) -> Option<ClientError> {
-        let errors = if let Some(payload) = value.get("payload") {
-            payload.get("errors")
-        } else {
-            value.get("errors")
-        };
-
-        if let Some(errors) = errors {
-            if let Some(errors) = errors.as_array() {
-                return Some(Error::graphql_server_error(None, errors));
-            }
-        }
-
-        return None;
-    }
-
     pub(crate) async fn query_http(
         &self,
         query: &GraphQLQuery,
@@ -534,11 +518,11 @@ impl ServerLink {
                 Err(err) => Err(err),
                 Ok(response) => {
                     if response.status == 401 {
-                        Err(Error::unauthorized())
+                        Err(Error::unauthorized(&response))
                     } else {
                         match response.body_as_json() {
                             Err(err) => Err(err),
-                            Ok(value) => match Self::try_extract_error(&value) {
+                            Ok(value) => match Error::try_extract_graphql_error(&value) {
                                 Some(err) => Err(err),
                                 None => Ok(value),
                             },
