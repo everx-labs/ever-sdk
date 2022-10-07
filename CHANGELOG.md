@@ -6,7 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### New
 
-**Debot module**:
+- **Debot module**:  
     - ABI specification v2.3 is supported in DEngine.
     - Supported flags `OVERRIDE_TS`, `OVERRIDE_EXPT`, `ASYNC_CALL` for external messages in DEngine.
     
