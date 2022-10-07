@@ -26,7 +26,7 @@ query{
 
 GraphQL schema is self-documented. You can find all fields descriptions in the playground. Click this button:
 
-![](<../.gitbook/assets/image (1).png>)
+![](<../.gitbook/assets/image (1) (1).png>)
 
 ## Access API from Client Libraries
 

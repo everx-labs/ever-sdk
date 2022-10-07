@@ -194,7 +194,7 @@ pub fn command(args: &[String]) -> Result<(), CliError> {
 
     let config = serde_json::json!({
         "network": {
-            "server_address": network
+            "endpoints": [network]
         }
     });
     let context = unsafe {

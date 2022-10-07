@@ -8,16 +8,16 @@ use ton_client::proofs::{ParamsOfProofBlockData, proof_block_data};
 use ton_types::{Result, UInt256};
 
 async fn query_network_keyblocks(
-    server_address: &'static str,
+    endpoint: &'static str,
     zs_root_hash: UInt256,
     trusted_blocks: Option<Vec<(u32, [u8; 32])>>,
 ) -> Result<Vec<(u32, [u8; 32])>> {
-    println!("*** [{}] ***", server_address);
+    println!("*** [{}] ***", endpoint);
     let context = Arc::new(
         ClientContext::new(
             serde_json::from_value(json!({
                 "network": {
-                    "server_address": server_address,
+                    "endpoints": [endpoint],
                 }
             }))?
         )?
@@ -60,7 +60,7 @@ async fn query_network_keyblocks(
         ).await?.result;
 
         if key_blocks.is_empty() {
-            println!("*** [{} done] ***", server_address);
+            println!("*** [{} done] ***", endpoint);
             return Ok(result);
         }
 
@@ -111,7 +111,7 @@ async fn main() -> Result<()> {
         Err(_) => {
             println!("Creating new trusted blocks list in {}", &args[1]);
             HashMap::new()
-        } 
+        }
     };
 
 

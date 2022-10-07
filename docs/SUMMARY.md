@@ -24,11 +24,12 @@
 * [Rust Reference](https://github.com/tonlabs/ever-sdk/tree/master/docs/reference/rust-api)
 * [GraphQL API](reference/ever-os-api/README.md)
   * [Networks](reference/ever-os-api/networks.md)
-  * [Connect to GraphQL API](reference/ever-os-api/connect-to-graphql-api.md)
   * [Explore API (Playground)](reference/ever-os-api/web\_playground.md)
+  * [Connect to GraphQL API](reference/ever-os-api/connect-to-graphql-api.md)
   * [Schema](reference/ever-os-api/schema.md)
   * [Blockchain API](reference/ever-os-api/blockchain.md)
   * [Info API](reference/ever-os-api/info.md)
+  * [FT (Fungible Token) API](reference/ever-os-api/ft-fungible-token-api.md)
   * [Collections: Query Language](reference/ever-os-api/query\_language.md)
   * [Field Descriptions](reference/ever-os-api/field\_descriptions.md)
   * [Samples](reference/ever-os-api/samples.md)
@@ -45,6 +46,7 @@
   * [Messages](samples/graphql-samples/messages.md)
   * [Blockchain Statistics](graphql-samples/statistics.md)
   * [Counterparties](graphql-samples/counterparties.md)
+  * [FT (Fungible Token) API](samples/graphql-samples/ft-fungible-token-api.md)
 
 ## guides
 

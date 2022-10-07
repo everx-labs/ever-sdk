@@ -2,7 +2,9 @@
 description: Learn about basic blockchain API
 ---
 
-# Blockchain
+# Blockchain API
+
+``<img src="../../.gitbook/assets/image (8).png" alt="" data-size="original">``
 
 `blockchain` root type is API that includes such basic real-time data as:
 
@@ -17,6 +19,6 @@ description: Learn about basic blockchain API
 
 This API is truly a Graph-oriented API .&#x20;
 
-We followed GraphQL best practices and implemented Relay Cursor Connections Specification for pagination. You can read more here [https://relay.dev/graphql/connections.htm](https://relay.dev/graphql/connections.htm)&#x20;
+We followed GraphQL best practices and implemented Relay Cursor Connections Specification for pagination for all lists. You can read more here [https://relay.dev/graphql/connections.htm](https://relay.dev/graphql/connections.htm)&#x20;
 
 &#x20;&#x20;

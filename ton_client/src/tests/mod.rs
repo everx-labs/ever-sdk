@@ -45,14 +45,49 @@ use tokio::sync::{
 
 mod common;
 
-const DEFAULT_TON_USE_SE: &str = "true";
-const DEFAULT_NETWORK_ADDRESS: &str = "http://localhost";
-
 const ROOT_CONTRACTS_PATH: &str = "src/tests/contracts/";
 const LOG_CGF_PATH: &str = "src/tests/log_cfg.yaml";
 
-const GIVER_ADDRESS_VAR: &str = "TON_GIVER_ADDRESS";
-const GIVER_SECRET_VAR: &str = "TON_GIVER_SECRET";
+mod env {
+    fn str(name: &str, alt: Option<&str>) -> Option<String> {
+        if let Ok(s) = std::env::var(name) {
+            Some(s)
+        } else if let Some(alt) = alt {
+            std::env::var(alt).ok()
+        } else {
+            None
+        }
+    }
+
+    pub(crate) fn giver_address() -> Option<String> {
+        str("EVERCLOUD_GIVER_ADDRESS", Some("TON_GIVER_ADDRESS"))
+    }
+
+    pub(crate) fn giver_secret() -> Option<String> {
+        str("EVERCLOUD_GIVER_SECRET", Some("TON_GIVER_SECRET"))
+    }
+
+    pub(crate) fn auth_project() -> Option<String> {
+        str("EVERCLOUD_AUTH_PROJECT", None)
+    }
+
+    pub(crate) fn endpoints() -> String {
+        str("EVERCLOUD_ENDPOINTS", Some("TON_NETWORK_ADDRESS"))
+            .unwrap_or_else(|| "http://localhost".into())
+    }
+
+    pub(crate) fn queries_protocol() -> String {
+        str("EVERCLOUD_QUERIES_PROTOCOL", Some("TON_QUERIES_PROTOCOL")).unwrap_or_else(|| "".into())
+    }
+
+    pub(crate) fn node_se() -> String {
+        str("EVERCLOUD_NODE_SE", Some("TON_USE_SE")).unwrap_or_else(|| "true".into())
+    }
+
+    pub(crate) fn abi_version() -> String {
+        str("EVERCLOUD_ABI_VERSION", Some("ABI_VERSION")).unwrap_or_else(|| "2".into())
+    }
+}
 
 struct SimpleLogger;
 
@@ -260,7 +295,7 @@ impl TestClient {
     }
 
     pub async fn giver_address(&self) -> String {
-        if let Ok(address) = std::env::var(GIVER_ADDRESS_VAR) {
+        if let Some(address) = env::giver_address() {
             address
         } else {
             self.calc_giver_address(Self::giver_keys()).await
@@ -268,7 +303,7 @@ impl TestClient {
     }
 
     pub fn giver_keys() -> KeyPair {
-        if let Ok(secret) = std::env::var(GIVER_SECRET_VAR) {
+        if let Some(secret) = env::giver_secret() {
             let secret_key =
                 ed25519_dalek::SecretKey::from_bytes(&hex::decode(&secret).unwrap()).unwrap();
             let public_key = ed25519_dalek::PublicKey::from(&secret_key);
@@ -286,9 +321,25 @@ impl TestClient {
         }
     }
 
+    pub fn auth_project() -> Option<String> {
+        env::auth_project()
+    }
+
+    pub fn with_project(endpoint: &str) -> String {
+        match Self::auth_project() {
+            Some(project) => {
+                if endpoint.ends_with('/') {
+                    format!("{}{}", endpoint, project)
+                } else {
+                    format!("{}/{}", endpoint, project)
+                }
+            }
+            None => endpoint.to_string(),
+        }
+    }
+
     pub fn endpoints() -> Vec<String> {
-        std::env::var("TON_NETWORK_ADDRESS")
-            .unwrap_or(DEFAULT_NETWORK_ADDRESS.into())
+        env::endpoints()
             .split(",")
             .map(|x| x.trim())
             .filter(|x| !x.is_empty())
@@ -297,10 +348,7 @@ impl TestClient {
     }
 
     pub fn queries_protocol() -> Option<String> {
-        let protocol = std::env::var("TON_QUERIES_PROTOCOL")
-            .unwrap_or("".into())
-            .trim()
-            .to_string();
+        let protocol = env::queries_protocol().trim().to_string();
         if protocol.is_empty() {
             None
         } else {
@@ -309,11 +357,11 @@ impl TestClient {
     }
 
     pub fn node_se() -> bool {
-        std::env::var("TON_USE_SE").unwrap_or(DEFAULT_TON_USE_SE.to_owned()) == "true".to_owned()
+        env::node_se() == "true"
     }
 
     pub fn abi_version() -> u8 {
-        u8::from_str_radix(&std::env::var("ABI_VERSION").unwrap_or("2".to_owned()), 10).unwrap()
+        u8::from_str_radix(&env::abi_version(), 10).unwrap()
     }
 
     pub fn contracts_path(abi_version: Option<u8>) -> String {
