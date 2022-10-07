@@ -18,7 +18,6 @@ use crate::error::{ClientError, ClientResult};
 use crate::net::gql::GraphQLMessageFromClient;
 use crate::net::ParamsOfWaitForCollection;
 use serde::{de::Error, Deserialize, Deserializer};
-use crate::net::endpoint::V_SUPPORTS_LATENCY;
 
 const COUNTERPARTIES_COLLECTION: &str = "counterparties";
 const FETCH_ADDITIONAL_TIMEOUT: u32 = 5000;
@@ -299,13 +298,9 @@ impl QueryOperationBuilder {
         self.end_op(&op.query_result());
     }
 
-    fn add_info(&mut self, server_version: u32) {
+    fn add_info(&mut self) {
         self.start_op("info");
-        self.end_op(if server_version >= V_SUPPORTS_LATENCY {
-            "version time latency"
-        } else {
-            "version time"
-        });
+        self.end_op("version time latency rempEnabled");
     }
 
     fn add_agg_op_params(
@@ -406,7 +401,6 @@ pub(crate) struct GraphQLQuery {
 impl GraphQLQuery {
     pub fn build(
         params: &[ParamsOfQueryOperation],
-        server_version: u32,
         include_info: bool,
         default_wait_for_timeout: u32,
     ) -> GraphQLQuery {
@@ -414,7 +408,7 @@ impl GraphQLQuery {
         let mut builder = QueryOperationBuilder::new(param_count > 1, default_wait_for_timeout);
         builder.add_operations(params);
         if include_info {
-            builder.add_info(server_version);
+            builder.add_info();
         }
         builder.build()
     }

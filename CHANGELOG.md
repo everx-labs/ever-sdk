@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - support cookies in net module for std mode (not wasm)
 - remove network aliases (main, dev, main.ton.dev, net.ton.dev)
+- Removed separate rempEnabled query.
 
 ## [1.37.2] – 2022-08-10
 
