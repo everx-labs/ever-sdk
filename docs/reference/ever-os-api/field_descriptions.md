@@ -8,7 +8,7 @@ description: Below you can find some key types descriptions.
 All types descriptions can be found in GraphQL schema as it is self-descriptive. Just go to playground and click "DOCS". Docs in Playground are the latest.
 {% endhint %}
 
-![](../../.gitbook/assets/image.png)
+![](<../../.gitbook/assets/image (3).png>)
 
 These types are met in most of GraphQL queries result data.&#x20;
 

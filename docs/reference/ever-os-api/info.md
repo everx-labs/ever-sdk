@@ -6,6 +6,8 @@ description: Endpoint info
 
 Info query is used to get API version, as well as health parameters of the API, such as latency of blocks, messages and transactions
 
+![](<../../.gitbook/assets/image (9).png>)
+
 ```graphql
 query{
   info{

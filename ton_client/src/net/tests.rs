@@ -16,6 +16,30 @@ use std::sync::Arc;
 use std::vec;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn not_authorized() {
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": [TestClient::with_project("mainnet.evercloud.dev")]
+        }
+    }));
+    let context = client.context().clone();
+    let link = context.net.server_link.as_ref().unwrap();
+    let result = link
+        .query_http(
+            &GraphQLQuery {
+                query: "query { info { version } }".to_string(),
+                timeout: None,
+                variables: None,
+                is_batch: false,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    println!("{:?}", result)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn auth_header() {
     let client = TestClient::new_with_config(json!({
         "network": {
@@ -930,11 +954,11 @@ async fn latency_detection_with_queries() {
                     "version": "0.39.0",
                     "time": 1000,
                     "latency": 1000,
+                    "rempEnabled": false,
                 },
             }
         })
         .to_string()) // query with latency checking, returns bad latency
-        .metrics(1000, 900)
         .url("a")
         .delay(20)
         .election_loose(now) // looser
@@ -949,8 +973,8 @@ async fn latency_detection_with_queries() {
     assert_eq!(get_query_url(&client).await, "a");
     assert_eq!(query_block_id(&client).await, "1");
     assert_eq!(query_block_id(&client).await, "2");
-    assert_eq!(NetworkMock::get_len(&client).await, 0);
     assert_eq!(get_query_url(&client).await, "b");
+    NetworkMock::assert_is_empty(&client).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -988,7 +1012,7 @@ async fn latency_detection_with_websockets() {
         .ws_ack()
         .url("a")
         .delay(20)
-        .metrics(now, 700) // check latency, bad
+        .info(now, 700, false) // check latency, bad
         .delay(20)
         .election_loose(now) // looser
         .url("b")
@@ -1236,59 +1260,6 @@ async fn order_by_fallback() {
         println!("{:?}", err);
     }
     assert!(result.is_err());
-}
-
-#[test]
-fn test_endpoints_replacement() {
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": ["main.ton.dev", "net.ton.dev"],
-        }
-    }));
-
-    let endpoints: ResultOfGetEndpoints = client.request("net.get_endpoints", json!({})).unwrap();
-
-    assert_eq!(
-        endpoints.endpoints,
-        vec![
-            "eri01.main.everos.dev",
-            "gra01.main.everos.dev",
-            "gra02.main.everos.dev",
-            "lim01.main.everos.dev",
-            "rbx01.main.everos.dev",
-            "eri01.net.everos.dev",
-            "rbx01.net.everos.dev",
-            "gra01.net.everos.dev",
-        ]
-    );
-
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": [
-                "https://main2.ton.dev",
-                "https://main.ton.dev/",
-                "http://main3.ton.dev",
-                "main2.ton.dev",
-                "https://lim01.main.everos.dev",
-                "gra02.main.everos.dev",
-            ],
-        }
-    }));
-
-    let endpoints: ResultOfGetEndpoints = client.request("net.get_endpoints", json!({})).unwrap();
-
-    assert_eq!(
-        endpoints.endpoints,
-        vec![
-            "https://main2.ton.dev",
-            "http://main3.ton.dev",
-            "https://lim01.main.everos.dev",
-            "gra02.main.everos.dev",
-            "eri01.main.everos.dev",
-            "gra01.main.everos.dev",
-            "rbx01.main.everos.dev",
-        ]
-    );
 }
 
 #[test]

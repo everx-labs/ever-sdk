@@ -1,5 +1,7 @@
 # Schema
 
+![](<../../.gitbook/assets/image (4).png>)
+
 A schema defines a type system of GraphQL API. It describes the complete set of possible data (objects, fields, relationships, everything) that a client can access.
 
 * [Root types](schema.md#root-types)
@@ -33,16 +35,18 @@ See non-root type descriptions in [Field descriptions](field\_descriptions.md) s
 
 **Root resolvers**
 
-| name                                                   | description                                                                                                                                                                                                                                                                                                                              |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| blockchain                                             | API that includes a set of functions for pagination of blocks, key blocks, transactions and account’s transactions and messages.                                                                                                                                                                                                         |
-| [blocks](field\_descriptions.md#block-type)            | Blocks analytics                                                                                                                                                                                                                                                                                                                         |
-| [accounts](field\_descriptions.md#account-type)        | Accounts analytics                                                                                                                                                                                                                                                                                                                       |
-| [messages](field\_descriptions.md#message-type)        | Messages analytics                                                                                                                                                                                                                                                                                                                       |
-| [transaction](field\_descriptions.md#transaction-type) | Transactions analytics                                                                                                                                                                                                                                                                                                                   |
-| blocks\_signatures                                     | Block signatures analytics                                                                                                                                                                                                                                                                                                               |
-| statistics                                             | <p>General Everscale Network statistics related to accounts, transactions, messages and blocks. And also some essential statistics about validators and depools such as total number of validators, total staked amount etc.<br>Available only in Evercloud API.</p>                                                                     |
-| counterparties                                         | <p>Returns a list of addresses the specified account interacted with, sorted by the latest interaction time (the latest message time between 2 accounts) DESC. Feature may be useful for wallet applications or for chat-based DApps to show the list of counterparties in descending order.<br><br>Available only in Evercloud API.</p> |
+| name                                                      | description                                                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| info                                                      | Info query is used to get GraphQL API version, as well as health parameters of the API, such as latency of blocks, messages and transactions                                                                                                                                                                                             |
+| [blockchain](blockchain.md)                               | API that includes a set of functions for pagination of blocks, key blocks, transactions and account’s transactions and messages.                                                                                                                                                                                                         |
+| [ft](ft-fungible-token-api.md)                            | Fungible Token API provides data about fungible tokens, transfers, holders.                                                                                                                                                                                                                                                              |
+| [blocks](field\_descriptions.md#block-type)               | Blocks analytics                                                                                                                                                                                                                                                                                                                         |
+| [accounts](field\_descriptions.md#account-type)           | Accounts analytics                                                                                                                                                                                                                                                                                                                       |
+| [messages](field\_descriptions.md#message-type)           | Messages analytics                                                                                                                                                                                                                                                                                                                       |
+| [transaction](field\_descriptions.md#transaction-type)    | Transactions analytics                                                                                                                                                                                                                                                                                                                   |
+| blocks\_signatures                                        | Block signatures analytics                                                                                                                                                                                                                                                                                                               |
+| [statistics](../../graphql-samples/statistics.md)         | <p>General Everscale Network statistics related to accounts, transactions, messages and blocks. And also some essential statistics about validators and depools such as total number of validators, total staked amount etc.<br>Available only in Evercloud API.</p>                                                                     |
+| [counterparties](../../graphql-samples/counterparties.md) | <p>Returns a list of addresses the specified account interacted with, sorted by the latest interaction time (the latest message time between 2 accounts) DESC. Feature may be useful for wallet applications or for chat-based DApps to show the list of counterparties in descending order.<br><br>Available only in Evercloud API.</p> |
 
 **Aggregation queries:**
 
@@ -54,10 +58,6 @@ See non-root type descriptions in [Field descriptions](field\_descriptions.md) s
 | aggregateAccounts        | Get aggregation info about accounts: COUNT, SUM, MAX, MIN, AVERAGE functions over accounts data.                  |
 | aggregateBlockSignatures | Get aggregation info about block signaturess: COUNT, SUM, MAX, MIN, AVERAGE functions over block signatures data. |
 
-**Other queries**
-
-* info - get information about the active GraphQL API version.
-
 ## Subscription types
 
 * blocks
@@ -66,6 +66,7 @@ See non-root type descriptions in [Field descriptions](field\_descriptions.md) s
 * transaction
 * blocks\_signatures
 * counterparties
+* rempReceipts - subscription for REMP processing status receipts of a message (by messageId)
 
 ## Mutation types
 

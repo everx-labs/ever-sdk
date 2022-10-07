@@ -2,6 +2,7 @@ use crate::client::core_version;
 use serde_json::Value;
 use std::fmt::Display;
 use chrono::TimeZone;
+use crate::net;
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Default, ApiType)]
 pub struct ClientError {
@@ -150,6 +151,10 @@ impl ClientError {
     pub fn add_address(mut self, address: &ton_block::MsgAddressInt) -> ClientError {
         self.data["account_address"] = address.to_string().into();
         self
+    }
+
+    pub fn is_unauthorized(&self) -> bool {
+        self.code == net::ErrorCode::Unauthorized as u32
     }
 }
 

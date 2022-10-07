@@ -32,7 +32,7 @@ const EMPTY_CELL: &'static str = "te6ccgEBAQEAAgAAAA==";
 fn create_client(url: &str) -> Result<TonClient, String> {
     let cli_conf = ClientConfig {
         network: NetworkConfig {
-            server_address: Some(url.to_owned()),
+            endpoints: Some(vec![url.to_string()]),
             ..Default::default()
         },
         ..Default::default()
@@ -159,7 +159,7 @@ impl DEngine {
             state.clone(),
             addr.clone(),
             abi.clone(),
-            "getDebotInfo", 
+            "getDebotInfo",
             None
         ).await;
         let mut info: DInfo = match result {
@@ -170,7 +170,7 @@ impl DEngine {
         info.interfaces = interfaces;
         info.dabi_version = dabi_version;
 
-        // TODO DEPRECATED 
+        // TODO DEPRECATED
         // For compatibility with previous debots that returns abi in
         // getDebotOptions. Remove later.
         if info.dabi.is_none() {
