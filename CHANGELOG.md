@@ -11,6 +11,17 @@ All notable changes to this project will be documented in this file.
 - Removed separate rempEnabled query.
 - Changed 401 error message to response text (was "Unauthorized").
 
+**Debot module**:
+    - ABI specification v2.3 is supported in DEngine.
+    - Supported flags `OVERRIDE_TS`, `OVERRIDE_EXPT`, `ASYNC_CALL` for external messages in DEngine.
+    
+### Improvement
+- Support cookies in net module for std mode (not wasm)
+- Remove network aliases (main, dev, main.ton.dev, net.ton.dev)
+- Removed the check of REMP support on backend during client initialization. 
+  It will make client initialization faster -> CLI tools that use SDK will work faster, web pages will load initial data faster.
+
+
 ## [1.37.2] – 2022-08-10
 
 ### New
@@ -33,17 +44,17 @@ All notable changes to this project will be documented in this file.
 ### Improvement
 
 - `create_crypto_box` optimisation.
-  When a user creates a crypto box, library encrypts provided secret information using provided 
+  When a user creates a crypto box, library encrypts provided secret information using provided
   password and salt.
-  When library encrypts the secret, it calculates encryption key from password and salt 
+  When library encrypts the secret, it calculates encryption key from password and salt
   using `scrypt` function which takes a lot of CPU time (about 1 second).
-  So when a user creates many crypto boxes using the same password and salt, 
+  So when a user creates many crypto boxes using the same password and salt,
   it takes a lot of time (about 12 seconds for 10 crypto boxes).
-  With the optimisations introduced in this version the library stores the 
+  With the optimisations introduced in this version the library stores the
   pair (password+salt => encryption key) in internal cache for approximately 2 seconds.
-  So when a user creates many crypto boxes at a time using the same password and salt, 
-  library uses cached information to skip heavy calculations. As a result now it takes only 
-  a second to create 10 crypto boxes.  
+  So when a user creates many crypto boxes at a time using the same password and salt,
+  library uses cached information to skip heavy calculations. As a result now it takes only
+  a second to create 10 crypto boxes.
 
 ### Fixed
 
@@ -53,10 +64,10 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- Pinned BOC cache now has reference counter for each pin in BOC. BOC can be pinned several times 
+- Pinned BOC cache now has reference counter for each pin in BOC. BOC can be pinned several times
 with the same pin. BOC is removed from cache after all references for all pins are unpinned with
 `cache_unpin` function calls.
-- Fixed error resolving in case when account state was modified after message expiration time. Now 
+- Fixed error resolving in case when account state was modified after message expiration time. Now
 appropriate error text is added to error message instead of executor internal error
 
 ## [1.37.0] – 2022-07-28
@@ -64,7 +75,7 @@ appropriate error text is added to error message instead of executor internal er
 ### New
 
 - client sends `config.network.access_key` as `Authorization: Basic ...` or `Authorization: Bearer ...` header depending on the value passed:
-  if value is in hex, then it is processed as project secret (basic), if in base64 - then as JWT token (bearer). 
+  if value is in hex, then it is processed as project secret (basic), if in base64 - then as JWT token (bearer).
 - client accepts endpoints with `/graphql` suffixes specified in config.
 
 ### Fixed
@@ -75,9 +86,9 @@ appropriate error text is added to error message instead of executor internal er
 
 ### Improvement
 
-- Time synchronization check between device and server improved:  calculation of time-diff 
-  with server is  moved from batched query to send_message function and therefore now query 
-  execution time does not affect this time diff. 
+- Time synchronization check between device and server improved:  calculation of time-diff
+  with server is  moved from batched query to send_message function and therefore now query
+  execution time does not affect this time diff.
 
 
 ## [1.36.0] – 2022-07-01
