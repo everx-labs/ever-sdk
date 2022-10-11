@@ -305,26 +305,18 @@ impl NetworkMockBuilder {
         network_mock.messages = Some(self.messages.clone());
     }
 
-    pub fn info(&mut self, time: u64, latency: u64, remp_enabled: bool) -> &mut Self {
+    pub fn info(&mut self, time: u64, latency: u64) -> &mut Self {
         self.ok(&json!({
             "data": {
                 "info": {
-                    "version": "0.39.0",
+                    "version": "0.54.0",
                     "time": time,
                     "latency": latency,
-                    "rempEnabled": remp_enabled,
+                    "rempEnabled": false,
                 }
             }
         })
         .to_string())
-    }
-
-    pub fn election(&mut self, time: u64, latency: u64) -> &mut Self {
-        self.info(time, latency, false)
-    }
-
-    pub fn election_loose(&mut self, time: u64) -> &mut Self {
-        self.info(time, 0, false)
     }
 
     pub fn blocks(&mut self, id: &str) -> &mut Self {
