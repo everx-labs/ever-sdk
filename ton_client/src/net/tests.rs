@@ -808,17 +808,11 @@ async fn retry_query_on_network_errors() {
         .url("a")
         .info(now, 1000)
         .network_err()
-        .info(now, 1000)
         .blocks("1")
+        .repeat(5)
         .network_err()
-        .info(now, 1000)
-        .network_err()
-        .info(now, 1000)
-        .network_err()
-        .info(now, 1000)
         .blocks("2")
         .status(502, "")
-        .info(now, 1000)
         .blocks("3")
         .ok(&json!({
           "errors": [
@@ -847,7 +841,6 @@ async fn retry_query_on_network_errors() {
           }
         })
         .to_string())
-        .info(now, 1000)
         .blocks("4")
         .reset_client(&client)
         .await;

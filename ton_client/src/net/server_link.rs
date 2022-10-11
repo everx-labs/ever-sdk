@@ -533,9 +533,17 @@ impl ServerLink {
 
             if let Err(err) = &result {
                 if crate::client::Error::is_network_error(err) {
-                    self.state.internal_suspend().await;
-                    self.websocket_link.suspend().await;
-                    self.websocket_link.resume().await;
+                    let endpoint_count = self
+                        .state
+                        .get_all_endpoint_addresses()
+                        .await
+                        .map(|x| x.len())
+                        .unwrap_or(0);
+                    if endpoint_count > 1 {
+                        self.state.internal_suspend().await;
+                        self.websocket_link.suspend().await;
+                        self.websocket_link.resume().await;
+                    }
                     retry_count += 1;
                     if retry_count <= network_retries_count {
                         continue 'retries;
