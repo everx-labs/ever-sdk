@@ -790,6 +790,7 @@ async fn get_query_url(client: &Arc<ClientContext>) -> String {
     url
 }
 
+#[ignore]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn retry_query_on_network_errors() {
     let client = Arc::new(
