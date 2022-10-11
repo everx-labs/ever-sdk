@@ -790,7 +790,6 @@ async fn get_query_url(client: &Arc<ClientContext>) -> String {
     url
 }
 
-#[ignore]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn retry_query_on_network_errors() {
     let client = Arc::new(
@@ -807,17 +806,13 @@ async fn retry_query_on_network_errors() {
     let now = client.env.now_ms();
     NetworkMock::build()
         .url("a")
-        .election(now, 1000)
-        .repeat(2)
+        .info(now, 1000)
         .network_err()
-        .election(now, 1000)
         .blocks("1")
         .repeat(5)
         .network_err()
-        .election(now, 1000)
         .blocks("2")
         .status(502, "")
-        .election(now, 1000)
         .blocks("3")
         .ok(&json!({
           "errors": [
@@ -846,7 +841,6 @@ async fn retry_query_on_network_errors() {
           }
         })
         .to_string())
-        .election(now, 1000)
         .blocks("4")
         .reset_client(&client)
         .await;
@@ -876,10 +870,10 @@ async fn querying_endpoint_selection() {
     NetworkMock::build()
         .url("a")
         .delay(200)
-        .election(now, 500) // looser
+        .info(now, 500) // looser
         .url("b")
         .delay(100)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .reset_client(&client)
         .await;
     assert_eq!(get_query_url(&client).await, "b");
@@ -889,10 +883,10 @@ async fn querying_endpoint_selection() {
     NetworkMock::build()
         .url("a")
         .delay(100)
-        .election(now, 1500) // looser
+        .info(now, 1500) // looser
         .url("b")
         .delay(200)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .reset_client(&client)
         .await;
     assert_eq!(get_query_url(&client).await, "b");
@@ -902,10 +896,10 @@ async fn querying_endpoint_selection() {
     NetworkMock::build()
         .url("a")
         .delay(200)
-        .election(now, 1500) // winner (slower but better latency)
+        .info(now, 1500) // winner (slower but better latency)
         .url("b")
         .delay(100)
-        .election(now, 2000) // looser (faster but worse latency)
+        .info(now, 2000) // looser (faster but worse latency)
         .reset_client(&client)
         .await;
     assert_eq!(get_query_url(&client).await, "a");
@@ -969,10 +963,10 @@ async fn latency_detection_with_queries() {
     NetworkMock::build()
         .url("a")
         .delay(10)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .url("b")
         .delay(20)
-        .election_loose(now) // looser
+        .info(now, 0) // looser
         .url("a")
         .delay(200)
         .blocks("1") // query
@@ -992,10 +986,10 @@ async fn latency_detection_with_queries() {
         .to_string()) // query with latency checking, returns bad latency
         .url("a")
         .delay(20)
-        .election_loose(now) // looser
+        .info(now, 0) // looser
         .url("b")
         .delay(10)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .url("b")
         .blocks("2") // retry query
         .reset_client(&client)
@@ -1029,10 +1023,10 @@ async fn latency_detection_with_websockets() {
     NetworkMock::build()
         .url("a")
         .delay(10)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .url("b")
         .delay(20)
-        .election_loose(now) // looser
+        .info(now, 0) // looser
         .url("a")
         .delay(100)
         .ws_ack()
@@ -1043,12 +1037,12 @@ async fn latency_detection_with_websockets() {
         .ws_ack()
         .url("a")
         .delay(20)
-        .info(now, 700, false) // check latency, bad
+        .info(now, 700) // check latency, bad
         .delay(20)
-        .election_loose(now) // looser
+        .info(now, 0) // looser
         .url("b")
         .delay(10)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .reset_client(&client)
         .await;
 
@@ -1089,10 +1083,10 @@ async fn get_endpoints() {
     NetworkMock::build()
         .url("a")
         .delay(10)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .url("b")
         .delay(20)
-        .election_loose(now) // looser
+        .info(now, 0) // looser
         .reset_client(&client)
         .await;
 
