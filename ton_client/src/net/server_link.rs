@@ -35,44 +35,6 @@ pub const MAX_TIMEOUT: u32 = i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
 pub const MAX_RESUME_TIMEOUT: u32 = 3000;
 
-struct EndpointsReplacement<'a> {
-    url: &'a str,
-    aliases: &'a [&'a str],
-}
-
-const MAIN_ALIASES: [&str; 5] = [
-    "eri01.main.everos.dev",
-    "gra01.main.everos.dev",
-    "gra02.main.everos.dev",
-    "lim01.main.everos.dev",
-    "rbx01.main.everos.dev",
-];
-
-const DEV_ALIASES: [&str; 3] = [
-    "eri01.net.everos.dev",
-    "rbx01.net.everos.dev",
-    "gra01.net.everos.dev",
-];
-
-const ENDPOINTS_REPLACE: [EndpointsReplacement; 4] = [
-    EndpointsReplacement {
-        url: "main.ton.dev",
-        aliases: &MAIN_ALIASES,
-    },
-    EndpointsReplacement {
-        url: "net.ton.dev",
-        aliases: &DEV_ALIASES,
-    },
-    EndpointsReplacement {
-        url: "main",
-        aliases: &MAIN_ALIASES,
-    },
-    EndpointsReplacement {
-        url: "dev",
-        aliases: &DEV_ALIASES,
-    },
-];
-
 pub(crate) struct Subscription {
     pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
     pub data_stream: Pin<Box<dyn Stream<Item = ClientResult<Value>> + Send>>,
@@ -298,7 +260,7 @@ impl NetworkState {
                 }));
             }
             let mut selected = Err(crate::client::Error::net_module_not_init());
-            let mut unauthorised = true;
+            let mut unauthorised = None;
             while futures.len() != 0 {
                 let (result, _, remain_futures) = futures::future::select_all(futures).await;
                 if let Ok(endpoint) = &result {
@@ -309,7 +271,7 @@ impl NetworkState {
                 futures = remain_futures;
                 if let Err(err) = &result {
                     if !err.is_unauthorized() {
-                        unauthorised = false;
+                        unauthorised = Some(err.clone());
                     }
                 }
                 if is_better(&result, &selected) {
@@ -319,8 +281,8 @@ impl NetworkState {
             if selected.is_ok() {
                 return selected;
             }
-            if unauthorised {
-                return Err(Error::unauthorized());
+            if let Some(unauthorised) = unauthorised {
+                return Err(unauthorised);
             }
             retry_count += 1;
             if retry_count > self.config.network_retries_count {
@@ -373,28 +335,15 @@ fn strip_endpoint(endpoint: &str) -> &str {
         .trim_end_matches("\\")
 }
 
-fn replace_endpoints(mut endpoints: Vec<String>) -> Vec<String> {
-    for entry in &ENDPOINTS_REPLACE {
-        let len = endpoints.len();
-        endpoints.retain(|endpoint| strip_endpoint(&endpoint) != entry.url);
-        if len != endpoints.len() {
-            endpoints.extend_from_slice(
-                &entry
-                    .aliases
-                    .iter()
-                    .map(|val| (*val).to_owned())
-                    .collect::<Vec<String>>(),
-            );
-        }
-    }
+fn same_endpoint(a: &str, b: &str) -> bool {
+    strip_endpoint(a) == strip_endpoint(b)
+}
 
+fn replace_endpoints(endpoints: Vec<String>) -> Vec<String> {
     let mut result: Vec<String> = vec![];
 
     for endpoint in endpoints {
-        if !result
-            .iter()
-            .any(|val| strip_endpoint(val) == strip_endpoint(&endpoint))
-        {
+        if !result.iter().any(|val| same_endpoint(val, &endpoint)) {
             result.push(endpoint);
         }
     }
@@ -527,22 +476,6 @@ impl ServerLink {
         })
     }
 
-    pub fn try_extract_error(value: &Value) -> Option<ClientError> {
-        let errors = if let Some(payload) = value.get("payload") {
-            payload.get("errors")
-        } else {
-            value.get("errors")
-        };
-
-        if let Some(errors) = errors {
-            if let Some(errors) = errors.as_array() {
-                return Some(Error::graphql_server_error(None, errors));
-            }
-        }
-
-        return None;
-    }
-
     pub(crate) async fn query_http(
         &self,
         query: &GraphQLQuery,
@@ -585,11 +518,11 @@ impl ServerLink {
                 Err(err) => Err(err),
                 Ok(response) => {
                     if response.status == 401 {
-                        Err(Error::unauthorized())
+                        Err(Error::unauthorized(&response))
                     } else {
                         match response.body_as_json() {
                             Err(err) => Err(err),
-                            Ok(value) => match Self::try_extract_error(&value) {
+                            Ok(value) => match Error::try_extract_graphql_error(&value) {
                                 Some(err) => Err(err),
                                 None => Ok(value),
                             },
@@ -600,9 +533,17 @@ impl ServerLink {
 
             if let Err(err) = &result {
                 if crate::client::Error::is_network_error(err) {
-                    self.state.internal_suspend().await;
-                    self.websocket_link.suspend().await;
-                    self.websocket_link.resume().await;
+                    let endpoint_count = self
+                        .state
+                        .get_all_endpoint_addresses()
+                        .await
+                        .map(|x| x.len())
+                        .unwrap_or(0);
+                    if endpoint_count > 1 {
+                        self.state.internal_suspend().await;
+                        self.websocket_link.suspend().await;
+                        self.websocket_link.resume().await;
+                    }
                     retry_count += 1;
                     if retry_count <= network_retries_count {
                         continue 'retries;
@@ -655,20 +596,16 @@ impl ServerLink {
         params: &[ParamsOfQueryOperation],
         endpoint: Option<Endpoint>,
     ) -> ClientResult<Vec<Value>> {
-        let (server_version, latency_detection_required) = if let Some(ref endpoint) = endpoint {
-            (endpoint.version(), false)
+        let latency_detection_required = if endpoint.is_some() {
+            false
         } else if self.state.has_multiple_endpoints() {
             let endpoint = self.state.get_query_endpoint().await?;
-            (
-                endpoint.version(),
-                self.client_env.now_ms() > endpoint.next_latency_detection_time(),
-            )
+            self.client_env.now_ms() > endpoint.next_latency_detection_time()
         } else {
-            (0, false)
+            false
         };
         let mut query = GraphQLQuery::build(
             params,
-            server_version,
             latency_detection_required,
             self.config.wait_for_timeout,
         );
@@ -685,7 +622,7 @@ impl ServerLink {
             )?;
             if current_endpoint.latency() > self.config.max_latency as u64 {
                 self.invalidate_querying_endpoint().await;
-                query = GraphQLQuery::build(params, 0, false, self.config.wait_for_timeout);
+                query = GraphQLQuery::build(params, false, self.config.wait_for_timeout);
                 result = self.query(&query, endpoint.as_ref()).await?;
             }
         }

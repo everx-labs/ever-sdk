@@ -12,10 +12,10 @@
 */
 
 use super::{Error, FetchMethod, FetchResult, WebSocket};
-use crate::client::{LOCAL_STORAGE_DEFAULT_DIR_NAME};
 #[cfg(test)]
 use crate::client::network_mock::NetworkMock;
 use crate::client::storage::KeyValueStorage;
+use crate::client::LOCAL_STORAGE_DEFAULT_DIR_NAME;
 use crate::error::ClientResult;
 use futures::{Future, SinkExt, StreamExt};
 use lazy_static::lazy_static;
@@ -27,6 +27,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 use std::path::PathBuf;
 use std::str::FromStr;
+use std::sync::Arc;
 use tokio::runtime::Runtime;
 #[cfg(test)]
 use tokio::sync::RwLock;
@@ -49,6 +50,7 @@ fn create_runtime() -> ClientResult<Runtime> {
 }
 
 pub(crate) struct ClientEnv {
+    cookies: Arc<dyn reqwest::cookie::CookieStore>,
     http_client: HttpClient,
     async_runtime_handle: tokio::runtime::Handle,
     #[cfg(test)]
@@ -57,7 +59,9 @@ pub(crate) struct ClientEnv {
 
 impl ClientEnv {
     pub fn new() -> ClientResult<Self> {
+        let cookies = Arc::new(reqwest::cookie::Jar::default());
         let client = ClientBuilder::new()
+            .cookie_provider(cookies.clone())
             .build()
             .map_err(|err| Error::http_client_create_error(err))?;
 
@@ -71,6 +75,7 @@ impl ClientEnv {
         };
 
         Ok(Self {
+            cookies,
             http_client: client,
             async_runtime_handle,
             #[cfg(test)]
@@ -144,8 +149,9 @@ impl ClientEnv {
                 return Ok(ws);
             }
         }
-        let mut request = tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(url)
-            .map_err(|err| Error::websocket_connect_error(url, err))?;
+        let mut request =
+            tokio_tungstenite::tungstenite::client::IntoClientRequest::into_client_request(url)
+                .map_err(|err| Error::websocket_connect_error(url, err))?;
 
         if let Some(headers) = headers {
             for (key, value) in headers {
@@ -154,6 +160,14 @@ impl ClientEnv {
                 let value = tokio_tungstenite::tungstenite::http::HeaderValue::try_from(value)
                     .map_err(|err| Error::websocket_connect_error(url, err))?;
                 request.headers_mut().insert(key, value);
+            }
+            if let Ok(url) = reqwest::Url::parse(url) {
+                if let Some(cookies) = self.cookies.cookies(&url) {
+                    request.headers_mut().insert(
+                        tokio_tungstenite::tungstenite::http::header::COOKIE,
+                        cookies,
+                    );
+                }
             }
         }
 
@@ -202,7 +216,8 @@ impl ClientEnv {
         let method = Method::from_str(method.as_str())
             .map_err(|err| Error::http_request_create_error(err))?;
 
-        let mut request = self.http_client
+        let mut request = self
+            .http_client
             .request(method, url)
             .timeout(std::time::Duration::from_millis(timeout_ms as u64));
 
@@ -245,7 +260,8 @@ impl LocalStorage {
         local_storage_path: Option<String>,
         storage_name: String,
     ) -> ClientResult<Self> {
-        tokio::fs::create_dir_all(Self::calc_storage_path(&local_storage_path, &storage_name)).await
+        tokio::fs::create_dir_all(Self::calc_storage_path(&local_storage_path, &storage_name))
+            .await
             .map_err(|err| Error::local_storage_error(err))?;
 
         Ok(Self {
@@ -254,10 +270,7 @@ impl LocalStorage {
         })
     }
 
-    fn calc_storage_path(
-        local_storage_path: &Option<String>,
-        storage_name: &str,
-    ) -> PathBuf {
+    fn calc_storage_path(local_storage_path: &Option<String>, storage_name: &str) -> PathBuf {
         let local_storage_path = local_storage_path
             .clone()
             .map(|path| PathBuf::from(path))
@@ -267,8 +280,7 @@ impl LocalStorage {
                     .join(LOCAL_STORAGE_DEFAULT_DIR_NAME)
             });
 
-        local_storage_path
-            .join(storage_name)
+        local_storage_path.join(storage_name)
     }
 
     pub fn is_storage_key_correct(key: &str) -> bool {
@@ -280,10 +292,7 @@ impl LocalStorage {
             return Err(Error::invalid_storage_key(key));
         }
 
-        Ok(
-            Self::calc_storage_path(&self.local_storage_path, &self.storage_name)
-                .join(key)
-        )
+        Ok(Self::calc_storage_path(&self.local_storage_path, &self.storage_name).join(key))
     }
 }
 
@@ -295,10 +304,12 @@ impl KeyValueStorage for LocalStorage {
 
         match tokio::fs::read(&path).await {
             Ok(value) => Ok(Some(value)),
-            Err(err) => if err.kind() == std::io::ErrorKind::NotFound {
-                Ok(None)
-            } else {
-                Err(Error::local_storage_error(err))
+            Err(err) => {
+                if err.kind() == std::io::ErrorKind::NotFound {
+                    Ok(None)
+                } else {
+                    Err(Error::local_storage_error(err))
+                }
             }
         }
     }
@@ -307,13 +318,15 @@ impl KeyValueStorage for LocalStorage {
     async fn put_bin(&self, key: &str, value: &[u8]) -> ClientResult<()> {
         let path = self.key_to_path(key)?;
 
-        tokio::fs::write(&path, value).await
+        tokio::fs::write(&path, value)
+            .await
             .map_err(|err| Error::local_storage_error(err))
     }
 
     /// Get string value by a given key from the storage
     async fn get_str(&self, key: &str) -> ClientResult<Option<String>> {
-        self.get_bin(key).await
+        self.get_bin(key)
+            .await
             .map(|opt| opt.map(|vec| String::from_utf8(vec)))?
             .transpose()
             .map_err(|err| Error::local_storage_error(err))
@@ -329,7 +342,8 @@ impl KeyValueStorage for LocalStorage {
     async fn remove(&self, key: &str) -> ClientResult<()> {
         let path = self.key_to_path(key)?;
 
-        tokio::fs::remove_file(&path).await
+        tokio::fs::remove_file(&path)
+            .await
             .map_err(|err| Error::local_storage_error(err))
     }
 }

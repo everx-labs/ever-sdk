@@ -980,7 +980,8 @@ enum NetErrorCode {
     NotSupported = 611,
     NoEndpointsProvided = 612,
     GraphqlWebsocketInitError = 613,
-    NetworkModuleResumed = 614
+    NetworkModuleResumed = 614,
+    Unauthorized = 615
 }
 ```
 One of the following value:
@@ -999,6 +1000,7 @@ One of the following value:
 - `NoEndpointsProvided = 612`
 - `GraphqlWebsocketInitError = 613`
 - `NetworkModuleResumed = 614`
+- `Unauthorized = 615`
 
 
 ## OrderBy

@@ -160,6 +160,7 @@ impl MsgInterface {
             .get_input_id();
         Ok((answer_id, result.value.unwrap_or_default()))
     }
+
 }
 
 #[async_trait::async_trait]

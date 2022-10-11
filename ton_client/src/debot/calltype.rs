@@ -15,11 +15,12 @@ use crate::tvm::{run_executor, run_tvm, AccountForExecutor, ParamsOfRunExecutor,
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::sync::Arc;
-use ton_block::{Message, MsgAddressExt, MsgAddressInt};
+use ton_block::{Message, MsgAddressExt, MsgAddressInt, Serializable};
 use ton_types::{BuilderData, IBitstring, SliceData};
 use crate::net::{query_transaction_tree, ParamsOfQueryTransactionTree};
 
 const SUPPORTED_ABI_VERSION: u8 = 2;
+const ABI_2_3: u8 = 0x32;
 
 pub(super) enum DebotCallType {
     Interface { msg: String, id: String },
@@ -36,10 +37,14 @@ fn msg_err(e: impl Display) -> ClientError {
 struct Metadata {
     answer_id: u32,
     onerror_id: u32,
+    abi_ver: u8,
     is_timestamp: bool,
     is_expire: bool,
     is_pubkey: bool,
     signing_box_handle: Option<SigningBoxHandle>,
+    override_ts: bool,
+    override_exp: bool,
+    async_call: bool,
 }
 
 impl TryFrom<MsgAddressExt> for Metadata {
@@ -54,30 +59,37 @@ impl TryFrom<MsgAddressExt> for Metadata {
                 let mut slice = extern_addr.external_address;
                 let answer_id = slice.get_next_u32().map_err(msg_err)?;
                 let onerror_id = slice.get_next_u32().map_err(msg_err)?;
-                let abi_version = slice.get_next_byte().map_err(msg_err)?;
-                if abi_version != SUPPORTED_ABI_VERSION {
+                let abi_ver = slice.get_next_byte().map_err(msg_err)?;
+                if (abi_ver & 0x0F) != SUPPORTED_ABI_VERSION {
                     return Err(msg_err(format!(
-                        "unsupported ABI version in src address (must be {})",
+                        "unsupported major ABI version in src address (must be {})",
                         SUPPORTED_ABI_VERSION
                     )));
                 }
                 let is_timestamp = slice.get_next_bit().map_err(msg_err)?;
                 let is_expire = slice.get_next_bit().map_err(msg_err)?;
                 let is_pubkey = slice.get_next_bit().map_err(msg_err)?;
-                let is_sign_box_handle = slice.get_next_bit().unwrap_or(false);
-                let signing_box_handle = if is_sign_box_handle {
-                    Some(SigningBoxHandle(slice.get_next_u32().map_err(msg_err)?))
-                } else {
-                    None
+                let signing_box_handle = 
+                    match slice.get_next_bit().unwrap_or(false) {
+                    true => Some(SigningBoxHandle(slice.get_next_u32().map_err(msg_err)?)),
+                    false => None,
                 };
+                let ctrl_flags = slice.get_next_byte().unwrap_or_default();
+                let override_ts = (ctrl_flags & 1) != 0;
+                let override_exp = (ctrl_flags & 2) != 0;
+                let async_call = (ctrl_flags & 4) != 0;
 
                 Ok(Self {
                     answer_id,
                     onerror_id,
+                    abi_ver,
                     is_timestamp,
                     is_expire,
                     is_pubkey,
                     signing_box_handle,
+                    override_ts,
+                    override_exp,
+                    async_call,
                 })
             }
         }
@@ -145,20 +157,32 @@ async fn decode_and_fix_ext_msg(
             in_body_slice.get_next_bits(256).map_err(msg_err)?;
         }
     }
-    if meta.is_timestamp {
-        // skip `timestamp` header
-        in_body_slice.get_next_u64().map_err(msg_err)?;
-    }
-    if meta.is_expire {
-        // skip `expire` header
-        in_body_slice.get_next_u32().map_err(msg_err)?;
-    }
+    let msg_ts = match meta.is_timestamp {
+        // read `timestamp` header
+        true => {
+            let user_ts = in_body_slice.get_next_u64().map_err(msg_err)?;
+            Some(if meta.override_ts { user_ts } else {now_ms})
+        },
+        false => None,
+    };
+    let msg_exp = match meta.is_expire {
+        // read `expire` header
+        true => {
+            let user_exp = in_body_slice.get_next_u32().map_err(msg_err)?;
+            Some(if meta.override_exp { 
+                user_exp 
+            } else {
+                ((now_ms / 1000) as u32) + ton.config.abi.message_expiration_timeout
+            })
+        },
+        false => None,
+    };
     // remember function id
     let func_id = in_body_slice.get_next_u32().map_err(msg_err)?;
 
-    // rebuild msg body - insert correct `timestamp` and `expire` headers if they are present,
-    // then sign body with signing box
-
+    // Rebuild msg body - insert correct `timestamp` and `expire` headers 
+    // if they are present, then sign body with signing box
+    
     let mut new_body = BuilderData::new();
     let pubkey = signer.resolve_public_key(ton.clone()).await?;
     if meta.is_pubkey {
@@ -172,12 +196,11 @@ async fn decode_and_fix_ext_msg(
             new_body.append_bit_zero().map_err(msg_err)?;
         }
     }
-    let expired_at = ((now_ms / 1000) as u32) + ton.config.abi.message_expiration_timeout;
-    if meta.is_timestamp {
-        new_body.append_u64(now_ms).map_err(msg_err)?;
+    if let Some(msg_ts) = msg_ts {
+        new_body.append_u64(msg_ts).map_err(msg_err)?;
     }
-    if meta.is_expire {
-        new_body.append_u32(expired_at).map_err(msg_err)?;
+    if let Some(msg_exp) = msg_exp {
+        new_body.append_u32(msg_exp).map_err(msg_err)?;
     }
     new_body
         .append_u32(func_id)
@@ -187,7 +210,14 @@ async fn decode_and_fix_ext_msg(
     let mut signed_body = BuilderData::new();
     match signer {
         Signer::SigningBox { handle: _ } => {
-            let hash = new_body.clone().into_cell().map_err(msg_err)?.repr_hash().as_slice().to_vec();
+            let sdata = if meta.abi_ver >= ABI_2_3 {
+                let mut sdata = msg.dst().unwrap_or_default().write_to_new_cell().map_err(msg_err)?;
+                sdata.append_builder(&new_body).map_err(msg_err)?;
+                sdata
+            } else {
+                new_body.clone()
+            };
+            let hash = sdata.into_cell().map_err(msg_err)?.repr_hash().as_slice().to_vec();
             let signature = signer.sign(ton.clone(), &hash).await?;
             if let Some(signature) = signature {
                 signed_body
@@ -262,6 +292,7 @@ impl ContractCall {
         if self.local_run {
             self.run_get_method(func_id, fixed_msg).await
         } else {
+            let wait_tx = !self.meta.async_call && wait_tx;
             self.send_ext_msg(func_id, fixed_msg, wait_tx).await
         }
     }
@@ -316,7 +347,6 @@ impl ContractCall {
                 return self.build_error_answer_msg(e);
             },
         }
-
         let browser = self.browser.clone();
         let callback = move |event| {
             debug!("{:?}", event);
@@ -347,7 +377,6 @@ impl ContractCall {
         .await
         .map(|e| { error!("{:?}", e); e })?;
         let msg_id = get_boc_hash(self.ton.clone(), ParamsOfGetBocHash { boc: fixed_msg.clone() }).await?.hash;
-
         if wait_tx {
             let result = wait_for_transaction(
                 self.ton.clone(),
@@ -410,7 +439,14 @@ impl ContractCall {
 
     async fn decode_and_fix_ext_msg(&self) -> ClientResult<(u32, String)> {
         let now_ms = self.ton.env.now_ms();
-        let result: (u32, Message) = decode_and_fix_ext_msg(&self.msg, now_ms, &self.signer, false, &self.meta, &self.ton).await?;
+        let result: (u32, Message) = decode_and_fix_ext_msg(
+            &self.msg,
+            now_ms,
+            &self.signer,
+            false,
+            &self.meta,
+            &self.ton,
+        ).await?;
         let (func_id, message) = result;
         let msg = serialize_object_to_base64(&message, "message").map_err(|e| Error::invalid_msg(e))?;
         Ok((func_id, msg))

@@ -1653,6 +1653,6 @@ async fn test_crypto_box_derive_key_cache() -> ton_types::Result<()> {
             .await?;
     }
     let time2 = client.context().env.now_ms() - start2;
-    assert!(time1 * 3 < time2);
+    assert!(time1 * 2 < time2);
     Ok(())
 }
