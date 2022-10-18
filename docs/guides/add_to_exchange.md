@@ -270,7 +270,7 @@ Input arguments:
      abi: SafeMultisigWallet.abi.json
     keys: deploy.keys.json
       wc: 0
-Connecting to net.ton.dev
+Connecting to your-endpoint-here
 Deploying...
 Transaction succeeded.
 Contract deployed at address: 0:703546ac78f2b9d58f1072d131ff9fc23f29aeddcc85fd30bcba64f475b306a2
@@ -719,7 +719,7 @@ Input arguments:
     keys: k1.keys.json
 lifetime: None
   output: None
-Connecting to net.ton.dev
+Connecting to your-endpoint-here
 Generating external inbound message...
 
 MessageId: c6baac843fefe6b9e8dc3609487a63ef21207e4fdde9ec253b9a47f7f5a88d01
@@ -772,7 +772,7 @@ $ tonos-cli account 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9
 Config: default
 Input arguments:
  address: 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3
-Connecting to <https://net.ton.dev>
+Connecting to <your-endpoint-here>
 Processing...
 Succeeded.
 acc_type:      Active
@@ -792,7 +792,7 @@ $ tonos-cli account 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9
 Config: defaultsh
 Input arguments:
  address: 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f4
-Connecting to <https://net.ton.dev>
+Connecting to <your-endpoint-here>
 Processing...
 Succeeded.
 Account not found.
@@ -835,7 +835,7 @@ Example:
 ```shell
 $ tonos-cli multisig send --addr 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3 --dest 0:a4629d617df931d8ad86ed24f4cac3d321788ba082574144f5820f2894493fbc --purpose "339" --sign key.json --value 6
 Config: /home/user/tonos-cli.conf.json
-Connecting to net.ton.dev
+Connecting to your-endpoint-here
 Generating external inbound message...
 
 MessageId: 62b1420ac98e586f29bf79bc2917a0981bb3f15c4757e8dca65370c19146e327
