@@ -39,7 +39,7 @@ const {libNode} = require("@eversdk/lib-node");
 TonClient.useBinaryLibrary(libNode)
 ```
 
-That's it! Now you are ready to create and [configure TONClient object](configure\_sdk.md)!
+That's it! Now you are ready to create and[ configure TONClient object!](../configuration/endpoint-configuration.md)
 
 ## Web
 

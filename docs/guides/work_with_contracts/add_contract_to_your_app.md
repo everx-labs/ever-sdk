@@ -7,7 +7,7 @@ Define a contract in your application to start working with it
 
 ## About contract artifacts
 
-Make sure your [added SDK to your app](../installation/add\_sdk\_to\_your\_app.md) and [configured your Client](../installation/configure\_sdk.md) before proceeding.
+Make sure your [added SDK to your app](../installation/add\_sdk\_to\_your\_app.md) and [configured your Client](../configuration/configure\_sdk.md) before proceeding.
 
 If you need to work with a previously deployed contract, you will need only its ABI and address. Get it in public repositories or ask the contract developer for it.
 

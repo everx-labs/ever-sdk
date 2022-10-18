@@ -1,9 +1,9 @@
-# Work with Events
+# Query/Subscribe for Events
 
 How to work with contract events
 
 * [About events](work\_with\_events.md#about-events)
-* [Query/subscribe to events](work\_with\_events.md#querysubscribe-to-events)
+* [Query/subscribe to events](work\_with\_events.md#query-subscribe-to-events)
 * [Query/Subscribe with SDK](work\_with\_events.md#querysubscribe-with-sdk)
 * [Low level syntax](work\_with\_events.md#low-level-syntax)
   * [Query](work\_with\_events.md#query)
@@ -11,56 +11,6 @@ How to work with contract events
   * [Decode](work\_with\_events.md#decode)
 
 ## About events
-
-When contract emits an event, you can fetch it from blockchain or you can subscribe to it.
-
-Events in blockchain are external outbound messages. In GraphQL API their `msg_type` is 2.
-
-## Query/subscribe to events
-
-You can fetch events of you contract with this filter from graphql. Try it out in playground [https://eri01.main.everos.dev/graphql](https://eri01.main.everos.dev/graphql):
-
-```graphql
-query{
-messages(
-      filter:{ 
-      src:{
-        eq:"-1:67f4bf95722e1bd6df845fca7991e5e7128ce4a6d25f6d4ef027d139a11a7964"
-      }
-      msg_type:{
-        eq:2
-      }
-    }
-)
-{
-   id
- body
-}
-}
-```
-
-Or subscribe to them:
-
-```graphql
-subscription{
-messages(
-      filter:{ 
-      src:{
-        eq:"-1:67f4bf95722e1bd6df845fca7991e5e7128ce4a6d25f6d4ef027d139a11a7964"
-      }
-      msg_type:{
-        eq:2
-      }
-    }
-)
-{
-   id
-  body
-}
-}
-```
-
-## Query/Subscribe with SDK
 
 Let's assume our contract code is this:
 
@@ -120,7 +70,56 @@ function getTextUpdateTime() public view returns (uint32 time) {
 
 We see that we have 1 event `TextUpdated(helloText, textUpdateTime)`.
 
-## Low level syntax
+Events in blockchain are external outbound messages. Their `msg_type` is 2 (`ExtOut`).
+
+## Query/subscribe to events
+
+You can fetch events of you contract like this:
+
+```graphql
+query{
+  blockchain{
+    account(address:"-1:67f4bf95722e1bd6df845fca7991e5e7128ce4a6d25f6d4ef027d139a11a7964"){
+      messages(msg_type:[ExtOut],first:2){
+        edges{
+          node{
+            hash
+            body
+            created_at_string
+          }
+          cursor
+        }
+        pageInfo{
+          hasNextPage
+        }
+      }
+    }
+  }
+}
+```
+
+Or subscribe to them:
+
+```graphql
+subscription{
+messages(
+      filter:{ 
+      src:{
+        eq:"-1:67f4bf95722e1bd6df845fca7991e5e7128ce4a6d25f6d4ef027d139a11a7964"
+      }
+      msg_type:{
+        eq:2
+      }
+    }
+)
+{
+   id
+  body
+}
+}
+```
+
+## Query/Subscribe with SDK
 
 See the full sample here [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/listen-and-decode](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/listen-and-decode)
 
