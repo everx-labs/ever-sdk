@@ -10,10 +10,23 @@ Due to the GraphQL ability to stitch its schemas, GraphQL API is in fact a set o
 
 ## Use-cases
 
-* Query blockchain data
 * Send a prepared message to blockchain
-* Subscribe to blockchain data updates
-* Subscribe to contract events(external outbound messages)
+* Query account data
+  * state
+  * messages (including events)
+  * transactions
+* Query block data
+* Query transaction data
+* Query message (including events) data
+* Get list of
+  * all blocks
+  * all transaction
+* Subscribe to
+  * account updates
+  * contract events(external outbound messages)
+  * new blocks
+  * new transactions
+  * new messages
 
 Read more in the next sections.
 
