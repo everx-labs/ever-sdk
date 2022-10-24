@@ -59,7 +59,7 @@
   * [Message Retry](guides/configuration/retry\_message.md)
 * [Work with contracts](guides/work\_with\_contracts/README.md)
   * [Add Contract to your App](guides/work\_with\_contracts/add\_contract\_to\_your\_app.md)
-  * [Using custom Giver](guides/work\_with\_contracts/custom\_giver.md)
+  * [Use your own Giver](guides/work\_with\_contracts/custom\_giver.md)
   * [Deploy](guides/work\_with\_contracts/deploy.md)
   * [Run on-chain](guides/work\_with\_contracts/run\_onchain.md)
   * [Run ABI Get Method](guides/work\_with\_contracts/run\_abi\_get\_method.md)
