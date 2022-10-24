@@ -1,16 +1,16 @@
 # Query Collection
 
 {% hint style="warning" %}
-<mark style="color:red;">**Please avoid using collection queries as much as possible. Soon we will restrict their execution time by 5 seconds. Use**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**`net.query`**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**+**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**`blockchain`**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**API  instead.**</mark>&#x20;
+<mark style="color:red;">**Collections is an analytics API  (not real-time, though it may look like one).**</mark>&#x20;
+
+<mark style="color:red;">**Not all filters and sortings are working now.**</mark>
 {% endhint %}
 
-`Collections` is the old API we had started providing when we didn't know what use-cases might be needed for developers and how to allow pagination of the sharded data the best way.&#x20;
+## When you may need collections?&#x20;
 
-We created API that allowed to query basically anything which led to impossible data optimizations on our end to provide good quality of such functionality.
+If you want to apply some custom filters and sortings on the data.
 
-Now we analyzed what use-cases users need and created a new API called `blockchain`. You can find it in root `query` next to all collections. Use it with [net.query function](raw\_query.md).&#x20;
-
-What is a collection?
+## About collections
 
 There are a few collections with blockchain data:
 
@@ -22,7 +22,19 @@ There are a few collections with blockchain data:
 
 [Use `query_collection` method to query data that can be filtered and sorted](../../reference/types-and-methods/mod\_net.md#query\_collection).
 
-<mark style="color:red;">**Attention! Avoid using collections if possible. Use**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**`net.query`**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**+**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**`blockchain`**</mark><mark style="color:red;">** **</mark><mark style="color:red;">**api instead.**</mark>
+## Usage
+
+```javascript
+await client.net.query_collection({
+    collection: 'accounts',
+    filter: {
+        id: {
+            eq: wallet1Address
+        }
+    },
+    result: 'balance'
+})
+```
 
 ## Sample source code
 

@@ -47,9 +47,7 @@ The `pragma AbiHeader expire;` line initiates the message expiration option for 
 const client = new TonClient({
     network: {
         endpoints: [
-            'eri01.net.everos.dev',
-            'rbx01.net.everos.dev',
-            'gra01.net.everos.dev',
+            your-endpoint(s)-here
         ]
     },
     abi: {
