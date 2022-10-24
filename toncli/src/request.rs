@@ -93,7 +93,7 @@ fn get_api() -> ClientResult<API> {
 }
 
 pub fn command(args: &[String]) -> Result<(), CliError> {
-    let mut network = "net.ton.dev".to_string();
+    let mut network = "devnet.evercloud.dev".to_string();
     let mut state = ParseState::OptionOrFunctionName;
     let mut option = String::new();
     let mut function = String::new();
@@ -194,7 +194,7 @@ pub fn command(args: &[String]) -> Result<(), CliError> {
 
     let config = serde_json::json!({
         "network": {
-            "server_address": network
+            "endpoints": [network]
         }
     });
     let context = unsafe {

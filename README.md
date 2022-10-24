@@ -199,6 +199,7 @@ TON_USE_SE: true/false - flag defining if tests run against Evernode SE or a rea
 TON_NETWORK_ADDRESS - Dapp server or Evernode SE addresses separated by comma.
 TON_GIVER_SECRET - Giver secret key. If not defined, default Evernode SE giver keys are used
 TON_GIVER_ADDRESS - Address of the giver to use for prepaying accounts before deploying test contracts. If not defined, the address is calculated using `GiverV2.tvc` and configured public key
+EVERCLOUD_AUTH_PROJECT – Evercloud project id used to authorise tests that requires main net interaction 
 ```
 
 ## Download precompiled binaries

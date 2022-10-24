@@ -1,4 +1,5 @@
-use crate::error::{ClientError, format_time};
+use crate::client::FetchResult;
+use crate::error::{format_time, ClientError};
 use serde_json::Value;
 use std::fmt::Display;
 
@@ -18,6 +19,7 @@ pub enum ErrorCode {
     NoEndpointsProvided = 612,
     GraphqlWebsocketInitError = 613,
     NetworkModuleResumed = 614,
+    Unauthorized = 615,
 }
 
 pub struct Error;
@@ -27,6 +29,33 @@ fn error(code: ErrorCode, message: String) -> ClientError {
 }
 
 impl Error {
+    pub(crate) fn unauthorized(response: &FetchResult) -> ClientError {
+        let message = match serde_json::from_str(&response.body) {
+            Err(_) => response.body.clone(),
+            Ok(value) => match Self::try_extract_graphql_error(&value) {
+                Some(err) => err.message,
+                None => response.body.clone(),
+            },
+        };
+        error(ErrorCode::Unauthorized, message)
+    }
+
+    pub fn try_extract_graphql_error(value: &Value) -> Option<ClientError> {
+        let errors = if let Some(payload) = value.get("payload") {
+            payload.get("errors")
+        } else {
+            value.get("errors")
+        };
+
+        if let Some(errors) = errors {
+            if let Some(errors) = errors.as_array() {
+                return Some(Self::graphql_server_error(None, errors));
+            }
+        }
+
+        return None;
+    }
+
     pub fn queries_query_failed<E: Display>(err: E) -> ClientError {
         error(ErrorCode::QueryFailed, format!("Query failed: {}", err))
     }
@@ -38,7 +67,11 @@ impl Error {
         )
     }
 
-    pub fn queries_wait_for_failed<E: Display>(err: E, filter: Option<Value>, timestamp: u32) -> ClientError {
+    pub fn queries_wait_for_failed<E: Display>(
+        err: E,
+        filter: Option<Value>,
+        timestamp: u32,
+    ) -> ClientError {
         let mut err = error(ErrorCode::WaitForFailed, format!("WaitFor failed: {}", err));
         err.data = json!({
             "filter": filter,
@@ -84,7 +117,10 @@ impl Error {
     fn try_get_message_and_code(server_errors: &[Value]) -> (Option<String>, Option<i64>) {
         for error in server_errors.iter() {
             if let Some(message) = error["message"].as_str() {
-                return (Some(message.to_string()), error["extensions"]["exception"]["code"].as_i64());
+                let code = error["extensions"]["exception"]["code"]
+                    .as_i64()
+                    .or_else(|| error["extensions"]["code"].as_i64());
+                return (Some(message.to_string()), code);
             }
         }
         (None, None)
@@ -92,15 +128,15 @@ impl Error {
 
     pub fn graphql_server_error(operation: Option<&str>, errors: &[Value]) -> ClientError {
         let (message, code) = Self::try_get_message_and_code(errors);
-        let operation = operation.unwrap_or("server returned");
-        let mut err = error(
-            ErrorCode::GraphqlError,
-            if let Some(message) = message {
+        let message = match (operation, message) {
+            (None, None) => "Graphql server returned error.".to_string(),
+            (None, Some(message)) => format!("Graphql server returned error: {}.", message),
+            (Some(operation), None) => format!("Graphql {} error.", operation),
+            (Some(operation), Some(message)) => {
                 format!("Graphql {} error: {}.", operation, message)
-            } else {
-                format!("Graphql {} error.", operation)
-            },
-        );
+            }
+        };
+        let mut err = error(ErrorCode::GraphqlError, message);
 
         if let Some(code) = code {
             err.data["server_code"] = code.into();

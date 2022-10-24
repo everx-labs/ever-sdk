@@ -1,5 +1,5 @@
 {
-  "version": "1.37.2",
+  "version": "1.38.0",
   "modules": [
     {
       "name": "client",
@@ -365,7 +365,7 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": "**This field is deprecated, but left for backward-compatibility.** DApp Server public address.",
+              "summary": "**This field is deprecated, but left for backward-compatibility.** Evernode endpoint.",
               "description": null
             },
             {
@@ -377,8 +377,8 @@
                   "type": "String"
                 }
               },
-              "summary": "List of DApp Server addresses.",
-              "description": "Any correct URL format can be specified, including IP addresses. This parameter is prevailing over `server_address`.\nCheck the full list of [supported network endpoints](../ton-os-api/networks.md)."
+              "summary": "List of Evernode endpoints.",
+              "description": "Any correct URL format can be specified, including IP addresses. This parameter is prevailing over `server_address`.\nCheck the full list of [supported network endpoints](https://docs.everos.dev/ever-sdk/reference/ever-os-api/networks)."
             },
             {
               "name": "network_retries_count",
@@ -539,8 +539,8 @@
               "optional_inner": {
                 "type": "String"
               },
-              "summary": "Access key to GraphQL API.",
-              "description": "You can specify here Basic Auth secret (Evercloud project secret) in hex string\nor serialized JWT in base64 string.\nWill be passed on as Authorization: Basic ... or Authorization: Bearer ... header."
+              "summary": "Access key to GraphQL API (Project secret)",
+              "description": null
             }
           ],
           "summary": null,
@@ -11301,6 +11301,13 @@
               "name": "NetworkModuleResumed",
               "type": "Number",
               "value": "614",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "Unauthorized",
+              "type": "Number",
+              "value": "615",
               "summary": null,
               "description": null
             }

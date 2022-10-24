@@ -175,12 +175,12 @@ pub enum NetworkQueriesProtocol {
 
 #[derive(Serialize, Deserialize, Debug, Clone, ApiType)]
 pub struct NetworkConfig {
-    /// **This field is deprecated, but left for backward-compatibility.** DApp Server public address.
+    /// **This field is deprecated, but left for backward-compatibility.** Evernode endpoint.
     pub server_address: Option<String>,
 
-    /// List of DApp Server addresses. Any correct URL format can be specified, including IP addresses.
+    /// List of Evernode endpoints. Any correct URL format can be specified, including IP addresses.
     /// This parameter is prevailing over `server_address`.
-    /// Check the full list of [supported network endpoints](../ton-os-api/networks.md).
+    /// Check the full list of [supported network endpoints](https://docs.everos.dev/ever-sdk/reference/ever-os-api/networks).
     pub endpoints: Option<Vec<String>>,
 
     /// Deprecated. You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout.
@@ -323,11 +323,7 @@ pub struct NetworkConfig {
     )]
     pub next_remp_status_timeout: u32,
 
-    /// Access key to GraphQL API.
-    ///
-    /// You can specify here Basic Auth secret (Evercloud project secret) in hex string 
-    /// or serialized JWT in base64 string.
-    /// Will be passed on as Authorization: Basic ... or Authorization: Bearer ... header.
+    /// Access key to GraphQL API (Project secret)
     pub access_key: Option<String>,
 }
 

@@ -16,6 +16,60 @@ use std::sync::Arc;
 use std::vec;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn not_authorized_response_text() {
+    // Query failed: Can not send http request: Server responded with code 401
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": ["mainnet.evercloud.dev"]
+        }
+    }));
+    let context = client.context().clone();
+    let link = context.net.server_link.as_ref().unwrap();
+    let result = link
+        .query_http(
+            &GraphQLQuery {
+                query: "query { info { version } }".to_string(),
+                timeout: None,
+                variables: None,
+                is_batch: false,
+            },
+            None,
+        )
+        .await;
+    if let Err(err) = result {
+        println!("{}", err.message);
+        assert_ne!(err.message, "Unauthorized");
+        assert_ne!(err.message, "Query failed: Can not send http request: Server responded with code 401");
+    } else {
+        panic!("Error expected");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn not_authorized() {
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": [TestClient::with_project("mainnet.evercloud.dev")]
+        }
+    }));
+    let context = client.context().clone();
+    let link = context.net.server_link.as_ref().unwrap();
+    let result = link
+        .query_http(
+            &GraphQLQuery {
+                query: "query { info { version } }".to_string(),
+                timeout: None,
+                variables: None,
+                is_batch: false,
+            },
+            None,
+        )
+        .await
+        .unwrap();
+    println!("{:?}", result)
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn auth_header() {
     let client = TestClient::new_with_config(json!({
         "network": {
@@ -752,17 +806,13 @@ async fn retry_query_on_network_errors() {
     let now = client.env.now_ms();
     NetworkMock::build()
         .url("a")
-        .election(now, 1000)
-        .repeat(2)
+        .info(now, 1000)
         .network_err()
-        .election(now, 1000)
         .blocks("1")
         .repeat(5)
         .network_err()
-        .election(now, 1000)
         .blocks("2")
         .status(502, "")
-        .election(now, 1000)
         .blocks("3")
         .ok(&json!({
           "errors": [
@@ -791,7 +841,6 @@ async fn retry_query_on_network_errors() {
           }
         })
         .to_string())
-        .election(now, 1000)
         .blocks("4")
         .reset_client(&client)
         .await;
@@ -821,10 +870,10 @@ async fn querying_endpoint_selection() {
     NetworkMock::build()
         .url("a")
         .delay(200)
-        .election(now, 500) // looser
+        .info(now, 500) // looser
         .url("b")
         .delay(100)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .reset_client(&client)
         .await;
     assert_eq!(get_query_url(&client).await, "b");
@@ -834,10 +883,10 @@ async fn querying_endpoint_selection() {
     NetworkMock::build()
         .url("a")
         .delay(100)
-        .election(now, 1500) // looser
+        .info(now, 1500) // looser
         .url("b")
         .delay(200)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .reset_client(&client)
         .await;
     assert_eq!(get_query_url(&client).await, "b");
@@ -847,10 +896,10 @@ async fn querying_endpoint_selection() {
     NetworkMock::build()
         .url("a")
         .delay(200)
-        .election(now, 1500) // winner (slower but better latency)
+        .info(now, 1500) // winner (slower but better latency)
         .url("b")
         .delay(100)
-        .election(now, 2000) // looser (faster but worse latency)
+        .info(now, 2000) // looser (faster but worse latency)
         .reset_client(&client)
         .await;
     assert_eq!(get_query_url(&client).await, "a");
@@ -914,10 +963,10 @@ async fn latency_detection_with_queries() {
     NetworkMock::build()
         .url("a")
         .delay(10)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .url("b")
         .delay(20)
-        .election_loose(now) // looser
+        .info(now, 0) // looser
         .url("a")
         .delay(200)
         .blocks("1") // query
@@ -930,17 +979,17 @@ async fn latency_detection_with_queries() {
                     "version": "0.39.0",
                     "time": 1000,
                     "latency": 1000,
+                    "rempEnabled": false,
                 },
             }
         })
         .to_string()) // query with latency checking, returns bad latency
-        .metrics(1000, 900)
         .url("a")
         .delay(20)
-        .election_loose(now) // looser
+        .info(now, 0) // looser
         .url("b")
         .delay(10)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .url("b")
         .blocks("2") // retry query
         .reset_client(&client)
@@ -949,8 +998,8 @@ async fn latency_detection_with_queries() {
     assert_eq!(get_query_url(&client).await, "a");
     assert_eq!(query_block_id(&client).await, "1");
     assert_eq!(query_block_id(&client).await, "2");
-    assert_eq!(NetworkMock::get_len(&client).await, 0);
     assert_eq!(get_query_url(&client).await, "b");
+    NetworkMock::assert_is_empty(&client).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -974,10 +1023,10 @@ async fn latency_detection_with_websockets() {
     NetworkMock::build()
         .url("a")
         .delay(10)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .url("b")
         .delay(20)
-        .election_loose(now) // looser
+        .info(now, 0) // looser
         .url("a")
         .delay(100)
         .ws_ack()
@@ -988,12 +1037,12 @@ async fn latency_detection_with_websockets() {
         .ws_ack()
         .url("a")
         .delay(20)
-        .metrics(now, 700) // check latency, bad
+        .info(now, 700) // check latency, bad
         .delay(20)
-        .election_loose(now) // looser
+        .info(now, 0) // looser
         .url("b")
         .delay(10)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .reset_client(&client)
         .await;
 
@@ -1034,10 +1083,10 @@ async fn get_endpoints() {
     NetworkMock::build()
         .url("a")
         .delay(10)
-        .election(now, 500) // winner
+        .info(now, 500) // winner
         .url("b")
         .delay(20)
-        .election_loose(now) // looser
+        .info(now, 0) // looser
         .reset_client(&client)
         .await;
 
@@ -1236,59 +1285,6 @@ async fn order_by_fallback() {
         println!("{:?}", err);
     }
     assert!(result.is_err());
-}
-
-#[test]
-fn test_endpoints_replacement() {
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": ["main.ton.dev", "net.ton.dev"],
-        }
-    }));
-
-    let endpoints: ResultOfGetEndpoints = client.request("net.get_endpoints", json!({})).unwrap();
-
-    assert_eq!(
-        endpoints.endpoints,
-        vec![
-            "eri01.main.everos.dev",
-            "gra01.main.everos.dev",
-            "gra02.main.everos.dev",
-            "lim01.main.everos.dev",
-            "rbx01.main.everos.dev",
-            "eri01.net.everos.dev",
-            "rbx01.net.everos.dev",
-            "gra01.net.everos.dev",
-        ]
-    );
-
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": [
-                "https://main2.ton.dev",
-                "https://main.ton.dev/",
-                "http://main3.ton.dev",
-                "main2.ton.dev",
-                "https://lim01.main.everos.dev",
-                "gra02.main.everos.dev",
-            ],
-        }
-    }));
-
-    let endpoints: ResultOfGetEndpoints = client.request("net.get_endpoints", json!({})).unwrap();
-
-    assert_eq!(
-        endpoints.endpoints,
-        vec![
-            "https://main2.ton.dev",
-            "http://main3.ton.dev",
-            "https://lim01.main.everos.dev",
-            "gra02.main.everos.dev",
-            "eri01.main.everos.dev",
-            "gra01.main.everos.dev",
-            "rbx01.main.everos.dev",
-        ]
-    );
 }
 
 #[test]
