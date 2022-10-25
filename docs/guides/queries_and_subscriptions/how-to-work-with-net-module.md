@@ -2,6 +2,6 @@
 
 To get API data with the help of SDK, just wrap the GraphQL query inside net.query function.
 
-[GraphQL samples. ](../../graphql-samples/accounts.md)
+[GraphQL samples. ](https://docs.everos.dev/ever-platform/samples/graphql-samples/accounts)
 
 See the next page how to do it.&#x20;
