@@ -38,7 +38,7 @@ network: {
 
 If you don't want to manage your own infrastructure -  get your Evercloud endpoints **for free** to Mainnet and Devnet and configure security settings here [https://docs.everos.dev/evernode-platform/products/evercloud/get-started](https://docs.everos.dev/evernode-platform/products/evercloud/get-started).
 
-Check the full list of [supported network](../../reference/ever-os-api/networks.md)s.&#x20;
+Check the full list of [supported networks](https://docs.everos.dev/ever-platform/reference/graphql-api/networks).&#x20;
 
 ```javascript
 const client = new TonClient({
