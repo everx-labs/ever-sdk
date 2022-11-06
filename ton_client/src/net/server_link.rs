@@ -270,7 +270,7 @@ impl NetworkState {
                 }
                 futures = remain_futures;
                 if let Err(err) = &result {
-                    if !err.is_unauthorized() {
+                    if err.is_unauthorized() {
                         unauthorised = Some(err.clone());
                     }
                 }

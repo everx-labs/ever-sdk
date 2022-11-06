@@ -15,6 +15,36 @@ use std::collections::HashSet;
 use std::sync::Arc;
 use std::vec;
 
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn not_authorized_response_code() {
+    // Query failed: Can not send http request: Server responded with code 401
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": ["mainnet.evercloud.dev"]
+        }
+    }));
+
+    let result = client
+        .request_async::<_, ResultOfQueryCollection>(
+            "net.query_collection",
+            ParamsOfQueryCollection {
+                collection: "accounts".to_owned(),
+                filter: Some(json!({})),
+                result: "id balance".to_owned(),
+                limit: None,
+                order: None,
+            },
+        )
+        .await;
+
+    if let Err(err) = result {
+        assert_eq!(err.code, super::ErrorCode::Unauthorized as u32);
+    } else {
+        panic!("Error expected");
+    }
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn not_authorized_response_text() {
     // Query failed: Can not send http request: Server responded with code 401
