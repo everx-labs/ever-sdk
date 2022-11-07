@@ -46,7 +46,7 @@ where
     match result {
         Ok(result) => {
             T::deserialize(result.clone())
-                .map_err(|err| Error::queries_query_failed(format!("{}: {}.", err, result)))
+                .map_err(|err| Error::invalid_server_response(format!("{}: {}.", err, result)))
                 .add_network_url(server_link)
                 .await
         }

@@ -257,7 +257,7 @@ async fn query_next_portion(
             break;
         }
         if server_link.client_env.now_ms() > time_limit {
-            return Err(crate::net::Error::queries_query_failed("Query transaction tree failed: some messages doesn't appear during 1 minute. Possible reason: sync problems on server side."));
+            return Err(crate::net::Error::query_transaction_tree_timeout(timeout));
         }
         server_link.client_env.set_timer(1000).await?;
     }

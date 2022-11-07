@@ -20,6 +20,7 @@ pub enum ErrorCode {
     GraphqlWebsocketInitError = 613,
     NetworkModuleResumed = 614,
     Unauthorized = 615,
+    QueryTransactionTreeTimeout = 616,
 }
 
 pub struct Error;
@@ -56,27 +57,33 @@ impl Error {
         return None;
     }
 
-    pub fn queries_query_failed<E: Display>(err: E) -> ClientError {
-        error(ErrorCode::QueryFailed, format!("Query failed: {}", err))
+    pub fn queries_query_failed(mut err: ClientError) -> ClientError {
+        if err.code != ErrorCode::Unauthorized as u32 {
+            err.code = ErrorCode::QueryFailed as u32;
+        }
+        err.message = format!("Query failed: {}", err);
+        err
     }
 
-    pub fn queries_subscribe_failed<E: Display>(err: E) -> ClientError {
-        error(
-            ErrorCode::SubscribeFailed,
-            format!("Subscribe failed: {}", err),
-        )
+    pub fn queries_subscribe_failed(mut err: ClientError) -> ClientError {
+        if err.code != ErrorCode::Unauthorized as u32 {
+            err.code = ErrorCode::SubscribeFailed as u32;
+        }
+        err.message = format!("Subscribe failed: {}", err);
+        err
     }
 
-    pub fn queries_wait_for_failed<E: Display>(
-        err: E,
+    pub fn queries_wait_for_failed(
+        mut err: ClientError,
         filter: Option<Value>,
         timestamp: u32,
     ) -> ClientError {
-        let mut err = error(ErrorCode::WaitForFailed, format!("WaitFor failed: {}", err));
-        err.data = json!({
-            "filter": filter,
-            "timestamp": format_time(timestamp),
-        });
+        if err.code != ErrorCode::Unauthorized as u32 {
+            err.code = ErrorCode::WaitForFailed as u32;
+        }
+        err.message = format!("WaitFor failed: {}", err);
+        err.data["filter"] = filter.into();
+        err.data["timestamp"] = format_time(timestamp).into();
         err
     }
 
@@ -184,5 +191,14 @@ impl Error {
             ErrorCode::NetworkModuleResumed,
             "Network module has been resumed".to_owned(),
         )
+    }
+
+    pub fn query_transaction_tree_timeout(timeout: u32) -> ClientError {
+        let mut err = error(
+            ErrorCode::QueryTransactionTreeTimeout,
+            "Query transaction tree failed: some messages has not appeared during the timeout. Possible reason: sync problems on server side.".to_owned(),
+        );
+        err.data = json!({ "timeout": timeout });
+        err
     }
 }
