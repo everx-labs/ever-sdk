@@ -9,7 +9,7 @@ license = 'Apache-2.0'
 name = 'toncli'
 readme = 'README.md'
 repository = 'https://github.com/tonlabs/ever-sdk'
-version = '1.38.0'
+version = '1.38.1'
 
 [dependencies]
 base64 = '0.13.0'
