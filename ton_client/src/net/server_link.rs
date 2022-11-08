@@ -224,7 +224,6 @@ impl NetworkState {
     }
 
     async fn check_sync_endpoint(&self, endpoint: &Endpoint) -> ClientResult<()> {
-        endpoint.refresh(&self.client_env, &self.config).await?;
         let server_time_delta = endpoint.time_delta().abs();
         let threshold = self.config.out_of_sync_threshold;
         if server_time_delta >= threshold as i64 {
