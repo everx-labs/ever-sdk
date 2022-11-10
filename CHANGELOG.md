@@ -2,6 +2,19 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.38.1] – 2022-11-10
+
+### Improvement
+
+- Aditional info query is removed from `send_message` to minimize API usage
+
+### Fixed
+
+- Error code `Unauthorized` is returned from all network functions in case of authentication failure
+- Server connection attempt is not retried in case of authentication failure
+
+### New
+
 ## [1.38.0] – 2022-10-06
 
 ### New

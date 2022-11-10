@@ -4,7 +4,7 @@ use super::{BrowserCallbacks, DebotActivity, Spending, TonClient};
 use crate::abi::Signer;
 use crate::boc::internal::{deserialize_object_from_base64, serialize_object_to_base64};
 use crate::boc::{get_boc_hash, parse_message, ParamsOfParse, ParamsOfGetBocHash};
-use crate::crypto::{KeyPair, SigningBoxHandle, get_signing_box};
+use crate::crypto::SigningBoxHandle;
 use crate::encoding::decode_abi_number;
 use crate::error::{ClientError, ClientResult};
 use crate::processing::{
@@ -15,7 +15,7 @@ use crate::tvm::{run_executor, run_tvm, AccountForExecutor, ParamsOfRunExecutor,
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::sync::Arc;
-use ton_block::{Message, MsgAddressExt, MsgAddressInt, Serializable};
+use ton_block::{Message, MsgAddressExt, Serializable};
 use ton_types::{BuilderData, IBitstring, SliceData};
 use crate::net::{query_transaction_tree, ParamsOfQueryTransactionTree};
 
@@ -100,13 +100,13 @@ impl TryFrom<MsgAddressExt> for Metadata {
 pub fn prepare_ext_in_message(
     msg: &Message,
     now_ms: u64,
-    keypair: Option<KeyPair>,
-) -> Result<(u32, u32, u32, MsgAddressInt, Message), String> {
+    keypair: Option<crate::crypto::KeyPair>,
+) -> Result<(u32, u32, u32, ton_block::MsgAddressInt, Message), String> {
     let config = crate::ClientConfig::default();
     let ton_client = Arc::new(crate::ClientContext::new(config).unwrap());
 
     let signer = if let Some(keypair) = keypair {
-        let future = get_signing_box(ton_client.clone(), keypair);
+        let future = crate::crypto::get_signing_box(ton_client.clone(), keypair);
         let signing_box = ton_client.env.block_on(future).unwrap();
         Signer::SigningBox {
             handle: signing_box.handle.clone(),
@@ -116,7 +116,7 @@ pub fn prepare_ext_in_message(
     };
 
     let hdr = msg.ext_in_header().unwrap();
-    let dst_addr: MsgAddressInt = hdr.dst.clone();
+    let dst_addr: ton_block::MsgAddressInt = hdr.dst.clone();
     let meta = Metadata::try_from(hdr.src.clone()).unwrap();
 
     let future =

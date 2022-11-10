@@ -1,5 +1,5 @@
 {
-  "version": "1.38.0",
+  "version": "1.38.1",
   "modules": [
     {
       "name": "client",
@@ -11308,6 +11308,13 @@
               "name": "Unauthorized",
               "type": "Number",
               "value": "615",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "QueryTransactionTreeTimeout",
+              "type": "Number",
+              "value": "616",
               "summary": null,
               "description": null
             }
