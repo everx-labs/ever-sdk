@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.39.0] – 2022-11-14
+
+### Fixed
+
+- `abi.encode_initial_data` function properly creates data in case of public key omitted. Now 
+`abi.encode_initial_data` call without initial data values and public key creates the same data as
+compiled tvc
+
 ## [1.38.1] – 2022-11-10
 
 ### Improvement
