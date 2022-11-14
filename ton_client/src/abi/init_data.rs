@@ -8,7 +8,7 @@ use crate::error::ClientResult;
 use serde_json;
 use serde_json::Value;
 use std::sync::Arc;
-use ton_types::Cell;
+use ton_types::{SliceData, Cell};
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfUpdateInitialData  {
@@ -77,6 +77,12 @@ fn update_initial_data_internal(
     }
 }
 
+fn default_init_data() -> ClientResult<Cell> {
+    ton_abi::Contract::insert_pubkey(Default::default(), &[0; ed25519_dalek::PUBLIC_KEY_LENGTH])
+        .map_err(|err| Error::encode_init_data_failed(err))
+        .map(SliceData::into_cell)
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct ParamsOfEncodeInitialData {
     /// Contract ABI
@@ -110,7 +116,7 @@ pub async fn encode_initial_data(
         &params.initial_data,
         &params.abi,
         &params.initial_pubkey,
-        Cell::default(),
+        default_init_data()?,
     )?;
 
     Ok(ResultOfEncodeInitialData {

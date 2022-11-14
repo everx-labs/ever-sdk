@@ -973,6 +973,18 @@ fn test_init_data() {
     assert_eq!(result.initial_data, Some(json!({})));
     assert_eq!(result.initial_pubkey, hex::encode(&[0u8; 32]));
 
+    let result: ResultOfEncodeInitialData = client
+    .request(
+        "abi.encode_initial_data",
+        ParamsOfEncodeInitialData {
+            abi: Some(abi.clone()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    assert_eq!(result.data, data);
+
     let initial_data = json!({
         "a": abi_uint(123, 8),
         "s": "some string",
@@ -1000,7 +1012,7 @@ fn test_init_data() {
             "abi.update_initial_data",
             ParamsOfUpdateInitialData {
                 abi: Some(abi.clone()),
-                data,
+                data: data.clone(),
                 initial_data: Some(initial_data.clone()),
                 initial_pubkey: Some(hex::encode(&[0x22u8; 32])),
                 boc_cache: None,
@@ -1019,8 +1031,32 @@ fn test_init_data() {
             },
         )
         .unwrap();
-    assert_eq!(result.initial_data, Some(initial_data));
+    assert_eq!(result.initial_data, Some(initial_data.clone()));
     assert_eq!(result.initial_pubkey, hex::encode(&[0x22u8; 32]));
+
+    let encode_result: ResultOfEncodeInitialData = client
+        .request(
+            "abi.encode_initial_data",
+            ParamsOfEncodeInitialData {
+                abi: Some(abi.clone()),
+                initial_data: Some(initial_data.clone()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+    let update_result: ResultOfUpdateInitialData = client
+        .request(
+            "abi.update_initial_data",
+            ParamsOfUpdateInitialData {
+                abi: Some(abi.clone()),
+                data,
+                initial_data: Some(initial_data.clone()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    assert_eq!(encode_result.data, update_result.data);
 }
 
 #[test]
