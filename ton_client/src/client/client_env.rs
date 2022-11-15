@@ -52,8 +52,20 @@ impl FetchResult {
         if self.is_success() {
             Ok(())
         } else {
-            log::debug!("Server responded with code {}. Body \n{}", self.status, self.body);
-            Err(Error::http_request_send_error(format!("Server responded with code {}", self.status)))
+            log::debug!(
+                "Server responded with code {}. Body \n{}",
+                self.status,
+                self.body
+            );
+            if let Ok(json) = serde_json::from_str(&self.body) {
+                if let Some(err) = crate::net::Error::try_extract_graphql_error(&json) {
+                    return Err(err);
+                }
+            }
+            Err(Error::http_request_send_error(format!(
+                "Server responded with code {}: {}",
+                self.status, self.body
+            )))
         }
     }
 }
