@@ -981,7 +981,8 @@ enum NetErrorCode {
     NoEndpointsProvided = 612,
     GraphqlWebsocketInitError = 613,
     NetworkModuleResumed = 614,
-    Unauthorized = 615
+    Unauthorized = 615,
+    QueryTransactionTreeTimeout = 616
 }
 ```
 One of the following value:
@@ -1001,6 +1002,7 @@ One of the following value:
 - `GraphqlWebsocketInitError = 613`
 - `NetworkModuleResumed = 614`
 - `Unauthorized = 615`
+- `QueryTransactionTreeTimeout = 616`
 
 
 ## OrderBy
