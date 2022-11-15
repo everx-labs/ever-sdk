@@ -49,7 +49,7 @@ async fn not_authorized_response_code() {
     // Query failed: Can not send http request: Server responded with code 401
     let client = TestClient::new_with_config(json!({
         "network": {
-            "endpoints": ["https://main.ton.dev"]
+            "endpoints": ["https://mainnet.evercloud.dev"]
         }
     }));
 
