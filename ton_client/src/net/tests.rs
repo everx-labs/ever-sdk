@@ -49,7 +49,7 @@ async fn not_authorized_response_code() {
     // Query failed: Can not send http request: Server responded with code 401
     let client = TestClient::new_with_config(json!({
         "network": {
-            "endpoints": ["https://main.ton.dev"]
+            "endpoints": ["mainnet.evercloud.dev"]
         }
     }));
 
@@ -67,7 +67,6 @@ async fn not_authorized_response_code() {
         .await;
 
     if let Err(err) = result {
-        println!("{:?}", err);
         assert_eq!(err.code, super::ErrorCode::Unauthorized as u32);
     } else {
         panic!("Error expected");
