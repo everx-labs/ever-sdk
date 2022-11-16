@@ -17,6 +17,34 @@ use std::vec;
 
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn bad_request() {
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": [TestClient::with_project("mainnet.evercloud.dev")]
+        }
+    }));
+
+    let result = client
+        .request_async::<_, ResultOfQuery>(
+            "net.query",
+            ParamsOfQuery {
+                query: r#"query { accounts { id }"#.to_string(),
+                variables: None
+            },
+        )
+        .await;
+
+    if let Err(err) = result {
+        println!("{:?}", err);
+        assert_eq!(err.code, ErrorCode::QueryFailed as u32);
+        assert_eq!(err.message, "Query failed: Graphql server returned error: Syntax Error: Expected Name, found <EOF>..");
+    } else {
+        panic!("Error expected");
+    }
+}
+
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn not_authorized_response_code() {
     // Query failed: Can not send http request: Server responded with code 401
     let client = TestClient::new_with_config(json!({
