@@ -139,7 +139,7 @@ pub fn convert_string_to_tokens(_ton: TonClient, arg: &str) -> Result<String, St
         u64::from_str_radix(&result, 10).map_err(|e| format!("failed to parse amount: {}", e))?;
         return Ok(result);
     }
-    Err("Invalid amout value".to_string())
+    Err("Invalid amount value".to_string())
 }
 
 pub async fn get_balance(ton: TonClient, arg_json: &serde_json::Value) -> Result<String, String> {

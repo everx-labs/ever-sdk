@@ -64,7 +64,7 @@ pub fn serialize_items<'a>(
                 list_items = Some(list);
             }
         }
-        
+
         if let Some(item) = next {
             match process_item(item)? {
                 ProcessingResult::Serialized(value) => {
@@ -104,7 +104,7 @@ pub fn deserialize_items(values: Iter<Value>) -> ClientResult<Vec<StackItem>> {
     Ok(items)
 }
 
-fn serialize_integer_data(data: &ton_vm::stack::integer::IntegerData) -> String {
+fn serialize_integer_data(data: &IntegerData) -> String {
     let hex = data.to_str_radix(16);
     // all negative numbers and positive numbers less than u128::MAX are encoded as decimal
     if hex.starts_with("-") || hex.len() <= 32 {
@@ -128,7 +128,7 @@ pub fn serialize_item<'a>(item: &'a StackItem) -> ClientResult<Value> {
 fn process_item(item: &StackItem) -> ClientResult<ProcessingResult> {
     Ok(match item {
         StackItem::None => ProcessingResult::Serialized(Value::Null),
-        StackItem::Integer(value) => 
+        StackItem::Integer(value) =>
             ProcessingResult::Serialized(Value::String(serialize_integer_data(value))),
         StackItem::Tuple(items) => ProcessingResult::Nested(Box::new(items.iter())),
         StackItem::Builder(value) => ProcessingResult::Serialized(json!(

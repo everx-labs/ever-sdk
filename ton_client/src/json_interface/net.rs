@@ -87,7 +87,7 @@ pub(crate) async fn subscribe_collection(
 ///
 /// ### Important Notes on Subscriptions
 ///
-/// Unfortunately sometimes the connection with the network breakes down.
+/// Unfortunately sometimes the connection with the network breaks down.
 /// In this situation the library attempts to reconnect to the network.
 /// This reconnection sequence can take significant time.
 /// All of this time the client is disconnected from the network.

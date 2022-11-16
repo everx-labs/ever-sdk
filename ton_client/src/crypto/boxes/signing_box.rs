@@ -70,7 +70,7 @@ impl SigningBox for KeysSigningBox {
 /// Creates a default signing box implementation.
 #[api_function]
 pub async fn get_signing_box(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: KeyPair,
 ) -> ClientResult<RegisteredSigningBox> {
     let id = context.get_next_id();
@@ -90,7 +90,7 @@ pub struct RegisteredSigningBox {
 
 /// Registers an application implemented signing box.
 pub async fn register_signing_box(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     signing_box: impl SigningBox + Send + Sync + 'static,
 ) -> ClientResult<RegisteredSigningBox> {
     let id = context.get_next_id();
@@ -123,7 +123,7 @@ pub async fn signing_box_get_public_key(
         pubkey: hex::encode(&key)
     })
 }
-    
+
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct ParamsOfSigningBoxSign {
     /// Signing Box handle.

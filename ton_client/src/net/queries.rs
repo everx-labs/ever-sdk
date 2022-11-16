@@ -27,7 +27,7 @@ pub struct ParamsOfQuery {
     pub query: String,
     /// Variables used in query. Must be a map with named values that
     /// can be used in query.
-    pub variables: Option<serde_json::Value>,
+    pub variables: Option<Value>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
@@ -82,7 +82,7 @@ pub async fn query(
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfQueryCollection {
     /// Objects that match the provided criteria
-    pub result: Vec<serde_json::Value>,
+    pub result: Vec<Value>,
 }
 
 /// Queries collection data
@@ -109,7 +109,7 @@ pub struct ParamsOfWaitForCollection {
     /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
     /// Collection filter
-    pub filter: Option<serde_json::Value>,
+    pub filter: Option<Value>,
     /// Projection (result) string
     pub result: String,
     /// Query timeout
@@ -119,7 +119,7 @@ pub struct ParamsOfWaitForCollection {
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfWaitForCollection {
     /// First found object that matches the provided criteria
-    pub result: serde_json::Value,
+    pub result: Value,
 }
 
 /// Returns an object that fulfills the conditions or waits for its appearance

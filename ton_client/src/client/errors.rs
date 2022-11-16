@@ -106,7 +106,7 @@ impl Error {
     pub fn websocket_connect_error<E: Display>(address: &str, err: E) -> ClientError {
         error(
             ErrorCode::WebsocketConnectError,
-            format!("Can not connect to webscocket URL {}: {}", address, err),
+            format!("Can not connect to websocket URL {}: {}", address, err),
         )
     }
 
@@ -277,7 +277,7 @@ impl Error {
         )
     }
 
-    pub fn cannot_convert_jsvalue_to_json(value: impl std::fmt::Debug) -> ClientError {
+    pub fn cannot_convert_jsvalue_to_json(value: impl Debug) -> ClientError {
         error(
             ErrorCode::CannotConvertJsValueToJson,
             format!("Can not convert JS value to JSON: {:#?}", value),

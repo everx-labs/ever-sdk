@@ -68,7 +68,7 @@ pub struct ParamsOfAggregateCollection {
     /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
     /// Collection filter
-    pub filter: Option<serde_json::Value>,
+    pub filter: Option<Value>,
     /// Projection (result) string
     pub fields: Option<Vec<FieldAggregation>>,
 }
@@ -78,7 +78,7 @@ pub struct ParamsOfQueryCollection {
     /// Collection name (accounts, blocks, transactions, messages, block_signatures)
     pub collection: String,
     /// Collection filter
-    pub filter: Option<serde_json::Value>,
+    pub filter: Option<Value>,
     /// Projection (result) string
     pub result: String,
     /// Sorting order
@@ -90,7 +90,7 @@ pub struct ParamsOfQueryCollection {
 #[derive(Deserialize)]
 struct ParamsOfQueryCollectionFix {
     pub collection: String,
-    pub filter: Option<serde_json::Value>,
+    pub filter: Option<Value>,
     pub result: String,
     pub order: Option<Vec<OrderBy>>,
     #[serde(rename = "orderBy")]
@@ -115,7 +115,7 @@ impl<'de> Deserialize<'de> for ParamsOfQueryCollection {
                         limit: verified.limit,
                     })
                 } else {
-                    Err(D::Error::custom(
+                    Err(Error::custom(
                         "Invalid parameter name \"orderBy\"`. Valid name is \"order\".",
                     ))
                 }

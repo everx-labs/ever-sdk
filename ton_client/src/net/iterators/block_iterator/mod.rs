@@ -383,7 +383,7 @@ pub struct ParamsOfCreateBlockIterator {
 /// Application should call the `remove_iterator` when iterator is no longer required.
 #[api_function]
 pub async fn create_block_iterator(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfCreateBlockIterator,
 ) -> ClientResult<RegisteredIterator> {
     register_iterator(
@@ -403,12 +403,12 @@ pub struct ParamsOfResumeBlockIterator {
 
 /// Resumes block iterator.
 ///
-/// The iterator stays exactly at the same position where the `resume_state` was catched.
+/// The iterator stays exactly at the same position where the `resume_state` was caught.
 ///
 /// Application should call the `remove_iterator` when iterator is no longer required.
 #[api_function]
 pub async fn resume_block_iterator(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfResumeBlockIterator,
 ) -> ClientResult<RegisteredIterator> {
     register_iterator(

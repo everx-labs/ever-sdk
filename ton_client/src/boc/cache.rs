@@ -32,7 +32,7 @@ pub const DEPTH_SIZE: usize = 2;
 fn number_of_bytes_to_fit(l: usize) -> usize {
     let mut n = 0;
     let mut l1 = l;
-    
+
     while l1 != 0 {
         l1 >>= 8;
         n += 1;
@@ -41,7 +41,7 @@ fn number_of_bytes_to_fit(l: usize) -> usize {
     n
 }
 
-fn calc_tree_cells(cell: &ton_types::Cell, hashes: &mut HashSet<ton_types::UInt256>) -> (usize, usize, usize) {
+fn calc_tree_cells(cell: &Cell, hashes: &mut HashSet<UInt256>) -> (usize, usize, usize) {
     let bits = cell.bit_length();
     let mut size = 2 +
         if cell.store_hashes() { (cell.level() as usize + 1) * (SHA256_SIZE + DEPTH_SIZE) } else { 0 } +
@@ -64,7 +64,7 @@ fn calc_tree_cells(cell: &ton_types::Cell, hashes: &mut HashSet<ton_types::UInt2
     (size, cell_count, refs_count)
 }
 
-fn calc_tree_size(cell: &ton_types::Cell) -> usize {
+fn calc_tree_size(cell: &Cell) -> usize {
     let mut hashes = HashSet::new();
     let (size, cell_count, refs_count) = calc_tree_cells(cell, &mut hashes);
     let ref_size = number_of_bytes_to_fit(cell_count);
@@ -79,8 +79,8 @@ pub enum BocCacheType {
     /// times the BOC was pinned with the pin. BOC is removed from cache after all references for all
     /// pins are unpinned with `cache_unpin` function calls.
     Pinned{ pin: String },
-    /// BOC is placed into a common BOC pool with limited size regulated by LRU 
-    /// (least recently used) cache lifecycle. BOC resides there until it is replaced 
+    /// BOC is placed into a common BOC pool with limited size regulated by LRU
+    /// (least recently used) cache lifecycle. BOC resides there until it is replaced
     /// with other BOCs if it is not used
     Unpinned
 }
@@ -157,7 +157,7 @@ impl Bocs {
                 }
             }
         }
-        
+
         for key in to_remove {
             lock.remove(&key);
         }
@@ -227,7 +227,7 @@ impl Bocs {
 fn parse_boc_ref(boc_ref: &str) -> ClientResult<UInt256> {
     if !boc_ref.starts_with("*") {
         return Err(Error::invalid_boc_ref(
-            "reference doesn't start with `*`. Did you use the BOC inself instead of reference?",
+            "reference doesn't start with `*`. Did you use the BOC itself instead of reference?",
             boc_ref
         ));
     }
@@ -256,7 +256,7 @@ pub struct ResultOfBocCacheSet {
 /// Save BOC into cache or increase pin counter for existing pinned BOC
 #[api_function]
 pub async fn cache_set(
-    context: Arc<ClientContext>, 
+    context: Arc<ClientContext>,
     params: ParamsOfBocCacheSet,
 ) -> ClientResult<ResultOfBocCacheSet> {
     let (bytes, cell) = deserialize_cell_from_boc(&context, &params.boc, "BOC").await?;
@@ -284,7 +284,7 @@ pub struct ResultOfBocCacheGet {
 /// Get BOC from cache
 #[api_function]
 pub async fn cache_get(
-    context: Arc<ClientContext>, 
+    context: Arc<ClientContext>,
     params: ParamsOfBocCacheGet,
 ) -> ClientResult<ResultOfBocCacheGet> {
     let hash = parse_boc_ref(&params.boc_ref)?;
@@ -294,7 +294,7 @@ pub async fn cache_get(
         .await
         .map(|cell| serialize_cell_to_base64(&cell, "BOC"))
         .transpose()?;
-    
+
     Ok( ResultOfBocCacheGet { boc })
 }
 
@@ -311,7 +311,7 @@ pub struct ParamsOfBocCacheUnpin {
 /// BOCs which have only 1 pin and its reference counter become 0 will be removed from cache
 #[api_function]
 pub async fn cache_unpin(
-    context: Arc<ClientContext>, 
+    context: Arc<ClientContext>,
     params: ParamsOfBocCacheUnpin,
 ) -> ClientResult<()> {
     let hash = params.boc_ref

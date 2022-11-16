@@ -33,7 +33,7 @@ pub struct ResultOfUpdateInitialData {
 }
 
 /// Updates initial account data with initial values for the contract's static variables and owner's public key.
-/// This operation is applicable only for initial account data (before deploy). 
+/// This operation is applicable only for initial account data (before deploy).
 /// If the contract is already deployed, its data doesn't contain this data section any more.
 #[api_function]
 pub async fn update_initial_data(
@@ -147,7 +147,7 @@ pub struct ResultOfDecodeInitialData {
 }
 
 /// Decodes initial values of a contract's static variables and owner's public key from account initial data
-/// This operation is applicable only for initial account data (before deploy). 
+/// This operation is applicable only for initial account data (before deploy).
 /// If the contract is already deployed, its data doesn't contain this data section any more.
 #[api_function]
 pub async fn decode_initial_data(
@@ -155,7 +155,7 @@ pub async fn decode_initial_data(
     params: ParamsOfDecodeInitialData,
 ) -> ClientResult<ResultOfDecodeInitialData> {
     let (_, data) = deserialize_cell_from_boc(&context, &params.data, "contract data").await?;
-    let data: ton_types::SliceData = data.into();
+    let data: SliceData = data.into();
 
     let initial_pubkey = ton_abi::Contract::get_pubkey(&data)
         .map_err(|e| Error::invalid_data_for_decode(e))?
@@ -175,7 +175,7 @@ pub async fn decode_initial_data(
         None
     };
 
-    Ok(ResultOfDecodeInitialData { 
+    Ok(ResultOfDecodeInitialData {
         initial_data,
         initial_pubkey: hex::encode(&initial_pubkey)
     })

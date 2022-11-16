@@ -104,7 +104,7 @@ pub struct ResultOfIteratorNext {
 /// See the description to the appropriated iterator creation function.
 #[api_function]
 pub async fn iterator_next(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfIteratorNext,
 ) -> ClientResult<ResultOfIteratorNext> {
     let iterator = {
@@ -138,7 +138,7 @@ pub async fn iterator_next(
 /// is no longer required.
 #[api_function]
 pub async fn remove_iterator(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: RegisteredIterator,
 ) -> ClientResult<()> {
     let iterator = {
@@ -158,7 +158,7 @@ pub async fn remove_iterator(
 }
 
 async fn register_iterator(
-    context: &std::sync::Arc<ClientContext>,
+    context: &Arc<ClientContext>,
     iterator: Box<dyn ChainIterator + Sync + Send>,
 ) -> ClientResult<RegisteredIterator> {
     let handle = rand::thread_rng().next_u32();

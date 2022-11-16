@@ -81,7 +81,7 @@ impl SendingMessage {
     ) -> ClientResult<Self> {
         // Check message
         let deserialized =
-            deserialize_object_from_boc::<ton_block::Message>(&context, serialized, "message")
+            deserialize_object_from_boc::<Message>(&context, serialized, "message")
                 .await?;
         let id = deserialized.cell.repr_hash().as_hex_string();
         let dst = deserialized

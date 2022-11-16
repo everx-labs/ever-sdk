@@ -557,7 +557,7 @@ impl ProofHelperEngineImpl {
         on_store_block: F,
     ) -> Result<BlockProof> {
         if mc_seq_no_range.is_empty() {
-            bail!("Empty materchain seq_no range");
+            bail!("Empty masterchain seq_no range");
         }
 
         let mut proof_values = self.query_key_blocks_proofs(mc_seq_no_range).await?;
@@ -586,8 +586,8 @@ impl ProofHelperEngineImpl {
             .ok_or_else(|| err_msg("Unable to read McBlockExtra"))?;
 
         let mut result = None;
-        if let Some(InRefValue(bintree)) = mc_extra.shards().get(&shard.workchain_id())? {
-            bintree.iterate(|prefix, shard_descr| {
+        if let Some(InRefValue(bin_tree)) = mc_extra.shards().get(&shard.workchain_id())? {
+            bin_tree.iterate(|prefix, shard_descr| {
                 let shard_ident = ShardIdent::with_prefix_slice(shard.workchain_id(), prefix)?;
                 if shard_ident != *shard {
                     return Ok(true);

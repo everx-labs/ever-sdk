@@ -370,7 +370,7 @@ pub struct ParamsOfCreateTransactionIterator {
 /// Application should call the `remove_iterator` when iterator is no longer required.
 #[api_function]
 pub async fn create_transaction_iterator(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfCreateTransactionIterator,
 ) -> ClientResult<RegisteredIterator> {
     register_iterator(
@@ -411,7 +411,7 @@ pub struct ParamsOfResumeTransactionIterator {
 /// Application should call the `remove_iterator` when iterator is no longer required.
 #[api_function]
 pub async fn resume_transaction_iterator(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfResumeTransactionIterator,
 ) -> ClientResult<RegisteredIterator> {
     register_iterator(

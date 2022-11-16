@@ -8,7 +8,7 @@ use super::*;
 
 #[test]
 fn test_parallel_requests() {
-    let client1 = std::sync::Arc::new(TestClient::new());
+    let client1 = Arc::new(TestClient::new());
     let client2 = TestClient::new();
     let client3 = client1.clone();
 
