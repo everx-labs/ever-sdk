@@ -71,10 +71,10 @@ pub(crate) fn call_tvm(
     let gas_limit = 1_000_000_000;
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
-    let mut engine = ton_vm::executor::Engine::with_capabilities(
+    let mut engine = Engine::with_capabilities(
         // TODO: use specific blockchain configs when they will be available
         // TODO: for now use maximum available capabilities
-        // options.blockchain_config.capabilites()
+        // options.blockchain_config.capabilities()
         capabilities
     ).setup(
         SliceData::from(code),

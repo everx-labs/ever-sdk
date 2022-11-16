@@ -857,7 +857,7 @@ impl BlockProof {
             );
         }
         // Check signatures
-        let checked_data = ton_block::Block::build_data_for_sign(
+        let checked_data = Block::build_data_for_sign(
             &self.id().root_hash(),
             &self.id().file_hash()
         );
@@ -896,7 +896,7 @@ impl BlockProof {
     fn process_zerostate(
         &self,
         zerostate: &ShardStateUnsplit,
-        block_info: &ton_block::BlockInfo,
+        block_info: &BlockInfo,
     ) -> Result<(Vec<ValidatorDescr>, u32)> {
         if !self.id().shard().is_masterchain() {
             bail!(

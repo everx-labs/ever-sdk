@@ -8,7 +8,7 @@ use crate::net;
 pub struct ClientError {
     pub code: u32,
     pub message: String,
-    pub data: serde_json::Value,
+    pub data: Value,
 }
 
 pub type ClientResult<T> = Result<T, ClientError>;
@@ -18,7 +18,7 @@ pub(crate) trait AddNetworkUrl: Sized {
     async fn add_endpoint_from_context(
         self,
         context: &crate::ClientContext,
-        endpoint: &crate::net::Endpoint,
+        endpoint: &net::Endpoint,
     ) -> Self {
         if let Some(link) = &context.net.server_link {
             self.add_endpoint(link, endpoint).await
@@ -27,7 +27,7 @@ pub(crate) trait AddNetworkUrl: Sized {
         }
     }
 
-    async fn add_network_url(self, client: &crate::net::ServerLink) -> Self {
+    async fn add_network_url(self, client: &net::ServerLink) -> Self {
         self.add_network_url_from_state(client.state().as_ref()).await
     }
 
@@ -41,19 +41,19 @@ pub(crate) trait AddNetworkUrl: Sized {
 
     async fn add_endpoint(
         self,
-        link: &crate::net::ServerLink,
-        endpoint: &crate::net::Endpoint,
+        link: &net::ServerLink,
+        endpoint: &net::Endpoint,
     ) -> Self;
 
-    async fn add_network_url_from_state(self, state: &crate::net::NetworkState) -> Self;
+    async fn add_network_url_from_state(self, state: &net::NetworkState) -> Self;
 }
 
 #[async_trait::async_trait]
 impl<T: Send> AddNetworkUrl for ClientResult<T> {
     async fn add_endpoint(
         self,
-        link: &crate::net::ServerLink,
-        endpoint: &crate::net::Endpoint,
+        link: &net::ServerLink,
+        endpoint: &net::Endpoint,
     ) -> Self {
         match self {
             Err(err) => {
@@ -63,7 +63,7 @@ impl<T: Send> AddNetworkUrl for ClientResult<T> {
         }
     }
 
-    async fn add_network_url_from_state(self, state: &crate::net::NetworkState) -> Self {
+    async fn add_network_url_from_state(self, state: &net::NetworkState) -> Self {
         match self {
             Err(err) => {
                 Err(err.add_network_url_from_state(state).await)
@@ -77,15 +77,15 @@ impl<T: Send> AddNetworkUrl for ClientResult<T> {
 impl AddNetworkUrl for ClientError {
     async fn add_endpoint(
         mut self,
-        link: &crate::net::ServerLink,
-        endpoint: &crate::net::Endpoint,
+        link: &net::ServerLink,
+        endpoint: &net::Endpoint,
     ) -> Self {
         self.data["config_servers"] = link.config_servers().await.into();
         self.data["endpoint"] = Value::String(endpoint.query_url.clone());
         self
     }
 
-    async fn add_network_url_from_state(mut self, state: &crate::net::NetworkState) -> Self {
+    async fn add_network_url_from_state(mut self, state: &net::NetworkState) -> Self {
         self.data["config_servers"] = state.config_servers().await.into();
         if let Some(endpoint) = state.query_endpoint().await {
             self.data["query_url"] = endpoint.query_url.as_str().into();

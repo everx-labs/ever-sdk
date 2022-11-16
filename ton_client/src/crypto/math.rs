@@ -215,7 +215,7 @@ pub fn ton_crc16(
     params: ParamsOfTonCrc16,
 ) -> ClientResult<ResultOfTonCrc16> {
     Ok(ResultOfTonCrc16 {
-        crc: crate::crypto::internal::ton_crc16(&(base64_decode(&params.data)?)),
+        crc: crypto::internal::ton_crc16(&(base64_decode(&params.data)?)),
     })
 }
 

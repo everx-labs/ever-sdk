@@ -39,7 +39,7 @@ pub struct ParamsOfWaitForTransaction {
 
     /// The list of endpoints to which the message was sent.
     ///
-    /// Use this field to get more informative errors. 
+    /// Use this field to get more informative errors.
     /// Provide the same value as the `send_message` has returned.
     /// If the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending.
     pub sending_endpoints: Option<Vec<String>>,
@@ -68,24 +68,24 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
 ) -> ClientResult<ResultOfProcessMessage> {
     // fallback to block walking in case of any error
     let notify = tokio::sync::Notify::new();
-    let fallback_fut = async { 
+    let fallback_fut = async {
         notify.notified().await;
-        wait_by_block_walking(context.clone(), &params, callback.clone()).await 
+        wait_by_block_walking(context.clone(), &params, callback.clone()).await
     }.fuse();
     futures::pin_mut!(fallback_fut);
 
     // Prepare to wait
     let message =
-        deserialize_object_from_boc::<ton_block::Message>(&context, &params.message, "message")
+        deserialize_object_from_boc::<Message>(&context, &params.message, "message")
             .await?;
     let message_id = message.cell.repr_hash().as_hex_string();
 
-    let (sender, reciever) = mpsc::channel(10);
-    let mut reciever = tokio_stream::wrappers::ReceiverStream::new(reciever).fuse();
+    let (sender, receiver) = mpsc::channel(10);
+    let mut receiver = tokio_stream::wrappers::ReceiverStream::new(receiver).fuse();
 
     let subscription_callback = move |event: ClientResult<ResultOfSubscription>| {
         let sender = sender.clone();
-        async move { 
+        async move {
             let _ = sender.send(event.map(|mut result| result.result["rempReceipts"].take())).await;
         }
     };
@@ -115,23 +115,23 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
         }
     };
 
-    // wait for REMP statuses and process them 
-    // if no statuses recieved during timeout or any error accured then activate fallback
+    // wait for REMP statuses and process them
+    // if no statuses received during timeout or any error occurred then activate fallback
     let mut timeout = context.config.network.first_remp_status_timeout;
     loop {
         let timer = context.env.set_timer(timeout as u64).fuse();
         futures::pin_mut!(timer);
         let result = futures::select! {
-            _ = timer => { 
-                if params.send_events { 
-                    callback(ProcessingEvent::RempError { 
+            _ = timer => {
+                if params.send_events {
+                    callback(ProcessingEvent::RempError {
                         error: Error::next_remp_status_timeout()
                     }).await;
                 }
                 notify.notify_one(); None
             },
             fallback = fallback_fut => Some(fallback),
-            remp_message = reciever.select_next_some() => {
+            remp_message = receiver.select_next_some() => {
                 timeout = context.config.network.next_remp_status_timeout;
                 match process_remp_message(
                     context.clone(),
@@ -141,7 +141,7 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
                     remp_message
                 ).await {
                     Err(error) => {
-                        if params.send_events { callback(ProcessingEvent::RempError { error }).await;} 
+                        if params.send_events { callback(ProcessingEvent::RempError { error }).await;}
                         notify.notify_one();
                         None
                     },
@@ -153,7 +153,7 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
         if let Some(result) = result {
             if let Some(subscription) = subscription {
                 let _ = crate::net::unsubscribe(
-                    context.clone(), 
+                    context.clone(),
                     subscription
                 ).await;
             }
@@ -276,7 +276,7 @@ async fn wait_by_block_walking<F: futures::Future<Output = ()> + Send>(
 
     // Prepare to wait
     let message =
-        deserialize_object_from_boc::<ton_block::Message>(&context, &params.message, "message")
+        deserialize_object_from_boc::<Message>(&context, &params.message, "message")
             .await?;
 
     let message_id = message.cell.repr_hash().as_hex_string();

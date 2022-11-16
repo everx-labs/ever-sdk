@@ -76,7 +76,7 @@ impl SigningBox for ExternalSigningBox {
     }
 
     async fn sign(&self, _context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
-        let response = self.app_object.call(ParamsOfAppSigningBox::Sign { 
+        let response = self.app_object.call(ParamsOfAppSigningBox::Sign {
             unsigned: base64::encode(unsigned)
         }).await?;
 
@@ -93,7 +93,7 @@ impl SigningBox for ExternalSigningBox {
 /// Register an application implemented signing box.
 #[api_function]
 pub(crate) async fn register_signing_box(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     app_object: AppObject<ParamsOfAppSigningBox, ResultOfAppSigningBox>,
 ) -> ClientResult<RegisteredSigningBox> {
     crate::crypto::register_signing_box(context, ExternalSigningBox::new(app_object)).await
@@ -185,7 +185,7 @@ impl EncryptionBox for ExternalEncryptionBox {
 /// Register an application implemented encryption box.
 #[api_function]
 pub(crate) async fn register_encryption_box(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     app_object: AppObject<ParamsOfAppEncryptionBox, ResultOfAppEncryptionBox>,
 ) -> ClientResult<RegisteredEncryptionBox> {
     crate::crypto::register_encryption_box(context, ExternalEncryptionBox::new(app_object)).await
@@ -193,20 +193,20 @@ pub(crate) async fn register_encryption_box(
 
 /// Interface that provides a callback that returns an encrypted
 /// password, used for cryptobox secret encryption
-/// 
+///
 /// To secure the password while passing it from application to the library,
-/// the library generates a temporary key pair, passes the pubkey 
-/// to the passwordProvider, decrypts the received password with private key, 
-/// and deletes the key pair right away. 
+/// the library generates a temporary key pair, passes the pubkey
+/// to the passwordProvider, decrypts the received password with private key,
+/// and deletes the key pair right away.
 ///
 /// Application should generate a temporary nacl_box_keypair
-/// and encrypt the password with naclbox function using nacl_box_keypair.secret 
-/// and encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key. 
+/// and encrypt the password with naclbox function using nacl_box_keypair.secret
+/// and encryption_public_key keys + nonce = 24-byte prefix of encryption_public_key.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, PartialEq)]
 #[serde(tag="type")]
 pub enum ParamsOfAppPasswordProvider {
     GetPassword {
-        /// Temporary library pubkey, that is used on application side for 
+        /// Temporary library pubkey, that is used on application side for
         /// password encryption, along with application temporary private key and nonce.
         /// Used for password decryption on library side.
         encryption_public_key: String,
@@ -220,8 +220,8 @@ pub enum ResultOfAppPasswordProvider {
         /// Password, encrypted and encoded to base64.
         /// Crypto box uses this password to decrypt its secret (seed phrase).
         encrypted_password: String,
-        /// Hex encoded public key of a temporary key pair, used for password encryption 
-        /// on application side. Used together with `encryption_public_key` to decode 
+        /// Hex encoded public key of a temporary key pair, used for password encryption
+        /// on application side. Used together with `encryption_public_key` to decode
         /// `encrypted_password`.
         app_encryption_pubkey: String,
     }
@@ -261,7 +261,7 @@ impl AppPasswordProvider for ExternalPasswordProvider {
 /// of time and then is immediately overwritten with zeroes.
 #[api_function]
 pub(crate) async fn create_crypto_box(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfCreateCryptoBox,
     password_provider: AppObject<ParamsOfAppPasswordProvider, ResultOfAppPasswordProvider>,
 ) -> ClientResult<RegisteredCryptoBox> {

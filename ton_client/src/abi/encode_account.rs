@@ -47,7 +47,7 @@ pub enum StateInitSource {
 
 impl Default for StateInitSource {
     fn default() -> Self {
-        StateInitSource::Tvc { 
+        StateInitSource::Tvc {
             tvc: Default::default(),
             public_key: Default::default(),
             init_params: Default::default(),
@@ -151,7 +151,7 @@ async fn state_init_from_tvc(
 /// 2. TVC (string in `base64`), keys, init params
 #[api_function]
 pub async fn encode_account(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfEncodeAccount,
 ) -> ClientResult<ResultOfEncodeAccount> {
     let state_init = match &params.state_init {

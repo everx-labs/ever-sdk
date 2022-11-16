@@ -44,8 +44,8 @@ pub async fn get_code_from_tvc(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetCodeFromTvc,
 ) -> ClientResult<ResultOfGetCodeFromTvc> {
-    let object = deserialize_object_from_boc::<ton_block::StateInit>(&context, &params.tvc, "TVC").await?;
-    
+    let object = deserialize_object_from_boc::<StateInit>(&context, &params.tvc, "TVC").await?;
+
     let code = object.object.code.ok_or(Error::invalid_boc("TVC image has no code"))?;
 
     Ok(ResultOfGetCodeFromTvc {
@@ -108,9 +108,9 @@ pub async fn get_code_salt(
     params: ParamsOfGetCodeSalt,
 ) -> ClientResult<ResultOfGetCodeSalt> {
     let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code").await?;
-    
+
     let (salt, _) = get_salt_and_ver(code)?;
-    
+
     let salt = if let Some(salt) = salt {
         Some(serialize_cell_to_boc(&context, salt, "code salt", params.boc_cache).await?)
     } else {
@@ -158,7 +158,7 @@ fn set_mycode_selector_salt(code: Cell, salt: Cell) -> ClientResult<Cell> {
     let new_selector = code.reference(1)
         .map_err(|_| Error::invalid_boc("no new selector in mycode selector"))?;
     let new_selector = set_new_selector_salt(new_selector, salt)?;
-    
+
     let mut builder: BuilderData = code.into();
     builder.replace_reference_cell(1, new_selector);
     builder_to_cell(builder)
@@ -189,7 +189,7 @@ pub async fn set_code_salt(
 ) -> ClientResult<ResultOfSetCodeSalt> {
     let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code").await?;
     let (_, salt) = deserialize_cell_from_boc(&context, &params.salt, "salt").await?;
-    
+
     let code = match code.data() {
         OLD_CPP_SELECTOR_DATA => set_old_selector_salt(code, salt),
         NEW_SELECTOR_DATA => set_new_selector_salt(code, salt),
@@ -197,8 +197,8 @@ pub async fn set_code_salt(
         OLD_SOL_SELECTOR_DATA => Err(Error::invalid_boc("the contract doesn't support salt adding")),
         _ => Err(Error::invalid_boc("unknown contract type")),
     }?;
-    
-    Ok(ResultOfSetCodeSalt { 
+
+    Ok(ResultOfSetCodeSalt {
         code: serialize_cell_to_boc(&context, code, "contract code", params.boc_cache).await?
     })
 }
@@ -299,7 +299,7 @@ pub async fn encode_tvc(
 
     let state = StateInit { code, data, library, special, split_depth };
 
-    Ok(ResultOfEncodeTvc { 
+    Ok(ResultOfEncodeTvc {
         tvc: serialize_object_to_boc(&context, &state, "TVC", params.boc_cache).await?
     })
 }
@@ -369,7 +369,7 @@ pub async fn decode_tvc(
     let data = serialize("data", tvc.object.data, params.boc_cache.clone()).await?;
 
     let library = serialize("library", tvc.object.library.root().cloned(), params.boc_cache.clone()).await?;
-    
+
     Ok(ResultOfDecodeTvc {
         code,
         code_depth,

@@ -13,6 +13,8 @@ All notable changes to this project will be documented in this file.
 - Graphql error messages with HTTP response 400 was skipped (was not propagated to
   the SDK client application).
 
+- Several misspelling.
+
 ## [1.38.1] – 2022-11-10
 
 ### Improvement

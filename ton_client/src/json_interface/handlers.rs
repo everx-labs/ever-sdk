@@ -30,7 +30,7 @@ const ENUM_VALUE_FIELD: &str = "value";
 
 fn parse_params<P: DeserializeOwned + ApiType>(params_json: &str) -> ClientResult<P> {
     match serde_json::from_str(params_json) {
-        Ok(deserialized) => ClientResult::Ok(deserialized),
+        Ok(deserialized) => Ok(deserialized),
         Err(err) => {
             let mut error = Error::invalid_params(params_json, err);
             if let Ok(value) = serde_json::from_str::<Value>(params_json) {

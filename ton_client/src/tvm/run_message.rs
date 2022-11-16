@@ -57,7 +57,7 @@ impl Default for AccountForExecutor {
     }
 }
 
-const UNLIMITED_BALANCE: u64 = std::u64::MAX;
+const UNLIMITED_BALANCE: u64 = u64::MAX;
 
 impl AccountForExecutor {
     pub async fn get_account(
@@ -207,7 +207,7 @@ async fn parse_transaction(
 /// the same component that is used on Validator Nodes.
 ///
 /// Can be used for contract debugging, to find out the reason why a message was not delivered successfully.
-/// Validators throw away the failed external inbound messages (if they failed bedore `ACCEPT`) in the real network.
+/// Validators throw away the failed external inbound messages (if they failed before `ACCEPT`) in the real network.
 /// This is why these messages are impossible to debug in the real network.
 /// With the help of run_executor you can do that. In fact, `process_message` function
 /// performs local check with `run_executor` if there was no transaction as a result of processing
@@ -237,7 +237,7 @@ async fn parse_transaction(
 
 #[api_function]
 pub async fn run_executor(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfRunExecutor,
 ) -> ClientResult<ResultOfRunExecutor> {
     run_executor_internal(
@@ -248,7 +248,7 @@ pub async fn run_executor(
 }
 
 pub async fn run_executor_internal(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfRunExecutor,
     show_tips_on_error: bool,
 ) -> ClientResult<ResultOfRunExecutor> {
@@ -277,7 +277,7 @@ pub async fn run_executor_internal(
         ).await?;
 
     let sdk_transaction = ton_sdk::Transaction::try_from(&transaction)
-        .map_err(|err| crate::tvm::Error::can_not_read_transaction(err))?;
+        .map_err(|err| Error::can_not_read_transaction(err))?;
 
     let fees = calc_transaction_fees(
         &sdk_transaction,
@@ -336,7 +336,7 @@ pub async fn run_executor_internal(
 /// `account_state.storage.state.data`  part of the BOC is updated.
 #[api_function]
 pub async fn run_tvm(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfRunTvm,
 ) -> ClientResult<ResultOfRunTvm> {
     let mut account = deserialize_object_from_boc::<Account>(&context, &params.account, "account").await?;
