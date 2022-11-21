@@ -15,6 +15,9 @@ All notable changes to this project will be documented in this file.
 
 - Several misspelling.
 
+- Message processing freeze in case of large amount of messages parallel processing using Websocket
+connection
+
 ## [1.38.1] – 2022-11-10
 
 ### Improvement
