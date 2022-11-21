@@ -106,7 +106,7 @@ pub async fn subscribe_collection<F: Future<Output = ()> + Send>(
 
     let mut subscription = Some(create_collection_subscription(context.clone(), &params).await?);
 
-    let (sender, mut receiver) = channel(1);
+    let (sender, mut receiver) = channel(10);
     add_subscription_handle(&context, handle, sender).await;
 
     // spawn thread which reads subscription stream and calls callback with data
@@ -155,7 +155,7 @@ pub async fn subscribe<F: Future<Output = ()> + Send>(
 
     let mut subscription = Some(create_subscription(context.clone(), &params).await?);
 
-    let (sender, mut receiver) = channel(1);
+    let (sender, mut receiver) = channel(10);
     add_subscription_handle(&context, handle, sender).await;
 
     // spawn thread which reads subscription stream and calls callback with data
