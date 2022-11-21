@@ -72,7 +72,7 @@ impl WebsocketLink {
         &self,
         operation: GraphQLQuery,
     ) -> ClientResult<Receiver<GraphQLQueryEvent>> {
-        let (event_sender, event_receiver) = channel(1);
+        let (event_sender, event_receiver) = channel(10);
         self.send_action_to_handler(HandlerAction::StartOperation(operation, event_sender))
             .await;
         Ok(event_receiver)
@@ -146,9 +146,9 @@ impl LinkHandler {
         state: Arc<NetworkState>,
         config: NetworkConfig,
     ) -> Sender<HandlerAction> {
-        let (action_sender, action_receiver) = channel(10);
+        let (action_sender, action_receiver) = channel(100);
         let action_receiver = ReceiverStream::new(action_receiver);
-        let (internal_action_sender, internal_action_receiver) = channel(10);
+        let (internal_action_sender, internal_action_receiver) = channel(100);
         let internal_action_receiver = ReceiverStream::new(internal_action_receiver);
         client_env.clone().spawn(Box::pin(async move {
             LinkHandler {
