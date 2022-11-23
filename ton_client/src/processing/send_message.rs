@@ -18,7 +18,7 @@ use crate::boc::internal::{deserialize_object_from_boc, DeserializedObject};
 use crate::client::ClientContext;
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::{AddNetworkUrl, ClientResult};
-use crate::net::{Endpoint, EndpointStat};
+use crate::net::EndpointStat;
 use crate::processing::internal::get_message_expiration_time;
 use crate::processing::types::ProcessingEvent;
 use crate::processing::Error;
