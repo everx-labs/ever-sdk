@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [1.39.0] – 2022-11-14
 
+### Improvement
+
+- Resolved endpoints are cached for 10 minutes so subsequent messages sent will not require
+additional server request
+
 ### Fixed
 
 - `abi.encode_initial_data` function properly creates data in case of public key omitted.
