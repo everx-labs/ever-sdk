@@ -31,6 +31,8 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{watch, Mutex, RwLock};
 
+use super::ErrorCode;
+
 pub const MAX_TIMEOUT: u32 = i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
 pub const MAX_RESUME_TIMEOUT: u32 = 3000;
@@ -145,6 +147,13 @@ impl NetworkState {
         }
     }
 
+    pub fn next_resume_timeout(&self) -> u32 {
+        let timeout = self.resume_timeout.load(Ordering::Relaxed);
+        let next_timeout = min(max(timeout * 2, MIN_RESUME_TIMEOUT), MAX_RESUME_TIMEOUT); // 0, 0.5, 1, 2, 3, 3, 3...
+        self.resume_timeout.store(next_timeout, Ordering::Relaxed);
+        timeout
+    }
+
     pub async fn internal_suspend(&self) {
         let mut regulation = self.suspend_regulation.lock().await;
         if regulation.internal_suspend {
@@ -154,9 +163,7 @@ impl NetworkState {
         regulation.internal_suspend = true;
         self.suspend(&regulation.sender).await;
 
-        let timeout = self.resume_timeout.load(Ordering::Relaxed);
-        let next_timeout = min(max(timeout * 2, MIN_RESUME_TIMEOUT), MAX_RESUME_TIMEOUT); // 0, 0.5, 1, 2, 3, 3, 3...
-        self.resume_timeout.store(next_timeout, Ordering::Relaxed);
+        let timeout = self.next_resume_timeout();
         log::debug!("Internal resume timeout {}", timeout);
 
         let env = self.client_env.clone();
@@ -251,14 +258,11 @@ impl NetworkState {
     }
 
     pub async fn resolve_endpoint(&self, address: &str) -> ClientResult<Arc<Endpoint>> {
-        if let Some(endpoint) = self.get_resolved_endpoint(address).await {
-            Ok(endpoint)
-        } else {
-            let endpoint = Endpoint::resolve(&self.client_env, &self.config, address).await?;
-            let endpoint = Arc::new(endpoint);
-            self.add_resolved_endpoint(address.to_owned(), endpoint.clone()).await;
-            Ok(endpoint)
-        }
+        let endpoint = Endpoint::resolve(&self.client_env, &self.config, address).await?;
+        let endpoint = Arc::new(endpoint);
+        self.add_resolved_endpoint(address.to_owned(), endpoint.clone()).await;
+        Ok(endpoint)
+
     }
 
     async fn select_querying_endpoint(self: &Arc<NetworkState>) -> ClientResult<Arc<Endpoint>> {
@@ -573,19 +577,17 @@ impl ServerLink {
 
             if let Err(err) = &result {
                 if crate::client::Error::is_network_error(err) {
-                    let endpoint_count = self
-                        .state
-                        .get_all_endpoint_addresses()
-                        .await
-                        .map(|x| x.len())
-                        .unwrap_or(0);
-                    if endpoint_count > 1 {
+                    let multiple_endpoints = self.state.has_multiple_endpoints();
+                    if multiple_endpoints {
                         self.state.internal_suspend().await;
                         self.websocket_link.suspend().await;
                         self.websocket_link.resume().await;
                     }
                     retry_count += 1;
                     if retry_count <= network_retries_count {
+                        if !multiple_endpoints {
+                            let _ = self.client_env.set_timer(self.state.next_resume_timeout() as u64).await;
+                        }
                         continue 'retries;
                     }
                 }
@@ -599,6 +601,8 @@ impl ServerLink {
         let mut receiver = self.websocket_link.start_operation(query.clone()).await?;
         let mut id = None::<u32>;
         let mut result = Ok(Value::Null);
+        let network_retries_count = self.config.network_retries_count;
+        let mut retry_count = 0;
         loop {
             match receiver.recv().await {
                 Some(GraphQLQueryEvent::Id(received_id)) => id = Some(received_id),
@@ -608,8 +612,17 @@ impl ServerLink {
                 }
                 Some(GraphQLQueryEvent::Complete) => break,
                 Some(GraphQLQueryEvent::Error(err)) => {
+                    if  err.code == ErrorCode::NetworkModuleSuspended as u32 ||
+                        err.code == ErrorCode::NetworkModuleResumed as u32
+                    {
+                        continue;
+                    }
+                    let is_retryable = crate::client::Error::is_network_error(&err);
                     result = Err(err);
-                    break;
+                    retry_count += 1;
+                    if !is_retryable || retry_count > network_retries_count {
+                        break;
+                    }
                 }
                 None => break,
             }

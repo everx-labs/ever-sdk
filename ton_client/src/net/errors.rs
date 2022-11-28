@@ -21,6 +21,7 @@ pub enum ErrorCode {
     NetworkModuleResumed = 614,
     Unauthorized = 615,
     QueryTransactionTreeTimeout = 616,
+    GraphqlConnectionError = 617,
 }
 
 pub struct Error;
@@ -149,6 +150,12 @@ impl Error {
             err.data["server_code"] = code.into();
         }
 
+        err
+    }
+
+    pub fn graphql_connection_error(errors: &[Value]) -> ClientError {
+        let mut err = Self::graphql_server_error(Some("connection"), errors);
+        err.code = ErrorCode::GraphqlConnectionError as u32;
         err
     }
 
