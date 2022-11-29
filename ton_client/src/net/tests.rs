@@ -1227,9 +1227,6 @@ async fn latency_detection_with_websockets() {
         .ws_ack()
         .delay(200)
         .ws_ka()
-        .url("b")
-        .delay(10)
-        .ws_ack()
         .url("a")
         .delay(20)
         .info(now, 700) // check latency, bad
@@ -1238,6 +1235,10 @@ async fn latency_detection_with_websockets() {
         .url("b")
         .delay(10)
         .info(now, 500) // winner
+        .delay(10)
+        .ws_ack()
+        .delay(10)
+        .ws_ka()
         .reset_client(&client)
         .await;
 

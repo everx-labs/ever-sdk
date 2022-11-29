@@ -136,9 +136,16 @@ pub(crate) struct LinkHandler {
     config: NetworkConfig,
 }
 
-async fn ws_send(ws: &mut WSSender, message: GraphQLMessageFromClient) {
+async fn ws_send(ws: &mut WSSender, message: GraphQLMessageFromClient) -> ClientResult<()> {
     log::trace!("Send WS message\n{}", message.get_message());
-    let _ = ws.send(message.get_message()).await;
+    let result = ws.send(message.get_message()).await;
+    if result.is_err() {
+        *ws = Box::pin(
+            futures::sink::drain()
+            .sink_map_err(|err| crate::client::Error::websocket_send_error(err))
+        );
+    }
+    result
 }
 
 impl LinkHandler {
@@ -234,9 +241,9 @@ impl LinkHandler {
     async fn handle_idle_action(&mut self, action: HandlerAction, phase: Phase) -> Phase {
         match action {
             HandlerAction::StartOperation(payload, event_sender) => {
-                self.start_operation(payload, event_sender, None, phase == Phase::Suspended)
-                    .await;
-                if phase == Phase::Suspended {
+                if let Err(err) = self.start_operation(payload, event_sender, None, phase == Phase::Suspended).await {
+                    self.handle_network_error(err, false).await
+                } else if phase == Phase::Suspended {
                     Phase::Suspended
                 } else {
                     Phase::Connecting
@@ -253,6 +260,7 @@ impl LinkHandler {
     }
 
     async fn connect(&mut self) -> ClientResult<WebSocket> {
+        log::trace!("LinkHandler connect");
         self.keep_alive = KeepAlive::WaitFirst;
         let endpoint = self.state.get_query_endpoint().await?;
         let mut headers = HashMap::new();
@@ -270,7 +278,7 @@ impl LinkHandler {
                 connection_params[name] = Value::String(value.clone());
             }
             let init_message = GraphQLMessageFromClient::ConnectionInit { connection_params };
-            ws_send(&mut ws.sender, init_message).await;
+            ws_send(&mut ws.sender, init_message).await?;
         }
         ws
     }
@@ -289,15 +297,18 @@ impl LinkHandler {
         let mut next_phase = phase;
         match action {
             HandlerAction::StartOperation(operation, event_sender) => {
-                self.start_operation(operation, event_sender, ws, false)
-                    .await;
+                if let Err(err) = self.start_operation(operation, event_sender, ws, false).await {
+                    next_phase = self.handle_network_error(err, false).await;
+                }
             }
             HandlerAction::StopOperation(id) => {
-                self.stop_operation(id, ws).await;
+                if let Err(err) = self.stop_operation(id, ws).await {
+                    next_phase = self.handle_network_error(err, false).await;
+                }
             }
             HandlerAction::Suspend => {
                 if let Some(ws) = ws {
-                    self.stop_running_operations(ws).await;
+                    let _ = self.stop_running_operations(ws).await;
                     self.send_error_to_running_operations(Error::network_module_suspended())
                         .await;
                 }
@@ -350,8 +361,11 @@ impl LinkHandler {
         let mut next_phase = phase;
         match message {
             GraphQLMessageFromServer::ConnectionAck => {
-                self.start_running_operations(ws).await;
-                next_phase = Phase::Connected;
+                if let Err(err) = self.start_running_operations(ws).await {
+                    next_phase = self.handle_network_error(err, false).await;
+                } else {
+                    next_phase = Phase::Connected;
+                }
             }
             GraphQLMessageFromServer::ConnectionKeepAlive => {
                 if let Some(phase) = self.check_latency().await {
@@ -495,16 +509,18 @@ impl LinkHandler {
         }
     }
 
-    async fn stop_running_operations(&self, ws: &mut WSSender) {
+    async fn stop_running_operations(&self, ws: &mut WSSender) -> ClientResult<()> {
         for (id, _) in &self.operations {
-            ws_send(ws, GraphQLMessageFromClient::Stop { id: id.to_string() }).await;
+            ws_send(ws, GraphQLMessageFromClient::Stop { id: id.to_string() }).await?;
         }
+        Ok(())
     }
 
-    async fn start_running_operations(&self, ws: &mut WSSender) {
+    async fn start_running_operations(&self, ws: &mut WSSender) -> ClientResult<()> {
         for (id, operation) in &self.operations {
-            ws_send(ws, operation.operation.get_start_message(id.to_string())).await;
+            ws_send(ws, operation.operation.get_start_message(id.to_string())).await?;
         }
+        Ok(())
     }
 
     async fn start_operation(
@@ -513,7 +529,7 @@ impl LinkHandler {
         event_sender: Sender<GraphQLQueryEvent>,
         ws: Option<&mut WSSender>,
         suspended: bool,
-    ) {
+    ) -> ClientResult<()> {
         let mut id = self.last_operation_id.wrapping_add(1);
         while id == 0 || self.operations.contains_key(&id) {
             id = id.wrapping_add(1);
@@ -531,20 +547,26 @@ impl LinkHandler {
                 .await;
         }
 
-        if let Some(ws) = ws {
-            ws_send(ws, operation.operation.get_start_message(id.to_string())).await;
-        }
+        let result = if let Some(ws) = ws {
+            ws_send(ws, operation.operation.get_start_message(id.to_string())).await
+        } else {
+            Ok(())
+        };
 
         self.operations.insert(id, operation);
         self.last_operation_id = id;
+
+        result
     }
 
-    async fn stop_operation(&mut self, id: u32, ws: Option<&mut WSSender>) {
+    async fn stop_operation(&mut self, id: u32, ws: Option<&mut WSSender>) -> ClientResult<()> {
         if let Some(mut operation) = self.operations.remove(&id) {
             operation.notify(GraphQLQueryEvent::Complete).await;
             if let Some(ws) = ws {
-                ws_send(ws, GraphQLMessageFromClient::Stop { id: id.to_string() }).await;
+                ws_send(ws, GraphQLMessageFromClient::Stop { id: id.to_string() }).await?;
             }
         }
+
+        Ok(())
     }
 }
