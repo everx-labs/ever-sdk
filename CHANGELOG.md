@@ -25,6 +25,8 @@ additional server request
 - Message processing freeze in case of large amount of messages parallel processing using Websocket
 connection
 
+- Websocket interaction thread panic
+
 ## [1.38.1] – 2022-11-10
 
 ### Improvement
