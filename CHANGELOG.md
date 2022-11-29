@@ -9,6 +9,8 @@ All notable changes to this project will be documented in this file.
 - Resolved endpoints are cached for 10 minutes so subsequent messages sent will not require
 additional server request
 
+- Queries are retried in case of network errors when websocket connection is used
+
 ### Fixed
 
 - `abi.encode_initial_data` function properly creates data in case of public key omitted.

@@ -202,7 +202,11 @@ impl SendingMessage {
         address: &str,
     ) -> ClientResult<String> {
         let link = context.get_server_link()?;
-        let endpoint = link.state().resolve_endpoint(address).await?;
+        let endpoint = if let Some(endpoint) = link.state().get_resolved_endpoint(address).await {
+            endpoint
+        } else {
+            link.state().resolve_endpoint(address).await?
+        };
 
         // Send
         link

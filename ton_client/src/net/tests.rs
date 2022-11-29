@@ -810,7 +810,7 @@ async fn test_query_counterparties() {
     }
 }
 
-async fn query_block_id(client: &Arc<ClientContext>) -> String {
+async fn query_block_id(client: &Arc<ClientContext>) -> ClientResult<String> {
     crate::net::query_collection(
         client.clone(),
         ParamsOfQueryCollection {
@@ -820,11 +820,12 @@ async fn query_block_id(client: &Arc<ClientContext>) -> String {
         },
     )
     .await
-    .unwrap()
-    .result[0]["id"]
-        .as_str()
-        .unwrap()
-        .to_string()
+    .map(|result|
+        result.result[0]["id"]
+            .as_str()
+            .unwrap()
+            .to_string()
+    )
 }
 
 async fn get_query_url(client: &Arc<ClientContext>) -> String {
@@ -902,10 +903,145 @@ async fn retry_query_on_network_errors() {
         .blocks("4")
         .reset_client(&client)
         .await;
-    assert_eq!(query_block_id(&client).await, "1");
-    assert_eq!(query_block_id(&client).await, "2");
-    assert_eq!(query_block_id(&client).await, "3");
-    assert_eq!(query_block_id(&client).await, "4");
+    assert_eq!(query_block_id(&client).await.unwrap(), "1");
+    assert_eq!(query_block_id(&client).await.unwrap(), "2");
+    assert_eq!(query_block_id(&client).await.unwrap(), "3");
+    assert_eq!(query_block_id(&client).await.unwrap(), "4");
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn retry_query_on_network_errors_ws() {
+    TestClient::init_log();
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into()]),
+                queries_protocol: NetworkQueriesProtocol::WS,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+
+    let now = client.env.now_ms();
+    NetworkMock::build()
+        .url("a")
+        .info(now, 1000)
+        .delay(100)
+        .ws_connection_error()
+        .ws_reconnect()
+        .delay(100)
+        .ws_ack()
+        .delay(100)
+        .ws_data(1, Value::Null, Some(vec![json!({
+            "message": "Service Unavailable",
+            "locations": [
+            {
+                "line": 2,
+                "column": 3
+            }
+            ],
+            "path": [
+            "counterparties"
+            ],
+            "extensions": {
+            "code": "INTERNAL_SERVER_ERROR",
+            "exception": {
+                "source": "graphql",
+                "code": 503
+            }
+            }
+        })]))
+        .ws_reconnect()
+        .delay(100)
+        .ws_ack()
+        .delay(100)
+        .ws_blocks(1, "1")
+        .delay(100)
+        .ws_error(2, json!({
+            "message":"Cannot query field \"a\" on type \"Query\".",
+            "locations":[{"line":1,"column":3}],
+            "extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}
+        }))
+        .reset_client(&client)
+        .await;
+    assert_eq!(query_block_id(&client).await.unwrap(), "1");
+    assert!(query_block_id(&client).await.is_err());
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn retry_query_on_network_errors_ws_multiple_endpoints() {
+    TestClient::init_log();
+    let client = Arc::new(
+        ClientContext::new(ClientConfig {
+            network: NetworkConfig {
+                endpoints: Some(vec!["a".into(), "b".into()]),
+                queries_protocol: NetworkQueriesProtocol::WS,
+                ..Default::default()
+            },
+            ..Default::default()
+        })
+        .unwrap(),
+    );
+
+    let now = client.env.now_ms();
+    NetworkMock::build()
+        .url("a")
+        .info(now, 100)
+        .url("b")
+        .info(now, 1000)
+        .url("a")
+        .delay(100)
+        .ws_connection_error()
+        .ws_reconnect()
+        .url("a")
+        .info(now, 100)
+        .url("b")
+        .info(now, 1000)
+        .url("a")
+        .delay(100)
+        .ws_ack()
+        .delay(100)
+        .ws_data(1, Value::Null, Some(vec![json!({
+            "message": "Service Unavailable",
+            "locations": [
+            {
+                "line": 2,
+                "column": 3
+            }
+            ],
+            "path": [
+            "counterparties"
+            ],
+            "extensions": {
+            "code": "INTERNAL_SERVER_ERROR",
+            "exception": {
+                "source": "graphql",
+                "code": 503
+            }
+            }
+        })]))
+        .ws_reconnect()
+        .url("a")
+        .info(now, 100)
+        .url("b")
+        .info(now, 1000)
+        .url("a")
+        .delay(100)
+        .ws_ack()
+        .delay(100)
+        .ws_blocks(1, "1")
+        .delay(100)
+        .ws_error(2, json!({
+            "message":"Cannot query field \"a\" on type \"Query\".",
+            "locations":[{"line":1,"column":3}],
+            "extensions":{"code":"GRAPHQL_VALIDATION_FAILED"}
+        }))
+        .reset_client(&client)
+        .await;
+    assert_eq!(query_block_id(&client).await.unwrap(), "1");
+    assert!(query_block_id(&client).await.is_err());
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -1054,14 +1190,15 @@ async fn latency_detection_with_queries() {
         .await;
 
     assert_eq!(get_query_url(&client).await, "a");
-    assert_eq!(query_block_id(&client).await, "1");
-    assert_eq!(query_block_id(&client).await, "2");
+    assert_eq!(query_block_id(&client).await.unwrap(), "1");
+    assert_eq!(query_block_id(&client).await.unwrap(), "2");
     assert_eq!(get_query_url(&client).await, "b");
     NetworkMock::assert_is_empty(&client).await;
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn latency_detection_with_websockets() {
+    TestClient::init_log();
     let client = Arc::new(
         ClientContext::new(ClientConfig {
             network: NetworkConfig {
