@@ -23,6 +23,7 @@ use std::iter::FromIterator;
 use std::sync::Arc;
 
 const DEFAULT_WAITING_TIMEOUT: u32 = 60000;
+const DEFAULT_TRANSACTION_MAX_COUNT: u32 = 50;
 
 fn get_string(v: &Value, name: &str) -> Option<String> {
     v[name].as_str().map(|x| x.to_string())
@@ -51,8 +52,16 @@ pub struct ParamsOfQueryTransactionTree {
     //  the function will wait for their appearance.
     /// The maximum waiting time is regulated by this option.
     ///
-    /// Default value is 60000 (1 min).
+    /// Default value is 60000 (1 min). If `timeout` is set to 0 then function will wait infinitely
+    /// until the whole transaction tree is executed
     pub timeout: Option<u32>,
+
+    /// Maximum transaction count to wait. If transaction tree contains more transaction then this
+    /// parameter then only first `transaction_max_count` transaction are awaited and returned.
+    /// 
+    /// Default value is 50. If `transaction_max_count` is set to 0 then no limitation on
+    /// transaction count is used and all transaction are returned.
+    pub transaction_max_count: Option<u32>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone, Debug)]
@@ -256,7 +265,7 @@ async fn query_next_portion(
         if message_ids.is_empty() {
             break;
         }
-        if server_link.client_env.now_ms() > time_limit {
+        if timeout != 0 && server_link.client_env.now_ms() > time_limit {
             return Err(crate::net::Error::query_transaction_tree_timeout(timeout));
         }
         server_link.client_env.set_timer(1000).await?;
@@ -307,7 +316,10 @@ pub async fn query_transaction_tree(
     let mut message_nodes = Vec::new();
     let mut query_queue: Vec<(Option<String>, String)> = vec![(None, params.in_msg.clone())];
     let timeout = params.timeout.unwrap_or(DEFAULT_WAITING_TIMEOUT);
-    while !query_queue.is_empty() && transaction_nodes.len() < 50 {
+    let transaction_max_count = params.transaction_max_count.unwrap_or(DEFAULT_TRANSACTION_MAX_COUNT) as usize;
+    while !query_queue.is_empty() &&
+        (transaction_max_count == 0 || transaction_nodes.len() < transaction_max_count)
+    {
         let (messages, src_transactions) =
             query_next_portion(server_link, timeout, &mut query_queue).await?;
         for message in messages {

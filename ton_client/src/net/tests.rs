@@ -1365,6 +1365,7 @@ async fn transaction_tree() {
             ParamsOfQueryTransactionTree {
                 in_msg: messages.result[0]["id"].as_str().unwrap().to_string(),
                 abi_registry: Some(abi_registry.clone()),
+                transaction_max_count: Some(0),
                 ..Default::default()
             },
         )
@@ -1401,6 +1402,22 @@ async fn transaction_tree() {
         }
     }
     assert!(has_decoded_bodies);
+
+    let result: ResultOfQueryTransactionTree = client
+        .request_async(
+            "net.query_transaction_tree",
+            ParamsOfQueryTransactionTree {
+                in_msg: messages.result[0]["id"].as_str().unwrap().to_string(),
+                abi_registry: Some(abi_registry.clone()),
+                transaction_max_count: Some(2),
+                timeout: Some(0),
+                ..Default::default()
+        },
+    )
+    .await
+    .unwrap();
+
+    assert_eq!(result.transactions.len(), 2);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

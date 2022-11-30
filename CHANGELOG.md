@@ -14,6 +14,13 @@ additional server request
 - `WaitForTimeout` error code (607) is returned in case of `wait_for_transaction` function was 
 successfully executed but expected data did not appeared during the specified timeout
 
+- `timeout` parameter in `net.query_transaction_tree` behaviour changed. Now value 0 indicates that
+no time limit should be used and function will wait for all transactions execution
+
+### New
+- `transaction_max_count` parameter in `net.query_transaction_tree` which controls the count of
+transaction to be awaited and returned
+
 ### Fixed
 
 - `abi.encode_initial_data` function properly creates data in case of public key omitted.
