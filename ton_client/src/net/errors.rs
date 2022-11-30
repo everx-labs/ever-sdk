@@ -79,7 +79,9 @@ impl Error {
         filter: Option<Value>,
         timestamp: u32,
     ) -> ClientError {
-        if err.code != ErrorCode::Unauthorized as u32 {
+        if  err.code != ErrorCode::Unauthorized as u32 &&
+            err.code != ErrorCode::WaitForTimeout as u32
+        {
             err.code = ErrorCode::WaitForFailed as u32;
         }
         err.message = format!("WaitFor failed: {}", err);

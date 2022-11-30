@@ -11,6 +11,9 @@ additional server request
 
 - Queries are retried in case of network errors when websocket connection is used
 
+- `WaitForTimeout` error code (607) is returned in case of `wait_for_transaction` function was 
+successfully executed but expected data did not appeared during the specified timeout
+
 ### Fixed
 
 - `abi.encode_initial_data` function properly creates data in case of public key omitted.
