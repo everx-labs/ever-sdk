@@ -41,7 +41,7 @@ pub(crate) async fn decode_output(
             ParamsOfDecodeMessage {
                 message,
                 abi: abi.clone(),
-                allow_partial: false,
+                ..Default::default()
             },
         ).await;
         let decoded = match decode_result {

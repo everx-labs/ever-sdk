@@ -23,6 +23,7 @@ extern crate api_derive;
 pub use ton_abi::json_abi;
 pub use ton_abi::Contract as AbiContract;
 pub use ton_abi::Function as AbiFunction;
+pub use ton_abi::Event as AbiEvent;
 
 mod error;
 pub use error::SdkError;

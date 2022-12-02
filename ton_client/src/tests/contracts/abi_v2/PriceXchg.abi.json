@@ -1,0 +1,174 @@
+{
+    "ABI version": 2,
+    "version": "2.3.0",
+    "header": [
+      "pubkey",
+      "time",
+      "expire"
+    ],
+    "functions": [
+    {
+      "name": "onTip3LendOwnership",
+      "inputs": [
+      { "name":"_answer_id", "type":"uint32" },
+      { "name":"balance", "type":"uint128" },
+      { "name":"lend_finish_time", "type":"uint32" },
+      { "components":[
+        { "name":"pubkey", "type":"uint256" },
+        { "name":"owner", "type":"optional(address)" }
+      ], "name":"creds", "type":"tuple" },
+      { "name":"payload", "type":"cell" },
+      { "name":"answer_addr", "type":"address" }
+      ],
+      "outputs": [
+      { "name":"err_code", "type":"uint32" },
+      { "name":"processed", "type":"uint128" },
+      { "name":"enqueued", "type":"uint128" },
+      { "name":"price_num", "type":"uint128" },
+      { "name":"price_denum", "type":"uint128" },
+      { "name":"user_id", "type":"uint256" },
+      { "name":"order_id", "type":"uint256" },
+      { "name":"pair", "type":"address" },
+      { "name":"major_decimals", "type":"uint8" },
+      { "name":"minor_decimals", "type":"uint8" },
+      { "name":"sell", "type":"bool" }
+      ],
+      "id": "0xc9"
+    },
+    {
+      "name": "processQueue",
+      "inputs": [
+      ],
+      "outputs": [
+      ],
+      "id": "0xca"
+    },
+    {
+      "name": "cancelOrder",
+      "inputs": [
+      { "name":"sell", "type":"bool" },
+      { "name":"user_id", "type":"optional(uint256)" },
+      { "name":"order_id", "type":"optional(uint256)" }
+      ],
+      "outputs": [
+      ],
+      "id": "0xcb"
+    },
+    {
+      "name": "cancelWalletOrder",
+      "inputs": [
+      { "name":"sell", "type":"bool" },
+      { "name":"owner", "type":"address" },
+      { "name":"user_id", "type":"uint256" },
+      { "name":"order_id", "type":"optional(uint256)" }
+      ],
+      "outputs": [
+      ],
+      "id": "0xcd"
+    },
+    {
+      "name": "getDetails",
+      "inputs": [
+      ],
+      "outputs": [
+      { "name":"price_num", "type":"uint128" },
+      { "components":[
+        { "name":"immediate_client", "type":"bool" },
+        { "name":"post_order", "type":"bool" },
+        { "name":"original_amount", "type":"uint128" },
+        { "name":"amount", "type":"uint128" },
+        { "name":"account", "type":"uint128" },
+        { "name":"lend_amount", "type":"uint128" },
+        { "components":[
+          { "name":"workchain_id", "type":"int8" },
+          { "name":"address", "type":"uint256" }
+        ], "name":"tip3_wallet_provide", "type":"tuple" },
+        { "components":[
+          { "name":"workchain_id", "type":"int8" },
+          { "name":"address", "type":"uint256" }
+        ], "name":"client_addr", "type":"tuple" },
+        { "name":"order_finish_time", "type":"uint32" },
+        { "name":"user_id", "type":"uint256" },
+        { "name":"order_id", "type":"uint256" },
+        { "name":"ltime", "type":"uint64" }
+      ], "name":"sells", "type":"tuple[]" },
+      { "components":[
+        { "name":"immediate_client", "type":"bool" },
+        { "name":"post_order", "type":"bool" },
+        { "name":"original_amount", "type":"uint128" },
+        { "name":"amount", "type":"uint128" },
+        { "name":"account", "type":"uint128" },
+        { "name":"lend_amount", "type":"uint128" },
+        { "components":[
+          { "name":"workchain_id", "type":"int8" },
+          { "name":"address", "type":"uint256" }
+        ], "name":"tip3_wallet_provide", "type":"tuple" },
+        { "components":[
+          { "name":"workchain_id", "type":"int8" },
+          { "name":"address", "type":"uint256" }
+        ], "name":"client_addr", "type":"tuple" },
+        { "name":"order_finish_time", "type":"uint32" },
+        { "name":"user_id", "type":"uint256" },
+        { "name":"order_id", "type":"uint256" },
+        { "name":"ltime", "type":"uint64" }
+      ], "name":"buys", "type":"tuple[]" },
+      { "components":[
+        { "name":"flex", "type":"address" },
+        { "name":"pair", "type":"address" },
+        { "name":"notify_addr", "type":"address" },
+        { "components":[
+          { "name":"name", "type":"string" },
+          { "name":"symbol", "type":"string" },
+          { "name":"decimals", "type":"uint8" },
+          { "name":"root_pubkey", "type":"uint256" },
+          { "name":"root_address", "type":"address" }
+        ], "name":"major_tip3cfg", "type":"tuple" },
+        { "components":[
+          { "name":"name", "type":"string" },
+          { "name":"symbol", "type":"string" },
+          { "name":"decimals", "type":"uint8" },
+          { "name":"root_pubkey", "type":"uint256" },
+          { "name":"root_address", "type":"address" }
+        ], "name":"minor_tip3cfg", "type":"tuple" },
+        { "name":"major_reserve_wallet", "type":"address" },
+        { "name":"minor_reserve_wallet", "type":"address" },
+        { "components":[
+          { "name":"transfer_tip3", "type":"uint128" },
+          { "name":"return_ownership", "type":"uint128" },
+          { "name":"order_answer", "type":"uint128" },
+          { "name":"process_queue", "type":"uint128" },
+          { "name":"send_notify", "type":"uint128" },
+          { "name":"dest_wallet_keep_evers", "type":"uint128" }
+        ], "name":"ev_cfg", "type":"tuple" },
+        { "name":"min_amount", "type":"uint128" },
+        { "name":"minmove", "type":"uint128" },
+        { "name":"price_denum", "type":"uint128" },
+        { "name":"deals_limit", "type":"uint8" },
+        { "name":"workchain_id", "type":"int8" }
+      ], "name":"salt", "type":"tuple" }
+      ],
+      "id": "0xce"
+    }
+    ],
+    "fields": [
+      { "name":"__uninitialized", "type":"bool" },
+      { "name":"price_num_", "type":"uint128" },
+      { "name":"sells_amount_", "type":"uint128" },
+      { "name":"buys_amount_", "type":"uint128" },
+      { "components":[
+        { "name":"size_", "type":"uint32" },
+        { "components":[
+          { "name":"dict_", "type":"optional(cell)" }
+        ], "name":"dict_", "type":"tuple" }
+      ], "name":"sells_", "type":"tuple" },
+      { "components":[
+        { "name":"size_", "type":"uint32" },
+        { "components":[
+          { "name":"dict_", "type":"optional(cell)" }
+        ], "name":"dict_", "type":"tuple" }
+      ], "name":"buys_", "type":"tuple" }
+    ],
+    "events": [
+    ]
+  }
+  
