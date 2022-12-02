@@ -18,8 +18,12 @@ successfully executed but expected data did not appeared during the specified ti
 no time limit should be used and function will wait for all transactions execution
 
 ### New
+
 - `transaction_max_count` parameter in `net.query_transaction_tree` which controls the count of
 transaction to be awaited and returned
+
+- `data_layout` and `function_name` parameters in `abi.decode_message` and `abi.decode_message_body` 
+that can be used to decode responsible function output and optimize message decoding by strict layout check
 
 ### Fixed
 

@@ -388,7 +388,7 @@ impl TestBrowser {
                 };
                 let decoded: DecodedMessageBody = client.request_async(
                     "abi.decode_message_body",
-                    ParamsOfDecodeMessageBody { abi, body, is_internal: true, allow_partial: false },
+                    ParamsOfDecodeMessageBody { abi, body, is_internal: true, ..Default::default() },
                 ).await.unwrap();
                 let (func, args) = (decoded.name, decoded.value.unwrap());
                 log::info!("request: {} ({})", func, args);
