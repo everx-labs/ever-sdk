@@ -1211,17 +1211,17 @@ fn decode_responsible() {
         header: None,
     };
 
-    let body = "te6ccgECAwEAAQ0AAbFoAIJeE0IGcdbVMNaZgg20A+AjQs5O+j3V4bgTaV8eLqp9ACJJcGu0At8+xvEZT+RoSvEd3GPDzKxYSJob/jnqHTb60nJUg+AGNFPwAAAVdei8IAbHE7QAwAEB0IAAAAAAAABnAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABDnTBYAAAAAAAAAAAAAAAAAO5rKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAgCHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAD9YhN79S7hQOnrVCizdlF32dvf9Wk8XgGP1lsYvH/14AYHg=";
+    let body = "te6ccgEBAgEAsQAB0IAAAAAAAABnAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABDnTBYAAAAAAAAAAAAAAAAAO5rKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQCHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAD9YhN79S7hQOnrVCizdlF32dvf9Wk8XgGP1lsYvH/14AYHg=";
 
     let result: DecodedMessageBody = client
         .request(
-            "abi.decode_message",
-            ParamsOfDecodeMessage {
+            "abi.decode_message_body",
+            ParamsOfDecodeMessageBody {
                 abi,
-                message: body.to_owned(),
+                body: body.to_owned(),
                 function_name: Some("onTip3LendOwnership".to_owned()),
                 data_layout: Some(DataLayout::Output),
-                // is_internal: true,
+                is_internal: true,
                 ..Default::default()
             },
         )
