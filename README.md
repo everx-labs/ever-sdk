@@ -85,7 +85,7 @@ But what if you are required to use library in languages others than Rust?
 You have some options:
 
 * use library module `json_interface` which provides access to library functions through JSON-RPC interface. This interface exports several extern "C" functions. So you can build a dynamic or static link library and link it to your application as any other external libraries. The JSON Interface is fully "C" compliant. You can find description in section [JSON Interface](docs/for-binding-developers/json\_interface.md).
-* use bindings already written by TON Labs and community. Below you can find a list of known bindings.
+* use bindings already written by EverX and community. Below you can find a list of known bindings.
 * write your own binding to chosen language and share it with community.
 
 If you choose using JSON Interface please read this document [JSON Interface](docs/for-binding-developers/json\_interface.md).\
@@ -204,7 +204,7 @@ EVERCLOUD_AUTH_PROJECT – Evercloud project id used to authorise tests that req
 
 ## Download precompiled binaries
 
-Instead of building library yourself, you can download the **latest** precompiled binaries from TON Labs SDK Binaries Store.
+Instead of building library yourself, you can download the **latest** precompiled binaries from EverX SDK Binaries Store.
 
 | Platform | Major | Download links                                                                                                                                           |
 | -------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
