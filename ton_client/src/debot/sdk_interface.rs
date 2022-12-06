@@ -777,14 +777,20 @@ impl SdkInterface {
     async fn sign_hash(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let box_handle = get_num_arg::<u32>(args, "boxHandle")?;
-        let hash_to_sign =
-            decode_abi_bigint(&get_arg(&args, "hash")?).map_err(|e| e.to_string())?;
+        let hash_arg = &get_arg(&args, "hash")?;
+        let str_to_sign = if hash_arg.starts_with("0x") {
+                hash_arg.get(2..)
+            } else {
+                hash_arg.get(0..)
+            }.ok_or("invalid hash arg")?;
+        let hash_to_sign = hex::decode(format!("{:064}", str_to_sign))
+            .map_err(|e| e.to_string())?;
 
         let signature = signing_box_sign(
             self.ton.clone(),
             ParamsOfSigningBoxSign {
                 signing_box: box_handle.into(),
-                unsigned: base64::encode(&hash_to_sign.to_bytes_be().1),
+                unsigned: base64::encode(hash_to_sign.as_slice()),
             },
         )
         .await
