@@ -60,6 +60,7 @@ impl Error {
             || error.code == ErrorCode::WebsocketReceiveError as u32
             || error.code == ErrorCode::WebsocketSendError as u32
             || error.code == ErrorCode::HttpRequestSendError as u32
+            || error.code == crate::net::ErrorCode::GraphqlWebsocketInitError as u32
             || error.code == crate::net::ErrorCode::WebsocketDisconnected as u32
             || error.code == crate::net::ErrorCode::GraphqlConnectionError as u32
             || (error.code == crate::net::ErrorCode::GraphqlError as u32
