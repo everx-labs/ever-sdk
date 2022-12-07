@@ -320,6 +320,7 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::abi::AbiData>();
     module.register_type::<crate::abi::AbiFunction>();
     module.register_type::<crate::abi::AbiContract>();
+    module.register_type::<crate::abi::DataLayout>();
 
     module.register_async_fn(
         crate::abi::encode_message_body,
