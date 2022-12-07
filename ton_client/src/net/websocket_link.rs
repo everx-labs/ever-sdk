@@ -72,7 +72,7 @@ impl WebsocketLink {
         &self,
         operation: GraphQLQuery,
     ) -> ClientResult<Receiver<GraphQLQueryEvent>> {
-        let (event_sender, event_receiver) = channel(10);
+        let (event_sender, event_receiver) = channel(1000);
         self.send_action_to_handler(HandlerAction::StartOperation(operation, event_sender))
             .await;
         Ok(event_receiver)
