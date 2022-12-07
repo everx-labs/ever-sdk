@@ -390,7 +390,7 @@ client and Everscale Network.
 
 ### Important Notes on Subscriptions
 
-Unfortunately sometimes the connection with the network breakes down.
+Unfortunately sometimes the connection with the network breaks down.
 In this situation the library attempts to reconnect to the network.
 This reconnection sequence can take significant time.
 All of this time the client is disconnected from the network.
@@ -597,7 +597,7 @@ into `result.messages` and `result.transactions` respectively.
 
 Function reads transactions layer by layer, by pages of 20 transactions.
 
-The retrieval prosess goes like this:
+The retrieval process goes like this:
 Let's assume we have an infinite chain of transactions and each transaction generates 5 messages.
 1. Retrieve 1st message (input parameter) and corresponding transaction - put it into result.
 It is the first level of the tree of transactions - its root.
@@ -622,7 +622,8 @@ So the application has to continue retrieval for missing messages if it requires
 type ParamsOfQueryTransactionTree = {
     in_msg: string,
     abi_registry?: Abi[],
-    timeout?: number
+    timeout?: number,
+    transaction_max_count?: number
 }
 
 type ResultOfQueryTransactionTree = {
@@ -638,7 +639,9 @@ function query_transaction_tree(
 - `in_msg`: _string_ – Input message id.
 - `abi_registry`?: _[Abi](mod\_abi.md#abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
 - `timeout`?: _number_ – Timeout used to limit waiting time for the missing messages and transaction.
-<br>If some of the following messages and transactions are missing yet<br>The maximum waiting time is regulated by this option.<br><br>Default value is 60000 (1 min).
+<br>If some of the following messages and transactions are missing yet<br>The maximum waiting time is regulated by this option.<br><br>Default value is 60000 (1 min). If `timeout` is set to 0 then function will wait infinitely<br>until the whole transaction tree is executed
+- `transaction_max_count`?: _number_ – Maximum transaction count to wait.
+<br>If transaction tree contains more transaction then this parameter then only first `transaction_max_count` transaction are awaited and returned.<br><br>Default value is 50. If `transaction_max_count` is set to 0 then no limitation on<br>transaction count is used and all transaction are returned.
 
 
 ### Result
@@ -723,7 +726,7 @@ function create_block_iterator(
 
 Resumes block iterator.
 
-The iterator stays exactly at the same position where the `resume_state` was catched.
+The iterator stays exactly at the same position where the `resume_state` was caught.
 
 Application should call the `remove_iterator` when iterator is no longer required.
 
@@ -982,7 +985,8 @@ enum NetErrorCode {
     GraphqlWebsocketInitError = 613,
     NetworkModuleResumed = 614,
     Unauthorized = 615,
-    QueryTransactionTreeTimeout = 616
+    QueryTransactionTreeTimeout = 616,
+    GraphqlConnectionError = 617
 }
 ```
 One of the following value:
@@ -1003,6 +1007,7 @@ One of the following value:
 - `NetworkModuleResumed = 614`
 - `Unauthorized = 615`
 - `QueryTransactionTreeTimeout = 616`
+- `GraphqlConnectionError = 617`
 
 
 ## OrderBy
@@ -1364,13 +1369,16 @@ type ParamsOfQueryCounterparties = {
 type ParamsOfQueryTransactionTree = {
     in_msg: string,
     abi_registry?: Abi[],
-    timeout?: number
+    timeout?: number,
+    transaction_max_count?: number
 }
 ```
 - `in_msg`: _string_ – Input message id.
 - `abi_registry`?: _[Abi](mod\_abi.md#abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
 - `timeout`?: _number_ – Timeout used to limit waiting time for the missing messages and transaction.
-<br>If some of the following messages and transactions are missing yet<br>The maximum waiting time is regulated by this option.<br><br>Default value is 60000 (1 min).
+<br>If some of the following messages and transactions are missing yet<br>The maximum waiting time is regulated by this option.<br><br>Default value is 60000 (1 min). If `timeout` is set to 0 then function will wait infinitely<br>until the whole transaction tree is executed
+- `transaction_max_count`?: _number_ – Maximum transaction count to wait.
+<br>If transaction tree contains more transaction then this parameter then only first `transaction_max_count` transaction are awaited and returned.<br><br>Default value is 50. If `transaction_max_count` is set to 0 then no limitation on<br>transaction count is used and all transaction are returned.
 
 
 ## ResultOfQueryTransactionTree

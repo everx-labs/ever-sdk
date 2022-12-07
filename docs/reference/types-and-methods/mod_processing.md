@@ -22,7 +22,7 @@ processing scenarios.
 
 [ProcessingEventWillSendVariant](mod\_processing.md#processingeventwillsendvariant) – Notifies the app that the message will be sent to the network. This event means that the account's current shard block was successfully fetched and the message was successfully created (`abi.encode_message` function was executed successfully).
 
-[ProcessingEventDidSendVariant](mod\_processing.md#processingeventdidsendvariant) – Notifies the app that the message was sent to the network, i.e `processing.send_message` was successfuly executed. Now, the message is in the blockchain. If Application exits at this phase, Developer needs to proceed with processing after the application is restored with `wait_for_transaction` function, passing shard_block_id and message from this event.
+[ProcessingEventDidSendVariant](mod\_processing.md#processingeventdidsendvariant) – Notifies the app that the message was sent to the network, i.e `processing.send_message` was successfully executed. Now, the message is in the blockchain. If Application exits at this phase, Developer needs to proceed with processing after the application is restored with `wait_for_transaction` function, passing shard_block_id and message from this event.
 
 [ProcessingEventSendFailedVariant](mod\_processing.md#processingeventsendfailedvariant) – Notifies the app that the sending operation was failed with network error.
 
@@ -36,11 +36,11 @@ processing scenarios.
 
 [ProcessingEventRempIncludedIntoBlockVariant](mod\_processing.md#processingeventrempincludedintoblockvariant) – Notifies the app that the message has been successfully included into a block candidate by the thread's collator
 
-[ProcessingEventRempIncludedIntoAcceptedBlockVariant](mod\_processing.md#processingeventrempincludedintoacceptedblockvariant) – Notifies the app that the block candicate with the message has been accepted by the thread's validators
+[ProcessingEventRempIncludedIntoAcceptedBlockVariant](mod\_processing.md#processingeventrempincludedintoacceptedblockvariant) – Notifies the app that the block candidate with the message has been accepted by the thread's validators
 
 [ProcessingEventRempOtherVariant](mod\_processing.md#processingeventrempothervariant) – Notifies the app about some other minor REMP statuses occurring during message processing
 
-[ProcessingEventRempErrorVariant](mod\_processing.md#processingeventremperrorvariant) – Notifies the app about any problem that has occured in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).
+[ProcessingEventRempErrorVariant](mod\_processing.md#processingeventremperrorvariant) – Notifies the app about any problem that has occurred in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).
 
 [ProcessingEvent](mod\_processing.md#processingevent)
 
@@ -308,9 +308,9 @@ type ProcessingEventWillSendVariant = {
 
 
 ## ProcessingEventDidSendVariant
-Notifies the app that the message was sent to the network, i.e `processing.send_message` was successfuly executed. Now, the message is in the blockchain. If Application exits at this phase, Developer needs to proceed with processing after the application is restored with `wait_for_transaction` function, passing shard_block_id and message from this event.
+Notifies the app that the message was sent to the network, i.e `processing.send_message` was successfully executed. Now, the message is in the blockchain. If Application exits at this phase, Developer needs to proceed with processing after the application is restored with `wait_for_transaction` function, passing shard_block_id and message from this event.
 
-Do not forget to specify abi of your contract as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation.
+Do not forget to specify abi of your contract as well, it is crucial for processing. See `processing.wait_for_transaction` documentation.
 
 ```ts
 type ProcessingEventDidSendVariant = {
@@ -333,7 +333,7 @@ node.
 If Application exits at this phase, Developer needs to proceed with processing
 after the application is restored with `wait_for_transaction` function, passing
 shard_block_id and message from this event. Do not forget to specify abi of your contract
-as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation.
+as well, it is crucial for processing. See `processing.wait_for_transaction` documentation.
 
 ```ts
 type ProcessingEventSendFailedVariant = {
@@ -357,7 +357,7 @@ procedure.
 If Application exits at this phase, Developer needs to proceed with processing
 after the application is restored with `wait_for_transaction` function, passing
 shard_block_id and message from this event. Do not forget to specify abi of your contract
-as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation.
+as well, it is crucial for processing. See `processing.wait_for_transaction` documentation.
 
 ```ts
 type ProcessingEventWillFetchNextBlockVariant = {
@@ -401,7 +401,7 @@ Notifies the app that the message was not executed within expire timeout on-chai
 This event occurs only for the contracts which ABI includes "expire" header.
 
 If Application specifies `NetworkConfig.message_retries_count` > 0, then `process_message`
-will perform retries: will create a new message and send it again and repeat it untill it reaches
+will perform retries: will create a new message and send it again and repeat it until it reaches
 the maximum retries count or receives a successful result.  All the processing
 events will be repeated.
 
@@ -448,7 +448,7 @@ type ProcessingEventRempIncludedIntoBlockVariant = {
 
 
 ## ProcessingEventRempIncludedIntoAcceptedBlockVariant
-Notifies the app that the block candicate with the message has been accepted by the thread's validators
+Notifies the app that the block candidate with the message has been accepted by the thread's validators
 
 ```ts
 type ProcessingEventRempIncludedIntoAcceptedBlockVariant = {
@@ -478,7 +478,7 @@ type ProcessingEventRempOtherVariant = {
 
 
 ## ProcessingEventRempErrorVariant
-Notifies the app about any problem that has occured in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).
+Notifies the app about any problem that has occurred in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).
 
 ```ts
 type ProcessingEventRempErrorVariant = {
@@ -547,9 +547,9 @@ Notifies the app that the message will be sent to the network. This event means 
 
 When _type_ is _'DidSend'_
 
-Notifies the app that the message was sent to the network, i.e `processing.send_message` was successfuly executed. Now, the message is in the blockchain. If Application exits at this phase, Developer needs to proceed with processing after the application is restored with `wait_for_transaction` function, passing shard_block_id and message from this event.
+Notifies the app that the message was sent to the network, i.e `processing.send_message` was successfully executed. Now, the message is in the blockchain. If Application exits at this phase, Developer needs to proceed with processing after the application is restored with `wait_for_transaction` function, passing shard_block_id and message from this event.
 
-Do not forget to specify abi of your contract as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation.
+Do not forget to specify abi of your contract as well, it is crucial for processing. See `processing.wait_for_transaction` documentation.
 
 - `shard_block_id`: _string_
 - `message_id`: _string_
@@ -565,7 +565,7 @@ node.
 If Application exits at this phase, Developer needs to proceed with processing
 after the application is restored with `wait_for_transaction` function, passing
 shard_block_id and message from this event. Do not forget to specify abi of your contract
-as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation.
+as well, it is crucial for processing. See `processing.wait_for_transaction` documentation.
 
 - `shard_block_id`: _string_
 - `message_id`: _string_
@@ -581,7 +581,7 @@ procedure.
 If Application exits at this phase, Developer needs to proceed with processing
 after the application is restored with `wait_for_transaction` function, passing
 shard_block_id and message from this event. Do not forget to specify abi of your contract
-as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation.
+as well, it is crucial for processing. See `processing.wait_for_transaction` documentation.
 
 - `shard_block_id`: _string_
 - `message_id`: _string_
@@ -610,7 +610,7 @@ Notifies the app that the message was not executed within expire timeout on-chai
 This event occurs only for the contracts which ABI includes "expire" header.
 
 If Application specifies `NetworkConfig.message_retries_count` > 0, then `process_message`
-will perform retries: will create a new message and send it again and repeat it untill it reaches
+will perform retries: will create a new message and send it again and repeat it until it reaches
 the maximum retries count or receives a successful result.  All the processing
 events will be repeated.
 
@@ -636,7 +636,7 @@ Notifies the app that the message has been successfully included into a block ca
 
 When _type_ is _'RempIncludedIntoAcceptedBlock'_
 
-Notifies the app that the block candicate with the message has been accepted by the thread's validators
+Notifies the app that the block candidate with the message has been accepted by the thread's validators
 
 - `message_id`: _string_
 - `timestamp`: _bigint_
@@ -652,7 +652,7 @@ Notifies the app about some other minor REMP statuses occurring during message p
 
 When _type_ is _'RempError'_
 
-Notifies the app about any problem that has occured in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).
+Notifies the app about any problem that has occurred in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).
 
 - `error`: _[ClientError](mod\_client.md#clienterror)_
 

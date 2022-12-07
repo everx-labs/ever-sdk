@@ -260,7 +260,7 @@ function parse_shardstate(
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
-- `id`: _string_ – Shardstate identificator
+- `id`: _string_ – Shardstate identifier
 - `workchain_id`: _number_ – Workchain shardstate belongs to
 
 
@@ -806,7 +806,7 @@ type ParamsOfParseShardstate = {
 }
 ```
 - `boc`: _string_ – BOC encoded as base64
-- `id`: _string_ – Shardstate identificator
+- `id`: _string_ – Shardstate identifier
 - `workchain_id`: _number_ – Workchain shardstate belongs to
 
 

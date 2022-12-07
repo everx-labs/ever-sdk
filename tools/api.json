@@ -1,5 +1,5 @@
 {
-  "version": "1.38.1",
+  "version": "1.39.0",
   "modules": [
     {
       "name": "client",
@@ -477,7 +477,7 @@
                 "number_size": 32
               },
               "summary": "Frequency of sync latency detection.",
-              "description": "Library periodically checks the current endpoint for blockchain data syncronization latency.\nIf the latency (time-lag) is less then `NetworkConfig.max_latency`\nthen library selects another endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
+              "description": "Library periodically checks the current endpoint for blockchain data synchronization latency.\nIf the latency (time-lag) is less then `NetworkConfig.max_latency`\nthen library selects another endpoint.\n\nMust be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
               "name": "max_latency",
@@ -487,7 +487,7 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data synchronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.",
+              "summary": "Maximum value for the endpoint's blockchain data synchronization latency (time-lag). Library periodically checks the current endpoint for blockchain data synchronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.",
               "description": "Must be specified in milliseconds. Default is 60000 (1 min)."
             },
             {
@@ -520,7 +520,7 @@
                 "number_size": 32
               },
               "summary": "UNSTABLE.",
-              "description": "First REMP status awaiting timeout. If no status recieved during the timeout than fallback transaction scenario is activated.\n\nMust be specified in milliseconds. Default is 1000 (1 sec)."
+              "description": "First REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.\n\nMust be specified in milliseconds. Default is 1000 (1 sec)."
             },
             {
               "name": "next_remp_status_timeout",
@@ -531,7 +531,7 @@
                 "number_size": 32
               },
               "summary": "UNSTABLE.",
-              "description": "Subsequent REMP status awaiting timeout. If no status recieved during the timeout than fallback transaction scenario is activated.\n\nMust be specified in milliseconds. Default is 5000 (5 sec)."
+              "description": "Subsequent REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.\n\nMust be specified in milliseconds. Default is 5000 (5 sec)."
             },
             {
               "name": "access_key",
@@ -559,7 +559,7 @@
             {
               "name": "WS",
               "type": "None",
-              "summary": "All GraphQL queries will be served using single web socket connection.",
+              "summary": "All GraphQL queries will be served using single web socket connection. SDK is tested to reliably handle 5000 parallel network requests (sending and processing messages, quering and awaiting blockchain data)",
               "description": null
             }
           ],
@@ -6539,6 +6539,25 @@
               },
               "summary": "Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)",
               "description": null
+            },
+            {
+              "name": "function_name",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Function name or function id if is known in advance",
+              "description": null
+            },
+            {
+              "name": "data_layout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "DataLayout"
+              },
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -6615,6 +6634,25 @@
                 "type": "Boolean"
               },
               "summary": "Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)",
+              "description": null
+            },
+            {
+              "name": "function_name",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "Function name or function id if is known in advance",
+              "description": null
+            },
+            {
+              "name": "data_layout",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "DataLayout"
+              },
+              "summary": null,
               "description": null
             }
           ],
@@ -7776,7 +7814,7 @@
             {
               "name": "id",
               "type": "String",
-              "summary": "Shardstate identificator",
+              "summary": "Shardstate identifier",
               "description": null
             },
             {
@@ -9464,8 +9502,8 @@
                   "description": null
                 }
               ],
-              "summary": "Notifies the app that the message was sent to the network, i.e `processing.send_message` was successfuly executed. Now, the message is in the blockchain. If Application exits at this phase, Developer needs to proceed with processing after the application is restored with `wait_for_transaction` function, passing shard_block_id and message from this event.",
-              "description": "Do not forget to specify abi of your contract as well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation."
+              "summary": "Notifies the app that the message was sent to the network, i.e `processing.send_message` was successfully executed. Now, the message is in the blockchain. If Application exits at this phase, Developer needs to proceed with processing after the application is restored with `wait_for_transaction` function, passing shard_block_id and message from this event.",
+              "description": "Do not forget to specify abi of your contract as well, it is crucial for processing. See `processing.wait_for_transaction` documentation."
             },
             {
               "name": "SendFailed",
@@ -9498,7 +9536,7 @@
                 }
               ],
               "summary": "Notifies the app that the sending operation was failed with network error.",
-              "description": "Nevertheless the processing will be continued at the waiting\nphase because the message possibly has been delivered to the\nnode.\nIf Application exits at this phase, Developer needs to proceed with processing\nafter the application is restored with `wait_for_transaction` function, passing\nshard_block_id and message from this event. Do not forget to specify abi of your contract\nas well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation."
+              "description": "Nevertheless the processing will be continued at the waiting\nphase because the message possibly has been delivered to the\nnode.\nIf Application exits at this phase, Developer needs to proceed with processing\nafter the application is restored with `wait_for_transaction` function, passing\nshard_block_id and message from this event. Do not forget to specify abi of your contract\nas well, it is crucial for processing. See `processing.wait_for_transaction` documentation."
             },
             {
               "name": "WillFetchNextBlock",
@@ -9524,7 +9562,7 @@
                 }
               ],
               "summary": "Notifies the app that the next shard block will be fetched from the network.",
-              "description": "Event can occurs more than one time due to block walking\nprocedure.\nIf Application exits at this phase, Developer needs to proceed with processing\nafter the application is restored with `wait_for_transaction` function, passing\nshard_block_id and message from this event. Do not forget to specify abi of your contract\nas well, it is crucial for proccessing. See `processing.wait_for_transaction` documentation."
+              "description": "Event can occurs more than one time due to block walking\nprocedure.\nIf Application exits at this phase, Developer needs to proceed with processing\nafter the application is restored with `wait_for_transaction` function, passing\nshard_block_id and message from this event. Do not forget to specify abi of your contract\nas well, it is crucial for processing. See `processing.wait_for_transaction` documentation."
             },
             {
               "name": "FetchNextBlockFailed",
@@ -9584,7 +9622,7 @@
                 }
               ],
               "summary": "Notifies the app that the message was not executed within expire timeout on-chain and will never be because it is already expired. The expiration timeout can be configured with `AbiConfig` parameters.",
-              "description": "This event occurs only for the contracts which ABI includes \"expire\" header.\n\nIf Application specifies `NetworkConfig.message_retries_count` > 0, then `process_message`\nwill perform retries: will create a new message and send it again and repeat it untill it reaches\nthe maximum retries count or receives a successful result.  All the processing\nevents will be repeated."
+              "description": "This event occurs only for the contracts which ABI includes \"expire\" header.\n\nIf Application specifies `NetworkConfig.message_retries_count` > 0, then `process_message`\nwill perform retries: will create a new message and send it again and repeat it until it reaches\nthe maximum retries count or receives a successful result.  All the processing\nevents will be repeated."
             },
             {
               "name": "RempSentToValidators",
@@ -9670,7 +9708,7 @@
                   "description": null
                 }
               ],
-              "summary": "Notifies the app that the block candicate with the message has been accepted by the thread's validators",
+              "summary": "Notifies the app that the block candidate with the message has been accepted by the thread's validators",
               "description": null
             },
             {
@@ -9714,7 +9752,7 @@
                   "description": null
                 }
               ],
-              "summary": "Notifies the app about any problem that has occured in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).",
+              "summary": "Notifies the app about any problem that has occurred in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).",
               "description": null
             }
           ],
@@ -11084,7 +11122,7 @@
         {
           "name": "run_executor",
           "summary": "Emulates all the phases of contract execution locally",
-          "description": "Performs all the phases of contract execution on Transaction Executor -\nthe same component that is used on Validator Nodes.\n\nCan be used for contract debugging, to find out the reason why a message was not delivered successfully.\nValidators throw away the failed external inbound messages (if they failed bedore `ACCEPT`) in the real network.\nThis is why these messages are impossible to debug in the real network.\nWith the help of run_executor you can do that. In fact, `process_message` function\nperforms local check with `run_executor` if there was no transaction as a result of processing\nand returns the error, if there is one.\n\nAnother use case to use `run_executor` is to estimate fees for message execution.\nSet  `AccountForExecutor::Account.unlimited_balance`\nto `true` so that emulation will not depend on the actual balance.\nThis may be needed to calculate deploy fees for an account that does not exist yet.\nJSON with fees is in `fees` field of the result.\n\nOne more use case - you can produce the sequence of operations,\nthus emulating the sequential contract calls locally.\nAnd so on.\n\nTransaction executor requires account BOC (bag of cells) as a parameter.\nTo get the account BOC - use `net.query` method to download it from GraphQL API\n(field `boc` of `account`) or generate it with `abi.encode_account` method.\n\nAlso it requires message BOC. To get the message BOC - use `abi.encode_message` or `abi.encode_internal_message`.\n\nIf you need this emulation to be as precise as possible (for instance - emulate transaction\nwith particular lt in particular block or use particular blockchain config,\ndownloaded from a particular key block - then specify `execution_options` parameter.\n\nIf you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.",
+          "description": "Performs all the phases of contract execution on Transaction Executor -\nthe same component that is used on Validator Nodes.\n\nCan be used for contract debugging, to find out the reason why a message was not delivered successfully.\nValidators throw away the failed external inbound messages (if they failed before `ACCEPT`) in the real network.\nThis is why these messages are impossible to debug in the real network.\nWith the help of run_executor you can do that. In fact, `process_message` function\nperforms local check with `run_executor` if there was no transaction as a result of processing\nand returns the error, if there is one.\n\nAnother use case to use `run_executor` is to estimate fees for message execution.\nSet  `AccountForExecutor::Account.unlimited_balance`\nto `true` so that emulation will not depend on the actual balance.\nThis may be needed to calculate deploy fees for an account that does not exist yet.\nJSON with fees is in `fees` field of the result.\n\nOne more use case - you can produce the sequence of operations,\nthus emulating the sequential contract calls locally.\nAnd so on.\n\nTransaction executor requires account BOC (bag of cells) as a parameter.\nTo get the account BOC - use `net.query` method to download it from GraphQL API\n(field `boc` of `account`) or generate it with `abi.encode_account` method.\n\nAlso it requires message BOC. To get the message BOC - use `abi.encode_message` or `abi.encode_internal_message`.\n\nIf you need this emulation to be as precise as possible (for instance - emulate transaction\nwith particular lt in particular block or use particular blockchain config,\ndownloaded from a particular key block - then specify `execution_options` parameter.\n\nIf you need to see the aborted transaction as a result, not as an error, set `skip_transaction_check` to `true`.",
           "params": [
             {
               "name": "context",
@@ -11315,6 +11353,13 @@
               "name": "QueryTransactionTreeTimeout",
               "type": "Number",
               "value": "616",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "GraphqlConnectionError",
+              "type": "Number",
+              "value": "617",
               "summary": null,
               "description": null
             }
@@ -12056,7 +12101,18 @@
                 "number_size": 32
               },
               "summary": "Timeout used to limit waiting time for the missing messages and transaction.",
-              "description": "If some of the following messages and transactions are missing yet\nThe maximum waiting time is regulated by this option.\n\nDefault value is 60000 (1 min)."
+              "description": "If some of the following messages and transactions are missing yet\nThe maximum waiting time is regulated by this option.\n\nDefault value is 60000 (1 min). If `timeout` is set to 0 then function will wait infinitely\nuntil the whole transaction tree is executed"
+            },
+            {
+              "name": "transaction_max_count",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "UInt",
+                "number_size": 32
+              },
+              "summary": "Maximum transaction count to wait.",
+              "description": "If transaction tree contains more transaction then this parameter then only first `transaction_max_count` transaction are awaited and returned.\n\nDefault value is 50. If `transaction_max_count` is set to 0 then no limitation on\ntransaction count is used and all transaction are returned."
             }
           ],
           "summary": null,
@@ -12624,7 +12680,7 @@
         {
           "name": "subscribe",
           "summary": "Creates a subscription",
-          "description": "The subscription is a persistent communication channel between\nclient and Everscale Network.\n\n### Important Notes on Subscriptions\n\nUnfortunately sometimes the connection with the network breakes down.\nIn this situation the library attempts to reconnect to the network.\nThis reconnection sequence can take significant time.\nAll of this time the client is disconnected from the network.\n\nBad news is that all changes that happened while\nthe client was disconnected are lost.\n\nGood news is that the client report errors to the callback when\nit loses and resumes connection.\n\nSo, if the lost changes are important to the application then\nthe application must handle these error reports.\n\nLibrary reports errors with `responseType` == 101\nand the error object passed via `params`.\n\nWhen the library has successfully reconnected\nthe application receives callback with\n`responseType` == 101 and `params.code` == 614 (NetworkModuleResumed).\n\nApplication can use several ways to handle this situation:\n- If application monitors changes for the single\nobject (for example specific account):  application\ncan perform a query for this object and handle actual data as a\nregular data from the subscription.\n- If application monitors sequence of some objects\n(for example transactions of the specific account): application must\nrefresh all cached (or visible to user) lists where this sequences presents.",
+          "description": "The subscription is a persistent communication channel between\nclient and Everscale Network.\n\n### Important Notes on Subscriptions\n\nUnfortunately sometimes the connection with the network breaks down.\nIn this situation the library attempts to reconnect to the network.\nThis reconnection sequence can take significant time.\nAll of this time the client is disconnected from the network.\n\nBad news is that all changes that happened while\nthe client was disconnected are lost.\n\nGood news is that the client report errors to the callback when\nit loses and resumes connection.\n\nSo, if the lost changes are important to the application then\nthe application must handle these error reports.\n\nLibrary reports errors with `responseType` == 101\nand the error object passed via `params`.\n\nWhen the library has successfully reconnected\nthe application receives callback with\n`responseType` == 101 and `params.code` == 614 (NetworkModuleResumed).\n\nApplication can use several ways to handle this situation:\n- If application monitors changes for the single\nobject (for example specific account):  application\ncan perform a query for this object and handle actual data as a\nregular data from the subscription.\n- If application monitors sequence of some objects\n(for example transactions of the specific account): application must\nrefresh all cached (or visible to user) lists where this sequences presents.",
           "params": [
             {
               "name": "context",
@@ -12910,7 +12966,7 @@
         {
           "name": "query_transaction_tree",
           "summary": "Returns a tree of transactions triggered by a specific message.",
-          "description": "Performs recursive retrieval of a transactions tree produced by a specific message:\nin_msg -> dst_transaction -> out_messages -> dst_transaction -> ...\nIf the chain of transactions execution is in progress while the function is running,\nit will wait for the next transactions to appear until the full tree or more than 50 transactions\nare received.\n\nAll the retrieved messages and transactions are included\ninto `result.messages` and `result.transactions` respectively.\n\nFunction reads transactions layer by layer, by pages of 20 transactions.\n\nThe retrieval prosess goes like this:\nLet's assume we have an infinite chain of transactions and each transaction generates 5 messages.\n1. Retrieve 1st message (input parameter) and corresponding transaction - put it into result.\nIt is the first level of the tree of transactions - its root.\nRetrieve 5 out message ids from the transaction for next steps.\n2. Retrieve 5 messages and corresponding transactions on the 2nd layer. Put them into result.\nRetrieve 5*5 out message ids from these transactions for next steps\n3. Retrieve 20 (size of the page) messages and transactions (3rd layer) and 20*5=100 message ids (4th layer).\n4. Retrieve the last 5 messages and 5 transactions on the 3rd layer + 15 messages and transactions (of 100) from the 4th layer\n+ 25 message ids of the 4th layer + 75 message ids of the 5th layer.\n5. Retrieve 20 more messages and 20 more transactions of the 4th layer + 100 more message ids of the 5th layer.\n6. Now we have 1+5+20+20+20 = 66 transactions, which is more than 50. Function exits with the tree of\n1m->1t->5m->5t->25m->25t->35m->35t. If we see any message ids in the last transactions out_msgs, which don't have\ncorresponding messages in the function result, it means that the full tree was not received and we need to continue iteration.\n\nTo summarize, it is guaranteed that each message in `result.messages` has the corresponding transaction\nin the `result.transactions`.\nBut there is no guarantee that all messages from transactions `out_msgs` are\npresented in `result.messages`.\nSo the application has to continue retrieval for missing messages if it requires.",
+          "description": "Performs recursive retrieval of a transactions tree produced by a specific message:\nin_msg -> dst_transaction -> out_messages -> dst_transaction -> ...\nIf the chain of transactions execution is in progress while the function is running,\nit will wait for the next transactions to appear until the full tree or more than 50 transactions\nare received.\n\nAll the retrieved messages and transactions are included\ninto `result.messages` and `result.transactions` respectively.\n\nFunction reads transactions layer by layer, by pages of 20 transactions.\n\nThe retrieval process goes like this:\nLet's assume we have an infinite chain of transactions and each transaction generates 5 messages.\n1. Retrieve 1st message (input parameter) and corresponding transaction - put it into result.\nIt is the first level of the tree of transactions - its root.\nRetrieve 5 out message ids from the transaction for next steps.\n2. Retrieve 5 messages and corresponding transactions on the 2nd layer. Put them into result.\nRetrieve 5*5 out message ids from these transactions for next steps\n3. Retrieve 20 (size of the page) messages and transactions (3rd layer) and 20*5=100 message ids (4th layer).\n4. Retrieve the last 5 messages and 5 transactions on the 3rd layer + 15 messages and transactions (of 100) from the 4th layer\n+ 25 message ids of the 4th layer + 75 message ids of the 5th layer.\n5. Retrieve 20 more messages and 20 more transactions of the 4th layer + 100 more message ids of the 5th layer.\n6. Now we have 1+5+20+20+20 = 66 transactions, which is more than 50. Function exits with the tree of\n1m->1t->5m->5t->25m->25t->35m->35t. If we see any message ids in the last transactions out_msgs, which don't have\ncorresponding messages in the function result, it means that the full tree was not received and we need to continue iteration.\n\nTo summarize, it is guaranteed that each message in `result.messages` has the corresponding transaction\nin the `result.transactions`.\nBut there is no guarantee that all messages from transactions `out_msgs` are\npresented in `result.messages`.\nSo the application has to continue retrieval for missing messages if it requires.",
           "params": [
             {
               "name": "context",
@@ -12986,7 +13042,7 @@
         {
           "name": "resume_block_iterator",
           "summary": "Resumes block iterator.",
-          "description": "The iterator stays exactly at the same position where the `resume_state` was catched.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
+          "description": "The iterator stays exactly at the same position where the `resume_state` was caught.\n\nApplication should call the `remove_iterator` when iterator is no longer required.",
           "params": [
             {
               "name": "context",
