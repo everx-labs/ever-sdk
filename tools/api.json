@@ -6134,6 +6134,26 @@
           "description": null
         },
         {
+          "name": "DataLayout",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "Input",
+              "type": "None",
+              "summary": "Decode message body as function input parameters.",
+              "description": null
+            },
+            {
+              "name": "Output",
+              "type": "None",
+              "summary": "Decode message body as function output.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
           "name": "ParamsOfEncodeMessageBody",
           "type": "Struct",
           "struct_fields": [
@@ -6554,7 +6574,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "DataLayout"
+                "ref_name": "abi.DataLayout"
               },
               "summary": null,
               "description": null
@@ -6650,7 +6670,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "DataLayout"
+                "ref_name": "abi.DataLayout"
               },
               "summary": null,
               "description": null
