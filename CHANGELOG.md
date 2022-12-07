@@ -41,6 +41,9 @@ connection
 
 - Websocket interaction thread panic
 
+- **Debot module**:
+    - fill hash argument in `SDK.signHash` method with leading zeroes up to 32 bytes.
+
 ## [1.38.1] – 2022-11-10
 
 ### Improvement
