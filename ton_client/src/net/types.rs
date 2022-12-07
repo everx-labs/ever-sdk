@@ -170,6 +170,8 @@ pub enum NetworkQueriesProtocol {
     HTTP,
 
     /// All GraphQL queries will be served using single web socket connection.
+    /// SDK is tested to reliably handle 5000 parallel network requests (sending and processing
+    /// messages, quering and awaiting blockchain data)
     WS,
 }
 
