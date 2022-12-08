@@ -1,4 +1,4 @@
-use crate::encoding::decode_abi_number;
+use crate::encoding::{decode_abi_number, slice_from_cell};
 use crate::{abi::types::Abi, boc::internal::deserialize_cell_from_boc};
 use crate::abi::{Error, FunctionHeader};
 use crate::boc::internal::deserialize_object_from_boc;
@@ -162,7 +162,8 @@ pub async fn decode_message_body(
     let abi = params.abi.json_string()?;
     let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
     let (_, body) = deserialize_cell_from_boc(&context, &params.body, "message body").await?;
-    decode_body(abi, body.into(), params.is_internal, params.allow_partial, params.function_name, params.data_layout)
+    let body = slice_from_cell(body)?;
+    decode_body(abi, body, params.is_internal, params.allow_partial, params.function_name, params.data_layout)
 }
 
 async fn prepare_decode(
@@ -304,10 +305,6 @@ fn decode_with_function(
     }
 }
 
-fn abi_event<'a>(abi: &'a AbiContract, event_name: &str) -> ton_types::Result<&'a ton_abi::Event> {
-    abi.events().get(event_name).ok_or_else(|| ton_abi::AbiError::InvalidName { name: event_name.to_owned() }.into())
-}
-
 enum AbiFunctionVariant<'a> {
     Function(&'a AbiFunction),
     Event(&'a AbiEvent),
@@ -316,7 +313,7 @@ enum AbiFunctionVariant<'a> {
 fn find_abi_function<'a>(abi: &'a AbiContract, name: &str) -> ClientResult<AbiFunctionVariant<'a>> {
     if let Ok(function) = abi.function(name) {
         Ok(AbiFunctionVariant::Function(function))
-    } else if let Ok(event) = abi_event(abi, name) {
+    } else if let Ok(event) = abi.event(name) {
         Ok(AbiFunctionVariant::Event(event))
     } else {
         let function_id: u32 = decode_abi_number(name)?;

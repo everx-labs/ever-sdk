@@ -161,7 +161,7 @@ impl ClientError {
 pub(crate) fn format_time(time: u32) -> String {
     format!(
         "{} ({})",
-        chrono::Local.timestamp(time as i64, 0).to_rfc2822(),
+        chrono::Local.timestamp_opt(time as i64, 0).unwrap().to_rfc2822(),
         time
     )
 }

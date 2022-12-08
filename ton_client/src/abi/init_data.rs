@@ -3,7 +3,7 @@ use crate::abi::Error;
 use crate::client::ClientContext;
 use crate::boc::internal::{deserialize_cell_from_boc, serialize_cell_to_boc};
 use crate::boc::BocCacheType;
-use crate::encoding::hex_decode;
+use crate::encoding::{hex_decode, slice_from_cell};
 use crate::error::ClientResult;
 use serde_json;
 use serde_json::Value;
@@ -60,7 +60,8 @@ fn update_initial_data_internal(
             let abi = abi.as_ref()
                 .ok_or_else(|| Error::encode_init_data_failed("contract ABI required to set initial data"))?
                 .json_string()?;
-            ton_abi::json_abi::update_contract_data(&abi, &init_data.to_string(), data.into())
+            let data = slice_from_cell(data)?;
+            ton_abi::json_abi::update_contract_data(&abi, &init_data.to_string(), data)
                 .map_err(|err| Error::encode_init_data_failed(err))?
                 .into_cell()
         }
@@ -69,7 +70,8 @@ fn update_initial_data_internal(
 
     match initial_pubkey {
         Some(pubkey) => {
-            Ok(ton_abi::Contract::insert_pubkey(data.into(), &hex_decode(&pubkey)?)
+            let data = slice_from_cell(data)?;
+            Ok(ton_abi::Contract::insert_pubkey(data, &hex_decode(&pubkey)?)
                 .map_err(|err| Error::encode_init_data_failed(err))?
                 .into_cell())
         }
@@ -155,7 +157,7 @@ pub async fn decode_initial_data(
     params: ParamsOfDecodeInitialData,
 ) -> ClientResult<ResultOfDecodeInitialData> {
     let (_, data) = deserialize_cell_from_boc(&context, &params.data, "contract data").await?;
-    let data: SliceData = data.into();
+    let data = slice_from_cell(data)?;
 
     let initial_pubkey = ton_abi::Contract::get_pubkey(&data)
         .map_err(|e| Error::invalid_data_for_decode(e))?

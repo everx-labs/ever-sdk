@@ -178,7 +178,7 @@ pub(super) fn format_arg(params: &serde_json::Value, i: usize) -> String {
         return if utime == 0 {
             "undefined".to_owned()
         } else {
-            let date = Local.timestamp(utime as i64, 0);
+            let date = Local.timestamp_opt(utime as i64, 0).unwrap();
             date.to_rfc2822()
         };
     }

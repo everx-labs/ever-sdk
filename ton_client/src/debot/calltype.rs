@@ -234,7 +234,7 @@ async fn decode_and_fix_ext_msg(
     }
     signed_body.append_builder(&new_body).map_err(msg_err)?;
 
-    message.set_body(signed_body.into_cell().map_err(msg_err)?.into());
+    message.set_body(signed_body.into_cell().and_then(SliceData::load_cell).map_err(msg_err)?);
     Ok((func_id, message))
 }
 
@@ -419,7 +419,8 @@ impl ContractCall {
                     // answer message not found, build empty answer.
                     let mut new_body = BuilderData::new();
                     new_body.append_u32(self.meta.answer_id).map_err(msg_err)?;
-                    build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into_cell().map_err(msg_err)?.into())
+                    let new_body = new_body.into_cell().and_then(SliceData::load_cell).map_err(msg_err)?;
+                    build_internal_message(&self.dest_addr, &self.debot_addr, new_body)
                 }
                 Err(e) => {
                     debug!("Transaction failed: {:?}", e);
@@ -433,7 +434,8 @@ impl ContractCall {
                 .append_u32(self.meta.answer_id)
                 .and_then(|b| b.append_raw(&msg_id, 256))
                 .map_err(msg_err)?;
-            build_internal_message(&self.dest_addr, &self.debot_addr, new_body.into_cell().map_err(msg_err)?.into())
+            let new_body = new_body.into_cell().and_then(SliceData::load_cell).map_err(msg_err)?;
+            build_internal_message(&self.dest_addr, &self.debot_addr, new_body)
         }
     }
 
@@ -470,7 +472,7 @@ fn build_onerror_body(onerror_id: u32, e: ClientError) -> ClientResult<SliceData
         .and_then(|val| val.as_i64())
         .unwrap_or(0);
     new_body.append_u32(error_code as u32).map_err(msg_err)?;
-    Ok(new_body.into_cell().map_err(msg_err)?.into())
+    new_body.into_cell().and_then(SliceData::load_cell).map_err(msg_err)
 }
 
 fn build_answer_msg(
@@ -498,7 +500,8 @@ fn build_answer_msg(
             .ok()?;
     }
 
-    build_internal_message(dest_addr, debot_addr, new_body.into_cell().ok()?.into()).ok()
+    let new_body = new_body.into_cell().and_then(SliceData::load_cell).ok()?;
+    build_internal_message(dest_addr, debot_addr, new_body).ok()
 }
 
 async fn resolve_signer(

@@ -115,12 +115,14 @@ impl ContractImage {
     }
 
     pub fn get_public_key(&self) -> Result<Option<PublicKey>> {
-        let data = &self.state_init.data.as_ref().ok_or_else(
-            || SdkError::InvalidData {
-                msg: "State init has no data".to_owned()
-            }
-        )?.into();
-        Ok(AbiContract::get_pubkey(data)?
+        let data = self.state_init.data
+            .clone()
+            .ok_or_else(
+                || SdkError::InvalidData {
+                    msg: "State init has no data".to_owned()
+                }
+            )?;
+        Ok(AbiContract::get_pubkey(&SliceData::load_cell(data)?)?
             .map(|pub_key| PublicKey::from_bytes(&pub_key))
             .transpose()?
         )
@@ -130,7 +132,7 @@ impl ContractImage {
         let state_init = &mut self.state_init;
 
         let new_data = AbiContract::insert_pubkey(
-            state_init.data.clone().unwrap_or_default().into(),
+            SliceData::load_cell(state_init.data.clone().unwrap_or_default())?,
             pub_key.as_bytes(),
         )?;
         state_init.set_data(new_data.into_cell());
@@ -185,7 +187,7 @@ impl ContractImage {
         let new_data = ton_abi::json_abi::update_contract_data(
             abi_json,
             data_json,
-            self.state_init.data.clone().unwrap_or_default().into(),
+            SliceData::load_cell(self.state_init.data.clone().unwrap_or_default())?,
         )?;
 
         self.state_init.set_data(new_data.into_cell());
@@ -297,7 +299,7 @@ impl Contract {
             Some(address.to_string()),
         )?;
 
-        let msg = Self::create_ext_in_message(address.clone(), msg_body.into_cell()?.into())?;
+        let msg = Self::create_ext_in_message(address.clone(), SliceData::load_cell(msg_body.into_cell()?)?)?;
         let (body, id) = Self::serialize_message(&msg)?;
         Ok(SdkMessage {
             id,
@@ -335,7 +337,7 @@ impl Contract {
             ihr_disabled,
             bounce,
             value,
-            Some(msg_body.into_cell()?.into()),
+            Some(SliceData::load_cell(msg_body.into_cell()?)?),
         )
     }
 
@@ -373,7 +375,7 @@ impl Contract {
             Some(address.to_string()),
         )?;
 
-        let msg = Self::create_ext_in_message(address, msg_body.into_cell()?.into())?;
+        let msg = Self::create_ext_in_message(address, SliceData::load_cell(msg_body.into_cell()?)?)?;
 
         Self::serialize_message(&msg).map(|(msg_data, _id)| MessageToSign {
             message: msg_data,
@@ -402,7 +404,7 @@ impl Contract {
             Some(image.msg_address(workchain_id).to_string()),
         )?;
 
-        let cell: SliceData = msg_body.into_cell()?.into();
+        let cell = SliceData::load_cell(msg_body.into_cell()?)?;
         let msg = Self::create_ext_deploy_message(Some(cell), image, workchain_id)?;
 
         let address = match msg.dst_ref() {
@@ -473,7 +475,7 @@ impl Contract {
             Some(image.msg_address(workchain_id).to_string()),
         )?;
 
-        let cell: SliceData = msg_body.into_cell()?.into();
+        let cell = SliceData::load_cell(msg_body.into_cell()?)?;
         let msg = Self::create_ext_deploy_message(Some(cell), image, workchain_id)?;
 
         Self::serialize_message(&msg).map(|(msg_data, _id)| MessageToSign {
@@ -502,7 +504,7 @@ impl Contract {
             Some(image.msg_address(workchain_id).to_string()),
         )?;
 
-        let cell: SliceData = msg_body.into_cell()?.into();
+        let cell = SliceData::load_cell(msg_body.into_cell()?)?;
         let msg = Self::create_int_deploy_message(src, Some(cell), image, workchain_id, ihr_disabled, bounce)?;
 
         Self::serialize_message(&msg)
@@ -527,7 +529,7 @@ impl Contract {
         }))?;
 
         let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
-        message.set_body(signed_body.into_cell()?.into());
+        message.set_body(SliceData::load_cell(signed_body.into_cell()?)?);
 
         let address = match message.dst_ref() {
             Some(address) => address.clone(),
@@ -563,7 +565,7 @@ impl Contract {
         }))?;
 
         let signed_body = abi.add_sign_to_encoded_input(signature, public_key, body)?;
-        message.set_body(signed_body.into_cell()?.into());
+        message.set_body(SliceData::load_cell(signed_body.into_cell()?)?);
 
         let address = match message.dst_ref() {
             Some(address) => address.clone(),
@@ -664,7 +666,7 @@ impl Contract {
 
     /// Deserializes tree of cells from byte array into `SliceData`
     pub fn deserialize_tree_to_slice(data: &[u8]) -> Result<SliceData> {
-        Ok(deserialize_tree_of_cells(&mut Cursor::new(data))?.into())
+        SliceData::load_cell(deserialize_tree_of_cells(&mut Cursor::new(data))?)
     }
 
     pub fn get_dst_from_msg(msg: &[u8]) -> Result<MsgAddressInt> {

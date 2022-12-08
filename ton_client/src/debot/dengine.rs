@@ -4,7 +4,7 @@ use crate::abi::{
 };
 use crate::boc::internal::{deserialize_cell_from_base64};
 use crate::crypto::{remove_signing_box, RegisteredSigningBox, SigningBoxHandle};
-use crate::encoding::{decode_abi_number};
+use crate::encoding::{decode_abi_number, slice_from_cell};
 use crate::error::{ClientError, ClientResult};
 use crate::net::{query_collection, NetworkConfig, ParamsOfQueryCollection};
 use crate::processing::{process_message, ParamsOfProcessMessage, ProcessingEvent};
@@ -284,7 +284,8 @@ impl DEngine {
         };
         let body = encode_message_body(self.ton.clone(), msg_params).await?.body;
         let (_, body_cell) = deserialize_cell_from_base64(&body, "message body")?;
-        let msg_base64 = build_internal_message(&source, &self.addr, body_cell.into())?;
+        let body = slice_from_cell(body_cell)?;
+        let msg_base64 = build_internal_message(&source, &self.addr, body)?;
         self.send_to_debot(msg_base64).await
     }
 
