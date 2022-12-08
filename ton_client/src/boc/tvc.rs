@@ -12,11 +12,12 @@
 */
 
 use ton_block::{Number5, StateInit, StateInitLib, TickTock};
-use ton_types::{BuilderData, Cell, SliceData};
+use ton_types::{BuilderData, Cell};
 
 use crate::boc::internal::{deserialize_cell_from_boc, deserialize_object_from_boc, serialize_cell_to_boc, serialize_object_to_boc};
 use crate::boc::Error;
 use crate::client::ClientContext;
+use crate::encoding::slice_from_cell;
 use crate::error::ClientResult;
 
 use super::BocCacheType;
@@ -58,9 +59,9 @@ fn get_old_selector_salt(code: &Cell) -> ClientResult<Option<Cell>> {
 }
 
 fn get_new_selector_salt_and_ver(code: &Cell) -> ClientResult<(Option<Cell>, Cell)> {
-    let mut private_selector: SliceData = code.reference(0)
-        .map_err(|_| Error::invalid_boc("no private functions selector in new selector"))?
-        .into();
+    let private_selector = code.reference(0)
+        .map_err(|_| Error::invalid_boc("no private functions selector in new selector"))?;
+    let mut private_selector = slice_from_cell(private_selector)?;
     if private_selector.get_next_bits(13).ok() != Some(vec![0xf4, 0xa0]) {
         return Err(Error::invalid_boc("invalid private functions selector data"))
     }

@@ -20,7 +20,7 @@ use std::str::FromStr;
 use num_bigint::BigInt;
 use num_traits::cast::NumCast;
 use ton_block::MsgAddressInt;
-use ton_types::SliceData;
+use ton_types::{Cell, SliceData};
 
 //------------------------------------------------------------------------------------------------------
 
@@ -150,4 +150,9 @@ pub fn decode_abi_number<N: NumCast>(string: &str) -> ClientResult<N> {
     let bigint = decode_abi_bigint(string)?;
     NumCast::from(bigint)
         .ok_or(client::Error::can_not_parse_number(string))
+}
+
+pub fn slice_from_cell(cell: Cell) -> ClientResult<SliceData> {
+    SliceData::load_cell(cell)
+        .map_err(|err| client::Error::invalid_data(err))
 }

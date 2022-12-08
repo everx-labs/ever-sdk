@@ -55,7 +55,7 @@ pub(crate) fn deserialize_object_from_cell<S: Deserializable>(
     } else {
         "".to_string()
     };
-    S::construct_from(&mut cell.into())
+    S::construct_from_cell(cell)
         .map_err(|err|
             Error::invalid_boc(
                 format!("cannot deserialize {} from BOC: {}{}", name, err, tip_full)

@@ -40,6 +40,7 @@ pub enum ErrorCode {
     InternalError = 33,
     InvalidHandle = 34,
     LocalStorageError = 35,
+    InvalidData = 36,
 }
 pub struct Error;
 
@@ -324,6 +325,13 @@ impl Error {
                 "Local storage error: {}",
                 err,
             ),
+        )
+    }
+
+    pub fn invalid_data(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::InvalidData,
+            format!("Invalid data: {}", err),
         )
     }
 }

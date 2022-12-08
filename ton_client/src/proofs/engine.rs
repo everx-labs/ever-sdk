@@ -2,6 +2,7 @@ use std::convert::TryInto;
 use std::future::Future;
 use std::io::Cursor;
 use std::ops::Range;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use failure::{bail, err_msg};

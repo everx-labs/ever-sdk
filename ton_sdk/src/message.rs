@@ -80,7 +80,7 @@ impl Message {
 
     // Returns message's body (as tree of cells) or None if message doesn't have once
     pub fn body(&self) -> Option<SliceData> {
-        self.body.clone().map(|cell| cell.into())
+        self.body.clone().and_then(|cell| SliceData::load_cell(cell).ok())
     }
 
     // Returns message's type

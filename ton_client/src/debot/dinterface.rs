@@ -5,7 +5,7 @@ use super::network_interface::NetworkInterface;
 use super::query_interface::QueryInterface;
 use super::json_lib_utils::bypass_json;
 use super::JsonValue;
-use crate::{abi::{Abi, Error}, error::ClientResult};
+use crate::{abi::{Abi, Error}, error::ClientResult, encoding::slice_from_cell};
 use crate::boc::{parse_message, ParamsOfParse};
 use crate::debot::TonClient;
 use crate::encoding::decode_abi_number;
@@ -15,7 +15,6 @@ use std::collections::HashMap;
 use std::sync::Arc;
 pub type InterfaceResult = Result<(u32, Value), String>;
 use ton_abi::{Contract, ParamType};
-use ton_types::SliceData;
 
 use crate::boc::internal::deserialize_cell_from_boc;
 use ton_sdk::AbiContract;
@@ -29,7 +28,7 @@ async fn decode_msg(
     let abi = abi.json_string()?;
     let abi = AbiContract::load(abi.as_bytes()).map_err(|e| Error::invalid_json(e))?;
     let (_, body) = deserialize_cell_from_boc(&client, &msg_body, "message body").await?;
-    let body: SliceData = body.into();
+    let body = slice_from_cell(body)?;
     let input = abi.decode_input(body, true, false)
         .map_err(|e| Error::invalid_message_for_decode(e))?;
     let value = Detokenizer::detokenize_to_json_value(&input.tokens)
