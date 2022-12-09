@@ -1,3 +1,4 @@
+use crate::abi::decode_message::DataLayout;
 use crate::abi::encode_message::{
     CallSet, DeploySet, ParamsOfAttachSignature, ParamsOfEncodeInternalMessage,
     ParamsOfEncodeMessage, ResultOfAttachSignature, ResultOfEncodeInternalMessage,
@@ -302,7 +303,7 @@ fn decode_v2() {
                 ParamsOfDecodeMessage {
                     abi: events_abi.clone(),
                     message: message.into(),
-                    allow_partial: false,
+                    ..Default::default()
                 },
             )
             .unwrap();
@@ -322,7 +323,7 @@ fn decode_v2() {
                     abi: events_abi.clone(),
                     body,
                     is_internal: parsed.parsed["msg_type_name"] == "Internal",
-                    allow_partial: false,
+                    ..Default::default()
                 },
             )
             .unwrap();
@@ -356,8 +357,7 @@ fn decode_v2() {
     let result: DecodedMessageBody = client.request("abi.decode_message_body", ParamsOfDecodeMessageBody {
         abi: events_abi.clone(),
         body: "te6ccgEBAgEAlgAB4a3f2/jCeWWvgMoAXOakv3VSD56sQrDPT76n1cbrSvpZ0BCs0KEUy2Duvo3zPExePONW3TYy0MCA1i+FFRXcSIXTHxAj/Hd67jWQF7peccWoU/dbMCBJBB6YdPCVZcJlJkAAAF0ZyXLg19VzGQVviwSgAQBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=".into(),
-        is_internal: false,
-        allow_partial: false,
+        ..Default::default()
     }).unwrap();
     let expected = DecodedMessageBody {
         body_type: MessageBodyType::Input,
@@ -973,6 +973,18 @@ fn test_init_data() {
     assert_eq!(result.initial_data, Some(json!({})));
     assert_eq!(result.initial_pubkey, hex::encode(&[0u8; 32]));
 
+    let result: ResultOfEncodeInitialData = client
+    .request(
+        "abi.encode_initial_data",
+        ParamsOfEncodeInitialData {
+            abi: Some(abi.clone()),
+            ..Default::default()
+        },
+    )
+    .unwrap();
+
+    assert_eq!(result.data, data);
+
     let initial_data = json!({
         "a": abi_uint(123, 8),
         "s": "some string",
@@ -1000,7 +1012,7 @@ fn test_init_data() {
             "abi.update_initial_data",
             ParamsOfUpdateInitialData {
                 abi: Some(abi.clone()),
-                data,
+                data: data.clone(),
                 initial_data: Some(initial_data.clone()),
                 initial_pubkey: Some(hex::encode(&[0x22u8; 32])),
                 boc_cache: None,
@@ -1019,8 +1031,32 @@ fn test_init_data() {
             },
         )
         .unwrap();
-    assert_eq!(result.initial_data, Some(initial_data));
+    assert_eq!(result.initial_data, Some(initial_data.clone()));
     assert_eq!(result.initial_pubkey, hex::encode(&[0x22u8; 32]));
+
+    let encode_result: ResultOfEncodeInitialData = client
+        .request(
+            "abi.encode_initial_data",
+            ParamsOfEncodeInitialData {
+                abi: Some(abi.clone()),
+                initial_data: Some(initial_data.clone()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+    let update_result: ResultOfUpdateInitialData = client
+        .request(
+            "abi.update_initial_data",
+            ParamsOfUpdateInitialData {
+                abi: Some(abi.clone()),
+                data,
+                initial_data: Some(initial_data.clone()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    assert_eq!(encode_result.data, update_result.data);
 }
 
 #[test]
@@ -1147,4 +1183,49 @@ fn test_calc_function_id() {
     ).unwrap();
 
     assert_eq!(result.function_id, 0xF744C7E2);
+}
+
+
+#[test]
+fn decode_responsible() {
+    TestClient::init_log();
+    let client = TestClient::new();
+    let abi = TestClient::abi("PriceXchg", Some(2));
+
+    let expected = DecodedMessageBody {
+        body_type: MessageBodyType::Output,
+        name: "onTip3LendOwnership".into(),
+        value: Some(json!({
+            "err_code": abi_uint(103, 32),
+            "processed": abi_uint(0, 128),
+            "enqueued": abi_uint(0, 128),
+            "price_num": abi_uint(72600000000, 128),
+            "price_denum": abi_uint(1000000000, 128),
+            "user_id": abi_uint(1, 256),
+            "order_id": abi_uint(1, 256),
+            "pair": "0:7eb109bdfa9770a074f5aa1459bb28bbecedeffab49e2f00c7eb2d8c5e3ffaf0",
+            "major_decimals": abi_uint(3, 8),
+            "minor_decimals": abi_uint(3, 8),
+            "sell": true,
+        })),
+        header: None,
+    };
+
+    let body = "te6ccgEBAgEAsQAB0IAAAAAAAABnAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABDnTBYAAAAAAAAAAAAAAAAAO5rKAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAQCHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAGAD9YhN79S7hQOnrVCizdlF32dvf9Wk8XgGP1lsYvH/14AYHg=";
+
+    let result: DecodedMessageBody = client
+        .request(
+            "abi.decode_message_body",
+            ParamsOfDecodeMessageBody {
+                abi,
+                body: body.to_owned(),
+                function_name: Some("onTip3LendOwnership".to_owned()),
+                data_layout: Some(DataLayout::Output),
+                is_internal: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+
+    assert_eq!(expected, result);
 }

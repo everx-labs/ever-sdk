@@ -70,7 +70,7 @@ pub struct RegisteredEncryptionBox {
 
 /// Registers an application implemented encryption box.
 pub async fn register_encryption_box(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     encryption_box: impl EncryptionBox + 'static,
 ) -> ClientResult<RegisteredEncryptionBox> {
     let id = context.get_next_id();
@@ -142,8 +142,8 @@ pub struct ResultOfEncryptionBoxEncrypt {
 }
 
 /// Encrypts data using given encryption box
-/// Note. Block cipher algorithms pad data to cipher block size so encrypted data can be longer then 
-/// original data. Client should store the original data size after encryption and use it after 
+/// Note. Block cipher algorithms pad data to cipher block size so encrypted data can be longer then
+/// original data. Client should store the original data size after encryption and use it after
 /// decryption to retrieve the original data from decrypted data.
 #[api_function]
 pub async fn encryption_box_encrypt(
@@ -173,8 +173,8 @@ pub struct ResultOfEncryptionBoxDecrypt {
 }
 
 /// Decrypts data using given encryption box
-/// Note. Block cipher algorithms pad data to cipher block size so encrypted data can be longer then 
-/// original data. Client should store the original data size after encryption and use it after 
+/// Note. Block cipher algorithms pad data to cipher block size so encrypted data can be longer then
+/// original data. Client should store the original data size after encryption and use it after
 /// decryption to retrieve the original data from decrypted data.
 #[api_function]
 pub async fn encryption_box_decrypt(

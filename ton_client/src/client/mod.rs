@@ -146,7 +146,7 @@ pub struct ParamsOfResolveAppRequest {
 /// Resolves application request processing result
 #[api_function]
 pub async fn resolve_app_request(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfResolveAppRequest,
 ) -> ClientResult<()> {
     let request_id = params.app_request_id;

@@ -90,7 +90,7 @@ impl Timer {
         let timer_id = window
             .set_timeout_with_callback_and_timeout_and_arguments_0(
                 on_timer.as_ref().unchecked_ref(),
-                std::cmp::min(timeout_ms, std::i32::MAX as u64) as i32,
+                std::cmp::min(timeout_ms, i32::MAX as u64) as i32,
             )
             .map_err(|_| Error::set_timer_error("Can not set timer"))?;
 

@@ -27,7 +27,7 @@ pub struct ParamsOfParse {
 pub struct ParamsOfParseShardstate {
     /// BOC encoded as base64
     pub boc: String,
-    /// Shardstate identificator
+    /// Shardstate identifier
     pub id: String,
     /// Workchain shardstate belongs to
     pub workchain_id: i32,
@@ -36,7 +36,7 @@ pub struct ParamsOfParseShardstate {
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ResultOfParse {
     /// JSON containing parsed BOC
-    pub parsed: serde_json::Value,
+    pub parsed: Value,
 }
 
 /// Parses message boc into a JSON

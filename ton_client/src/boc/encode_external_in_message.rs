@@ -3,7 +3,7 @@ use crate::boc::internal::{
 };
 use crate::boc::BocCacheType;
 use crate::client::ClientContext;
-use crate::encoding::account_decode;
+use crate::encoding::{account_decode, slice_from_cell};
 use crate::error::ClientResult;
 use std::str::FromStr;
 use ton_block::{ExternalInboundMessageHeader, GetRepresentationHash, MsgAddressExt, StateInit};
@@ -70,7 +70,7 @@ pub async fn encode_external_in_message(
     }
     if let Some(body) = params.body {
         let (_, cell) = deserialize_cell_from_boc(&context, &body, "message body").await?;
-        msg.set_body(cell.into());
+        msg.set_body(slice_from_cell(cell)?);
     }
 
     let hash = msg

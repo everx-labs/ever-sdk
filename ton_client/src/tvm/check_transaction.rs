@@ -43,7 +43,7 @@ where
 }
 
 pub(crate) async fn extract_error<F>(
-    transaction: &ton_sdk::Transaction,
+    transaction: &Transaction,
     contract_info: impl FnOnce() -> F,
     show_tips: bool,
 ) -> ClientResult<()>

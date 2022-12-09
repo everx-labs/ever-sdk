@@ -1,6 +1,7 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
 use std::io::Cursor;
+use std::str::FromStr;
 use std::sync::Arc;
 
 use failure::{bail, err_msg};
@@ -11,7 +12,7 @@ use ton_block::{
     HashmapAugType, MerkleProof, Message, ShardIdent, ShardStateUnsplit, Transaction,
     ValidatorDescr,
 };
-use ton_types::{Cell, UInt256};
+use ton_types::{Cell, UInt256, SliceData};
 use ton_types::Result;
 
 pub(crate) use errors::ErrorCode;
@@ -589,7 +590,7 @@ impl BlockProof {
     }
 
     pub fn virtualize_block(&self) -> Result<(Block, Cell)> {
-        let merkle_proof = MerkleProof::construct_from(&mut self.root.clone().into())?;
+        let merkle_proof = MerkleProof::construct_from(&mut SliceData::load_cell(self.root.clone())?)?;
         let block_virt_root = merkle_proof.proof.clone().virtualize(1);
         if *self.id().root_hash() != block_virt_root.repr_hash() {
             bail!(
@@ -857,7 +858,7 @@ impl BlockProof {
             );
         }
         // Check signatures
-        let checked_data = ton_block::Block::build_data_for_sign(
+        let checked_data = Block::build_data_for_sign(
             &self.id().root_hash(),
             &self.id().file_hash()
         );
@@ -896,7 +897,7 @@ impl BlockProof {
     fn process_zerostate(
         &self,
         zerostate: &ShardStateUnsplit,
-        block_info: &ton_block::BlockInfo,
+        block_info: &BlockInfo,
     ) -> Result<(Vec<ValidatorDescr>, u32)> {
         if !self.id().shard().is_masterchain() {
             bail!(

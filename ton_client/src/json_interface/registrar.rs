@@ -74,7 +74,7 @@ impl<'h> ModuleReg<'h> {
 
     pub fn register_async_fn<P, R, F>(
         &mut self,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> F,
+        handler: fn(context: Arc<ClientContext>, params: P) -> F,
         api: fn() -> api_info::Function,
     ) where
         P: ApiType + Send + DeserializeOwned + Default + 'static,
@@ -100,7 +100,7 @@ impl<'h> ModuleReg<'h> {
 
     pub fn register_async_fn_no_args<R, F>(
         &mut self,
-        handler: fn(context: std::sync::Arc<ClientContext>) -> F,
+        handler: fn(context: Arc<ClientContext>) -> F,
         api: fn() -> api_info::Function,
     ) where
         R: ApiType + Send + Serialize + 'static,
@@ -124,7 +124,7 @@ impl<'h> ModuleReg<'h> {
 
     pub fn register_async_fn_with_callback<P, R, F>(
         &mut self,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P, callback: Arc<Request>) -> F,
+        handler: fn(context: Arc<ClientContext>, params: P, callback: Arc<Request>) -> F,
         api: fn() -> api_info::Function,
     ) where
         P: ApiType + Send + DeserializeOwned + Default + 'static,
@@ -144,7 +144,7 @@ impl<'h> ModuleReg<'h> {
     pub fn register_async_fn_with_app_object<P, R, F, AP, AR>(
         &mut self,
         handler: fn(
-            context: std::sync::Arc<ClientContext>,
+            context: Arc<ClientContext>,
             params: P,
             app_object: AppObject<AP, AR>,
         ) -> F,
@@ -169,7 +169,7 @@ impl<'h> ModuleReg<'h> {
 
     pub fn register_async_fn_with_app_object_no_args<R, F, AP, AR>(
         &mut self,
-        handler: fn(context: std::sync::Arc<ClientContext>, app_object: AppObject<AP, AR>) -> F,
+        handler: fn(context: Arc<ClientContext>, app_object: AppObject<AP, AR>) -> F,
         api: fn() -> api_info::Function,
     ) where
         R: ApiType + Send + Serialize + 'static,
@@ -191,7 +191,7 @@ impl<'h> ModuleReg<'h> {
 
     pub fn register_sync_fn<P, R>(
         &mut self,
-        handler: fn(context: std::sync::Arc<ClientContext>, params: P) -> ClientResult<R>,
+        handler: fn(context: Arc<ClientContext>, params: P) -> ClientResult<R>,
         api: fn() -> api_info::Function,
     ) where
         P: ApiType + Send + DeserializeOwned + Default + 'static,
@@ -216,7 +216,7 @@ impl<'h> ModuleReg<'h> {
 
     pub fn register_sync_fn_without_args<R>(
         &mut self,
-        handler: fn(context: std::sync::Arc<ClientContext>) -> ClientResult<R>,
+        handler: fn(context: Arc<ClientContext>) -> ClientResult<R>,
         api: fn() -> api_info::Function,
     ) where
         R: ApiType + Send + Serialize + 'static,

@@ -12,7 +12,6 @@
 */
 
 use crate::client::ClientContext;
-use crate::crypto;
 use crate::crypto::internal::{key192, key256, key512};
 use crate::crypto::keys::KeyPair;
 use crate::crypto::{internal, Error};
@@ -34,8 +33,8 @@ pub struct ParamsOfNaclSignKeyPairFromSecret {
 }
 
 /// Generates a key pair for signing from the secret key
-/// 
-/// **NOTE:** In the result the secret key is actually the concatenation 
+///
+/// **NOTE:** In the result the secret key is actually the concatenation
 /// of secret and public keys (128 symbols hex string) by design of [NaCL](http://nacl.cr.yp.to/sign.html).
 /// See also [the stackexchange question](https://crypto.stackexchange.com/questions/54353/).
 #[api_function]
@@ -44,7 +43,7 @@ pub fn nacl_sign_keypair_from_secret_key(
     params: ParamsOfNaclSignKeyPairFromSecret,
 ) -> ClientResult<KeyPair> {
     let secret = hex::decode(&params.secret)
-        .map_err(|err| crypto::Error::invalid_secret_key(err, &params.secret))?;
+        .map_err(|err| Error::invalid_secret_key(err, &params.secret))?;
     let seed = key256(&secret)?;
     let mut sk = [0u8; 64];
     let mut pk = [0u8; 32];
@@ -156,7 +155,7 @@ pub fn nacl_sign_open(
         &signed,
         &key256(&hex_decode(&params.public)?)?.0,
     )
-    .map_err(|_| crypto::Error::nacl_sign_failed("box sign open failed"))?;
+    .map_err(|_| Error::nacl_sign_failed("box sign open failed"))?;
     unsigned.resize(len, 0);
     Ok(ResultOfNaclSignOpen {
         unsigned: base64::encode(&unsigned),
@@ -239,7 +238,7 @@ pub fn nacl_box_keypair_from_secret_key(
     params: ParamsOfNaclBoxKeyPairFromSecret,
 ) -> ClientResult<KeyPair> {
     let secret = hex::decode(&params.secret)
-        .map_err(|err| crypto::Error::invalid_secret_key(err, &params.secret))?;
+        .map_err(|err| Error::invalid_secret_key(err, &params.secret))?;
     let seed = key256(&secret)?;
     let mut sk = [0u8; 32];
     let mut pk = [0u8; 32];
@@ -293,7 +292,7 @@ pub fn nacl_box(
         &hex_decode_secret_const(&params.their_public)?.0,
         &secret.0,
     )
-    .map_err(|_| crypto::Error::nacl_box_failed("box failed"))?;
+    .map_err(|_| Error::nacl_box_failed("box failed"))?;
     padded_output.drain(..16);
     Ok(ResultOfNaclBox {
         encrypted: base64::encode(&padded_output),
@@ -360,7 +359,7 @@ pub fn nacl_box_open_internal(
         their_public,
         &secret.0,
     )
-        .map_err(|_| crypto::Error::nacl_box_failed("box open failed"))?;
+        .map_err(|_| Error::nacl_box_failed("box open failed"))?;
     padded_output.drain(..32);
 
     Ok(padded_output)
@@ -397,7 +396,7 @@ pub fn nacl_secret_box(
     )?;
 
     sodalite::secretbox(&mut padded_output, &padded_input, &nonce, &key.0)
-        .map_err(|_| crypto::Error::nacl_secret_box_failed("secret box failed"))?;
+        .map_err(|_| Error::nacl_secret_box_failed("secret box failed"))?;
     padded_output.drain(..16);
     Ok(ResultOfNaclBox {
         encrypted: base64::encode(&padded_output),
@@ -432,7 +431,7 @@ pub fn nacl_secret_box_open(
     )?;
 
     sodalite::secretbox_open(&mut padded_output, &padded_input, &nonce, &key.0)
-        .map_err(|_| crypto::Error::nacl_secret_box_failed("secret box open failed"))?;
+        .map_err(|_| Error::nacl_secret_box_failed("secret box open failed"))?;
     padded_output.drain(..32);
     Ok(ResultOfNaclBoxOpen {
         decrypted: base64::encode(&padded_output),

@@ -2,11 +2,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.39.0] – 2022-12-07
+
+### Improvement
+
+- Resolved endpoints are cached for 10 minutes so subsequent messages sent will not require
+additional server request
+
+- Queries are retried in case of network errors when websocket connection is used
+
+- `WaitForTimeout` error code (607) is returned in case of `wait_for_transaction` function was 
+successfully executed but expected data did not appeared during the specified timeout
+
+- `timeout` parameter in `net.query_transaction_tree` behaviour changed. Now value 0 indicates that
+no time limit should be used and function will wait for all transactions execution
+
+### New
+
+- `transaction_max_count` parameter in `net.query_transaction_tree` which controls the count of
+transaction to be awaited and returned
+
+- `data_layout` and `function_name` parameters in `abi.decode_message` and `abi.decode_message_body` 
+that can be used to decode responsible function output and optimize message decoding by strict layout check
+
+### Fixed
+
+- `abi.encode_initial_data` function properly creates data in case of public key omitted.
+  Now `abi.encode_initial_data` call without initial data values and public key creates
+  the same data as compiled tvc
+
+- Graphql error messages with HTTP response 400 was skipped (was not propagated to
+  the SDK client application).
+
+- Several misspelling.
+
+- Message processing freeze in case of large amount of messages parallel processing using Websocket
+connection
+
+- Websocket interaction thread panic
+
+- **Debot module**:
+    - fill hash argument in `SDK.signHash` method with leading zeroes up to 32 bytes.
+
 ## [1.38.1] – 2022-11-10
 
 ### Improvement
 
-- Aditional info query is removed from `send_message` to minimize API usage
+- Additional info query is removed from `send_message` to minimize API usage
 
 ### Fixed
 
@@ -19,16 +61,18 @@ All notable changes to this project will be documented in this file.
 
 ### New
 
-- **Debot module**:  
+- **Debot module**:
     - ABI specification v2.3 is supported in DEngine.
     - Supported flags `OVERRIDE_TS`, `OVERRIDE_EXPT`, `ASYNC_CALL` for external messages in DEngine.
-    
+
 ### Improvement
 
 - Support cookies in net module for std mode (not wasm)
 - Remove network aliases (main, dev, main.ton.dev, net.ton.dev)
-- No balancing logic in case of 1 endpoint + removed the check of REMP support on backend during client initialization. 
-  These changes will make client initialization faster -> CLI tools that use SDK will work faster, web pages will load initial data faster.
+- No balancing logic in case of 1 endpoint + removed the check of REMP support on backend during
+  client initialization.
+  These changes will make client initialization faster -> CLI tools that use SDK will work faster,
+  web pages will load initial data faster.
 - Changed 401 error message to response message from API
 - Tests improvements: cryptobox tests made stable
 
@@ -68,24 +112,27 @@ All notable changes to this project will be documented in this file.
 
 ### Fixed
 
-- Some enum types were not properly presented in api.json (some types that use serde(content="value"))
+- Some enum types were not properly presented in api.json (some types that use serde(content="
+  value"))
 
 ## [1.37.1] – 2022-08-03
 
 ### Fixed
 
 - Pinned BOC cache now has reference counter for each pin in BOC. BOC can be pinned several times
-with the same pin. BOC is removed from cache after all references for all pins are unpinned with
-`cache_unpin` function calls.
+  with the same pin. BOC is removed from cache after all references for all pins are unpinned with
+  `cache_unpin` function calls.
 - Fixed error resolving in case when account state was modified after message expiration time. Now
-appropriate error text is added to error message instead of executor internal error
+  appropriate error text is added to error message instead of executor internal error
 
 ## [1.37.0] – 2022-07-28
 
 ### New
 
-- client sends `config.network.access_key` as `Authorization: Basic ...` or `Authorization: Bearer ...` header depending on the value passed:
-  if value is in hex, then it is processed as project secret (basic), if in base64 - then as JWT token (bearer).
+- client sends `config.network.access_key` as `Authorization: Basic ...`
+  or `Authorization: Bearer ...` header depending on the value passed:
+  if value is in hex, then it is processed as project secret (basic), if in base64 - then as JWT
+  token (bearer).
 - client accepts endpoints with `/graphql` suffixes specified in config.
 
 ### Fixed
@@ -97,9 +144,8 @@ appropriate error text is added to error message instead of executor internal er
 ### Improvement
 
 - Time synchronization check between device and server improved:  calculation of time-diff
-  with server is  moved from batched query to send_message function and therefore now query
+  with server is moved from batched query to send_message function and therefore now query
   execution time does not affect this time diff.
-
 
 ## [1.36.0] – 2022-07-01
 
@@ -190,7 +236,7 @@ appropriate error text is added to error message instead of executor internal er
 
 ### New
 
-- `network.queries_protocol` config parameter allows selecting protocol the SDK uses to communicaite
+- `network.queries_protocol` config parameter allows selecting protocol the SDK uses to communicate
   with GraphQL endpoint:
     - `HTTP` – SDK performs single HTTP-request for each request.
     - `WS` – SDK uses single WebSocket connection to send all requests. This protocol is a
@@ -281,7 +327,7 @@ done to avoid breaking changes in existing applications and give time to migrate
 - DevNet endpoints now changed to EVER OS domain: eri01.net.everos.dev, rbx01.net.everos.dev,
   gra01.net.everos.dev
 - **Debot module**:
-    - Аdded float numbers support for Json interface
+    - Added float numbers support for Json interface
 - Added guide for custom giver usage.
 
 ### Fixed
@@ -320,7 +366,7 @@ This function is analogue of `tvm.buildDataInit` function in Solidity.
 ### New
 
 - **Debot module**:
-    - Аdded `allow_no_signature` parameter to `decode_and_fix_ext_msg()` and
+    - Added `allow_no_signature` parameter to `decode_and_fix_ext_msg()` and
       `onerror_id` return value to `prepare_ext_in_message()` inner functions used in TS4.
     - Added support for async external calls.
     - `Query` interface extended with `waitForCollection` and `query` methods. `waitForCollection`
@@ -433,7 +479,7 @@ from Graphql API.
 - `crypto.create_encryption_box` function for creating SDK-defined encryption boxes. First supported
   algorithm - AES with CBC mode.
 - **Debot module**:
-    - Аdded public `prepare_ext_in_message` function.
+    - Added public `prepare_ext_in_message` function.
 
 ### Fixed
 
@@ -593,7 +639,7 @@ from Graphql API.
 
 - Blockchain interaction reliability improvement (broadcast): library sends external inbound
   messages simultaneously
-  to the N randomly chosen endpoints. If all N endpoints failed to responce then library repeats
+  to the N randomly chosen endpoints. If all N endpoints failed to response then library repeats
   sending to another random N endpoints (except the failed one).
   If all the available endpoints fail to respond then library throws error.
   The N parameter is taken from `config.network.sending_endpoint_count` (default is 2).
@@ -631,9 +677,9 @@ from Graphql API.
 ### Changed
 
 - **Debot Module**:
-    - [breaking] `fetch` function does't create an instance of debot. It returns DeBot
+    - [breaking] `fetch` function doesn't create an instance of debot. It returns DeBot
       metadata (`DebotInfo`).
-    - [breaking] `start` function does't create an instance of debot. It accepts DeBot handle
+    - [breaking] `start` function doesn't create an instance of debot. It accepts DeBot handle
       created in `init` function.
 
 ## [1.11.2] – 2021-03-19
@@ -676,7 +722,7 @@ from Graphql API.
 - [`tvm` module](docs/mod_tvm.md) functions download current blockchain configuration if `net` is
   initialized with
   DApp Server endpoints.
-  Otherwise [default configuration](https://github.com/tonlabs/ton-executor/blob/11f46c416ebf1f145eacfb996587891a0a3cb940/src/blockchain_config.rs#L214)
+  Otherwise, [default configuration](https://github.com/tonlabs/ton-executor/blob/11f46c416ebf1f145eacfb996587891a0a3cb940/src/blockchain_config.rs#L214)
   is used.
 - **Debot Module**:
     - Support for debot invoking in Debot Engine. `send` browser callback is used not only for
@@ -751,9 +797,9 @@ from Graphql API.
     - `boc.cache_get`
     - `boc.cache_unpin`
 - Now functions that take boc as a parameter can also take a reference to boc cash instead so that
-  it deсreases the number of boc serialization
+  it decreases the number of boc serialization
   and deserializations which drastically improves performance of `run_tvm` and `run_executor`
-  expecially in case of numerous calls on the same data.
+  especially in case of numerous calls on the same data.
 - `boc_cache` parameter in `tvm.run_tvm` and `tvm.run_executor` functions to save resulting messages
   and account BOCs into cache.
 - `return_updated_account` flag parameter introduced in `tvm.run_tvm` and `tvm.run_executor`
@@ -951,7 +997,7 @@ from Graphql API.
 
 - TS generator fix some field names that is an invalid JS identifiers.
 - Use `install_name_tool` to fix loading library paths at `libton_client.dylib`.
-- `api.json` is reduced, so it can't contains tuple types, only structs.
+- `api.json` is reduced, so it can't contain tuple types, only structs.
   All types are exactly match to JSON.
 - `out_of_sync_threshold` config parameter is `u32`
 

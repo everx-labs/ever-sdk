@@ -36,7 +36,7 @@ pub struct ParamsOfRunGet {
     pub execution_options: Option<ExecutionOptions>,
     /// Convert lists based on nested tuples in the **result** into plain arrays. Default is `false`.
     /// Input parameters may use any of lists representations
-    /// If you receive this error on Web: "Runtime error. Unreachable code should not be executed...", 
+    /// If you receive this error on Web: "Runtime error. Unreachable code should not be executed...",
     /// set this flag to true.
     /// This may happen, for example, when elector contract contains too many participants
     pub tuple_list_as_array: Option<bool>,
@@ -49,14 +49,14 @@ pub struct ResultOfRunGet {
     pub output: Value,
 }
 
-/// Executes a get-method of FIFT contract 
-/// 
+/// Executes a get-method of FIFT contract
+///
 /// Executes a get-method of FIFT contract that fulfills the smc-guidelines https://test.ton.org/smc-guidelines.txt
 /// and returns the result data from TVM's stack
 
 #[api_function]
 pub async fn run_get(
-    context: std::sync::Arc<ClientContext>,
+    context: Arc<ClientContext>,
     params: ParamsOfRunGet,
 ) -> ClientResult<ResultOfRunGet> {
     let mut account: ton_block::Account =

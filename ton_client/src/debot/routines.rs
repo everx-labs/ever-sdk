@@ -139,7 +139,7 @@ pub fn convert_string_to_tokens(_ton: TonClient, arg: &str) -> Result<String, St
         u64::from_str_radix(&result, 10).map_err(|e| format!("failed to parse amount: {}", e))?;
         return Ok(result);
     }
-    Err("Invalid amout value".to_string())
+    Err("Invalid amount value".to_string())
 }
 
 pub async fn get_balance(ton: TonClient, arg_json: &serde_json::Value) -> Result<String, String> {
@@ -178,7 +178,7 @@ pub(super) fn format_arg(params: &serde_json::Value, i: usize) -> String {
         return if utime == 0 {
             "undefined".to_owned()
         } else {
-            let date = Local.timestamp(utime as i64, 0);
+            let date = Local.timestamp_opt(utime as i64, 0).unwrap();
             date.to_rfc2822()
         };
     }

@@ -18,7 +18,7 @@ use crate::boc::internal::{deserialize_object_from_boc, DeserializedObject};
 use crate::client::ClientContext;
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::{AddNetworkUrl, ClientResult};
-use crate::net::Endpoint;
+use crate::net::EndpointStat;
 use crate::processing::internal::get_message_expiration_time;
 use crate::processing::types::ProcessingEvent;
 use crate::processing::Error;
@@ -81,7 +81,7 @@ impl SendingMessage {
     ) -> ClientResult<Self> {
         // Check message
         let deserialized =
-            deserialize_object_from_boc::<ton_block::Message>(&context, serialized, "message")
+            deserialize_object_from_boc::<Message>(&context, serialized, "message")
                 .await?;
         let id = deserialized.cell.repr_hash().as_hex_string();
         let dst = deserialized
@@ -157,7 +157,13 @@ impl SendingMessage {
                 let context = context.clone();
                 let message = self.clone();
                 futures.push(Box::pin(async move {
-                    message.send_to_address(context, &address).await
+                    let result = message.send_to_address(context.clone(), address).await;
+                    if result.is_err() {
+                        context
+                            .get_server_link()?
+                            .update_stat(&[address.to_owned()], EndpointStat::MessageUndelivered).await;
+                    }
+                    result
                 }));
             }
             for result in futures::future::join_all(futures).await {
@@ -195,12 +201,15 @@ impl SendingMessage {
         context: Arc<ClientContext>,
         address: &str,
     ) -> ClientResult<String> {
-        let endpoint =
-            Endpoint::resolve(&context.env, &context.config.network, address).await?;
+        let link = context.get_server_link()?;
+        let endpoint = if let Some(endpoint) = link.state().get_resolved_endpoint(address).await {
+            endpoint
+        } else {
+            link.state().resolve_endpoint(address).await?
+        };
 
         // Send
-        context
-            .get_server_link()?
+        link
             .send_message(&hex_decode(&self.id)?, &self.body, Some(&endpoint))
             .await
             .add_endpoint_from_context(&context, &endpoint)

@@ -31,9 +31,12 @@ use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{watch, Mutex, RwLock};
 
+use super::ErrorCode;
+
 pub const MAX_TIMEOUT: u32 = i32::MAX as u32;
 pub const MIN_RESUME_TIMEOUT: u32 = 500;
 pub const MAX_RESUME_TIMEOUT: u32 = 3000;
+pub const ENDPOINT_CACHE_TIMEOUT: u64 = 10 * 60 * 1000;
 
 pub(crate) struct Subscription {
     pub unsubscribe: Pin<Box<dyn Future<Output = ()> + Send>>,
@@ -51,6 +54,11 @@ pub(crate) enum EndpointStat {
     MessageUndelivered,
 }
 
+pub(crate) struct ResolvedEndpoint {
+    pub endpoint: Arc<Endpoint>,
+    pub time_added: u64,
+}
+
 pub(crate) struct NetworkState {
     client_env: Arc<ClientEnv>,
     config: NetworkConfig,
@@ -61,6 +69,7 @@ pub(crate) struct NetworkState {
     suspend_regulation: Arc<Mutex<SuspendRegulation>>,
     resume_timeout: AtomicU32,
     query_endpoint: RwLock<Option<Arc<Endpoint>>>,
+    resolved_endpoints: RwLock<HashMap<String, ResolvedEndpoint>>,
 }
 
 async fn query_by_url(
@@ -105,6 +114,7 @@ impl NetworkState {
             suspend_regulation: Arc::new(Mutex::new(regulation)),
             resume_timeout: AtomicU32::new(0),
             query_endpoint: RwLock::new(None),
+            resolved_endpoints: Default::default(),
         }
     }
 
@@ -137,6 +147,13 @@ impl NetworkState {
         }
     }
 
+    pub fn next_resume_timeout(&self) -> u32 {
+        let timeout = self.resume_timeout.load(Ordering::Relaxed);
+        let next_timeout = min(max(timeout * 2, MIN_RESUME_TIMEOUT), MAX_RESUME_TIMEOUT); // 0, 0.5, 1, 2, 3, 3, 3...
+        self.resume_timeout.store(next_timeout, Ordering::Relaxed);
+        timeout
+    }
+
     pub async fn internal_suspend(&self) {
         let mut regulation = self.suspend_regulation.lock().await;
         if regulation.internal_suspend {
@@ -146,9 +163,7 @@ impl NetworkState {
         regulation.internal_suspend = true;
         self.suspend(&regulation.sender).await;
 
-        let timeout = self.resume_timeout.load(Ordering::Relaxed);
-        let next_timeout = min(max(timeout * 2, MIN_RESUME_TIMEOUT), MAX_RESUME_TIMEOUT); // 0, 0.5, 1, 2, 3, 3, 3...
-        self.resume_timeout.store(next_timeout, Ordering::Relaxed);
+        let timeout = self.next_resume_timeout();
         log::debug!("Internal resume timeout {}", timeout);
 
         let env = self.client_env.clone();
@@ -190,7 +205,7 @@ impl NetworkState {
         addresses
     }
 
-    pub async fn update_stat(&self, addresses: &Vec<String>, stat: EndpointStat) {
+    pub async fn update_stat(&self, addresses: &[String], stat: EndpointStat) {
         let bad_delivery = self.bad_delivery_addresses.read().await.clone();
         let addresses: HashSet<_> = addresses.iter().cloned().collect();
         let new_bad_delivery = match stat {
@@ -233,7 +248,7 @@ impl NetworkState {
         }
     }
 
-    async fn check_sync(&self, endpoint: Option<&Endpoint>) -> ClientResult<()> {
+    async fn check_sync(self: &Arc<NetworkState>, endpoint: Option<&Endpoint>) -> ClientResult<()> {
         if let Some(endpoint) = endpoint {
             self.check_sync_endpoint(endpoint).await
         } else {
@@ -242,8 +257,16 @@ impl NetworkState {
         }
     }
 
-    async fn select_querying_endpoint(&self) -> ClientResult<Endpoint> {
-        let is_better = |a: &ClientResult<Endpoint>, b: &ClientResult<Endpoint>| match (a, b) {
+    pub async fn resolve_endpoint(&self, address: &str) -> ClientResult<Arc<Endpoint>> {
+        let endpoint = Endpoint::resolve(&self.client_env, &self.config, address).await?;
+        let endpoint = Arc::new(endpoint);
+        self.add_resolved_endpoint(address.to_owned(), endpoint.clone()).await;
+        Ok(endpoint)
+
+    }
+
+    async fn select_querying_endpoint(self: &Arc<NetworkState>) -> ClientResult<Arc<Endpoint>> {
+        let is_better = |a: &ClientResult<Arc<Endpoint>>, b: &ClientResult<Arc<Endpoint>>| match (a, b) {
             (Ok(a), Ok(b)) => a.latency() < b.latency(),
             (Ok(_), Err(_)) => true,
             (Err(_), Err(_)) => true,
@@ -254,9 +277,8 @@ impl NetworkState {
             let mut futures = vec![];
             for address in self.endpoint_addresses.read().await.iter() {
                 let address = address.clone();
-                futures.push(Box::pin(async move {
-                    Endpoint::resolve(&self.client_env, &self.config, &address).await
-                }));
+                let self_copy = self.clone();
+                futures.push(Box::pin(async move { self_copy.resolve_endpoint(&address).await }));
             }
             let mut selected = Err(crate::client::Error::net_module_not_init());
             let mut unauthorised = None;
@@ -264,6 +286,11 @@ impl NetworkState {
                 let (result, _, remain_futures) = futures::future::select_all(futures).await;
                 if let Ok(endpoint) = &result {
                     if endpoint.latency() <= self.config.max_latency as u64 {
+                        if remain_futures.len() > 0 {
+                            self.client_env.spawn(async move {
+                                futures::future::join_all(remain_futures).await;
+                            });
+                        }
                         return result;
                     }
                 }
@@ -294,7 +321,7 @@ impl NetworkState {
         }
     }
 
-    pub async fn get_query_endpoint(&self) -> ClientResult<Arc<Endpoint>> {
+    pub async fn get_query_endpoint(self: &Arc<NetworkState>) -> ClientResult<Arc<Endpoint>> {
         // wait for resume
         let mut suspended = self.suspended.clone();
         while *suspended.borrow() {
@@ -309,13 +336,31 @@ impl NetworkState {
         if let Some(endpoint) = &*locked_query_endpoint {
             return Ok(endpoint.clone());
         }
-        let fastest = Arc::new(self.select_querying_endpoint().await?);
+        let fastest = self.select_querying_endpoint().await?;
         *locked_query_endpoint = Some(fastest.clone());
         Ok(fastest)
     }
 
     pub async fn get_all_endpoint_addresses(&self) -> ClientResult<Vec<String>> {
         Ok(self.endpoint_addresses.read().await.clone())
+    }
+
+    pub async fn add_resolved_endpoint(&self, address: String, endpoint: Arc<Endpoint>) {
+        let mut lock = self.resolved_endpoints.write().await;
+        lock.insert(address, ResolvedEndpoint { endpoint, time_added: self.client_env.now_ms() });
+    }
+
+    pub async fn get_resolved_endpoint(&self, address: &str) -> Option<Arc<Endpoint>> {
+        let lock = self.resolved_endpoints.read().await;
+        lock
+            .get(address)
+            .and_then(|endpoint| 
+                if endpoint.time_added + ENDPOINT_CACHE_TIMEOUT > self.client_env.now_ms() {
+                    Some(endpoint.endpoint.clone())
+                } else {
+                    None
+                }
+            )
     }
 }
 
@@ -532,19 +577,17 @@ impl ServerLink {
 
             if let Err(err) = &result {
                 if crate::client::Error::is_network_error(err) {
-                    let endpoint_count = self
-                        .state
-                        .get_all_endpoint_addresses()
-                        .await
-                        .map(|x| x.len())
-                        .unwrap_or(0);
-                    if endpoint_count > 1 {
+                    let multiple_endpoints = self.state.has_multiple_endpoints();
+                    if multiple_endpoints {
                         self.state.internal_suspend().await;
                         self.websocket_link.suspend().await;
                         self.websocket_link.resume().await;
                     }
                     retry_count += 1;
                     if retry_count <= network_retries_count {
+                        if !multiple_endpoints {
+                            let _ = self.client_env.set_timer(self.state.next_resume_timeout() as u64).await;
+                        }
                         continue 'retries;
                     }
                 }
@@ -558,6 +601,8 @@ impl ServerLink {
         let mut receiver = self.websocket_link.start_operation(query.clone()).await?;
         let mut id = None::<u32>;
         let mut result = Ok(Value::Null);
+        let network_retries_count = self.config.network_retries_count;
+        let mut retry_count = 0;
         loop {
             match receiver.recv().await {
                 Some(GraphQLQueryEvent::Id(received_id)) => id = Some(received_id),
@@ -567,8 +612,17 @@ impl ServerLink {
                 }
                 Some(GraphQLQueryEvent::Complete) => break,
                 Some(GraphQLQueryEvent::Error(err)) => {
+                    if  err.code == ErrorCode::NetworkModuleSuspended as u32 ||
+                        err.code == ErrorCode::NetworkModuleResumed as u32
+                    {
+                        continue;
+                    }
+                    let is_retryable = crate::client::Error::is_network_error(&err);
                     result = Err(err);
-                    break;
+                    retry_count += 1;
+                    if !is_retryable || retry_count > network_retries_count {
+                        break;
+                    }
                 }
                 None => break,
             }
@@ -751,7 +805,7 @@ impl ServerLink {
         self.state.get_all_endpoint_addresses().await
     }
 
-    pub async fn update_stat(&self, addresses: &Vec<String>, stat: EndpointStat) {
+    pub async fn update_stat(&self, addresses: &[String], stat: EndpointStat) {
         self.state.update_stat(addresses, stat).await
     }
 

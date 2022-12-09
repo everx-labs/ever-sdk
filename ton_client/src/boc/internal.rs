@@ -22,7 +22,7 @@ use ton_types::{UInt256, deserialize_tree_of_cells};
 
 pub(crate) fn get_boc_hash(boc: &[u8]) -> ClientResult<String> {
     let cells = deserialize_tree_of_cells(&mut Cursor::new(boc))
-        .map_err(|err| crate::boc::Error::invalid_boc(err))?;
+        .map_err(|err| Error::invalid_boc(err))?;
     let id: Vec<u8> = cells.repr_hash().as_slice()[..].into();
     Ok(hex::encode(&id))
 }
@@ -34,7 +34,7 @@ pub(crate) fn deserialize_cell_from_base64(
     let bytes = base64::decode(&b64)
         .map_err(|err| Error::invalid_boc(format!("error decode {} BOC base64: {}", name, err)))?;
 
-    let cell = ton_types::cells_serialization::deserialize_tree_of_cells(&mut Cursor::new(&bytes))
+    let cell = deserialize_tree_of_cells(&mut Cursor::new(&bytes))
         .map_err(|err| {
             Error::invalid_boc(format!("{} BOC deserialization error: {}", name, err))
         })?;
@@ -55,7 +55,7 @@ pub(crate) fn deserialize_object_from_cell<S: Deserializable>(
     } else {
         "".to_string()
     };
-    S::construct_from(&mut cell.into())
+    S::construct_from_cell(cell)
         .map_err(|err|
             Error::invalid_boc(
                 format!("cannot deserialize {} from BOC: {}{}", name, err, tip_full)

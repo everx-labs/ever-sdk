@@ -309,17 +309,17 @@ type NetworkConfig = {
 - `sending_endpoint_count`?: _number_ – Maximum number of randomly chosen endpoints the library uses to broadcast a message.
 <br>Default is 1.
 - `latency_detection_interval`?: _number_ – Frequency of sync latency detection.
-<br>Library periodically checks the current endpoint for blockchain data syncronization latency.<br>If the latency (time-lag) is less then `NetworkConfig.max_latency`<br>then library selects another endpoint.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
-- `max_latency`?: _number_ – Maximum value for the endpoint's blockchain data syncronization latency (time-lag). Library periodically checks the current endpoint for blockchain data synchronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.
+<br>Library periodically checks the current endpoint for blockchain data synchronization latency.<br>If the latency (time-lag) is less then `NetworkConfig.max_latency`<br>then library selects another endpoint.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
+- `max_latency`?: _number_ – Maximum value for the endpoint's blockchain data synchronization latency (time-lag). Library periodically checks the current endpoint for blockchain data synchronization latency. If the latency (time-lag) is less then `NetworkConfig.max_latency` then library selects another endpoint.
 <br>Must be specified in milliseconds. Default is 60000 (1 min).
 - `query_timeout`?: _number_ – Default timeout for http requests.
 <br>Is is used when no timeout specified for the request to limit the answer waiting time. If no answer received during the timeout requests ends with<br>error.<br><br>Must be specified in milliseconds. Default is 60000 (1 min).
 - `queries_protocol`?: _[NetworkQueriesProtocol](mod\_client.md#networkqueriesprotocol)_ – Queries protocol.
 <br>`HTTP` or `WS`. <br>Default is `HTTP`.
 - `first_remp_status_timeout`?: _number_ – UNSTABLE.
-<br>First REMP status awaiting timeout. If no status recieved during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 1000 (1 sec).
+<br>First REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 1000 (1 sec).
 - `next_remp_status_timeout`?: _number_ – UNSTABLE.
-<br>Subsequent REMP status awaiting timeout. If no status recieved during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 5000 (5 sec).
+<br>Subsequent REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 5000 (5 sec).
 - `access_key`?: _string_ – Access key to GraphQL API (Project secret)
 
 
@@ -335,7 +335,7 @@ enum NetworkQueriesProtocol {
 One of the following value:
 
 - `HTTP = "HTTP"` – Each GraphQL query uses separate HTTP request.
-- `WS = "WS"` – All GraphQL queries will be served using single web socket connection.
+- `WS = "WS"` – All GraphQL queries will be served using single web socket connection. SDK is tested to reliably handle 5000 parallel network requests (sending and processing messages, quering and awaiting blockchain data)
 
 
 ## CryptoConfig

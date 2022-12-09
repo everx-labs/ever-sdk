@@ -2,6 +2,7 @@ use crate::abi::types::AbiParam;
 use crate::abi::Error;
 use crate::client::ClientContext;
 use crate::boc::internal::deserialize_cell_from_boc;
+use crate::encoding::slice_from_cell;
 use crate::error::ClientResult;
 use serde_json;
 use serde_json::Value;
@@ -60,7 +61,7 @@ pub async fn decode_boc(
 
     let tokens = ton_abi::TokenValue::decode_params(
         &abi_params,
-        data.into(),
+        slice_from_cell(data)?,
         &ton_abi::contract::MAX_SUPPORTED_VERSION,
         params.allow_partial
     )

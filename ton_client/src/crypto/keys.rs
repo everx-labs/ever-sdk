@@ -108,7 +108,7 @@ pub fn convert_public_key_to_ton_safe_format(
 #[api_function]
 pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> ClientResult<KeyPair> {
     let mut rng = rand::thread_rng();
-    let keypair = ed25519_dalek::Keypair::generate(&mut rng);
+    let keypair = Keypair::generate(&mut rng);
     Ok(KeyPair::new(
         hex::encode(keypair.public.to_bytes()),
         hex::encode(keypair.secret.to_bytes()),

@@ -34,7 +34,7 @@ use std::sync::Arc;
 /// The intermediate events, such as `WillFetchFirstBlock`, `WillSend`, `DidSend`,
 /// `WillFetchNextBlock`, etc - are switched on/off by `send_events` flag
 /// and logged into the supplied callback function.
-/// 
+///
 /// The retry configuration parameters are defined in the client's `NetworkConfig` and `AbiConfig`.
 ///
 /// If contract's ABI does not include "expire" header
@@ -43,7 +43,7 @@ use std::sync::Arc;
 pub(crate) async fn process_message(
     context: Arc<ClientContext>,
     params: ParamsOfProcessMessage,
-    request: std::sync::Arc<Request>,
+    request: Arc<Request>,
 ) -> ClientResult<ResultOfProcessMessage> {
     let callback = move |event: ProcessingEvent| {
         request.response(event, ProcessingResponseType::ProcessingEvent as u32);
@@ -60,7 +60,7 @@ pub(crate) async fn process_message(
 pub(crate) async fn send_message(
     context: Arc<ClientContext>,
     params: ParamsOfSendMessage,
-    callback: std::sync::Arc<Request>,
+    callback: Arc<Request>,
 ) -> ClientResult<ResultOfSendMessage> {
     let callback = move |result: ProcessingEvent| {
         callback.response(result, ProcessingResponseType::ProcessingEvent as u32);
@@ -101,7 +101,7 @@ pub(crate) async fn send_message(
 pub(crate) async fn wait_for_transaction(
     context: Arc<ClientContext>,
     params: ParamsOfWaitForTransaction,
-    callback: std::sync::Arc<Request>,
+    callback: Arc<Request>,
 ) -> ClientResult<ResultOfProcessMessage> {
     let callback = move |result: ProcessingEvent| {
         callback.response(result, ProcessingResponseType::ProcessingEvent as u32);

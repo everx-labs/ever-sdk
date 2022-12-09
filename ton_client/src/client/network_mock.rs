@@ -92,6 +92,10 @@ impl NetworkMock {
         if let Some(messages) = &mut self.messages {
             let mut i = 0;
             while i < messages.len() {
+                if messages[i].url.is_empty() {
+                    messages.remove(i);
+                    break;
+                }
                 if same_endpoints(url, &messages[i].url) {
                     result.push(messages.remove(i));
                 } else {
@@ -116,10 +120,10 @@ impl NetworkMock {
                 let _ = server_receiver;
                 while !messages.is_empty() {
                     let message = messages.remove(0);
-                    println!("Send {}", message.message);
                     if let Some(delay) = message.delay {
                         tokio::time::sleep(tokio::time::Duration::from_millis(delay)).await;
                     }
+                    println!("Send {}", message.message);
                     let _ = server_sender.send(Ok(message.message)).await;
                 }
             });
@@ -266,6 +270,38 @@ impl NetworkMockBuilder {
         self.ws(&json!({"type":"ka"}))
     }
 
+    pub fn ws_connection_error(&mut self) -> &mut Self {
+        self.ws(&json!({"type":"connection_error"}))
+    }
+
+    pub fn ws_data(&mut self, id: u32, data: Value, errors: Option<Vec<Value>>) -> &mut Self {
+        self.ws(&json!({
+            "type": "data",
+            "id": id.to_string(),
+            "payload": {
+                "data": data,
+                "errors": errors,
+            }
+        }))
+    }
+
+    pub fn ws_error(&mut self, id: u32, error: Value) -> &mut Self {
+        self.ws(&json!({
+            "type": "error",
+            "id": id.to_string(),
+            "payload": error,
+        }))
+    }
+
+    pub fn ws_reconnect(&mut self) -> &mut Self {
+        self.messages.push(MessageMock {
+            url: "".to_string(),
+            delay: None,
+            message: "".to_string(),
+        });
+        self
+    }
+
     pub fn ok(&mut self, body: &str) -> &mut Self {
         self.push_fetch(Ok(FetchResult {
             url: self.url.clone(),
@@ -326,5 +362,9 @@ impl NetworkMockBuilder {
             }
         })
         .to_string())
+    }
+
+    pub fn ws_blocks(&mut self, operation_id: u32, id: &str) -> &mut Self {
+        self.ws_data(operation_id, json!({"blocks": [{"id": id.to_string()}]}), None)
     }
 }

@@ -32,7 +32,7 @@ use crate::tvm::types::mainnet_config;
 use api_info::ApiModule;
 use serde_json::Value;
 use std::sync::Arc;
-use ton_types::{BuilderData, Cell};
+use ton_types::{BuilderData, Cell, SliceData};
 use ton_vm::stack::{continuation::ContinuationData, StackItem};
 
 const ELECTOR_ADDRESS: &str = "-1:3333333333333333333333333333333333333333333333333333333333333333";
@@ -594,8 +594,8 @@ fn test_stack_serialization() {
             StackItem::boolean(false),
             StackItem::cell(empty_cell.clone()),
             StackItem::builder(BuilderData::new()),
-            StackItem::continuation(ContinuationData::with_code(empty_cell.clone().into())),
-            StackItem::slice(empty_cell.clone().into()),
+            StackItem::continuation(ContinuationData::with_code(SliceData::default())),
+            StackItem::slice(SliceData::default()),
             StackItem::tuple(vec![StackItem::int(123), StackItem::int(456)]),
             list.clone(),
             list.clone(),

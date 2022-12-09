@@ -367,21 +367,21 @@ impl<'de> serde::de::Visitor<'de> for StringVisitor {
 
     fn visit_string<E>(self, v: String) -> Result<Self::Value, E>
     where
-        E: serde::de::Error,
+        E: Error,
     {
         Ok(v)
     }
 
     fn visit_str<E>(self, v: &str) -> Result<Self::Value, E>
     where
-        E: serde::de::Error,
+        E: Error,
     {
         Ok(v.to_string())
     }
 
     fn visit_none<E>(self) -> Result<Self::Value, E>
     where
-        E: serde::de::Error,
+        E: Error,
     {
         Ok("null".to_owned())
     }
@@ -404,5 +404,5 @@ where
 {
     let string = d.deserialize_str(StringVisitor)?;
     shard_ident_parse(&string)
-        .map_err(|err| D::Error::custom(format!("Error parsing shard ident: {}", err)))
+        .map_err(|err| Error::custom(format!("Error parsing shard ident: {}", err)))
 }

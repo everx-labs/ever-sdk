@@ -13,6 +13,7 @@
  */
 
 use crate::boc::internal::{deserialize_cell_from_base64, serialize_cell_to_base64};
+use crate::encoding::slice_from_cell;
 use crate::error::ClientResult;
 use crate::tvm::Error;
 use core::result::Result::{Err, Ok};
@@ -64,7 +65,7 @@ pub fn serialize_items<'a>(
                 list_items = Some(list);
             }
         }
-        
+
         if let Some(item) = next {
             match process_item(item)? {
                 ProcessingResult::Serialized(value) => {
@@ -104,7 +105,7 @@ pub fn deserialize_items(values: Iter<Value>) -> ClientResult<Vec<StackItem>> {
     Ok(items)
 }
 
-fn serialize_integer_data(data: &ton_vm::stack::integer::IntegerData) -> String {
+fn serialize_integer_data(data: &IntegerData) -> String {
     let hex = data.to_str_radix(16);
     // all negative numbers and positive numbers less than u128::MAX are encoded as decimal
     if hex.starts_with("-") || hex.len() <= 32 {
@@ -128,7 +129,7 @@ pub fn serialize_item<'a>(item: &'a StackItem) -> ClientResult<Value> {
 fn process_item(item: &StackItem) -> ClientResult<ProcessingResult> {
     Ok(match item {
         StackItem::None => ProcessingResult::Serialized(Value::Null),
-        StackItem::Integer(value) => 
+        StackItem::Integer(value) =>
             ProcessingResult::Serialized(Value::String(serialize_integer_data(value))),
         StackItem::Tuple(items) => ProcessingResult::Nested(Box::new(items.iter())),
         StackItem::Builder(value) => ProcessingResult::Serialized(json!(
@@ -183,11 +184,11 @@ pub fn deserialize_item(value: &Value) -> ClientResult<StackItem> {
                 }
                 ComplexType::Continuation(string) => {
                     let cell = deserialize_cell_from_base64(&string, "Continuation")?.1;
-                    StackItem::continuation(ContinuationData::with_code(cell.into()))
+                    StackItem::continuation(ContinuationData::with_code(slice_from_cell(cell)?))
                 }
                 ComplexType::Slice(string) => {
                     let cell = deserialize_cell_from_base64(&string, "Slice")?.1;
-                    StackItem::slice(cell.into())
+                    StackItem::slice(slice_from_cell(cell)?)
                 }
                 ComplexType::List(mut vec) => {
                     let mut list = StackItem::None;

@@ -388,7 +388,7 @@ impl TestBrowser {
                 };
                 let decoded: DecodedMessageBody = client.request_async(
                     "abi.decode_message_body",
-                    ParamsOfDecodeMessageBody { abi, body, is_internal: true, allow_partial: false },
+                    ParamsOfDecodeMessageBody { abi, body, is_internal: true, ..Default::default() },
                 ).await.unwrap();
                 let (func, args) = (decoded.name, decoded.value.unwrap());
                 log::info!("request: {} ({})", func, args);
@@ -1555,6 +1555,27 @@ async fn test_debot_transaction_result() {
         build_info(abi, 19, vec![
             format!("0x475a5d1729acee4601c2a8cb67240e4da5316cc90a116e1b181d905e79401c51"),
             format!("0xc13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a"),
+        ]),
+        vec![],
+    ).await;
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_debot_sign_hash() {
+    let client = std::sync::Arc::new(TestClient::new());
+    let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(
+        client.clone(), "testDebot21"
+    ).await;
+    let steps = vec![];
+    TestBrowser::execute_with_details(
+        client.clone(),
+        debot_addr.clone(),
+        keys,
+        steps,
+        vec![],
+        build_info_abi2_2(abi, 21, vec![
+            format!("0xc13024e101c95e71afb1f5fa6d72f633d51e721de0320d73dfd6121a54e4d40a"),
+            format!("0x8796536366ee21852db56dccb60bc564598b618c865fc50c8b1ab740bba128e3")
         ]),
         vec![],
     ).await;

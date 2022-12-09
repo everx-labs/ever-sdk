@@ -91,6 +91,8 @@ Provides message encoding and decoding according to the ABI specification.
 
 [AbiContract](mod\_abi.md#abicontract)
 
+[DataLayout](mod\_abi.md#datalayout)
+
 [ParamsOfEncodeMessageBody](mod\_abi.md#paramsofencodemessagebody)
 
 [ResultOfEncodeMessageBody](mod\_abi.md#resultofencodemessagebody)
@@ -411,7 +413,9 @@ Decodes message body using provided message BOC and ABI.
 type ParamsOfDecodeMessage = {
     abi: Abi,
     message: string,
-    allow_partial?: boolean
+    allow_partial?: boolean,
+    function_name?: string,
+    data_layout?: DataLayout
 }
 
 type DecodedMessageBody = {
@@ -429,6 +433,8 @@ function decode_message(
 - `abi`: _[Abi](mod\_abi.md#abi)_ – contract ABI
 - `message`: _string_ – Message BOC
 - `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
+- `function_name`?: _string_ – Function name or function id if is known in advance
+- `data_layout`?: _[DataLayout](mod\_abi.md#datalayout)_
 
 
 ### Result
@@ -448,7 +454,9 @@ type ParamsOfDecodeMessageBody = {
     abi: Abi,
     body: string,
     is_internal: boolean,
-    allow_partial?: boolean
+    allow_partial?: boolean,
+    function_name?: string,
+    data_layout?: DataLayout
 }
 
 type DecodedMessageBody = {
@@ -467,6 +475,8 @@ function decode_message_body(
 - `body`: _string_ – Message body BOC encoded in `base64`.
 - `is_internal`: _boolean_ – True if the body belongs to the internal message.
 - `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
+- `function_name`?: _string_ – Function name or function id if is known in advance
+- `data_layout`?: _[DataLayout](mod\_abi.md#datalayout)_
 
 
 ### Result
@@ -1280,6 +1290,19 @@ type AbiContract = {
 - `fields`?: _[AbiParam](mod\_abi.md#abiparam)[]_
 
 
+## DataLayout
+```ts
+enum DataLayout {
+    Input = "Input",
+    Output = "Output"
+}
+```
+One of the following value:
+
+- `Input = "Input"` – Decode message body as function input parameters.
+- `Output = "Output"` – Decode message body as function output.
+
+
 ## ParamsOfEncodeMessageBody
 ```ts
 type ParamsOfEncodeMessageBody = {
@@ -1453,12 +1476,16 @@ type ResultOfAttachSignature = {
 type ParamsOfDecodeMessage = {
     abi: Abi,
     message: string,
-    allow_partial?: boolean
+    allow_partial?: boolean,
+    function_name?: string,
+    data_layout?: DataLayout
 }
 ```
 - `abi`: _[Abi](mod\_abi.md#abi)_ – contract ABI
 - `message`: _string_ – Message BOC
 - `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
+- `function_name`?: _string_ – Function name or function id if is known in advance
+- `data_layout`?: _[DataLayout](mod\_abi.md#datalayout)_
 
 
 ## DecodedMessageBody
@@ -1482,13 +1509,17 @@ type ParamsOfDecodeMessageBody = {
     abi: Abi,
     body: string,
     is_internal: boolean,
-    allow_partial?: boolean
+    allow_partial?: boolean,
+    function_name?: string,
+    data_layout?: DataLayout
 }
 ```
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
 - `body`: _string_ – Message body BOC encoded in `base64`.
 - `is_internal`: _boolean_ – True if the body belongs to the internal message.
 - `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
+- `function_name`?: _string_ – Function name or function id if is known in advance
+- `data_layout`?: _[DataLayout](mod\_abi.md#datalayout)_
 
 
 ## ParamsOfEncodeAccount

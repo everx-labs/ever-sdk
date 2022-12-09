@@ -380,7 +380,7 @@ pub enum StdContractError {
     PopEmptyArray = 54,
     #[fail(display = "Bad StateInit cell for tvm_insert_pubkey. Data was not found.")]
     DataNotFound = 55,
-    #[fail(display = "map.pollFisrt() for empty map")]
+    #[fail(display = "map.pollFirst() for empty map")]
     PollEmptyMap = 56,
     #[fail(display = "External inbound message is expired")]
     ExtMessageExpired = 57,

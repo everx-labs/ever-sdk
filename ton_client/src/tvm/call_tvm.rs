@@ -13,9 +13,8 @@
  */
 
 use super::types::ResolvedExecutionOptions;
-use crate::error::ClientResult;
+use crate::{error::ClientResult, encoding::slice_from_cell};
 use crate::tvm::Error;
-use std::sync::Arc;
 use ton_block::{
     Account, CommonMsgInfo, ConfigParams, CurrencyCollection, Deserializable, GlobalCapabilities,
     Message, MsgAddressInt, OutAction, OutActions, Serializable,
@@ -71,13 +70,13 @@ pub(crate) fn call_tvm(
     let gas_limit = 1_000_000_000;
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
-    let mut engine = ton_vm::executor::Engine::with_capabilities(
+    let mut engine = Engine::with_capabilities(
         // TODO: use specific blockchain configs when they will be available
         // TODO: for now use maximum available capabilities
-        // options.blockchain_config.capabilites()
+        // options.blockchain_config.capabilities()
         capabilities
     ).setup(
-        SliceData::from(code),
+        slice_from_cell(code)?,
         Some(ctrls),
         Some(stack),
         Some(gas),
@@ -176,7 +175,9 @@ fn build_contract_info(
     init_code_hash: Option<&UInt256>,
 ) -> ton_vm::SmartContractInfo {
     let mut info =
-        ton_vm::SmartContractInfo::with_myself(address.serialize().unwrap_or_default().into());
+        ton_vm::SmartContractInfo::with_myself(
+            address.serialize().and_then(|cell| SliceData::load_cell(cell)).unwrap_or_default()
+        );
     info.block_lt = block_lt;
     info.trans_lt = tr_lt;
     info.unix_time = block_unixtime;

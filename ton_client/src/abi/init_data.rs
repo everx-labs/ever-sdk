@@ -3,12 +3,12 @@ use crate::abi::Error;
 use crate::client::ClientContext;
 use crate::boc::internal::{deserialize_cell_from_boc, serialize_cell_to_boc};
 use crate::boc::BocCacheType;
-use crate::encoding::hex_decode;
+use crate::encoding::{hex_decode, slice_from_cell};
 use crate::error::ClientResult;
 use serde_json;
 use serde_json::Value;
 use std::sync::Arc;
-use ton_types::Cell;
+use ton_types::{SliceData, Cell};
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfUpdateInitialData  {
@@ -33,7 +33,7 @@ pub struct ResultOfUpdateInitialData {
 }
 
 /// Updates initial account data with initial values for the contract's static variables and owner's public key.
-/// This operation is applicable only for initial account data (before deploy). 
+/// This operation is applicable only for initial account data (before deploy).
 /// If the contract is already deployed, its data doesn't contain this data section any more.
 #[api_function]
 pub async fn update_initial_data(
@@ -60,7 +60,8 @@ fn update_initial_data_internal(
             let abi = abi.as_ref()
                 .ok_or_else(|| Error::encode_init_data_failed("contract ABI required to set initial data"))?
                 .json_string()?;
-            ton_abi::json_abi::update_contract_data(&abi, &init_data.to_string(), data.into())
+            let data = slice_from_cell(data)?;
+            ton_abi::json_abi::update_contract_data(&abi, &init_data.to_string(), data)
                 .map_err(|err| Error::encode_init_data_failed(err))?
                 .into_cell()
         }
@@ -69,12 +70,19 @@ fn update_initial_data_internal(
 
     match initial_pubkey {
         Some(pubkey) => {
-            Ok(ton_abi::Contract::insert_pubkey(data.into(), &hex_decode(&pubkey)?)
+            let data = slice_from_cell(data)?;
+            Ok(ton_abi::Contract::insert_pubkey(data, &hex_decode(&pubkey)?)
                 .map_err(|err| Error::encode_init_data_failed(err))?
                 .into_cell())
         }
         _ => Ok(data)
     }
+}
+
+fn default_init_data() -> ClientResult<Cell> {
+    ton_abi::Contract::insert_pubkey(Default::default(), &[0; ed25519_dalek::PUBLIC_KEY_LENGTH])
+        .map_err(|err| Error::encode_init_data_failed(err))
+        .map(SliceData::into_cell)
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
@@ -110,7 +118,7 @@ pub async fn encode_initial_data(
         &params.initial_data,
         &params.abi,
         &params.initial_pubkey,
-        Cell::default(),
+        default_init_data()?,
     )?;
 
     Ok(ResultOfEncodeInitialData {
@@ -141,7 +149,7 @@ pub struct ResultOfDecodeInitialData {
 }
 
 /// Decodes initial values of a contract's static variables and owner's public key from account initial data
-/// This operation is applicable only for initial account data (before deploy). 
+/// This operation is applicable only for initial account data (before deploy).
 /// If the contract is already deployed, its data doesn't contain this data section any more.
 #[api_function]
 pub async fn decode_initial_data(
@@ -149,7 +157,7 @@ pub async fn decode_initial_data(
     params: ParamsOfDecodeInitialData,
 ) -> ClientResult<ResultOfDecodeInitialData> {
     let (_, data) = deserialize_cell_from_boc(&context, &params.data, "contract data").await?;
-    let data: ton_types::SliceData = data.into();
+    let data = slice_from_cell(data)?;
 
     let initial_pubkey = ton_abi::Contract::get_pubkey(&data)
         .map_err(|e| Error::invalid_data_for_decode(e))?
@@ -169,7 +177,7 @@ pub async fn decode_initial_data(
         None
     };
 
-    Ok(ResultOfDecodeInitialData { 
+    Ok(ResultOfDecodeInitialData {
         initial_data,
         initial_pubkey: hex::encode(&initial_pubkey)
     })

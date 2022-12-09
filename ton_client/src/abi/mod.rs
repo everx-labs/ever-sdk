@@ -34,7 +34,7 @@ pub use decode_boc::{decode_boc, ParamsOfDecodeBoc, ResultOfDecodeBoc};
 pub use decode_data::{decode_account_data, ParamsOfDecodeAccountData, ResultOfDecodeAccountData};
 pub use decode_message::{
     decode_message, decode_message_body, DecodedMessageBody, MessageBodyType,
-    ParamsOfDecodeMessage, ParamsOfDecodeMessageBody,
+    ParamsOfDecodeMessage, ParamsOfDecodeMessageBody, DataLayout
 };
 pub use encode_account::{
     encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,

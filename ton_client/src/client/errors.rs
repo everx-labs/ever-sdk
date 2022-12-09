@@ -40,6 +40,7 @@ pub enum ErrorCode {
     InternalError = 33,
     InvalidHandle = 34,
     LocalStorageError = 35,
+    InvalidData = 36,
 }
 pub struct Error;
 
@@ -60,7 +61,9 @@ impl Error {
             || error.code == ErrorCode::WebsocketReceiveError as u32
             || error.code == ErrorCode::WebsocketSendError as u32
             || error.code == ErrorCode::HttpRequestSendError as u32
+            || error.code == crate::net::ErrorCode::GraphqlWebsocketInitError as u32
             || error.code == crate::net::ErrorCode::WebsocketDisconnected as u32
+            || error.code == crate::net::ErrorCode::GraphqlConnectionError as u32
             || (error.code == crate::net::ErrorCode::GraphqlError as u32
                 && error.data["server_code"].as_i64() >= Some(500)
                 && error.data["server_code"].as_i64() <= Some(599)
@@ -106,7 +109,7 @@ impl Error {
     pub fn websocket_connect_error<E: Display>(address: &str, err: E) -> ClientError {
         error(
             ErrorCode::WebsocketConnectError,
-            format!("Can not connect to webscocket URL {}: {}", address, err),
+            format!("Can not connect to websocket URL {}: {}", address, err),
         )
     }
 
@@ -277,7 +280,7 @@ impl Error {
         )
     }
 
-    pub fn cannot_convert_jsvalue_to_json(value: impl std::fmt::Debug) -> ClientError {
+    pub fn cannot_convert_jsvalue_to_json(value: impl Debug) -> ClientError {
         error(
             ErrorCode::CannotConvertJsValueToJson,
             format!("Can not convert JS value to JSON: {:#?}", value),
@@ -322,6 +325,13 @@ impl Error {
                 "Local storage error: {}",
                 err,
             ),
+        )
+    }
+
+    pub fn invalid_data(err: impl Display) -> ClientError {
+        error(
+            ErrorCode::InvalidData,
+            format!("Invalid data: {}", err),
         )
     }
 }

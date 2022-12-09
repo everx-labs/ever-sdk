@@ -241,7 +241,7 @@ impl TestClient {
 
     pub(crate) fn wrap_async_callback<P, R, F>(
         self: &TestClient,
-        _: fn(Arc<ClientContext>, P, std::sync::Arc<crate::json_interface::request::Request>) -> F,
+        _: fn(Arc<ClientContext>, P, Arc<crate::json_interface::request::Request>) -> F,
         module: api_info::Module,
         function: api_info::Function,
     ) -> AsyncFuncWrapper<P, R>
@@ -397,9 +397,15 @@ impl TestClient {
         (Self::abi(name, abi_version), Self::tvc(name, abi_version))
     }
 
+    pub fn init_simple_logger() {
+        let _ = log::set_boxed_logger(Box::new(SimpleLogger)).map(|()| log::set_max_level(MAX_LEVEL));
+    }
+
     pub(crate) fn init_log() {
         let log_cfg_path = LOG_CGF_PATH;
-        let _ = log4rs::init_file(log_cfg_path, Default::default());
+        if log4rs::init_file(log_cfg_path, Default::default()).is_err() {
+            Self::init_simple_logger();
+        }
     }
 
     pub(crate) fn new() -> Self {
@@ -412,8 +418,7 @@ impl TestClient {
     }
 
     pub(crate) fn new_with_config(config: Value) -> Self {
-        let _ =
-            log::set_boxed_logger(Box::new(SimpleLogger)).map(|()| log::set_max_level(MAX_LEVEL));
+        Self::init_simple_logger();
 
         unsafe {
             let response = tc_create_context(StringData::new(&config.to_string()));
