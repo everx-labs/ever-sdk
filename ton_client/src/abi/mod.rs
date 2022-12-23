@@ -33,8 +33,9 @@ use serde::{Deserialize, Deserializer};
 pub use decode_boc::{decode_boc, ParamsOfDecodeBoc, ResultOfDecodeBoc};
 pub use decode_data::{decode_account_data, ParamsOfDecodeAccountData, ResultOfDecodeAccountData};
 pub use decode_message::{
-    decode_message, decode_message_body, DecodedMessageBody, MessageBodyType,
-    ParamsOfDecodeMessage, ParamsOfDecodeMessageBody, DataLayout
+    decode_message, decode_message_body, get_signature_data, DecodedMessageBody, MessageBodyType,
+    ParamsOfDecodeMessage, ParamsOfDecodeMessageBody, DataLayout, ParamsOfGetSignatureData,
+    ResultOfGetSignatureData
 };
 pub use encode_account::{
     encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,

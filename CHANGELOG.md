@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.40.0] – 2022-12-23
+
+### New
+
+- `abi.get_signature_data` function that returns signature from message and hash to verify the signature
+
 ## [1.39.0] – 2022-12-07
 
 ### Improvement
