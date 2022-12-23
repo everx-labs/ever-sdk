@@ -159,8 +159,7 @@ pub async fn decode_message_body(
     context: Arc<ClientContext>,
     params: ParamsOfDecodeMessageBody,
 ) -> ClientResult<DecodedMessageBody> {
-    let abi = params.abi.json_string()?;
-    let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
+    let abi = params.abi.abi()?;
     let (_, body) = deserialize_cell_from_boc(&context, &params.body, "message body").await?;
     let body = slice_from_cell(body)?;
     decode_body(abi, body, params.is_internal, params.allow_partial, params.function_name, params.data_layout)
@@ -170,8 +169,7 @@ async fn prepare_decode(
     context: &ClientContext,
     params: &ParamsOfDecodeMessage,
 ) -> ClientResult<(AbiContract, ton_block::Message)> {
-    let abi = params.abi.json_string()?;
-    let abi = AbiContract::load(abi.as_bytes()).map_err(|x| Error::invalid_json(x))?;
+    let abi = params.abi.abi()?;
     let message = deserialize_object_from_boc(context, &params.message, "message")
         .await
         .map_err(|x| Error::invalid_message_for_decode(x))?;
@@ -326,5 +324,49 @@ fn find_abi_function<'a>(abi: &'a AbiContract, name: &str) -> ClientResult<AbiFu
         } else {
             Err(Error::invalid_function_name(name))
         }
+    }
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default)]
+pub struct ParamsOfGetSignatureData {
+    /// Contract ABI used to decode.
+    pub abi: Abi,
+
+    /// Message BOC encoded in `base64`.
+    pub message: String,
+}
+
+#[derive(Serialize, Deserialize, ApiType, Default)]
+pub struct ResultOfGetSignatureData {
+    /// Signature from the message in `hex`.
+    pub signature: String,
+
+    /// Hash to verify the signature in `base64`.
+    pub hash: String,
+}
+
+/// Extracts signature from message body and calculates hash to verify the signature
+#[api_function]
+pub async fn get_signature_data(
+    context: Arc<ClientContext>,
+    params: ParamsOfGetSignatureData,
+) -> ClientResult<ResultOfGetSignatureData> {
+    let abi = params.abi.abi()?;
+    let message: ton_block::Message = deserialize_object_from_boc(&context, &params.message, "message").await?.object;
+    if let Some(body) = message.body() {
+        let address = message.dst()
+            .ok_or_else(|| Error::invalid_message_for_decode(
+                "Message has no destination address",
+            ))?;
+        let (signature, hash) = abi.get_signature_data(body, Some(address))
+            .map_err(|err| Error::invalid_message_for_decode(err))?;
+        Ok(ResultOfGetSignatureData { 
+            signature: hex::encode(&signature), 
+            hash: base64::encode(&hash),
+        })
+    } else {
+        Err(Error::invalid_message_for_decode(
+            "The message body is empty",
+        ))
     }
 }
