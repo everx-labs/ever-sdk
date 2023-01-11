@@ -194,7 +194,8 @@ enum ClientErrorCode {
     CanNotParseNumber = 32,
     InternalError = 33,
     InvalidHandle = 34,
-    LocalStorageError = 35
+    LocalStorageError = 35,
+    InvalidData = 36
 }
 ```
 One of the following value:
@@ -234,6 +235,7 @@ One of the following value:
 - `InternalError = 33`
 - `InvalidHandle = 34`
 - `LocalStorageError = 35`
+- `InvalidData = 36`
 
 
 ## ClientError

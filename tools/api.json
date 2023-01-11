@@ -1,5 +1,5 @@
 {
-  "version": "1.39.0",
+  "version": "1.40.0",
   "modules": [
     {
       "name": "client",
@@ -252,6 +252,13 @@
               "name": "LocalStorageError",
               "type": "Number",
               "value": "35",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "InvalidData",
+              "type": "Number",
+              "value": "36",
               "summary": null,
               "description": null
             }
@@ -7126,6 +7133,47 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ParamsOfGetSignatureData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "abi",
+              "type": "Ref",
+              "ref_name": "abi.Abi",
+              "summary": "Contract ABI used to decode.",
+              "description": null
+            },
+            {
+              "name": "message",
+              "type": "String",
+              "summary": "Message BOC encoded in `base64`.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetSignatureData",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signature",
+              "type": "String",
+              "summary": "Signature from the message in `hex`.",
+              "description": null
+            },
+            {
+              "name": "hash",
+              "type": "String",
+              "summary": "Hash to verify the signature in `base64`.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -7694,6 +7742,44 @@
               {
                 "type": "Ref",
                 "ref_name": "abi.ResultOfCalcFunctionId"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_signature_data",
+          "summary": "Extracts signature from message body and calculates hash to verify the signature",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "abi.ParamsOfGetSignatureData",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "abi.ResultOfGetSignatureData"
               }
             ]
           },
