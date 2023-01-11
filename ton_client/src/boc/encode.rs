@@ -108,7 +108,9 @@ pub async fn encode_boc(
             BuildResult::Complete(cell) => {
                 if let Some(prev) = stack.pop() {
                     builder = prev;
-                    builder.result.append_reference_cell(cell);
+                    builder.result.checked_append_reference(cell).map_err(
+                        |err| Error::serialization_error(err, "encoded cell"),
+                    )?;
                 } else {
                     return Ok(ResultOfEncodeBoc {
                         boc: serialize_cell_to_boc(&context, cell, "encoded cell", params.boc_cache)
@@ -156,11 +158,13 @@ impl<'a> Builder<'a> {
                     append_bitstring(&mut self.result, &value)?;
                 }
                 BuilderOp::CellBoc { boc } => {
-                    self.result.append_reference_cell(
+                    self.result.checked_append_reference(
                         deserialize_cell_from_boc(context, boc, "CellBoc")
                             .await?
                             .1,
-                    );
+                    ).map_err(
+                        |err| Error::serialization_error(err, "encode_boc"),
+                    )?;
                 }
                 BuilderOp::Cell { ref builder } => {
                     return Ok(BuildResult::Nested {

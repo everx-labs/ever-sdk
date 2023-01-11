@@ -1075,7 +1075,7 @@ fn test_init_data() {
 fn test_decode_boc() {
     let mut builder = BuilderData::new();
     builder.append_u32(0).unwrap();
-    builder.append_reference(123u64.write_to_new_cell().unwrap());
+    builder.checked_append_reference(123u64.write_to_new_cell().unwrap().into_cell().unwrap()).unwrap();
     builder.append_bit_one().unwrap();
 
     let boc = serialize_cell_to_base64(&builder.into_cell().unwrap(), "").unwrap();
