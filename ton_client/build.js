@@ -26,7 +26,7 @@ main(async () => {
         },
         darwin: {
           x64: [['lib{}.dylib', '']],
-          arm64: [['lib{}.dylib', '_arm64']]
+          arm64: [['lib{}.dylib', '']]
         },
     };
     for (const [src, dstSuffix] of platformNames[platform][arch] || []) {
