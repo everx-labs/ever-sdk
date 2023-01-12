@@ -382,6 +382,10 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::calc_function_id,
         crate::abi::function_id::calc_function_id_api,
     );
+    module.register_async_fn(
+        crate::abi::get_signature_data,
+        crate::abi::decode_message::get_signature_data_api,
+    );
     module.register();
 }
 

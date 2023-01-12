@@ -34,6 +34,8 @@ Provides message encoding and decoding according to the ABI specification.
 
 [calc_function_id](mod\_abi.md#calc_function_id) – Calculates contract function ID by contract ABI
 
+[get_signature_data](mod\_abi.md#get_signature_data) – Extracts signature from message body and calculates hash to verify the signature
+
 ## Types
 [AbiErrorCode](mod\_abi.md#abierrorcode)
 
@@ -150,6 +152,10 @@ Provides message encoding and decoding according to the ABI specification.
 [ParamsOfCalcFunctionId](mod\_abi.md#paramsofcalcfunctionid)
 
 [ResultOfCalcFunctionId](mod\_abi.md#resultofcalcfunctionid)
+
+[ParamsOfGetSignatureData](mod\_abi.md#paramsofgetsignaturedata)
+
+[ResultOfGetSignatureData](mod\_abi.md#resultofgetsignaturedata)
 
 
 # Functions
@@ -769,6 +775,36 @@ function calc_function_id(
 ### Result
 
 - `function_id`: _number_ – Contract function ID
+
+
+## get_signature_data
+
+Extracts signature from message body and calculates hash to verify the signature
+
+```ts
+type ParamsOfGetSignatureData = {
+    abi: Abi,
+    message: string
+}
+
+type ResultOfGetSignatureData = {
+    signature: string,
+    hash: string
+}
+
+function get_signature_data(
+    params: ParamsOfGetSignatureData,
+): Promise<ResultOfGetSignatureData>;
+```
+### Parameters
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
+- `message`: _string_ – Message BOC encoded in `base64`.
+
+
+### Result
+
+- `signature`: _string_ – Signature from the message in `hex`.
+- `hash`: _string_ – Hash to verify the signature in `base64`.
 
 
 # Types
@@ -1716,5 +1752,27 @@ type ResultOfCalcFunctionId = {
 }
 ```
 - `function_id`: _number_ – Contract function ID
+
+
+## ParamsOfGetSignatureData
+```ts
+type ParamsOfGetSignatureData = {
+    abi: Abi,
+    message: string
+}
+```
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
+- `message`: _string_ – Message BOC encoded in `base64`.
+
+
+## ResultOfGetSignatureData
+```ts
+type ResultOfGetSignatureData = {
+    signature: string,
+    hash: string
+}
+```
+- `signature`: _string_ – Signature from the message in `hex`.
+- `hash`: _string_ – Hash to verify the signature in `base64`.
 
 

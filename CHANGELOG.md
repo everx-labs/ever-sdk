@@ -2,6 +2,17 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.40.0] – 2023-01-11
+
+### New
+
+- `abi.get_signature_data` function that returns signature from message and hash to verify the signature
+
+### Improvement
+
+- local endpoints with port specified are expanded with `http` protocol instead of `https` (e.g.
+`localhost:8033` in expanded to `http://localhost:8033/graphql`)
+
 ## [1.39.0] – 2022-12-07
 
 ### Improvement

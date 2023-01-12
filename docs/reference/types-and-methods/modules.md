@@ -159,6 +159,8 @@ Where:
 
 [calc_function_id](mod\_abi.md#calc_function_id) – Calculates contract function ID by contract ABI
 
+[get_signature_data](mod\_abi.md#get_signature_data) – Extracts signature from message body and calculates hash to verify the signature
+
 ## [boc](mod\_boc.md) – BOC manipulation module.
 
 [parse_message](mod\_boc.md#parse_message) – Parses message boc into a JSON

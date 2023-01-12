@@ -72,8 +72,9 @@ impl Endpoint {
     fn expand_address(base_url: &str) -> String {
         let mut base_url = base_url.trim_end_matches("/").to_lowercase();
         if !base_url.starts_with(HTTP_PROTOCOL) && !base_url.starts_with(HTTPS_PROTOCOL) {
+            let stripped_url = base_url.split_once(&['/', ':']).map(|x| x.0).unwrap_or(&base_url);
             let protocol =
-                if base_url == "localhost" || base_url == "127.0.0.1" || base_url == "0.0.0.0" {
+                if stripped_url == "localhost" || stripped_url == "127.0.0.1" || stripped_url == "0.0.0.0" {
                     HTTP_PROTOCOL
                 } else {
                     HTTPS_PROTOCOL
@@ -226,4 +227,21 @@ impl Endpoint {
     pub fn remp_enabled(&self) -> bool {
         self.remp_enabled.load(Ordering::Relaxed)
     }
+}
+
+#[test]
+fn test_expand_address() {
+    assert_eq!(Endpoint::expand_address("localhost"), "http://localhost/graphql");
+    assert_eq!(Endpoint::expand_address("localhost:8033"), "http://localhost:8033/graphql");
+    assert_eq!(Endpoint::expand_address("0.0.0.0:8033/graphql"), "http://0.0.0.0:8033/graphql");
+    assert_eq!(Endpoint::expand_address("127.0.0.1/graphql"), "http://127.0.0.1/graphql");
+    assert_eq!(Endpoint::expand_address("http://localhost/graphql"), "http://localhost/graphql");
+    assert_eq!(Endpoint::expand_address("https://localhost"), "https://localhost/graphql");
+
+    assert_eq!(Endpoint::expand_address("devnet.evercloud.dev"), "https://devnet.evercloud.dev/graphql");
+    assert_eq!(Endpoint::expand_address("devnet.evercloud.dev:8033"), "https://devnet.evercloud.dev:8033/graphql");
+    assert_eq!(Endpoint::expand_address("devnet.evercloud.dev:8033/graphql"), "https://devnet.evercloud.dev:8033/graphql");
+    assert_eq!(Endpoint::expand_address("devnet.evercloud.dev/graphql"), "https://devnet.evercloud.dev/graphql");
+    assert_eq!(Endpoint::expand_address("http://devnet.evercloud.dev/graphql"), "http://devnet.evercloud.dev/graphql");
+    assert_eq!(Endpoint::expand_address("https://devnet.evercloud.dev"), "https://devnet.evercloud.dev/graphql");
 }

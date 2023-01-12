@@ -118,7 +118,7 @@ async fn test_encode_boc() {
         .append_builder(&burner_address)
         .unwrap();
     let inner_cell = inner_builder.into_cell().unwrap();
-    builder.append_reference_cell(inner_cell.clone());
+    builder.checked_append_reference(inner_cell.clone()).unwrap();
 
     let cell = builder.into_cell().unwrap();
     let boc = serialize_cell_to_base64(&cell, "cell").unwrap();

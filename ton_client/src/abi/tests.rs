@@ -208,7 +208,7 @@ fn encode_v2() {
     assert_eq!(unsigned_body_encoded.body, unsigned_body);
     assert_eq!(unsigned_body_encoded.data_to_sign, unsigned.data_to_sign);
 
-    let signature = client.sign_detached(&unsigned.data_to_sign.unwrap(), &keys);
+    let signature = client.sign_detached(unsigned.data_to_sign.as_deref().unwrap(), &keys);
     assert_eq!(signature, "5bbfb7f184f2cb5f019400b9cd497eeaa41f3d5885619e9f7d4fab8dd695f4b3a02159a1422996c1dd7d1be67898bc79c6adba6c65a18101ac5f0a2a2bb8910b");
     let signed: ResultOfAttachSignature = client
         .request(
@@ -222,6 +222,18 @@ fn encode_v2() {
         )
         .unwrap();
     assert_eq!(signed.message, signed_message);
+
+    let sign: ResultOfGetSignatureData = client
+        .request(
+            "abi.get_signature_data",
+            ParamsOfGetSignatureData {
+                abi: abi.clone(),
+                message: signed.message.clone(),
+            },
+        )
+        .unwrap();
+    assert_eq!(sign.signature, signature);
+    assert_eq!(sign.hash, unsigned.data_to_sign.as_deref().unwrap());
 
     let signed_body = extract_body(signed.message);
 
@@ -1063,7 +1075,7 @@ fn test_init_data() {
 fn test_decode_boc() {
     let mut builder = BuilderData::new();
     builder.append_u32(0).unwrap();
-    builder.append_reference(123u64.write_to_new_cell().unwrap());
+    builder.checked_append_reference(123u64.write_to_new_cell().unwrap().into_cell().unwrap()).unwrap();
     builder.append_bit_one().unwrap();
 
     let boc = serialize_cell_to_base64(&builder.into_cell().unwrap(), "").unwrap();
