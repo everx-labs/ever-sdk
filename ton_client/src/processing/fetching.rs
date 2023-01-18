@@ -36,6 +36,7 @@ pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send>(
             callback(ProcessingEvent::WillFetchNextBlock {
                 shard_block_id: block_id.to_string(),
                 message_id: message_id.to_string(),
+                message_dst: address.to_string(),
                 message: params.message.clone(),
             })
             .await;
@@ -54,6 +55,7 @@ pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send>(
                     callback(ProcessingEvent::FetchNextBlockFailed {
                         shard_block_id: block_id.to_string(),
                         message_id: message_id.to_string(),
+                        message_dst: address.to_string(),
                         message: params.message.clone(),
                         error: error.clone(),
                     })

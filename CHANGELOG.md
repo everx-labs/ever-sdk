@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.0] – 2023-01-18
+
+### New
+
+- `message_id` and `message_dst` fields are added to all `ProcessingEvent` variants
+
 ## [1.40.0] – 2023-01-11
 
 ### New
