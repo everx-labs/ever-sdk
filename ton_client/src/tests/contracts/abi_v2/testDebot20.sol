@@ -1,4 +1,4 @@
-pragma ton-solidity ^0.65.0;
+pragma ton-solidity >=0.65.0;
 pragma AbiHeader expire;
 pragma AbiHeader time;
 pragma AbiHeader pubkey;
@@ -68,7 +68,6 @@ contract MsgTestDebot is Debot, ARecieverDebot {
     function setBoxHandle(uint32 handle) public {
         m_handle = handle;
         test1();
-        test2();
     }
 
     function test1() private view {
@@ -148,6 +147,7 @@ contract MsgTestDebot is Debot, ARecieverDebot {
     function getMsgDetails(uint64 value0,uint32 value1) public view {
         require(value0==m_sendTimestamp, 105);
         require(value1==m_sendExpire, 106);
+        test2();
     }
 
     function onGetMethodError(uint32 sdkError, uint32 exitCode) public pure {
