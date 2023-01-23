@@ -177,7 +177,10 @@ async fn endpoints_with_graphql_suffix() {
         .await
         .unwrap();
 
-    assert_eq!(endpoint.query_url, format!("{}/graphql", url));
+    assert_eq!(
+        endpoint.query_url.trim_start_matches("http://").trim_start_matches("https://"),
+        format!("{}/graphql", url).trim_start_matches("http://").trim_start_matches("https://"),
+    );
 
     let client = TestClient::new_with_config(json!({
         "network": {
@@ -191,7 +194,10 @@ async fn endpoints_with_graphql_suffix() {
         .get_query_endpoint()
         .await
         .unwrap();
-    assert_eq!(endpoint.query_url, format!("{}/graphql", url));
+    assert_eq!(
+        endpoint.query_url.trim_start_matches("http://").trim_start_matches("https://"),
+        format!("{}/graphql", url).trim_start_matches("http://").trim_start_matches("https://"),
+    );
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

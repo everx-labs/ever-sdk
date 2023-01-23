@@ -356,6 +356,7 @@ impl ContractCall {
                     ProcessingEvent::WillSend {
                         shard_block_id: _,
                         message_id: _,
+                        message_dst: _,
                         message: _,
                     } => {
                         browser.log("Sending message...".to_owned()).await;

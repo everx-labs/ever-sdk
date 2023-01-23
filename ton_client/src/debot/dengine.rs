@@ -784,7 +784,7 @@ impl DEngine {
             let browser = browser.clone();
             async move {
                 match event {
-                    ProcessingEvent::WillSend { shard_block_id: _, message_id, message: _ } => {
+                    ProcessingEvent::WillSend { shard_block_id: _, message_id, message_dst: _, message: _ } => {
                         browser.log(format!("Sending message {}", message_id)).await;
                     },
                     _ => (),

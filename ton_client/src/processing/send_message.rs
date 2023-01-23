@@ -112,13 +112,20 @@ impl SendingMessage {
         callback: &Option<impl Fn(ProcessingEvent) -> F + Send + Sync>,
     ) -> ClientResult<String> {
         if let Some(callback) = callback {
-            callback(ProcessingEvent::WillFetchFirstBlock {}).await;
+            callback(ProcessingEvent::WillFetchFirstBlock {
+                message_id: self.id.to_string(),
+                message_dst: self.dst.to_string(),
+            }).await;
         }
         let shard_block_id = match find_last_shard_block(&context, &self.dst, None).await {
             Ok(block) => block.to_string(),
             Err(err) => {
                 if let Some(callback) = &callback {
-                    callback(ProcessingEvent::FetchFirstBlockFailed { error: err.clone() }).await;
+                    callback(ProcessingEvent::FetchFirstBlockFailed { 
+                        message_id: self.id.to_string(),
+                        message_dst: self.dst.to_string(),
+                        error: err.clone(),
+                    }).await;
                 }
                 return Err(Error::fetch_first_block_failed(err, &self.id));
             }
@@ -127,6 +134,7 @@ impl SendingMessage {
             callback(ProcessingEvent::WillSend {
                 shard_block_id: shard_block_id.clone(),
                 message_id: self.id.to_string(),
+                message_dst: self.dst.to_string(),
                 message: self.serialized.clone(),
             })
             .await;
@@ -237,12 +245,14 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
         callback(match &result {
             Ok(_) => ProcessingEvent::DidSend {
                 shard_block_id: shard_block_id.to_string(),
-                message_id: message.id.clone(),
+                message_id: message.id.to_string(),
+                message_dst: message.dst.to_string(),
                 message: message.serialized.clone(),
             },
             Err(err) => ProcessingEvent::SendFailed {
                 shard_block_id: shard_block_id.to_string(),
-                message_id: message.id.clone(),
+                message_id: message.id.to_string(),
+                message_dst: message.dst.to_string(),
                 message: message.serialized.clone(),
                 error: Error::send_message_failed(err, &message.id, &shard_block_id),
             },
