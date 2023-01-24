@@ -17,6 +17,30 @@ struct State {
 }
 
 impl State {
+    fn subscribe<F: Future<Output = ()> + Send>(
+        self: Arc<Self>,
+        messages: Vec<MessageMonitoringParams>,
+        callback: impl Fn(crate::error::Result<Vec<MessageMonitoringResult>>) -> F
+            + Send
+            + Sync
+            + 'static,
+    ) -> usize {
+        let subscription = self.create_subscription();
+        tokio::spawn(async move {
+            let mut messages = messages;
+            while !messages.is_empty() && self.contains_subscription(subscription) {
+                let (found, not_found) = self.find_results(messages);
+                messages = not_found;
+                if !found.is_empty() {
+                    callback(Ok(found)).await
+                } else {
+                    tokio::time::sleep(Duration::from_millis(100)).await;
+                }
+            }
+        });
+        subscription
+    }
+
     fn find_results(
         &self,
         messages: Vec<MessageMonitoringParams>,
@@ -32,6 +56,21 @@ impl State {
             }
         }
         (found, not_found)
+    }
+
+    fn create_subscription(&self) -> usize {
+        let mut next = self.next_subscription.lock().unwrap();
+        *next += 1;
+        self.subscriptions.write().unwrap().insert(*next);
+        *next
+    }
+
+    fn contains_subscription(&self, subscription: usize) -> bool {
+        self.subscriptions.read().unwrap().contains(&subscription)
+    }
+
+    fn remove_subscription(&self, subscription: usize) {
+        self.subscriptions.write().unwrap().remove(&subscription);
     }
 }
 
@@ -62,39 +101,11 @@ impl EverApiProvider for MockEverApi {
             + Sync
             + 'static,
     ) -> crate::error::Result<Subscription> {
-        let subscription = {
-            let mut next = self.state.next_subscription.lock().unwrap();
-            *next += 1;
-            self.state.subscriptions.write().unwrap().insert(*next);
-            *next
-        };
-        let state = self.state.clone();
-        tokio::spawn(async move {
-            let mut messages = messages;
-            while !messages.is_empty() {
-                let (found, not_found) = state.find_results(messages);
-                messages = not_found;
-                if !found.is_empty() {
-                    {
-                        if !state.subscriptions.read().unwrap().contains(&subscription) {
-                            break;
-                        }
-                    }
-                    callback(Ok(found)).await
-                } else {
-                    tokio::time::sleep(Duration::from_millis(100)).await;
-                }
-            }
-        });
-        Ok(Subscription(subscription))
+        Ok(Subscription(self.state.clone().subscribe(messages, callback)))
     }
 
     async fn unsubscribe(&self, subscription: Subscription) -> crate::error::Result<()> {
-        self.state
-            .subscriptions
-            .write()
-            .unwrap()
-            .remove(&subscription.0);
+        self.state.remove_subscription(subscription.0);
         Ok(())
     }
 }

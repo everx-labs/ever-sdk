@@ -2625,7 +2625,7 @@ dependencies = [
 
 [[package]]
 name = "ton_client_msg_mon"
-version = "1.41.0"
+version = "1.42.0"
 dependencies = [
  "async-trait",
  "futures",
