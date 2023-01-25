@@ -63,14 +63,14 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
     ) -> crate::error::Result<()> {
         {
             let mut queues = self.queues.write().unwrap();
+            let queue = if let Some(queue) = queues.get_mut(queue) {
+                queue
+            } else {
+                queues.insert(queue.to_string(), MonitoringQueue::new());
+                queues.get_mut(queue).unwrap()
+            };
             for message in messages {
-                let queue = if let Some(queue) = queues.get_mut(queue) {
-                    queue
-                } else {
-                    queues.insert(queue.to_string(), MonitoringQueue::new());
-                    queues.get_mut(queue).unwrap()
-                };
-                queue.unresolved.push(message);
+                queue.add_unresolved(message);
             }
             self.notify_queues.send(true).ok();
         }
@@ -120,17 +120,17 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
         };
         Ok(MonitoringQueueInfo { queued, resolved })
     }
-}
 
-// priv
-impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
     pub fn cancel_monitor(&self, queue: &str) -> crate::error::Result<()> {
         let mut queues = self.queues.write().unwrap();
         queues.remove(queue);
         self.notify_queues.send(true).ok();
         Ok(())
     }
+}
 
+// priv
+impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
     async fn resubscribe(&self) -> crate::error::Result<()> {
         let new_subscription = self.subscribe().await?;
         if let Some(old_subscription) = mem::replace(
@@ -168,7 +168,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
     fn collect_unresolved(&self) -> Vec<MessageMonitoringParams> {
         let mut messages = Vec::new();
         for queue in self.queues.read().unwrap().values() {
-            for message in &queue.unresolved {
+            for message in queue.unresolved.values() {
                 messages.push(message.clone());
             }
         }

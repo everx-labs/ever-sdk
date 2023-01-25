@@ -34,6 +34,13 @@ pub enum MessageMonitoringStatus {
 pub struct MessageMonitoringTransaction {
     #[serde(deserialize_with = "deserialize_uint256")]
     pub hash: UInt256,
+    pub aborted: bool,
+    pub compute: Option<MessageMonitoringTransactionCompute>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MessageMonitoringTransactionCompute {
+    pub exit_code: i32,
 }
 
 fn serialize_uint256<S>(value: &UInt256, s: S) -> Result<S::Ok, S::Error>

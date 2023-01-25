@@ -1,17 +1,22 @@
 use crate::monitor::{MessageMonitoringParams, MessageMonitoringResult};
+use std::collections::HashMap;
 use std::mem;
+use ton_types::UInt256;
 
 pub(crate) struct MonitoringQueue {
-    pub unresolved: Vec<MessageMonitoringParams>,
+    pub unresolved: HashMap<UInt256, MessageMonitoringParams>,
     pub resolved: Vec<MessageMonitoringResult>,
 }
 
 impl MonitoringQueue {
-    pub(crate) fn resolve(&mut self, results: &Vec<MessageMonitoringResult>) {
-        for i in (0..self.unresolved.len()).rev() {
-            if let Some(result) = results.iter().find(|&x| x.hash == self.unresolved[i].hash) {
+    pub fn add_unresolved(&mut self, message: MessageMonitoringParams) {
+        self.unresolved.insert(message.hash.clone(), message);
+    }
+
+    pub fn resolve(&mut self, results: &Vec<MessageMonitoringResult>) {
+        for result in results {
+            if self.unresolved.remove(&result.hash).is_some() {
                 self.resolved.push(result.clone());
-                self.unresolved.remove(i);
             }
         }
     }
@@ -20,12 +25,12 @@ impl MonitoringQueue {
 impl MonitoringQueue {
     pub fn new() -> Self {
         Self {
-            unresolved: Vec::new(),
+            unresolved: HashMap::new(),
             resolved: Vec::new(),
         }
     }
 
     pub fn fetch_resolved(&mut self) -> Vec<MessageMonitoringResult> {
-        mem::replace(&mut self.resolved, Vec::new())
+        mem::take(&mut self.resolved)
     }
 }

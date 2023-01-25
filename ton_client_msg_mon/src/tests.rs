@@ -137,7 +137,7 @@ fn msg_res(h: usize, s: MessageMonitoringStatus) -> MessageMonitoringResult {
     MessageMonitoringResult {
         hash: u256(h),
         status: s,
-        transaction: Some(MessageMonitoringTransaction { hash: u256(h) }),
+        transaction: Some(MessageMonitoringTransaction { hash: u256(h), aborted: false, compute: None }),
         user_data: None,
     }
 }
