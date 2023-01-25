@@ -3,6 +3,7 @@ exclude = [ 'examples/rust' ]
 members = [
     'ton_sdk',
     'ton_client',
+    'ton_client_msg_mon',
     'toncli',
     'api/test',
     'tools/update_trusted_blocks'
