@@ -1,6 +1,6 @@
 use crate::monitor::message::{MessageMonitoringParams, MessageMonitoringResult};
 use crate::monitor::queue::MonitoringQueue;
-use crate::providers::{EverApiProvider, Subscription};
+use crate::providers::{EverApiProvider, EverApiSubscription};
 use std::collections::HashMap;
 use std::mem;
 use std::sync::{Arc, Mutex, RwLock};
@@ -16,7 +16,7 @@ pub struct MessageMonitor<EverApi: EverApiProvider> {
     ///
     notify_queues: Arc<tokio::sync::watch::Sender<bool>>,
     listen_queues: tokio::sync::watch::Receiver<bool>,
-    active_subscription: Mutex<Option<Subscription>>,
+    active_subscription: Mutex<Option<EverApiSubscription>>,
 }
 
 pub struct MonitoringQueueInfo {
@@ -142,7 +142,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
         Ok(())
     }
 
-    async fn subscribe(&self) -> crate::error::Result<Option<Subscription>> {
+    async fn subscribe(&self) -> crate::error::Result<Option<EverApiSubscription>> {
         let messages = self.collect_unresolved();
         if messages.is_empty() {
             return Ok(None);

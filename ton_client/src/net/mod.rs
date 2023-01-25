@@ -66,9 +66,14 @@ pub(crate) mod transaction_tree;
 pub(crate) mod types;
 mod websocket_link;
 
+mod network;
 #[cfg(not(feature = "wasm-base"))]
 #[cfg(test)]
 mod tests;
+mod msg_mon_providers;
+
+pub(crate) use network::NetworkContext;
+pub(crate) use msg_mon_providers::MessageMonitorEverApi;
 
 /// Suspends network module to stop any network activity
 #[api_function]

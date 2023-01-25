@@ -1,5 +1,5 @@
 use crate::monitor::{MessageMonitoringParams, MessageMonitoringResult};
-use crate::providers::{EverApiProvider, Subscription};
+use crate::providers::{EverApiProvider, EverApiSubscription};
 use std::collections::HashSet;
 use std::future::Future;
 use std::sync::{Arc, Mutex, RwLock};
@@ -100,11 +100,11 @@ impl EverApiProvider for MockEverApi {
             + Send
             + Sync
             + 'static,
-    ) -> crate::error::Result<Subscription> {
-        Ok(Subscription(self.state.clone().subscribe(messages, callback)))
+    ) -> crate::error::Result<EverApiSubscription> {
+        Ok(EverApiSubscription(self.state.clone().subscribe(messages, callback)))
     }
 
-    async fn unsubscribe(&self, subscription: Subscription) -> crate::error::Result<()> {
+    async fn unsubscribe(&self, subscription: EverApiSubscription) -> crate::error::Result<()> {
         self.state.remove_subscription(subscription.0);
         Ok(())
     }

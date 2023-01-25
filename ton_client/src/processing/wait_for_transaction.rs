@@ -113,7 +113,7 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
         Ok(result) => Some(result),
         Err(error) => {
             if params.send_events {
-                callback(ProcessingEvent::RempError { 
+                callback(ProcessingEvent::RempError {
                     error,
                     message_id: message_id.clone(),
                     message_dst: message_dst.to_string(),

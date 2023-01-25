@@ -29,4 +29,4 @@ pub use monitor::{
     MessageMonitor, MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
     MessageMonitoringTransaction, MonitorFetchWait, MonitoringQueueInfo,
 };
-pub use providers::EverApiProvider;
+pub use providers::{EverApiProvider, EverApiSubscription};

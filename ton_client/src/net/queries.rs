@@ -36,7 +36,7 @@ pub struct ResultOfQuery {
     pub result: Value,
 }
 
-async fn deserialize_result<T>(
+pub(crate) async fn deserialize_result<T>(
     result: ClientResult<Value>,
     server_link: &ServerLink,
 ) -> ClientResult<T>

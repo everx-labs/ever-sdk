@@ -7,7 +7,7 @@ use crate::monitor::{MessageMonitoringParams, MessageMonitoringResult};
 pub use mock_api::MockEverApi;
 use std::future::Future;
 
-pub struct Subscription(usize);
+pub struct EverApiSubscription(pub usize);
 
 #[async_trait]
 pub trait EverApiProvider {
@@ -15,7 +15,7 @@ pub trait EverApiProvider {
         &self,
         messages: Vec<MessageMonitoringParams>,
         callback: impl Fn(error::Result<Vec<MessageMonitoringResult>>) -> F + Send + Sync + 'static,
-    ) -> error::Result<Subscription>;
+    ) -> error::Result<EverApiSubscription>;
 
-    async fn unsubscribe(&self, subscription: Subscription) -> error::Result<()>;
+    async fn unsubscribe(&self, subscription: EverApiSubscription) -> error::Result<()>;
 }

@@ -19,6 +19,7 @@ serde_json = '1.0.59'
 api_derive = { path = '../api/derive' }
 api_info = { path = '../api/info' }
 ton_sdk = { default-features = false, path = '../ton_sdk' }
+ton_client_msg_mon = { default-features = false, path = '../ton_client_msg_mon' }
 
 ton_abi = { git = 'https://github.com/tonlabs/ton-labs-abi.git', tag = '2.3.54' }
 ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.9.18' }
