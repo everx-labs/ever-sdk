@@ -28,4 +28,11 @@ pub enum MessageMonitoringStatus {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct MessageMonitoringTransaction {
     pub hash: UInt256,
+    pub aborted: bool,
+    pub compute: Option<MessageMonitoringTransactionCompute>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MessageMonitoringTransactionCompute {
+    pub exit_code: i32,
 }
