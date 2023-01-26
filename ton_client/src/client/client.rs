@@ -85,6 +85,10 @@ impl ClientContext {
         self.env.set_timer(ms).await
     }
 
+    pub fn now_ms(&self) -> u64 {
+        self.env.now_ms()
+    }
+
     pub fn new(config: ClientConfig) -> ClientResult<ClientContext> {
         let env = Arc::new(ClientEnv::new()?);
 
