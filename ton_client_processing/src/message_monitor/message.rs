@@ -1,12 +1,49 @@
+use crate::Error;
+use base64::Engine;
 use serde_json::Value;
+use std::io::Cursor;
+use ton_types::deserialize_tree_of_cells;
+
+#[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, ApiType)]
+pub enum MonitoredMessage {
+    /// BOC of the message.
+    Boc { boc: String },
+    /// Message's hash and destination address.
+    HashAddress {
+        /// Hash of the message.
+        hash: String,
+        /// Destination address of the message.
+        address: String,
+    },
+}
+
+impl MonitoredMessage {
+    pub fn hash(&self) -> crate::Result<String> {
+        Ok(match self {
+            MonitoredMessage::HashAddress { hash, .. } => hash.clone(),
+            MonitoredMessage::Boc { boc } => {
+                let bytes = base64::engine::general_purpose::STANDARD
+                    .decode(boc)
+                    .map_err(|err| {
+                        Error::invalid_boc(format!("error decode message BOC base64: {}", err))
+                    })?;
+                let cell = deserialize_tree_of_cells(&mut Cursor::new(&bytes)).map_err(|err| {
+                    Error::invalid_boc(format!("Message BOC deserialization error: {}", err))
+                })?;
+
+                cell.repr_hash().as_hex_string()
+            }
+        })
+    }
+}
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, ApiType)]
 pub struct MessageMonitoringParams {
-    /// Hash of the message that was sent to the blockchain.
-    pub hash: String,
-
-    /// Destination account address
-    pub address: String,
+    /// Monitored message identification.
+    /// Can be provided as a message's BOC or (hash, address) pair.
+    /// BOC is a preferable way because it helps to determine possible error reason (using TVM
+    /// execution of the message).
+    pub message: MonitoredMessage,
 
     /// Block time
     /// Must be specified as a UNIX timestamp in seconds

@@ -2,7 +2,7 @@
 mod mock_api;
 
 use crate::error;
-use crate::monitor::{MessageMonitoringParams, MessageMonitoringResult};
+use crate::message_monitor::{MessageMonitoringParams, MessageMonitoringResult};
 #[cfg(test)]
 pub use mock_api::MockEverApi;
 use std::future::Future;

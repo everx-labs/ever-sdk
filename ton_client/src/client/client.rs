@@ -17,7 +17,7 @@ use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{oneshot, Mutex, RwLock};
-use ton_client_msg_mon::MessageMonitor;
+use ton_client_processing::MessageMonitor;
 
 #[cfg(not(feature = "wasm-base"))]
 use super::std_client_env::ClientEnv;

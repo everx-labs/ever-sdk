@@ -1,5 +1,5 @@
-use crate::monitor::message::{MessageMonitoringParams, MessageMonitoringResult};
-use crate::monitor::queue::MonitoringQueue;
+use crate::message_monitor::message::{MessageMonitoringParams, MessageMonitoringResult};
+use crate::message_monitor::queue::MonitoringQueue;
 use crate::providers::{EverApiProvider, EverApiSubscription};
 use std::collections::HashMap;
 use std::mem;
@@ -21,7 +21,7 @@ pub struct MessageMonitor<EverApi: EverApiProvider> {
 #[derive(Deserialize, Serialize, ApiType)]
 pub struct MonitoringQueueInfo {
     /// Count of the unresolved messages.
-    pub queued: u32,
+    pub unresolved: u32,
     /// Count of resolved results.
     pub resolved: u32,
 }
@@ -30,14 +30,14 @@ pub struct MonitoringQueueInfo {
 pub enum MonitorFetchWait {
     /// If there are an unresolved messages and no resolved results yet,
     /// then monitor awaits for the next resolved result.
-    /// If there are no queued messages then monitor immediately
+    /// If there are no unresolved messages then monitor immediately
     /// returns a resolved list (even if it is empty).
     AtLeastOne,
 
-    /// Monitor waits until all queued messages will be resolved.
-    /// If there are no queued messages then monitor immediately
+    /// Monitor waits until all unresolved messages will be resolved.
+    /// If there are no unresolved messages then monitor immediately
     /// returns a resolved list (even if it is empty).
-    AllQueued,
+    All,
 
     // Monitor does not any awaits even if there are no resolved results yet.
     NoWait,
@@ -70,7 +70,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
                 queues.get_mut(queue).unwrap()
             };
             for message in messages {
-                queue.add_unresolved(message);
+                queue.add_unresolved(message)?;
             }
             self.notify_queues.send(true).ok();
         }
@@ -90,7 +90,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
                     let is_ready = match wait {
                         MonitorFetchWait::NoWait => true,
                         MonitorFetchWait::AtLeastOne => !queue.resolved.is_empty(),
-                        MonitorFetchWait::AllQueued => queue.unresolved.is_empty(),
+                        MonitorFetchWait::All => queue.unresolved.is_empty(),
                     };
                     if is_ready {
                         Some(queue.fetch_resolved())
@@ -111,14 +111,17 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
         }
     }
 
-    pub fn get_monitor_info(&self, queue: &str) -> crate::error::Result<MonitoringQueueInfo> {
+    pub fn get_queue_info(&self, queue: &str) -> crate::error::Result<MonitoringQueueInfo> {
         let queues = self.queues.read().unwrap();
-        let (queued, resolved) = if let Some(queue) = queues.get(queue) {
+        let (unresolved, resolved) = if let Some(queue) = queues.get(queue) {
             (queue.unresolved.len() as u32, queue.resolved.len() as u32)
         } else {
             (0, 0)
         };
-        Ok(MonitoringQueueInfo { queued, resolved })
+        Ok(MonitoringQueueInfo {
+            unresolved,
+            resolved,
+        })
     }
 
     pub fn cancel_monitor(&self, queue: &str) -> crate::error::Result<()> {

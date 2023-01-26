@@ -563,6 +563,7 @@ fn register_processing(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::processing::MessageMonitoringParams>();
     module.register_type::<crate::processing::MessageMonitoringResult>();
     module.register_type::<crate::processing::MonitorFetchWait>();
+    module.register_type::<crate::processing::MonitoredMessage>();
 
     module.register_async_fn(
         crate::processing::monitor_messages,

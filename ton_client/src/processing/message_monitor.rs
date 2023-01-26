@@ -1,7 +1,9 @@
 use crate::error::ClientResult;
 use crate::ClientContext;
 use std::sync::Arc;
-use ton_client_msg_mon::{MessageMonitoringParams, MessageMonitoringResult, MonitorFetchWait};
+use ton_client_processing::{
+    MessageMonitoringParams, MessageMonitoringResult, MonitorFetchWait, MonitoringQueueInfo,
+};
 
 #[derive(Deserialize, Default, ApiType)]
 pub struct ParamsOfMonitorMessages {
@@ -93,25 +95,13 @@ pub struct ParamsOfGetMonitorInfo {
     pub queue: String,
 }
 
-#[derive(Serialize, ApiType)]
-pub struct ResultOfGetMonitorInfo {
-    /// Count of the unresolved messages.
-    queued: u32,
-    /// Count of the resolved messages.
-    resolved: u32,
-}
-
 #[api_function]
 /// Returns summary information about current state of the specified monitoring queue.
 pub async fn get_monitor_info(
     context: Arc<ClientContext>,
     params: ParamsOfGetMonitorInfo,
-) -> ClientResult<ResultOfGetMonitorInfo> {
-    let info = context.message_monitor.get_monitor_info(&params.queue)?;
-    Ok(ResultOfGetMonitorInfo {
-        queued: info.queued,
-        resolved: info.resolved,
-    })
+) -> ClientResult<MonitoringQueueInfo> {
+    Ok(context.message_monitor.get_queue_info(&params.queue)?)
 }
 
 #[derive(Deserialize, Default, ApiType)]

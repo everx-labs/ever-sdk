@@ -1,8 +1,9 @@
-use crate::monitor::{
+use crate::message_monitor::{
     MessageMonitor, MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
     MessageMonitoringTransaction, MonitorFetchWait,
 };
 use crate::providers::MockEverApi;
+use crate::MonitoredMessage;
 use std::mem;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
@@ -27,7 +28,7 @@ async fn test_fetch() {
         msg_res(2, MessageMonitoringStatus::Finalized),
     ]);
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::AllQueued)
+        .fetch_next_monitor_results("1", MonitorFetchWait::All)
         .await
         .unwrap();
     assert_eq!(
@@ -55,7 +56,7 @@ async fn test_fetch_wait_all() {
     let spawned_mon = mon.clone();
     tokio::spawn(async move {
         let results = spawned_mon
-            .fetch_next_monitor_results("1", MonitorFetchWait::AllQueued)
+            .fetch_next_monitor_results("1", MonitorFetchWait::All)
             .await
             .unwrap();
         *results_from_spawned.write().unwrap() = results;
@@ -79,7 +80,7 @@ async fn test_fetch_wait_all() {
 
     // Queue should be empty
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::AllQueued)
+        .fetch_next_monitor_results("1", MonitorFetchWait::All)
         .await
         .unwrap();
     assert_eq!(results, vec![]);
@@ -99,20 +100,20 @@ async fn test_fetch_wait_all() {
 async fn test_mon_info() {
     let api = providers();
     let mon = MessageMonitor::new(api.clone());
-    let info = mon.get_monitor_info("1").unwrap();
+    let info = mon.get_queue_info("1").unwrap();
     assert_eq!(info.resolved, 0);
-    assert_eq!(info.queued, 0);
+    assert_eq!(info.unresolved, 0);
     mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
         .await
         .unwrap();
-    let info = mon.get_monitor_info("1").unwrap();
+    let info = mon.get_queue_info("1").unwrap();
     assert_eq!(info.resolved, 0);
-    assert_eq!(info.queued, 2);
+    assert_eq!(info.unresolved, 2);
     api.add_recent_ext_in_messages(vec![msg_res(1, MessageMonitoringStatus::Finalized)]);
     tokio::time::sleep(Duration::from_millis(1000)).await;
-    let info = mon.get_monitor_info("1").unwrap();
+    let info = mon.get_queue_info("1").unwrap();
     assert_eq!(info.resolved, 1);
-    assert_eq!(info.queued, 1);
+    assert_eq!(info.unresolved, 1);
 }
 
 fn hash(n: usize) -> String {
@@ -130,8 +131,10 @@ fn addr(a: usize) -> String {
 
 fn msg(h: usize, w: u32) -> MessageMonitoringParams {
     MessageMonitoringParams {
-        hash: hash(h),
-        address: addr(h),
+        message: MonitoredMessage::HashAddress {
+            hash: hash(h),
+            address: addr(h),
+        },
         wait_until: w,
         user_data: None,
     }

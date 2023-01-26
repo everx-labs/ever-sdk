@@ -1,4 +1,4 @@
-use crate::monitor::{MessageMonitoringParams, MessageMonitoringResult};
+use crate::message_monitor::{MessageMonitoringParams, MessageMonitoringResult};
 use std::collections::HashMap;
 use std::mem;
 
@@ -8,8 +8,9 @@ pub(crate) struct MonitoringQueue {
 }
 
 impl MonitoringQueue {
-    pub fn add_unresolved(&mut self, message: MessageMonitoringParams) {
-        self.unresolved.insert(message.hash.clone(), message);
+    pub fn add_unresolved(&mut self, message: MessageMonitoringParams) -> crate::Result<()> {
+        self.unresolved.insert(message.message.hash()?, message);
+        Ok(())
     }
 
     pub fn resolve(&mut self, results: &Vec<MessageMonitoringResult>) {

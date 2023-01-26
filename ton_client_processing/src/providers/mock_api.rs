@@ -1,6 +1,6 @@
-use crate::monitor::{MessageMonitoringParams, MessageMonitoringResult};
+use crate::message_monitor::{MessageMonitoringParams, MessageMonitoringResult};
 use crate::providers::{EverApiProvider, EverApiSubscription};
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
@@ -11,7 +11,7 @@ pub struct MockEverApi {
 }
 
 struct State {
-    recent_ext_in_messages: RwLock<Vec<MessageMonitoringResult>>,
+    results: RwLock<HashMap<String, MessageMonitoringResult>>,
     next_subscription: Mutex<usize>,
     subscriptions: RwLock<HashSet<usize>>,
 }
@@ -27,7 +27,10 @@ impl State {
     ) -> usize {
         let subscription = self.create_subscription();
         tokio::spawn(async move {
-            let mut messages = messages;
+            let mut messages = messages
+                .into_iter()
+                .map(|x| (x.message.hash().unwrap(), x))
+                .collect::<HashMap<_, _>>();
             while !messages.is_empty() && self.contains_subscription(subscription) {
                 let (found, not_found) = self.find_results(messages);
                 messages = not_found;
@@ -43,16 +46,19 @@ impl State {
 
     fn find_results(
         &self,
-        messages: Vec<MessageMonitoringParams>,
-    ) -> (Vec<MessageMonitoringResult>, Vec<MessageMonitoringParams>) {
-        let recent = self.recent_ext_in_messages.read().unwrap();
+        messages: HashMap<String, MessageMonitoringParams>,
+    ) -> (
+        Vec<MessageMonitoringResult>,
+        HashMap<String, MessageMonitoringParams>,
+    ) {
+        let recent = self.results.read().unwrap();
         let mut found = Vec::new();
-        let mut not_found = Vec::new();
-        for message in messages {
-            if let Some(result) = recent.iter().find(|&x| x.hash == message.hash) {
+        let mut not_found = HashMap::new();
+        for (hash, message) in messages {
+            if let Some(result) = recent.get(&hash) {
                 found.push(result.clone());
             } else {
-                not_found.push(message);
+                not_found.insert(hash.clone(), message);
             }
         }
         (found, not_found)
@@ -78,7 +84,7 @@ impl MockEverApi {
     pub fn new() -> Self {
         Self {
             state: Arc::new(State {
-                recent_ext_in_messages: RwLock::new(Vec::new()),
+                results: RwLock::new(HashMap::new()),
                 next_subscription: Mutex::new(1),
                 subscriptions: RwLock::new(HashSet::new()),
             }),
@@ -86,8 +92,8 @@ impl MockEverApi {
     }
 
     pub fn add_recent_ext_in_messages(&self, messages: Vec<MessageMonitoringResult>) {
-        let mut recent = self.state.recent_ext_in_messages.write().unwrap();
-        recent.extend(messages)
+        let mut recent = self.state.results.write().unwrap();
+        recent.extend(messages.into_iter().map(|x| (x.hash.clone(), x)))
     }
 }
 
@@ -101,7 +107,9 @@ impl EverApiProvider for MockEverApi {
             + Sync
             + 'static,
     ) -> crate::error::Result<EverApiSubscription> {
-        Ok(EverApiSubscription(self.state.clone().subscribe(messages, callback)))
+        Ok(EverApiSubscription(
+            self.state.clone().subscribe(messages, callback),
+        ))
     }
 
     async fn unsubscribe(&self, subscription: EverApiSubscription) -> crate::error::Result<()> {

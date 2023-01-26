@@ -1,12 +1,12 @@
 [package]
-name = 'ton_client_msg_mon'
+name = 'ton_client_processing'
 version = '1.42.0'
 authors = [ 'TON Labs LTD <support@tonlabs.io>' ]
 edition = '2018'
 license = 'Apache-2.0'
 
 [lib]
-name = 'ton_client_msg_mon'
+name = 'ton_client_processing'
 crate-type = [ 'cdylib', 'rlib', 'staticlib' ]
 
 [dependencies]
@@ -23,3 +23,4 @@ serde_derive = '1.0.91'
 serde_json = '1.0.41'
 serde_repr = '0.1.7'
 tokio = { default-features = false, features = [ 'sync', 'rt-multi-thread', 'macros', 'time', 'net', 'fs' ], version = '1.4' }
+base64 = "0.21.0"

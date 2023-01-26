@@ -4,6 +4,6 @@ mod queue;
 
 pub use message::{
     MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
-    MessageMonitoringTransaction, MessageMonitoringTransactionCompute,
+    MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitoredMessage,
 };
 pub use monitor::{MessageMonitor, MonitorFetchWait, MonitoringQueueInfo};

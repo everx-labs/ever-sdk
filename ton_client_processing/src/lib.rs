@@ -21,15 +21,15 @@ extern crate async_trait;
 extern crate api_derive;
 
 mod error;
-mod monitor;
+mod message_monitor;
 mod providers;
 #[cfg(test)]
 mod tests;
 
 pub use error::{Error, Result};
-pub use monitor::{
+pub use message_monitor::{
     MessageMonitor, MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
     MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitorFetchWait,
-    MonitoringQueueInfo,
+    MonitoredMessage, MonitoringQueueInfo,
 };
 pub use providers::{EverApiProvider, EverApiSubscription};

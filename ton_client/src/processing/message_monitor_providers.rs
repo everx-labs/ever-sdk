@@ -1,11 +1,13 @@
 use crate::error::{ClientError, ClientResult};
 use crate::net::{NetworkContext, ResultOfSubscription};
 use async_trait::async_trait;
+use serde_json::Value;
 use std::future::Future;
 use std::sync::Arc;
-use ton_client_msg_mon::{
+use ton_client_processing::{
     EverApiProvider, EverApiSubscription, MessageMonitoringParams, MessageMonitoringResult,
     MessageMonitoringStatus, MessageMonitoringTransaction, MessageMonitoringTransactionCompute,
+    MonitoredMessage,
 };
 
 pub(crate) struct MessageMonitorEverApi {
@@ -16,9 +18,32 @@ impl MessageMonitorEverApi {
     pub fn new(net: Arc<NetworkContext>) -> Self {
         Self { net }
     }
+
+    fn subscription(messages: Vec<MessageMonitoringParams>) -> (String, Option<Value>) {
+        let query = r#"
+        subscription monitorMessages($messages: [MessageMonitoringParams!]!) {
+            recentExtInMessageStatuses(messages: $messages) {
+                hash
+                status
+                error
+                transaction {
+                    hash
+                    compute {
+                        exit_code
+                    }
+                }
+            }
+        }
+        "#;
+        let messages = messages
+            .into_iter()
+            .map(|x| x.into())
+            .collect::<Vec<GraphQLMessageMonitoringParams>>();
+        (query.to_string(), Some(json!({ "messages": messages })))
+    }
 }
 
-impl From<ClientError> for ton_client_msg_mon::Error {
+impl From<ClientError> for ton_client_processing::Error {
     fn from(value: ClientError) -> Self {
         Self {
             code: value.code,
@@ -28,8 +53,8 @@ impl From<ClientError> for ton_client_msg_mon::Error {
     }
 }
 
-impl From<ton_client_msg_mon::Error> for ClientError {
-    fn from(value: ton_client_msg_mon::Error) -> Self {
+impl From<ton_client_processing::Error> for ClientError {
+    fn from(value: ton_client_processing::Error) -> Self {
         Self {
             code: value.code,
             message: value.message,
@@ -38,59 +63,45 @@ impl From<ton_client_msg_mon::Error> for ClientError {
     }
 }
 
+fn deserialize_subscription_data(
+    value: ClientResult<ResultOfSubscription>,
+) -> ton_client_processing::Result<Vec<MessageMonitoringResult>> {
+    value
+        .map(|result| {
+            serde_json::from_value::<Vec<GraphQLMessageMonitoringResult>>(result.result)
+                .unwrap()
+                .into_iter()
+                .map(|x| x.into())
+                .collect::<Vec<_>>()
+        })
+        .map_err(|err| err.into())
+}
+
 #[async_trait]
 impl EverApiProvider for MessageMonitorEverApi {
     async fn subscribe_for_recent_ext_in_message_statuses<F: Future<Output = ()> + Send>(
         &self,
         messages: Vec<MessageMonitoringParams>,
-        callback: impl Fn(ton_client_msg_mon::Result<Vec<MessageMonitoringResult>>) -> F
+        callback: impl Fn(ton_client_processing::Result<Vec<MessageMonitoringResult>>) -> F
             + Send
             + Sync
             + 'static,
-    ) -> ton_client_msg_mon::Result<EverApiSubscription> {
+    ) -> ton_client_processing::Result<EverApiSubscription> {
         // We have to wrap callback into Arc because it will move out of closure scope
         let callback = Arc::new(callback);
-        let subscription_callback = move |evt: ClientResult<ResultOfSubscription>| {
-            let result = evt
-                .map(|result| {
-                    serde_json::from_value::<Vec<GraphQLMessageMonitoringResult>>(result.result)
-                        .unwrap()
-                        .into_iter()
-                        .map(|x| x.into())
-                        .collect::<Vec<_>>()
-                })
-                .map_err(|err| err.into());
-            // We have to clone callback because it will move out of closure scope
-            let callback = callback.clone();
-            async move {
-                callback(result).await;
-            }
-        };
-        let messages = messages
-            .into_iter()
-            .map(|x| x.into())
-            .collect::<Vec<GraphQLMessageMonitoringParams>>();
+        let (query, vars) = Self::subscription(messages);
         let subscription = self
             .net
             .subscribe(
-                r#"
-                subscription monitorMessages($messages: [RecentExtInMsg!]!) {
-                    recentExtInMsgStatuses(messages: $messages) {
-                        hash
-                        status
-                        error
-                        transaction {
-                            hash
-                            compute {
-                                exit_code
-                            }
-                        }
+                query,
+                vars,
+                move |evt: ClientResult<ResultOfSubscription>| {
+                    // We have to clone callback because it will move out of closure scope
+                    let callback = callback.clone();
+                    async move {
+                        callback(deserialize_subscription_data(evt)).await;
                     }
-                }
-                "#
-                .to_string(),
-                Some(json!({ "messages": messages })),
-                subscription_callback,
+                },
             )
             .await?;
         Ok(EverApiSubscription(subscription as usize))
@@ -99,24 +110,34 @@ impl EverApiProvider for MessageMonitorEverApi {
     async fn unsubscribe(
         &self,
         subscription: EverApiSubscription,
-    ) -> ton_client_msg_mon::Result<()> {
+    ) -> ton_client_processing::Result<()> {
         Ok(self.net.unsubscribe(subscription.0 as u32).await?)
     }
 }
 
 #[derive(Serialize)]
 struct GraphQLMessageMonitoringParams {
-    pub hash: String,
-    pub address: String,
+    pub hash: Option<String>,
+    pub address: Option<String>,
+    pub boc: Option<String>,
     pub wait_until: u32,
 }
 
 impl From<MessageMonitoringParams> for GraphQLMessageMonitoringParams {
     fn from(value: MessageMonitoringParams) -> Self {
-        Self {
-            hash: value.hash,
-            address: value.address,
-            wait_until: value.wait_until,
+        match value.message {
+            MonitoredMessage::Boc { boc } => Self {
+                address: None,
+                hash: None,
+                boc: Some(boc),
+                wait_until: value.wait_until,
+            },
+            MonitoredMessage::HashAddress { hash, address } => Self {
+                address: Some(address),
+                hash: Some(hash),
+                boc: None,
+                wait_until: value.wait_until,
+            },
         }
     }
 }
