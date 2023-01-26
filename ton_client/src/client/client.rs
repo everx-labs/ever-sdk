@@ -34,7 +34,8 @@ use crate::debot::DEngine;
 use crate::error::ClientResult;
 use crate::json_interface::interop::ResponseType;
 use crate::json_interface::request::Request;
-use crate::net::{MessageMonitorEverApi, NetworkConfig, NetworkContext, ServerLink};
+use crate::net::{NetworkConfig, NetworkContext, ServerLink};
+use crate::processing::MessageMonitorEverApi;
 use crate::proofs::ProofsConfig;
 
 #[derive(Default)]
@@ -45,12 +46,12 @@ pub struct Boxes {
 }
 
 pub struct ClientContext {
-    pub(crate) config: ClientConfig,
-    pub(crate) debots: LockfreeMap<u32, Mutex<DEngine>>,
-    pub(crate) blockchain_config: RwLock<Option<Arc<ton_executor::BlockchainConfig>>>,
+    next_id: AtomicU32,
 
+    // context
+    pub(crate) config: ClientConfig,
+    pub(crate) blockchain_config: RwLock<Option<Arc<ton_executor::BlockchainConfig>>>,
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
-    pub(crate) proofs_storage: RwLock<Option<Arc<dyn KeyValueStorage>>>,
 
     // client module
     pub(crate) env: Arc<ClientEnv>,
@@ -68,7 +69,11 @@ pub struct ClientContext {
     // processing module
     pub(crate) message_monitor: Arc<MessageMonitor<MessageMonitorEverApi>>,
 
-    next_id: AtomicU32,
+    // proofs module
+    pub(crate) proofs_storage: RwLock<Option<Arc<dyn KeyValueStorage>>>,
+
+    // debot module
+    pub(crate) debots: LockfreeMap<u32, Mutex<DEngine>>,
 }
 
 impl ClientContext {

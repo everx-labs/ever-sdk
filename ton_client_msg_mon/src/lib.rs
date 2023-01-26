@@ -17,6 +17,8 @@ extern crate serde_json;
 extern crate serde_derive;
 #[macro_use]
 extern crate async_trait;
+#[macro_use]
+extern crate api_derive;
 
 mod error;
 mod monitor;
@@ -27,6 +29,7 @@ mod tests;
 pub use error::{Error, Result};
 pub use monitor::{
     MessageMonitor, MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
-    MessageMonitoringTransaction, MonitorFetchWait, MonitoringQueueInfo,
+    MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitorFetchWait,
+    MonitoringQueueInfo,
 };
 pub use providers::{EverApiProvider, EverApiSubscription};

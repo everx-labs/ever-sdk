@@ -12,6 +12,8 @@ crate-type = [ 'cdylib', 'rlib', 'staticlib' ]
 [dependencies]
 ton_block = { git = 'https://github.com/tonlabs/ton-labs-block.git', tag = '1.9.18' }
 ton_types = { git = 'https://github.com/tonlabs/ton-labs-types.git', tag = '1.12.6' }
+api_derive = { path = '../api/derive' }
+api_info = { path = '../api/info' }
 
 async-trait = '0.1.40'
 futures = '0.3.4'

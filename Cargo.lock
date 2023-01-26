@@ -2616,6 +2616,8 @@ dependencies = [
 name = "ton_client_msg_mon"
 version = "1.42.0"
 dependencies = [
+ "api_derive",
+ "api_info",
  "async-trait",
  "futures",
  "log",

@@ -13,33 +13,33 @@ pub struct MessageMonitor<EverApi: EverApiProvider> {
     api: EverApi,
     /// Active queues
     queues: Arc<RwLock<HashMap<String, MonitoringQueue>>>,
-    ///
     notify_queues: Arc<tokio::sync::watch::Sender<bool>>,
     listen_queues: tokio::sync::watch::Receiver<bool>,
     active_subscription: Mutex<Option<EverApiSubscription>>,
 }
 
+#[derive(Deserialize, Serialize, ApiType)]
 pub struct MonitoringQueueInfo {
-    pub queued: usize,
-    pub resolved: usize,
+    /// Count of the unresolved messages.
+    pub queued: u32,
+    /// Count of resolved results.
+    pub resolved: u32,
 }
 
+#[derive(Deserialize, Serialize, ApiType)]
 pub enum MonitorFetchWait {
-    /*
-     * If there are no resolved results yet, then monitor awaits for next resolved result.
-     * Note that if there are no queued messages and resolved buffer is empty
-     * then monitor immediately returns an empty list.
-     */
+    /// If there are an unresolved messages and no resolved results yet,
+    /// then monitor awaits for the next resolved result.
+    /// If there are no queued messages then monitor immediately
+    /// returns a resolved list (even if it is empty).
     AtLeastOne,
-    /*
-     * Monitor waits until all queued messages will be resolved.
-     * Note that if there are no queued messages and resolved buffer is empty
-     * then monitor immediately returns an empty list.
-     */
+
+    /// Monitor waits until all queued messages will be resolved.
+    /// If there are no queued messages then monitor immediately
+    /// returns a resolved list (even if it is empty).
     AllQueued,
-    /*
-     * Monitor does not any awaits even if there are no resolved results yet.
-     */
+
+    // Monitor does not any awaits even if there are no resolved results yet.
     NoWait,
 }
 
@@ -114,7 +114,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
     pub fn get_monitor_info(&self, queue: &str) -> crate::error::Result<MonitoringQueueInfo> {
         let queues = self.queues.read().unwrap();
         let (queued, resolved) = if let Some(queue) = queues.get(queue) {
-            (queue.unresolved.len(), queue.resolved.len())
+            (queue.unresolved.len() as u32, queue.resolved.len() as u32)
         } else {
             (0, 0)
         };
@@ -133,10 +133,13 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
 impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
     async fn resubscribe(&self) -> crate::error::Result<()> {
         let new_subscription = self.subscribe().await?;
-        if let Some(old_subscription) = mem::replace(
-            &mut *self.active_subscription.lock().unwrap(),
-            new_subscription,
-        ) {
+        let old_subscription = {
+            mem::replace(
+                &mut *self.active_subscription.lock().unwrap(),
+                new_subscription,
+            )
+        };
+        if let Some(old_subscription) = old_subscription {
             self.api.unsubscribe(old_subscription).await?;
         }
         Ok(())
