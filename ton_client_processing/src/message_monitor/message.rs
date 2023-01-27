@@ -2,7 +2,7 @@ use crate::Error;
 use base64::Engine;
 use serde_json::Value;
 use std::io::Cursor;
-use ton_types::deserialize_tree_of_cells;
+use ton_types::{deserialize_tree_of_cells, UInt256};
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, ApiType)]
 pub enum MonitoredMessage {
@@ -21,19 +21,21 @@ impl MonitoredMessage {
     pub fn hash(&self) -> crate::Result<String> {
         Ok(match self {
             MonitoredMessage::HashAddress { hash, .. } => hash.clone(),
-            MonitoredMessage::Boc { boc } => {
-                let bytes = base64::engine::general_purpose::STANDARD
-                    .decode(boc)
-                    .map_err(|err| {
-                        Error::invalid_boc(format!("error decode message BOC base64: {}", err))
-                    })?;
-                let cell = deserialize_tree_of_cells(&mut Cursor::new(&bytes)).map_err(|err| {
-                    Error::invalid_boc(format!("Message BOC deserialization error: {}", err))
-                })?;
-
-                cell.repr_hash().as_hex_string()
-            }
+            MonitoredMessage::Boc { boc } => Self::get_boc_hash(boc)?.as_hex_string(),
         })
+    }
+
+    pub fn get_boc_hash(boc: &str) -> crate::Result<UInt256> {
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(boc)
+            .map_err(|err| {
+                Error::invalid_boc(format!("error decode message BOC base64: {}", err))
+            })?;
+        let cell = deserialize_tree_of_cells(&mut Cursor::new(&bytes)).map_err(|err| {
+            Error::invalid_boc(format!("Message BOC deserialization error: {}", err))
+        })?;
+
+        Ok(cell.repr_hash())
     }
 }
 

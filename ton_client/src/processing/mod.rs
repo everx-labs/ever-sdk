@@ -25,6 +25,7 @@ pub(crate) mod parsing;
 pub(crate) mod process_message;
 mod remp;
 pub(crate) mod send_message;
+mod send_messages;
 mod types;
 pub(crate) mod wait_for_transaction;
 
@@ -38,6 +39,9 @@ pub use message_monitor::{
 pub(crate) use message_monitor_providers::MessageMonitorEverApi;
 pub use process_message::{process_message, ParamsOfProcessMessage};
 pub use send_message::{send_message, ParamsOfSendMessage, ResultOfSendMessage};
+pub use send_messages::{
+    send_messages, send_messages_api, ParamsOfSendMessages, ResultOfSendMessages,
+};
 pub use ton_client_processing::{
     MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringTransaction,
     MessageMonitoringTransactionCompute, MonitorFetchWait, MonitoredMessage, MonitoringQueueInfo,

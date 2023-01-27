@@ -30,6 +30,7 @@ use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{watch, Mutex, RwLock};
+use ton_types::UInt256;
 
 use super::ErrorCode;
 
@@ -260,25 +261,28 @@ impl NetworkState {
     pub async fn resolve_endpoint(&self, address: &str) -> ClientResult<Arc<Endpoint>> {
         let endpoint = Endpoint::resolve(&self.client_env, &self.config, address).await?;
         let endpoint = Arc::new(endpoint);
-        self.add_resolved_endpoint(address.to_owned(), endpoint.clone()).await;
+        self.add_resolved_endpoint(address.to_owned(), endpoint.clone())
+            .await;
         Ok(endpoint)
-
     }
 
     async fn select_querying_endpoint(self: &Arc<NetworkState>) -> ClientResult<Arc<Endpoint>> {
-        let is_better = |a: &ClientResult<Arc<Endpoint>>, b: &ClientResult<Arc<Endpoint>>| match (a, b) {
-            (Ok(a), Ok(b)) => a.latency() < b.latency(),
-            (Ok(_), Err(_)) => true,
-            (Err(_), Err(_)) => true,
-            _ => false,
-        };
+        let is_better =
+            |a: &ClientResult<Arc<Endpoint>>, b: &ClientResult<Arc<Endpoint>>| match (a, b) {
+                (Ok(a), Ok(b)) => a.latency() < b.latency(),
+                (Ok(_), Err(_)) => true,
+                (Err(_), Err(_)) => true,
+                _ => false,
+            };
         let mut retry_count = 0i8;
         loop {
             let mut futures = vec![];
             for address in self.endpoint_addresses.read().await.iter() {
                 let address = address.clone();
                 let self_copy = self.clone();
-                futures.push(Box::pin(async move { self_copy.resolve_endpoint(&address).await }));
+                futures.push(Box::pin(async move {
+                    self_copy.resolve_endpoint(&address).await
+                }));
             }
             let mut selected = Err(crate::client::Error::net_module_not_init());
             let mut unauthorised = None;
@@ -347,20 +351,24 @@ impl NetworkState {
 
     pub async fn add_resolved_endpoint(&self, address: String, endpoint: Arc<Endpoint>) {
         let mut lock = self.resolved_endpoints.write().await;
-        lock.insert(address, ResolvedEndpoint { endpoint, time_added: self.client_env.now_ms() });
+        lock.insert(
+            address,
+            ResolvedEndpoint {
+                endpoint,
+                time_added: self.client_env.now_ms(),
+            },
+        );
     }
 
     pub async fn get_resolved_endpoint(&self, address: &str) -> Option<Arc<Endpoint>> {
         let lock = self.resolved_endpoints.read().await;
-        lock
-            .get(address)
-            .and_then(|endpoint| 
-                if endpoint.time_added + ENDPOINT_CACHE_TIMEOUT > self.client_env.now_ms() {
-                    Some(endpoint.endpoint.clone())
-                } else {
-                    None
-                }
-            )
+        lock.get(address).and_then(|endpoint| {
+            if endpoint.time_added + ENDPOINT_CACHE_TIMEOUT > self.client_env.now_ms() {
+                Some(endpoint.endpoint.clone())
+            } else {
+                None
+            }
+        })
     }
 }
 
@@ -586,7 +594,10 @@ impl ServerLink {
                     retry_count += 1;
                     if retry_count <= network_retries_count {
                         if !multiple_endpoints {
-                            let _ = self.client_env.set_timer(self.state.next_resume_timeout() as u64).await;
+                            let _ = self
+                                .client_env
+                                .set_timer(self.state.next_resume_timeout() as u64)
+                                .await;
                         }
                         continue 'retries;
                     }
@@ -612,8 +623,8 @@ impl ServerLink {
                 }
                 Some(GraphQLQueryEvent::Complete) => break,
                 Some(GraphQLQueryEvent::Error(err)) => {
-                    if  err.code == ErrorCode::NetworkModuleSuspended as u32 ||
-                        err.code == ErrorCode::NetworkModuleResumed as u32
+                    if err.code == ErrorCode::NetworkModuleSuspended as u32
+                        || err.code == ErrorCode::NetworkModuleResumed as u32
                     {
                         continue;
                     }
@@ -753,6 +764,33 @@ impl ServerLink {
         // but client didn't receive response
         if let Err(err) = &result {
             log::warn!("Post message error: {}", err.message);
+        }
+
+        Ok(result.err())
+    }
+
+    pub async fn send_messages(
+        &self,
+        messages: Vec<(UInt256, String)>,
+        endpoint: Option<&Endpoint>,
+    ) -> ClientResult<Option<ClientError>> {
+        let mut requests = Vec::with_capacity(messages.len());
+        for (hash, boc) in messages {
+            requests.push(PostRequest {
+                id: base64::encode(hash.as_slice()),
+                body: boc,
+            })
+        }
+        self.state.check_sync(endpoint).await?;
+
+        let result = self
+            .query(&GraphQLQuery::with_post_requests(&requests), endpoint)
+            .await;
+
+        // Send messages is always successful in order to process case when server received message
+        // but client didn't receive response
+        if let Err(err) = &result {
+            log::warn!("Send messages error: {}", err.message);
         }
 
         Ok(result.err())
