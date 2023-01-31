@@ -25,7 +25,8 @@ Rust Client Library (core) for DApp development in TVM networks (Everscale, TON,
 
 ## Quick Start
 
-Get your endpoing at [dashboard.evercloud.dev](https://dashboard.evercloud.dev/)
+Get your endpoing at [dashboard.evercloud.dev](https://dashboard.evercloud.dev/)  
+
 See the list of available TVM networks:
 https://docs.evercloud.dev/products/evercloud/networks-endpoints
 
