@@ -142,7 +142,7 @@ async fn ws_send(ws: &mut WSSender, message: GraphQLMessageFromClient) -> Client
     if result.is_err() {
         *ws = Box::pin(
             futures::sink::drain()
-            .sink_map_err(|err| crate::client::Error::websocket_send_error(err))
+                .sink_map_err(|err| crate::client::Error::websocket_send_error(err)),
         );
     }
     result
@@ -241,7 +241,10 @@ impl LinkHandler {
     async fn handle_idle_action(&mut self, action: HandlerAction, phase: Phase) -> Phase {
         match action {
             HandlerAction::StartOperation(payload, event_sender) => {
-                if let Err(err) = self.start_operation(payload, event_sender, None, phase == Phase::Suspended).await {
+                if let Err(err) = self
+                    .start_operation(payload, event_sender, None, phase == Phase::Suspended)
+                    .await
+                {
                     self.handle_network_error(err, false).await
                 } else if phase == Phase::Suspended {
                     Phase::Suspended
@@ -297,7 +300,10 @@ impl LinkHandler {
         let mut next_phase = phase;
         match action {
             HandlerAction::StartOperation(operation, event_sender) => {
-                if let Err(err) = self.start_operation(operation, event_sender, ws, false).await {
+                if let Err(err) = self
+                    .start_operation(operation, event_sender, ws, false)
+                    .await
+                {
                     next_phase = self.handle_network_error(err, false).await;
                 }
             }
@@ -391,10 +397,7 @@ impl LinkHandler {
             }
             GraphQLMessageFromServer::ConnectionError { error } => {
                 next_phase = self
-                    .handle_network_error(
-                        Error::graphql_connection_error(&vec![error]),
-                        false,
-                    )
+                    .handle_network_error(Error::graphql_connection_error(&vec![error]), false)
                     .await;
             }
             GraphQLMessageFromServer::Data { id, data, errors } => {
@@ -405,10 +408,12 @@ impl LinkHandler {
                     if crate::client::Error::is_network_error(&error) {
                         next_phase = self.handle_network_error(error, false).await;
                     } else {
-                        self.notify_with_remove(false, &id, GraphQLQueryEvent::Error(error)).await;
+                        self.notify_with_remove(false, &id, GraphQLQueryEvent::Error(error))
+                            .await;
                     };
                 } else {
-                    self.notify_with_remove(false, &id, GraphQLQueryEvent::Data(data)).await;
+                    self.notify_with_remove(false, &id, GraphQLQueryEvent::Data(data))
+                        .await;
                 };
             }
             GraphQLMessageFromServer::Error { id, error } => {
@@ -485,7 +490,10 @@ impl LinkHandler {
                 HandlerAction::Resume
                     .send(&mut self.internal_action_sender.clone())
                     .await;
-                let _ = self.client_env.set_timer(self.state.next_resume_timeout() as u64).await;
+                let _ = self
+                    .client_env
+                    .set_timer(self.state.next_resume_timeout() as u64)
+                    .await;
                 return Phase::Reconnecting;
             }
             self.send_error_to_running_operations(Error::network_module_suspended())

@@ -27,6 +27,7 @@ use super::{AppRequestResult, Error, ParamsOfAppRequest};
 use crate::abi::AbiConfig;
 use crate::boc::{cache::Bocs, BocConfig};
 use crate::client::storage::KeyValueStorage;
+use crate::client::{BindingConfig, update_binding_config};
 use crate::crypto::boxes::crypto_box::{CryptoBox, DerivedKeys};
 use crate::crypto::boxes::{encryption_box::EncryptionBox, signing_box::SigningBox};
 use crate::crypto::CryptoConfig;
@@ -86,6 +87,7 @@ impl ClientContext {
     }
 
     pub fn new(config: ClientConfig) -> ClientResult<ClientContext> {
+        update_binding_config(&config.binding);
         let env = Arc::new(ClientEnv::new()?);
 
         let server_link = if config.network.server_address.is_some()
@@ -161,6 +163,8 @@ Note that default values are used if parameters are omitted in config"#,
 
 #[derive(Deserialize, Serialize, Debug, Clone, ApiType)]
 pub struct ClientConfig {
+    #[serde(default, deserialize_with = "deserialize_binding_config")]
+    pub binding: BindingConfig,
     #[serde(default, deserialize_with = "deserialize_network_config")]
     pub network: NetworkConfig,
     #[serde(default, deserialize_with = "deserialize_crypto_config")]
@@ -177,6 +181,12 @@ pub struct ClientConfig {
     /// Default (recommended) value is "~/.tonclient" for native environments and ".tonclient"
     /// for web-browser.
     pub local_storage_path: Option<String>,
+}
+
+fn deserialize_binding_config<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<BindingConfig, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
 }
 
 fn deserialize_network_config<'de, D: Deserializer<'de>>(
@@ -212,6 +222,7 @@ fn deserialize_proofs_config<'de, D: Deserializer<'de>>(
 impl Default for ClientConfig {
     fn default() -> Self {
         Self {
+            binding: Default::default(),
             network: Default::default(),
             crypto: Default::default(),
             abi: Default::default(),
