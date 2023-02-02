@@ -13,7 +13,6 @@ pub struct ParamsOfMonitorMessages {
     pub messages: Vec<MessageMonitoringParams>,
 }
 
-#[api_function]
 /// Starts monitoring for the processing results of the specified messages.
 ///
 /// Message monitor performs background monitoring for a message processing results
@@ -45,6 +44,7 @@ pub struct ParamsOfMonitorMessages {
 /// If monitoring queue with specified name does not exist then monitoring queue will be created
 /// with specified unresolved messages.
 ///
+#[api_function]
 pub async fn monitor_messages(
     context: Arc<ClientContext>,
     params: ParamsOfMonitorMessages,
@@ -70,11 +70,11 @@ pub struct ResultOfFetchNextMonitorResults {
     results: Vec<MessageMonitoringResult>,
 }
 
-#[api_function]
 /// Fetches next resolved results from the specified monitoring queue.
 ///
 /// Results and waiting options are depends on the `wait` parameter.
 /// All returned results will be removed from the queue's resolved list.
+#[api_function]
 pub async fn fetch_next_monitor_results(
     context: Arc<ClientContext>,
     params: ParamsOfFetchNextMonitorResults,
@@ -95,8 +95,8 @@ pub struct ParamsOfGetMonitorInfo {
     pub queue: String,
 }
 
-#[api_function]
 /// Returns summary information about current state of the specified monitoring queue.
+#[api_function]
 pub async fn get_monitor_info(
     context: Arc<ClientContext>,
     params: ParamsOfGetMonitorInfo,
@@ -110,9 +110,9 @@ pub struct ParamsOfCancelMonitor {
     pub queue: String,
 }
 
-#[api_function]
 /// Cancels all background activity and releases all allocated system resources
 /// for the specified monitoring queue.
+#[api_function]
 pub async fn cancel_monitor(
     context: Arc<ClientContext>,
     params: ParamsOfCancelMonitor,

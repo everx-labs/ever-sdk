@@ -1,6 +1,7 @@
 use crate::message_monitor::{MessageMonitoringParams, MessageMonitoringResult};
 use std::collections::HashMap;
 use std::mem;
+use crate::MessageMonitorSdkServices;
 
 pub(crate) struct MonitoringQueue {
     pub unresolved: HashMap<String, MessageMonitoringParams>,
@@ -8,8 +9,8 @@ pub(crate) struct MonitoringQueue {
 }
 
 impl MonitoringQueue {
-    pub fn add_unresolved(&mut self, message: MessageMonitoringParams) -> crate::Result<()> {
-        self.unresolved.insert(message.message.hash()?, message);
+    pub fn add_unresolved<Sdk: MessageMonitorSdkServices>(&mut self, sdk: &Sdk, message: MessageMonitoringParams) -> crate::Result<()> {
+        self.unresolved.insert(message.message.hash(sdk)?, message);
         Ok(())
     }
 

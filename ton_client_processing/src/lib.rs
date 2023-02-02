@@ -22,7 +22,7 @@ extern crate api_derive;
 
 mod error;
 mod message_monitor;
-mod providers;
+mod sdk_services;
 #[cfg(test)]
 mod tests;
 
@@ -32,4 +32,4 @@ pub use message_monitor::{
     MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitorFetchWait,
     MonitoredMessage, MonitoringQueueInfo,
 };
-pub use providers::{EverApiProvider, EverApiSubscription};
+pub use sdk_services::{MessageMonitorSdkServices, NetSubscription};

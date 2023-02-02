@@ -20,7 +20,7 @@ mod errors;
 mod fetching;
 mod internal;
 mod message_monitor;
-mod message_monitor_providers;
+mod message_monitor_sdk_services;
 pub(crate) mod parsing;
 pub(crate) mod process_message;
 mod remp;
@@ -36,7 +36,7 @@ pub use message_monitor::{
     ParamsOfCancelMonitor, ParamsOfFetchNextMonitorResults, ParamsOfGetMonitorInfo,
     ParamsOfMonitorMessages, ResultOfFetchNextMonitorResults,
 };
-pub(crate) use message_monitor_providers::MessageMonitorEverApi;
+pub(crate) use message_monitor_sdk_services::SdkServices;
 pub use process_message::{process_message, ParamsOfProcessMessage};
 pub use send_message::{send_message, ParamsOfSendMessage, ResultOfSendMessage};
 pub use send_messages::{
