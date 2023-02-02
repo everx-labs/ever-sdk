@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.40.1] – 2023-02-02
+
+### Improvement
+
+- rename URI of own repos
+
 ## [1.40.0] – 2023-01-11
 
 ### New
