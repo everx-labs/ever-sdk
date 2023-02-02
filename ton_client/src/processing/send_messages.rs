@@ -60,10 +60,10 @@ pub async fn send_messages(
         .messages
         .iter()
         .map(|x| {
-            (
-                MonitoredMessage::get_boc_hash(&x.boc).unwrap(),
-                x.boc.clone(),
-            )
+            context
+                .bocs
+                .resolve_boc_with_hash(&x.boc, "message")
+                .unwrap()
         })
         .collect();
     server_link
@@ -83,7 +83,8 @@ pub async fn send_messages(
     if let Some(queue) = params.monitor_queue {
         context
             .message_monitor
-            .monitor_messages(&queue, messages.clone()).await?;
+            .monitor_messages(&queue, messages.clone())
+            .await?;
     }
     Ok(ResultOfSendMessages { messages })
 }
