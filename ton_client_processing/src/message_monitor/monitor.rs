@@ -1,6 +1,6 @@
 use crate::message_monitor::message::{MessageMonitoringParams, MessageMonitoringResult};
 use crate::message_monitor::queue::MonitoringQueue;
-use crate::providers::{EverApiProvider, EverApiSubscription};
+use crate::sdk_services::{MessageMonitorSdkServices, NetSubscription};
 use std::collections::HashMap;
 use std::mem;
 use std::sync::{Arc, Mutex, RwLock};
@@ -8,14 +8,14 @@ use std::sync::{Arc, Mutex, RwLock};
 /// The main message monitor object.
 /// Incorporates and serves all message monitoring queues.
 ///
-pub struct MessageMonitor<EverApi: EverApiProvider> {
-    /// External provider for Ever API
-    api: EverApi,
+pub struct MessageMonitor<Sdk: MessageMonitorSdkServices> {
+    /// External SDK services used by message monitor
+    sdk: Sdk,
     /// Active queues
     queues: Arc<RwLock<HashMap<String, MonitoringQueue>>>,
     notify_queues: Arc<tokio::sync::watch::Sender<bool>>,
     listen_queues: tokio::sync::watch::Receiver<bool>,
-    active_subscription: Mutex<Option<EverApiSubscription>>,
+    active_subscription: Mutex<Option<NetSubscription>>,
 }
 
 #[derive(Deserialize, Serialize, ApiType)]
@@ -44,11 +44,11 @@ pub enum MonitorFetchWait {
 }
 
 // pub
-impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
-    pub fn new(api: EverApi) -> Self {
+impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
+    pub fn new(sdk: SdkServices) -> Self {
         let (sender, receiver) = tokio::sync::watch::channel(false);
         Self {
-            api,
+            sdk,
             queues: Arc::new(RwLock::new(HashMap::new())),
             active_subscription: Mutex::new(None),
             notify_queues: Arc::new(sender),
@@ -70,7 +70,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
                 queues.get_mut(queue).unwrap()
             };
             for message in messages {
-                queue.add_unresolved(message)?;
+                queue.add_unresolved(&self.sdk, message)?;
             }
             self.notify_queues.send(true).ok();
         }
@@ -133,7 +133,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
 }
 
 // priv
-impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
+impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
     async fn resubscribe(&self) -> crate::error::Result<()> {
         let new_subscription = self.subscribe().await?;
         let old_subscription = {
@@ -143,12 +143,12 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
             )
         };
         if let Some(old_subscription) = old_subscription {
-            self.api.unsubscribe(old_subscription).await?;
+            self.sdk.unsubscribe(old_subscription).await?;
         }
         Ok(())
     }
 
-    async fn subscribe(&self) -> crate::error::Result<Option<EverApiSubscription>> {
+    async fn subscribe(&self) -> crate::error::Result<Option<NetSubscription>> {
         let messages = self.collect_unresolved();
         if messages.is_empty() {
             return Ok(None);
@@ -165,7 +165,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
             async {}
         };
         Ok(Some(
-            self.api
+            self.sdk
                 .subscribe_for_recent_ext_in_message_statuses(messages, callback)
                 .await?,
         ))

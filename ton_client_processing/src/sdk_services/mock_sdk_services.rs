@@ -1,12 +1,15 @@
-use crate::message_monitor::{MessageMonitoringParams, MessageMonitoringResult};
-use crate::providers::{EverApiProvider, EverApiSubscription};
+use crate::message_monitor::{CellFromBoc, MessageMonitoringParams, MessageMonitoringResult};
+use crate::{error, Error, MessageMonitorSdkServices, NetSubscription};
+use base64::Engine;
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
+use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::Duration;
+use ton_types::{deserialize_tree_of_cells, Cell};
 
 #[derive(Clone)]
-pub struct MockEverApi {
+pub struct MockSdkServices {
     state: Arc<State>,
 }
 
@@ -16,20 +19,23 @@ struct State {
     subscriptions: RwLock<HashSet<usize>>,
 }
 
+impl CellFromBoc for State {
+    fn convert(&self, boc: &str, name: &str) -> crate::Result<Cell> {
+        State::cell_from_boc(boc, name)
+    }
+}
+
 impl State {
     fn subscribe<F: Future<Output = ()> + Send>(
         self: Arc<Self>,
         messages: Vec<MessageMonitoringParams>,
-        callback: impl Fn(crate::error::Result<Vec<MessageMonitoringResult>>) -> F
-            + Send
-            + Sync
-            + 'static,
+        callback: impl Fn(error::Result<Vec<MessageMonitoringResult>>) -> F + Send + Sync + 'static,
     ) -> usize {
         let subscription = self.create_subscription();
         tokio::spawn(async move {
             let mut messages = messages
                 .into_iter()
-                .map(|x| (x.message.hash().unwrap(), x))
+                .map(|x| (x.message.hash(&*self).unwrap(), x))
                 .collect::<HashMap<_, _>>();
             while !messages.is_empty() && self.contains_subscription(subscription) {
                 let (found, not_found) = self.find_results(messages);
@@ -78,9 +84,20 @@ impl State {
     fn remove_subscription(&self, subscription: usize) {
         self.subscriptions.write().unwrap().remove(&subscription);
     }
+
+    fn cell_from_boc(boc: &str, name: &str) -> error::Result<Cell> {
+        let bytes = base64::engine::general_purpose::STANDARD
+            .decode(boc)
+            .map_err(|err| {
+                Error::invalid_boc(format!("error decode {} BOC base64: {}", name, err))
+            })?;
+        deserialize_tree_of_cells(&mut Cursor::new(&bytes)).map_err(|err| {
+            Error::invalid_boc(format!("{} BOC deserialization error: {}", name, err))
+        })
+    }
 }
 
-impl MockEverApi {
+impl MockSdkServices {
     pub fn new() -> Self {
         Self {
             state: Arc::new(State {
@@ -98,22 +115,23 @@ impl MockEverApi {
 }
 
 #[async_trait]
-impl EverApiProvider for MockEverApi {
+impl MessageMonitorSdkServices for MockSdkServices {
     async fn subscribe_for_recent_ext_in_message_statuses<F: Future<Output = ()> + Send>(
         &self,
         messages: Vec<MessageMonitoringParams>,
-        callback: impl Fn(crate::error::Result<Vec<MessageMonitoringResult>>) -> F
-            + Send
-            + Sync
-            + 'static,
-    ) -> crate::error::Result<EverApiSubscription> {
-        Ok(EverApiSubscription(
+        callback: impl Fn(error::Result<Vec<MessageMonitoringResult>>) -> F + Send + Sync + 'static,
+    ) -> error::Result<NetSubscription> {
+        Ok(NetSubscription(
             self.state.clone().subscribe(messages, callback),
         ))
     }
 
-    async fn unsubscribe(&self, subscription: EverApiSubscription) -> crate::error::Result<()> {
+    async fn unsubscribe(&self, subscription: NetSubscription) -> error::Result<()> {
         self.state.remove_subscription(subscription.0);
         Ok(())
+    }
+
+    fn cell_from_boc(&self, boc: &str, name: &str) -> error::Result<Cell> {
+        State::cell_from_boc(boc, name)
     }
 }

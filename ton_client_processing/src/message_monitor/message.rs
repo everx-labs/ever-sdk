@@ -1,8 +1,6 @@
-use crate::Error;
-use base64::Engine;
+use crate::{error, MessageMonitorSdkServices};
 use serde_json::Value;
-use std::io::Cursor;
-use ton_types::deserialize_tree_of_cells;
+use ton_types::Cell;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, ApiType)]
 pub enum MonitoredMessage {
@@ -17,22 +15,27 @@ pub enum MonitoredMessage {
     },
 }
 
+pub(crate) trait CellFromBoc {
+    fn convert(&self, boc: &str, name: &str) -> error::Result<Cell>;
+}
+
+impl<T: MessageMonitorSdkServices> CellFromBoc for T {
+    fn convert(&self, boc: &str, name: &str) -> crate::Result<Cell> {
+        self.cell_from_boc(boc, name)
+    }
+}
+
 impl MonitoredMessage {
-    pub fn hash(&self) -> crate::Result<String> {
+    pub(crate) fn hash<Converter: CellFromBoc>(
+        &self,
+        converter: &Converter,
+    ) -> crate::Result<String> {
         Ok(match self {
             MonitoredMessage::HashAddress { hash, .. } => hash.clone(),
-            MonitoredMessage::Boc { boc } => {
-                let bytes = base64::engine::general_purpose::STANDARD
-                    .decode(boc)
-                    .map_err(|err| {
-                        Error::invalid_boc(format!("error decode message BOC base64: {}", err))
-                    })?;
-                let cell = deserialize_tree_of_cells(&mut Cursor::new(&bytes)).map_err(|err| {
-                    Error::invalid_boc(format!("Message BOC deserialization error: {}", err))
-                })?;
-
-                cell.repr_hash().as_hex_string()
-            }
+            MonitoredMessage::Boc { boc } => converter
+                .convert(boc, "message")?
+                .repr_hash()
+                .as_hex_string(),
         })
     }
 }
@@ -77,25 +80,15 @@ pub struct MessageMonitoringResult {
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, ApiType)]
 pub enum MessageMonitoringStatus {
-    /// The message was processed on the blockchain and transaction was included into
-    /// finalized block.
-    /// This is terminal status for message monitoring.
+    /// Returned when the messages was processed and included into finalized block
+    /// before `wait_until` block time.
     Finalized,
-    /// The message (and transaction) was not processed on the blockchain before the
-    /// specified `wait_until` time.
-    /// In other words – there are no blocks containing transaction and with `gen_utime`
-    /// less or equal to the `wait_until`.
-    /// This is terminal status for message monitoring.
+    /// Returned when the message was not processed until `wait_until` block time.
     Timeout,
-    /// Full node tries to execute message onto the actual shard state and encounters error.
-    /// So this message was not sent to the validators.
-    /// It is an intermediate status. Next status will be a `Timeout`.
-    RejectedByFullNode,
-    /// Indicates that message was included into shard block but not finalized by masterchain yet.
-    /// This status is reported by REMP protocol.
-    /// It is an intermediate status. Next status could be a `Finalized` (most possible)
-    /// or `Timeout`.
-    IncludedIntoBlock,
+    /// Reserved for future statuses. Is never returned.
+    /// Application should wait for one of the `Finalized` or `Timeout` statuses.
+    /// All other statuses are intermediate.
+    Reserved,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, ApiType)]

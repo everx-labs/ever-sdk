@@ -1,3 +1,4 @@
+use crate::boc::cache::Bocs;
 use crate::error::{ClientError, ClientResult};
 use crate::net::{NetworkContext, ResultOfSubscription};
 use async_trait::async_trait;
@@ -5,18 +6,20 @@ use serde_json::Value;
 use std::future::Future;
 use std::sync::Arc;
 use ton_client_processing::{
-    EverApiProvider, EverApiSubscription, MessageMonitoringParams, MessageMonitoringResult,
+    MessageMonitorSdkServices, MessageMonitoringParams, MessageMonitoringResult,
     MessageMonitoringStatus, MessageMonitoringTransaction, MessageMonitoringTransactionCompute,
-    MonitoredMessage,
+    MonitoredMessage, NetSubscription,
 };
+use ton_types::Cell;
 
-pub(crate) struct MessageMonitorEverApi {
+pub(crate) struct SdkServices {
     net: Arc<NetworkContext>,
+    bocs: Arc<Bocs>,
 }
 
-impl MessageMonitorEverApi {
-    pub fn new(net: Arc<NetworkContext>) -> Self {
-        Self { net }
+impl SdkServices {
+    pub fn new(net: Arc<NetworkContext>, bocs: Arc<Bocs>) -> Self {
+        Self { net, bocs }
     }
 
     fn subscription(messages: Vec<MessageMonitoringParams>) -> (String, Option<Value>) {
@@ -78,7 +81,7 @@ fn deserialize_subscription_data(
 }
 
 #[async_trait]
-impl EverApiProvider for MessageMonitorEverApi {
+impl MessageMonitorSdkServices for SdkServices {
     async fn subscribe_for_recent_ext_in_message_statuses<F: Future<Output = ()> + Send>(
         &self,
         messages: Vec<MessageMonitoringParams>,
@@ -86,7 +89,7 @@ impl EverApiProvider for MessageMonitorEverApi {
             + Send
             + Sync
             + 'static,
-    ) -> ton_client_processing::Result<EverApiSubscription> {
+    ) -> ton_client_processing::Result<NetSubscription> {
         // We have to wrap callback into Arc because it will move out of closure scope
         let callback = Arc::new(callback);
         let (query, vars) = Self::subscription(messages);
@@ -104,14 +107,19 @@ impl EverApiProvider for MessageMonitorEverApi {
                 },
             )
             .await?;
-        Ok(EverApiSubscription(subscription as usize))
+        Ok(NetSubscription(subscription as usize))
     }
 
     async fn unsubscribe(
         &self,
-        subscription: EverApiSubscription,
+        subscription: NetSubscription,
     ) -> ton_client_processing::Result<()> {
         Ok(self.net.unsubscribe(subscription.0 as u32).await?)
+    }
+
+    fn cell_from_boc(&self, boc: &str, name: &str) -> ton_client_processing::Result<Cell> {
+        let (_, cell) = self.bocs.deserialize_cell(boc, name)?;
+        Ok(cell)
     }
 }
 
@@ -167,8 +175,7 @@ impl From<GraphQLMessageMonitoringResult> for MessageMonitoringResult {
 enum GraphQLMessageMonitoringStatus {
     Finalized,
     Timeout,
-    RejectedByFullNode,
-    IncludedIntoBlock,
+    Reserved,
 }
 
 impl From<GraphQLMessageMonitoringStatus> for MessageMonitoringStatus {
@@ -176,8 +183,7 @@ impl From<GraphQLMessageMonitoringStatus> for MessageMonitoringStatus {
         match value {
             GraphQLMessageMonitoringStatus::Finalized => Self::Finalized,
             GraphQLMessageMonitoringStatus::Timeout => Self::Timeout,
-            GraphQLMessageMonitoringStatus::RejectedByFullNode => Self::RejectedByFullNode,
-            GraphQLMessageMonitoringStatus::IncludedIntoBlock => Self::IncludedIntoBlock,
+            GraphQLMessageMonitoringStatus::Reserved => Self::Reserved,
         }
     }
 }

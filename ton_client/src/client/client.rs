@@ -35,7 +35,7 @@ use crate::error::ClientResult;
 use crate::json_interface::interop::ResponseType;
 use crate::json_interface::request::Request;
 use crate::net::{NetworkConfig, NetworkContext, ServerLink};
-use crate::processing::MessageMonitorEverApi;
+use crate::processing::SdkServices;
 use crate::proofs::ProofsConfig;
 
 #[derive(Default)]
@@ -61,13 +61,13 @@ pub struct ClientContext {
     pub(crate) derived_keys: DerivedKeys,
 
     // boc module
-    pub(crate) bocs: Bocs,
+    pub(crate) bocs: Arc<Bocs>,
 
     // net module
     pub(crate) net: Arc<NetworkContext>,
 
     // processing module
-    pub(crate) message_monitor: Arc<MessageMonitor<MessageMonitorEverApi>>,
+    pub(crate) message_monitor: Arc<MessageMonitor<SdkServices>>,
 
     // proofs module
     pub(crate) proofs_storage: RwLock<Option<Arc<dyn KeyValueStorage>>>,
@@ -104,7 +104,7 @@ Note that default values are used if parameters are omitted in config"#,
             None
         };
 
-        let bocs = Bocs::new(config.boc.cache_max_size);
+        let bocs = Arc::new(Bocs::new(config.boc.cache_max_size));
         let net = Arc::new(NetworkContext {
             env: env.clone(),
             server_link,
@@ -112,8 +112,10 @@ Note that default values are used if parameters are omitted in config"#,
             iterators: Default::default(),
             network_uid: Default::default(),
         });
-        let message_monitor =
-            Arc::new(MessageMonitor::new(MessageMonitorEverApi::new(net.clone())));
+        let message_monitor = Arc::new(MessageMonitor::new(SdkServices::new(
+            net.clone(),
+            bocs.clone(),
+        )));
         Ok(Self {
             net,
             message_monitor,

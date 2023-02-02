@@ -2,7 +2,7 @@ use crate::message_monitor::{
     MessageMonitor, MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
     MessageMonitoringTransaction, MonitorFetchWait,
 };
-use crate::providers::MockEverApi;
+use crate::sdk_services::MockSdkServices;
 use crate::MonitoredMessage;
 use std::mem;
 use std::sync::{Arc, RwLock};
@@ -13,7 +13,7 @@ use ton_types::{AccountId, UInt256};
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_fetch() {
-    let api = providers();
+    let api = sdk_services();
     let mon = MessageMonitor::new(api.clone());
     mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
         .await
@@ -42,7 +42,7 @@ async fn test_fetch() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_fetch_wait_all() {
-    let api = providers();
+    let api = sdk_services();
     let mon = Arc::new(MessageMonitor::new(api.clone()));
 
     // Start monitoring for [1, 2] messages
@@ -98,7 +98,7 @@ async fn test_fetch_wait_all() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mon_info() {
-    let api = providers();
+    let api = sdk_services();
     let mon = MessageMonitor::new(api.clone());
     let info = mon.get_queue_info("1").unwrap();
     assert_eq!(info.resolved, 0);
@@ -154,8 +154,8 @@ fn msg_res(h: usize, s: MessageMonitoringStatus) -> MessageMonitoringResult {
     }
 }
 
-fn providers() -> MockEverApi {
-    MockEverApi::new()
+fn sdk_services() -> MockSdkServices {
+    MockSdkServices::new()
 }
 
 fn sorted<T, K, F>(source: Vec<T>, mut f: F) -> Vec<T>
