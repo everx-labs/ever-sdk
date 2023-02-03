@@ -206,7 +206,11 @@ impl Bocs {
         Ok(())
     }
 
-    pub(crate) fn deserialize_cell(&self, boc: &str, name: &str) -> ClientResult<(DeserializedBoc, Cell)> {
+    pub(crate) fn deserialize_cell(
+        &self,
+        boc: &str,
+        name: &str,
+    ) -> ClientResult<(DeserializedBoc, Cell)> {
         if boc.starts_with("*") {
             let hash = UInt256::from_str(&boc[1..]).map_err(|err| {
                 Error::invalid_boc(format!(
@@ -221,6 +225,21 @@ impl Bocs {
             deserialize_cell_from_base64(boc, name)
                 .map(|(bytes, cell)| (DeserializedBoc::Bytes(bytes), cell))
         }
+    }
+
+    pub(crate) fn resolve_boc_with_hash(
+        &self,
+        boc: &str,
+        name: &str,
+    ) -> ClientResult<(UInt256, String)> {
+        let (source, cell) = self.deserialize_cell(boc, name)?;
+        let hash = cell.repr_hash();
+        let boc = if let DeserializedBoc::Bytes(_) = source {
+            boc.to_string()
+        } else {
+            serialize_cell_to_base64(&cell, name)?
+        };
+        Ok((hash, boc))
     }
 
     fn get_pinned(&self, hash: &UInt256) -> Option<Cell> {

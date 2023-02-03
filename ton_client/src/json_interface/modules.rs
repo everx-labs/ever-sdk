@@ -581,6 +581,10 @@ fn register_processing(handlers: &mut RuntimeHandlers) {
         crate::processing::cancel_monitor,
         crate::processing::cancel_monitor_api,
     );
+    module.register_async_fn(
+        crate::processing::send_messages,
+        crate::processing::send_messages_api,
+    );
 
     module.register_async_fn_with_callback(
         super::processing::send_message,
