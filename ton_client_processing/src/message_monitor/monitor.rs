@@ -1,6 +1,6 @@
-use crate::monitor::message::{MessageMonitoringParams, MessageMonitoringResult};
-use crate::monitor::queue::MonitoringQueue;
-use crate::providers::{EverApiProvider, Subscription};
+use crate::message_monitor::message::{MessageMonitoringParams, MessageMonitoringResult};
+use crate::message_monitor::queue::MonitoringQueue;
+use crate::sdk_services::{MessageMonitorSdkServices, NetSubscription};
 use std::collections::HashMap;
 use std::mem;
 use std::sync::{Arc, Mutex, RwLock};
@@ -8,47 +8,47 @@ use std::sync::{Arc, Mutex, RwLock};
 /// The main message monitor object.
 /// Incorporates and serves all message monitoring queues.
 ///
-pub struct MessageMonitor<EverApi: EverApiProvider> {
-    /// External provider for Ever API
-    api: EverApi,
+pub struct MessageMonitor<Sdk: MessageMonitorSdkServices> {
+    /// External SDK services used by message monitor
+    sdk: Sdk,
     /// Active queues
     queues: Arc<RwLock<HashMap<String, MonitoringQueue>>>,
-    ///
     notify_queues: Arc<tokio::sync::watch::Sender<bool>>,
     listen_queues: tokio::sync::watch::Receiver<bool>,
-    active_subscription: Mutex<Option<Subscription>>,
+    active_subscription: Mutex<Option<NetSubscription>>,
 }
 
+#[derive(Deserialize, Serialize, ApiType)]
 pub struct MonitoringQueueInfo {
-    pub queued: usize,
-    pub resolved: usize,
+    /// Count of the unresolved messages.
+    pub unresolved: u32,
+    /// Count of resolved results.
+    pub resolved: u32,
 }
 
+#[derive(Deserialize, Serialize, ApiType)]
 pub enum MonitorFetchWait {
-    /*
-     * If there are no resolved results yet, then monitor awaits for next resolved result.
-     * Note that if there are no queued messages and resolved buffer is empty
-     * then monitor immediately returns an empty list.
-     */
+    /// If there are an unresolved messages and no resolved results yet,
+    /// then monitor awaits for the next resolved result.
+    /// If there are no unresolved messages then monitor immediately
+    /// returns a resolved list (even if it is empty).
     AtLeastOne,
-    /*
-     * Monitor waits until all queued messages will be resolved.
-     * Note that if there are no queued messages and resolved buffer is empty
-     * then monitor immediately returns an empty list.
-     */
-    AllQueued,
-    /*
-     * Monitor does not any awaits even if there are no resolved results yet.
-     */
+
+    /// Monitor waits until all unresolved messages will be resolved.
+    /// If there are no unresolved messages then monitor immediately
+    /// returns a resolved list (even if it is empty).
+    All,
+
+    // Monitor does not any awaits even if there are no resolved results yet.
     NoWait,
 }
 
 // pub
-impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
-    pub fn new(api: EverApi) -> Self {
+impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
+    pub fn new(sdk: SdkServices) -> Self {
         let (sender, receiver) = tokio::sync::watch::channel(false);
         Self {
-            api,
+            sdk,
             queues: Arc::new(RwLock::new(HashMap::new())),
             active_subscription: Mutex::new(None),
             notify_queues: Arc::new(sender),
@@ -70,7 +70,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
                 queues.get_mut(queue).unwrap()
             };
             for message in messages {
-                queue.add_unresolved(message);
+                queue.add_unresolved(&self.sdk, message)?;
             }
             self.notify_queues.send(true).ok();
         }
@@ -90,7 +90,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
                     let is_ready = match wait {
                         MonitorFetchWait::NoWait => true,
                         MonitorFetchWait::AtLeastOne => !queue.resolved.is_empty(),
-                        MonitorFetchWait::AllQueued => queue.unresolved.is_empty(),
+                        MonitorFetchWait::All => queue.unresolved.is_empty(),
                     };
                     if is_ready {
                         Some(queue.fetch_resolved())
@@ -111,14 +111,17 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
         }
     }
 
-    pub fn get_monitor_info(&self, queue: &str) -> crate::error::Result<MonitoringQueueInfo> {
+    pub fn get_queue_info(&self, queue: &str) -> crate::error::Result<MonitoringQueueInfo> {
         let queues = self.queues.read().unwrap();
-        let (queued, resolved) = if let Some(queue) = queues.get(queue) {
-            (queue.unresolved.len(), queue.resolved.len())
+        let (unresolved, resolved) = if let Some(queue) = queues.get(queue) {
+            (queue.unresolved.len() as u32, queue.resolved.len() as u32)
         } else {
             (0, 0)
         };
-        Ok(MonitoringQueueInfo { queued, resolved })
+        Ok(MonitoringQueueInfo {
+            unresolved,
+            resolved,
+        })
     }
 
     pub fn cancel_monitor(&self, queue: &str) -> crate::error::Result<()> {
@@ -130,19 +133,22 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
 }
 
 // priv
-impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
+impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
     async fn resubscribe(&self) -> crate::error::Result<()> {
         let new_subscription = self.subscribe().await?;
-        if let Some(old_subscription) = mem::replace(
-            &mut *self.active_subscription.lock().unwrap(),
-            new_subscription,
-        ) {
-            self.api.unsubscribe(old_subscription).await?;
+        let old_subscription = {
+            mem::replace(
+                &mut *self.active_subscription.lock().unwrap(),
+                new_subscription,
+            )
+        };
+        if let Some(old_subscription) = old_subscription {
+            self.sdk.unsubscribe(old_subscription).await?;
         }
         Ok(())
     }
 
-    async fn subscribe(&self) -> crate::error::Result<Option<Subscription>> {
+    async fn subscribe(&self) -> crate::error::Result<Option<NetSubscription>> {
         let messages = self.collect_unresolved();
         if messages.is_empty() {
             return Ok(None);
@@ -159,7 +165,7 @@ impl<EverApi: EverApiProvider> MessageMonitor<EverApi> {
             async {}
         };
         Ok(Some(
-            self.api
+            self.sdk
                 .subscribe_for_recent_ext_in_message_statuses(messages, callback)
                 .await?,
         ))

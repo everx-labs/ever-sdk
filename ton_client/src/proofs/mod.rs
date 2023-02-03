@@ -18,11 +18,9 @@ use ton_types::Result;
 pub(crate) use errors::ErrorCode;
 
 use crate::boc::internal::{deserialize_object_from_base64, deserialize_object_from_boc_bin};
-use crate::client::NetworkUID;
 use crate::ClientContext;
 use crate::encoding::base64_decode;
 use crate::error::ClientResult;
-use crate::net::{ParamsOfQueryCollection, query_collection};
 use crate::proofs::engine::ProofHelperEngineImpl;
 use crate::proofs::errors::Error;
 use crate::proofs::validators::{calc_subset_for_workchain, check_crypto_signatures};
@@ -932,63 +930,11 @@ impl BlockProof {
     }
 }
 
-async fn get_current_network_uid(
-    context: &Arc<ClientContext>,
-) -> Result<Arc<NetworkUID>> {
-    if let Some(ref uid) = *context.net.network_uid.read().await {
-        return Ok(Arc::clone(uid));
-    }
-
-    let queried_uid = query_current_network_uid(Arc::clone(context)).await?;
-
-    let mut write_guard = context.net.network_uid.write().await;
-    if let Some(ref stored_uid) = *write_guard {
-        return Ok(Arc::clone(stored_uid));
-    }
-
-    *write_guard = Some(Arc::clone(&queried_uid));
-
-    Ok(queried_uid)
-}
-
-async fn query_current_network_uid(
-    context: Arc<ClientContext>,
-) -> Result<Arc<NetworkUID>> {
-    let blocks = query_collection(context, ParamsOfQueryCollection {
-        collection: "blocks".to_string(),
-        filter: Some(json!({
-            "workchain_id": {
-                "eq": -1
-            },
-            "seq_no": {
-                "eq": 1
-            },
-        })),
-        result: "id, prev_ref{root_hash}".to_string(),
-        limit: Some(1),
-        ..Default::default()
-    }).await?.result;
-
-    if blocks.is_empty() {
-        bail!("Unable to resolve zerostate's root hash: can't get masterchain block #1");
-    }
-
-    let prev_ref = &blocks[0]["prev_ref"];
-    if prev_ref.is_null() {
-        bail!("Unable to resolve zerostate's root hash: prev_ref of the block #1 is not set");
-    }
-
-    let first_master_block_root_hash = UInt256::from_str(blocks[0].get_str("id")?)?;
-    let zerostate_root_hash = UInt256::from_str(prev_ref.get_str("root_hash")?)?;
-
-    Ok(Arc::new(NetworkUID { zerostate_root_hash, first_master_block_root_hash }))
-}
-
 async fn resolve_initial_trusted_key_block(
     context: &Arc<ClientContext>,
     mc_seq_no: u32,
 ) -> Result<(u32, UInt256)> {
-    let network_uid = get_current_network_uid(context).await?;
+    let network_uid = context.net.get_current_network_uid().await?;
 
     if let Some(hardcoded_mc_blocks) =
         INITIAL_TRUSTED_KEY_BLOCKS.get(network_uid.zerostate_root_hash.as_array())

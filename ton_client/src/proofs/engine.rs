@@ -16,7 +16,7 @@ use crate::ClientContext;
 use crate::encoding::base64_decode;
 use crate::error::ClientResult;
 use crate::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
-use crate::proofs::{BlockProof, get_current_network_uid, ProofHelperEngine, resolve_initial_trusted_key_block};
+use crate::proofs::{BlockProof, ProofHelperEngine, resolve_initial_trusted_key_block};
 use crate::proofs::Error;
 use crate::utils::json::JsonHelper;
 
@@ -74,7 +74,7 @@ impl ProofHelperEngineImpl {
         let new_storage = if !context.config.proofs.cache_in_local_storage {
             Arc::new(InMemoryKeyValueStorage::new()) as Arc<dyn KeyValueStorage>
         } else {
-            let network_uid = get_current_network_uid(&context).await?;
+            let network_uid = context.net.get_current_network_uid().await?;
 
             let storage_name = format!(
                 "proofs/{}/{}",
@@ -923,7 +923,7 @@ impl ProofHelperEngine for ProofHelperEngineImpl {
         let boc = self.query_zerostate_boc().await?;
 
         let actual_hash = UInt256::from_str(&get_boc_hash(&boc)?)?;
-        let network_uid = get_current_network_uid(self.context()).await?;
+        let network_uid = self.context.net.get_current_network_uid().await?;
         if actual_hash != network_uid.zerostate_root_hash {
             bail!(
                 "Zerostate hashes mismatch (expected `{:x}`, but queried from DApp is `{:x}`)",

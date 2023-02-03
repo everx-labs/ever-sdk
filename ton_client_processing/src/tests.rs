@@ -1,8 +1,9 @@
-use crate::monitor::{
+use crate::message_monitor::{
     MessageMonitor, MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
     MessageMonitoringTransaction, MonitorFetchWait,
 };
-use crate::providers::MockEverApi;
+use crate::sdk_services::MockSdkServices;
+use crate::MonitoredMessage;
 use std::mem;
 use std::sync::{Arc, RwLock};
 use std::time::Duration;
@@ -12,7 +13,7 @@ use ton_types::{AccountId, UInt256};
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_fetch() {
-    let api = providers();
+    let api = sdk_services();
     let mon = MessageMonitor::new(api.clone());
     mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
         .await
@@ -27,7 +28,7 @@ async fn test_fetch() {
         msg_res(2, MessageMonitoringStatus::Finalized),
     ]);
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::AllQueued)
+        .fetch_next_monitor_results("1", MonitorFetchWait::All)
         .await
         .unwrap();
     assert_eq!(
@@ -41,7 +42,7 @@ async fn test_fetch() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_fetch_wait_all() {
-    let api = providers();
+    let api = sdk_services();
     let mon = Arc::new(MessageMonitor::new(api.clone()));
 
     // Start monitoring for [1, 2] messages
@@ -55,7 +56,7 @@ async fn test_fetch_wait_all() {
     let spawned_mon = mon.clone();
     tokio::spawn(async move {
         let results = spawned_mon
-            .fetch_next_monitor_results("1", MonitorFetchWait::AllQueued)
+            .fetch_next_monitor_results("1", MonitorFetchWait::All)
             .await
             .unwrap();
         *results_from_spawned.write().unwrap() = results;
@@ -79,11 +80,10 @@ async fn test_fetch_wait_all() {
 
     // Queue should be empty
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::AllQueued)
+        .fetch_next_monitor_results("1", MonitorFetchWait::All)
         .await
         .unwrap();
     assert_eq!(results, vec![]);
-
 
     // Check that spawned thread has received all monitoring messages
     let results = mem::replace(&mut *fetched.write().unwrap(), Vec::new());
@@ -98,36 +98,43 @@ async fn test_fetch_wait_all() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_mon_info() {
-    let api = providers();
+    let api = sdk_services();
     let mon = MessageMonitor::new(api.clone());
-    let info = mon.get_monitor_info("1").unwrap();
+    let info = mon.get_queue_info("1").unwrap();
     assert_eq!(info.resolved, 0);
-    assert_eq!(info.queued, 0);
+    assert_eq!(info.unresolved, 0);
     mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
         .await
         .unwrap();
-    let info = mon.get_monitor_info("1").unwrap();
+    let info = mon.get_queue_info("1").unwrap();
     assert_eq!(info.resolved, 0);
-    assert_eq!(info.queued, 2);
+    assert_eq!(info.unresolved, 2);
     api.add_recent_ext_in_messages(vec![msg_res(1, MessageMonitoringStatus::Finalized)]);
     tokio::time::sleep(Duration::from_millis(1000)).await;
-    let info = mon.get_monitor_info("1").unwrap();
+    let info = mon.get_queue_info("1").unwrap();
     assert_eq!(info.resolved, 1);
-    assert_eq!(info.queued, 1);
+    assert_eq!(info.unresolved, 1);
 }
 
-fn u256(n: usize) -> UInt256 {
-    UInt256::from_be_bytes(&n.to_be_bytes())
+fn hash(n: usize) -> String {
+    UInt256::from_be_bytes(&n.to_be_bytes()).as_hex_string()
 }
 
-fn addr(a: usize) -> MsgAddrStd {
-    MsgAddrStd::with_address(None, 0, AccountId::from(u256(a)))
+fn addr(a: usize) -> String {
+    MsgAddrStd::with_address(
+        None,
+        0,
+        AccountId::from(UInt256::from_be_bytes(&a.to_be_bytes())),
+    )
+    .to_string()
 }
 
 fn msg(h: usize, w: u32) -> MessageMonitoringParams {
     MessageMonitoringParams {
-        hash: u256(h),
-        address: addr(h),
+        message: MonitoredMessage::HashAddress {
+            hash: hash(h),
+            address: addr(h),
+        },
         wait_until: w,
         user_data: None,
     }
@@ -135,15 +142,20 @@ fn msg(h: usize, w: u32) -> MessageMonitoringParams {
 
 fn msg_res(h: usize, s: MessageMonitoringStatus) -> MessageMonitoringResult {
     MessageMonitoringResult {
-        hash: u256(h),
+        hash: hash(h),
         status: s,
-        transaction: Some(MessageMonitoringTransaction { hash: u256(h), aborted: false, compute: None }),
+        transaction: Some(MessageMonitoringTransaction {
+            hash: Some(hash(h)),
+            aborted: false,
+            compute: None,
+        }),
+        error: None,
         user_data: None,
     }
 }
 
-fn providers() -> MockEverApi {
-    MockEverApi::new()
+fn sdk_services() -> MockSdkServices {
+    MockSdkServices::new()
 }
 
 fn sorted<T, K, F>(source: Vec<T>, mut f: F) -> Vec<T>

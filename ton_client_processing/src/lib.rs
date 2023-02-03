@@ -17,16 +17,19 @@ extern crate serde_json;
 extern crate serde_derive;
 #[macro_use]
 extern crate async_trait;
+#[macro_use]
+extern crate api_derive;
 
 mod error;
-mod monitor;
-mod providers;
+mod message_monitor;
+mod sdk_services;
 #[cfg(test)]
 mod tests;
 
 pub use error::{Error, Result};
-pub use monitor::{
+pub use message_monitor::{
     MessageMonitor, MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
-    MessageMonitoringTransaction, MonitorFetchWait, MonitoringQueueInfo,
+    MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitorFetchWait,
+    MonitoredMessage, MonitoringQueueInfo,
 };
-pub use providers::EverApiProvider;
+pub use sdk_services::{MessageMonitorSdkServices, NetSubscription};
