@@ -9,6 +9,11 @@ All notable changes to this project will be documented in this file.
 - Added message monitoring functions to the `processing` module: `monitor_messages`, 
     `fetch_next_monitor_results`, `get_monitor_info`, `cancel_monitor****`.
 - Added `processing.send_messages` function.
+- Config parameter `binding: { library: string, version: string }`. Binding authors should mix 
+   this parameter at context initialization.
+- `tonclient-binding-library` and `tonclient-binding-version` GraphQL request headers.
+- `Error.data.binding_library` and `Error.data.binding_version` error data fields. 
+
 
 ## [1.41.0] – 2023-01-18
 
