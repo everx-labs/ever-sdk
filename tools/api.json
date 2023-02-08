@@ -1,5 +1,5 @@
 {
-  "version": "1.40.0",
+  "version": "1.41.0",
   "modules": [
     {
       "name": "client",
@@ -9540,7 +9540,20 @@
             {
               "name": "WillFetchFirstBlock",
               "type": "Struct",
-              "struct_fields": [],
+              "struct_fields": [
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_dst",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                }
+              ],
               "summary": "Notifies the application that the account's current shard block will be fetched from the network. This step is performed before the message sending so that sdk knows starting from which block it will search for the transaction.",
               "description": "Fetched block will be used later in waiting phase."
             },
@@ -9552,6 +9565,18 @@
                   "name": "error",
                   "type": "Ref",
                   "ref_name": "client.ClientError",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_dst",
+                  "type": "String",
                   "summary": null,
                   "description": null
                 }
@@ -9571,6 +9596,12 @@
                 },
                 {
                   "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_dst",
                   "type": "String",
                   "summary": null,
                   "description": null
@@ -9602,6 +9633,12 @@
                   "description": null
                 },
                 {
+                  "name": "message_dst",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
                   "name": "message",
                   "type": "String",
                   "summary": null,
@@ -9623,6 +9660,12 @@
                 },
                 {
                   "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_dst",
                   "type": "String",
                   "summary": null,
                   "description": null
@@ -9661,6 +9704,12 @@
                   "description": null
                 },
                 {
+                  "name": "message_dst",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
                   "name": "message",
                   "type": "String",
                   "summary": null,
@@ -9682,6 +9731,12 @@
                 },
                 {
                   "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_dst",
                   "type": "String",
                   "summary": null,
                   "description": null
@@ -9714,6 +9769,12 @@
                   "description": null
                 },
                 {
+                  "name": "message_dst",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
                   "name": "message",
                   "type": "String",
                   "summary": null,
@@ -9736,6 +9797,12 @@
               "struct_fields": [
                 {
                   "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_dst",
                   "type": "String",
                   "summary": null,
                   "description": null
@@ -9770,6 +9837,12 @@
                   "description": null
                 },
                 {
+                  "name": "message_dst",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
                   "name": "timestamp",
                   "type": "BigInt",
                   "number_type": "UInt",
@@ -9794,6 +9867,12 @@
               "struct_fields": [
                 {
                   "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_dst",
                   "type": "String",
                   "summary": null,
                   "description": null
@@ -9828,6 +9907,12 @@
                   "description": null
                 },
                 {
+                  "name": "message_dst",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
                   "name": "timestamp",
                   "type": "BigInt",
                   "number_type": "UInt",
@@ -9850,6 +9935,18 @@
               "name": "RempError",
               "type": "Struct",
               "struct_fields": [
+                {
+                  "name": "message_id",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
+                {
+                  "name": "message_dst",
+                  "type": "String",
+                  "summary": null,
+                  "description": null
+                },
                 {
                   "name": "error",
                   "type": "Ref",
@@ -9931,6 +10028,287 @@
                 "ref_name": "Value"
               },
               "summary": "Decoded body of the function output message.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "MessageMonitoringTransactionCompute",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "exit_code",
+              "type": "Number",
+              "number_type": "Int",
+              "number_size": 32,
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "MessageMonitoringTransaction",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "hash",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "aborted",
+              "type": "Boolean",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "compute",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "processing.MessageMonitoringTransactionCompute"
+              },
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "MessageMonitoringParams",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "hash",
+              "type": "String",
+              "summary": "Hash of the message that was sent to the blockchain.",
+              "description": null
+            },
+            {
+              "name": "address",
+              "type": "String",
+              "summary": "Destination account address",
+              "description": null
+            },
+            {
+              "name": "wait_until",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "Block time Must be specified as a UNIX timestamp in seconds",
+              "description": null
+            },
+            {
+              "name": "user_data",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "User defined data associated with this message. Helps to identify this message when user received message processing results.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "MessageMonitoringResult",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "hash",
+              "type": "String",
+              "summary": "Hash of the message.",
+              "description": null
+            },
+            {
+              "name": "status",
+              "type": "Ref",
+              "ref_name": "MessageMonitoringStatus",
+              "summary": "Processing status.",
+              "description": null
+            },
+            {
+              "name": "transaction",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "processing.MessageMonitoringTransaction"
+              },
+              "summary": "In case of FINALIZED the transaction is extracted from the block. In case of TIMEOUT the transaction is emulated using the last known account state.",
+              "description": null
+            },
+            {
+              "name": "error",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": "In case of TIMEOUT contains possible error reason.",
+              "description": null
+            },
+            {
+              "name": "user_data",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "Value"
+              },
+              "summary": "User defined data related to this message. This is the same value as passed before with `MessageMonitoringParams` or `SendMessageParams`.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "MonitorFetchWait",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "AtLeastOne",
+              "type": "None",
+              "summary": "If there are no resolved results yet, then monitor awaits for next resolved result. Note that if there are no queued messages and resolved buffer is empty then monitor immediately returns an empty list.",
+              "description": null
+            },
+            {
+              "name": "AllQueued",
+              "type": "None",
+              "summary": "Monitor waits until all queued messages will be resolved. Note that if there are no queued messages and resolved buffer is empty then monitor immediately returns an empty list.",
+              "description": null
+            },
+            {
+              "name": "NoWait",
+              "type": "None",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfMonitorMessages",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "queue",
+              "type": "String",
+              "summary": "Name of the monitoring queue.",
+              "description": null
+            },
+            {
+              "name": "messages",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "processing.MessageMonitoringParams"
+              },
+              "summary": "Messages to start monitoring for.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfGetMonitorInfo",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "queue",
+              "type": "String",
+              "summary": "Name of the monitoring queue.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfGetMonitorInfo",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "queued",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "Count of the unresolved messages.",
+              "description": null
+            },
+            {
+              "name": "resolved",
+              "type": "Number",
+              "number_type": "UInt",
+              "number_size": 32,
+              "summary": "Count of the resolved messages.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfFetchNextMonitorResults",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "queue",
+              "type": "String",
+              "summary": "Name of the monitoring queue.",
+              "description": null
+            },
+            {
+              "name": "wait",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "processing.MonitorFetchWait"
+              },
+              "summary": "Wait mode.",
+              "description": "Default is `NO_WAIT`."
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ResultOfFetchNextMonitorResults",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "results",
+              "type": "Array",
+              "array_item": {
+                "type": "Ref",
+                "ref_name": "processing.MessageMonitoringResult"
+              },
+              "summary": "List of the resolved results.",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "ParamsOfCancelMonitor",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "queue",
+              "type": "String",
+              "summary": "Name of the monitoring queue.",
               "description": null
             }
           ],
@@ -10061,6 +10439,156 @@
         }
       ],
       "functions": [
+        {
+          "name": "monitor_messages",
+          "summary": "Starts monitoring for the processing result of the specified messages.",
+          "description": "Message monitor performs background monitoring for a message processing results\nfor the specified set of messages.\n\nEach monitor queue has a unique application defined identifier (or name) used\nto separate several queue's.\n\nThere are two important lists inside of the monitoring queue:\n\n- unresolved: contains messages requested by the application for monitoring\n  and not yet resolved;\n\n- resolved: contains resolved processing results for monitored messages.\n\nEach monitoring queue tracks own unresolved and resolved lists.\nApplication can add more messages to the monitoring queue at any time.\n\nMessage monitor accumulates resolved results.\nApplication should fetch this results with `fetchNextMonitorResults` function.\n\nWhen both unresolved and resolved lists becomes empty, monitor stops any background activity\nand frees all allocated internal memory.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "processing.ParamsOfMonitorMessages",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_monitor_info",
+          "summary": "Returns summary information about current state of the specified monitor.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "processing.ParamsOfGetMonitorInfo",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "processing.ResultOfGetMonitorInfo"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "fetch_next_monitor_results",
+          "summary": "Fetches next resolved results from the specified monitoring queue.",
+          "description": "Results and waiting options are depends on the `wait` parameter.\nAll returned results are removed from the queue's resolved list.",
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "processing.ParamsOfFetchNextMonitorResults",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "processing.ResultOfFetchNextMonitorResults"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "cancel_monitor",
+          "summary": "Cancels all background activity and releases all allocated system resources for the specified monitoring queue.",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "params",
+              "type": "Ref",
+              "ref_name": "processing.ParamsOfCancelMonitor",
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
         {
           "name": "send_message",
           "summary": "Sends message to the network",

@@ -2,6 +2,14 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.0] – 2023-01-18
+
+### New
+
+- Added message monitoring functions to the `processing` module: `monitor_messages`, 
+    `fetch_next_monitor_results`, `get_monitor_info`, `cancel_monitor****`.
+- Added `processing.send_messages` function.
+
 ## [1.41.0] – 2023-01-18
 
 ### New
