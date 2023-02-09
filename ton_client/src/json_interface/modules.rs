@@ -75,6 +75,7 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::crypto::ChaCha20ParamsCB>();
     module.register_type::<crate::crypto::NaclBoxParamsCB>();
     module.register_type::<crate::crypto::NaclSecretBoxParamsCB>();
+    module.register_type::<crate::crypto::MnemonicDictionary>();
 
     // Math
 
