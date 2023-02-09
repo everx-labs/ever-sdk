@@ -13,10 +13,7 @@ use crate::crypto::boxes::encryption_box::nacl_secret_box::NaclSecretEncryptionB
 use crate::crypto::boxes::signing_box::KeysSigningBox;
 use crate::crypto::internal::{SecretBuf, SecretString};
 use crate::crypto::mnemonic::mnemonics;
-use crate::crypto::{
-    register_encryption_box, register_signing_box, CryptoConfig, EncryptionBox, EncryptionBoxInfo,
-    Error, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox,
-};
+use crate::crypto::{register_encryption_box, register_signing_box, CryptoConfig, EncryptionBox, EncryptionBoxInfo, Error, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox, MnemonicDictionary};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 use crate::ClientContext;
@@ -28,7 +25,7 @@ pub(crate) use derived_keys::DerivedKeys;
 
 type PasswordProvider = Arc<dyn AppPasswordProvider + Send + Sync + 'static>;
 
-const DEFAULT_DICTIONARY: u8 = 0;
+const DEFAULT_DICTIONARY: MnemonicDictionary = MnemonicDictionary::Ton;
 const DEFAULT_WORDCOUNT: u8 = 12;
 
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, ApiType, Default, PartialEq)]
@@ -61,7 +58,7 @@ pub trait AppPasswordProvider {
 pub(crate) enum SecretInternal {
     SeedPhrase {
         phrase: SecretString,
-        dictionary: u8,
+        dictionary: MnemonicDictionary,
         wordcount: u8,
     },
 }
@@ -94,7 +91,7 @@ pub enum CryptoBoxSecret {
     /// should use `EncryptedSecret` type instead.
     ///
     /// Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
-    RandomSeedPhrase { dictionary: u8, wordcount: u8 },
+    RandomSeedPhrase { dictionary: MnemonicDictionary, wordcount: u8 },
 
     /// Restores crypto box instance from an existing seed phrase.
     /// This type should be used when Crypto Box is initialized from a seed phrase, entered by a user.
@@ -105,7 +102,7 @@ pub enum CryptoBoxSecret {
     /// Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
     PredefinedSeedPhrase {
         phrase: String,
-        dictionary: u8,
+        dictionary: MnemonicDictionary,
         wordcount: u8,
     },
 
@@ -238,7 +235,7 @@ pub async fn remove_crypto_box(
 )]
 pub struct ResultOfGetCryptoBoxSeedPhrase {
     pub phrase: String,
-    pub dictionary: u8,
+    pub dictionary: MnemonicDictionary,
     pub wordcount: u8,
 }
 
