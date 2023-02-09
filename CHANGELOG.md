@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `message_id` and `message_dst` fields are added to all `ProcessingEvent` variants
+- Changed type of the `dictionary` parameter or mnemonic crypto functions and crypto config.
+  Now it uses `MnemonicDictionary` enum type instead of `number`. `MnemonicDictionary` numeric 
+  constants are compatible with previous values. 
 
 ## [1.40.0] – 2023-01-11
 
