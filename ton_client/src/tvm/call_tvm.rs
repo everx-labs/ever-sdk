@@ -46,7 +46,8 @@ pub(crate) fn call_tvm(
         .put(4, &mut StackItem::Cell(data))
         .map_err(|err| Error::internal_error(format!("can not put data to registers: {}", err)))?;
 
-    let capabilities = GlobalCapabilities::CapInitCodeHash as u64 |
+    let capabilities = options.blockchain_config.raw_config().capabilities() |
+        GlobalCapabilities::CapInitCodeHash as u64 |
         GlobalCapabilities::CapMycode as u64 |
         GlobalCapabilities::CapStorageFeeToTvm as u64;
     #[cfg(feature = "include-zstd")]
@@ -82,6 +83,7 @@ pub(crate) fn call_tvm(
         Some(gas),
     );
 
+    engine.set_signature_id(options.global_id);
     engine.modify_behavior(options.behavior_modifiers);
 
     match engine.execute() {

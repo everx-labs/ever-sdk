@@ -11,6 +11,8 @@ use ton_abi::token::Detokenizer;
 use ton_sdk::{AbiContract, AbiFunction, AbiEvent};
 use ton_types::SliceData;
 
+use super::types::extend_data_to_sign;
+
 #[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone)]
 pub enum DataLayout {
     /// Decode message body as function input parameters.
@@ -334,6 +336,10 @@ pub struct ParamsOfGetSignatureData {
 
     /// Message BOC encoded in `base64`.
     pub message: String,
+
+    /// Signature ID to be used in unsigned data preparing when CapSignatureWithId
+    /// capability is enabled
+    pub signature_id: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
@@ -341,8 +347,8 @@ pub struct ResultOfGetSignatureData {
     /// Signature from the message in `hex`.
     pub signature: String,
 
-    /// Hash to verify the signature in `base64`.
-    pub hash: String,
+    /// Data to verify the signature in `base64`.
+    pub unsigned: String,
 }
 
 /// Extracts signature from message body and calculates hash to verify the signature
@@ -360,9 +366,10 @@ pub async fn get_signature_data(
             ))?;
         let (signature, hash) = abi.get_signature_data(body, Some(address))
             .map_err(|err| Error::invalid_message_for_decode(err))?;
+        let unsigned = extend_data_to_sign(&context, params.signature_id, Some(hash)).await?;
         Ok(ResultOfGetSignatureData { 
             signature: hex::encode(&signature), 
-            hash: base64::encode(&hash),
+            unsigned: base64::encode(&unsigned.unwrap()),
         })
     } else {
         Err(Error::invalid_message_for_decode(

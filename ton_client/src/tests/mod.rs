@@ -67,6 +67,10 @@ mod env {
         str("EVERCLOUD_GIVER_SECRET", Some("TON_GIVER_SECRET"))
     }
 
+    pub(crate) fn giver_type() -> String {
+        str("EVERCLOUD_GIVER_TYPE", None).unwrap_or_else(|| "v2".into())
+    }
+
     pub(crate) fn auth_project() -> Option<String> {
         str("EVERCLOUD_AUTH_PROJECT", None)
     }
@@ -279,13 +283,25 @@ impl TestClient {
     }
 
     pub fn giver_abi() -> Abi {
-        Self::abi(GIVER_V2, Some(2))
+        match env::giver_type().as_str() {
+            "v2" => Self::abi(GIVER_V2, Some(2)),
+            "v1" => Self::abi("Giver", Some(1)),
+            _ => panic!("Unknown giver type")
+        }
+    }
+
+    pub fn giver_tvc() -> String {
+        match env::giver_type().as_str() {
+            "v2" => Self::tvc(GIVER_V2, Some(2)),
+            "v1" => Self::tvc("Giver", Some(1)),
+            _ => panic!("Unknown giver type")
+        }
     }
 
     async fn calc_giver_address(&self, keys: KeyPair) -> String {
         self.encode_message(ParamsOfEncodeMessage {
-            abi: Self::giver_abi(),
-            deploy_set: DeploySet::some_with_tvc(Self::tvc(GIVER_V2, None)),
+            abi:  Self::giver_abi(),
+            deploy_set: DeploySet::some_with_tvc(Self::giver_tvc()),
             signer: Signer::Keys { keys },
             ..Default::default()
         })
@@ -382,7 +398,7 @@ impl TestClient {
 
     pub fn tvc(name: &str, abi_version: Option<u8>) -> String {
         base64::encode(
-            &std::fs::read(format!("{}{}.tvc", Self::contracts_path(abi_version), name)).unwrap(),
+            &std::fs::read(dbg!(format!("{}{}.tvc", Self::contracts_path(abi_version), name))).unwrap(),
         )
     }
 
@@ -663,14 +679,13 @@ impl TestClient {
                 message_encode_params: ParamsOfEncodeMessage {
                     address: Some(address),
                     abi,
-                    deploy_set: None,
                     call_set: Some(CallSet {
                         header: None,
                         function_name: function_name.into(),
                         input: Some(input),
                     }),
-                    processing_try_index: None,
                     signer,
+                    ..Default::default()
                 },
                 send_events: false,
             },
@@ -679,17 +694,35 @@ impl TestClient {
         .await
     }
 
-    pub(crate) async fn get_tokens_from_giver_async(&self, account: &str, value: Option<u64>) {
+    pub(crate) async fn get_tokens_from_giver_async(&self, account: &str, value: Option<u64>) -> ResultOfProcessMessage {
+        let (function, input) = match env::giver_type().as_str() {
+            "v1" => {
+                (
+                    "sendGrams",
+                    json!({
+                        "dest": account.to_string(),
+                        "amount": value.unwrap_or(500_000_000u64),
+                    })
+                )
+            },
+            "v2" => {
+                (
+                    "sendTransaction",
+                    json!({
+                        "dest": account.to_string(),
+                        "value": value.unwrap_or(500_000_000u64),
+                        "bounce": false,
+                    })
+                )
+            },
+            _ => panic!("Unknown giver version")
+        };
         let run_result = self
             .net_process_function(
                 self.giver_address().await,
                 Self::giver_abi(),
-                "sendTransaction",
-                json!({
-                    "dest": account.to_string(),
-                    "value": value.unwrap_or(500_000_000u64),
-                    "bounce": false
-                }),
+                function,
+                input,
                 Signer::Keys {
                     keys: Self::giver_keys(),
                 },
@@ -711,6 +744,8 @@ impl TestClient {
             )
             .await
             .unwrap();
+
+        run_result
     }
 
     pub(crate) async fn deploy_with_giver_async(

@@ -125,19 +125,17 @@ async fn test_wait_message() {
 
     let encode_params = ParamsOfEncodeMessage {
         abi: abi.clone(),
-        address: None,
         deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
         call_set: Some(CallSet {
             function_name: "constructor".into(),
             header: Some(FunctionHeader {
-                expire: None,
-                time: None,
                 pubkey: Some(keys.public.clone()),
+                ..Default::default()
             }),
             input: None,
         }),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
+        ..Default::default()
     };
 
     let encoded = client.encode_message(encode_params.clone()).await.unwrap();
@@ -204,7 +202,6 @@ async fn test_process_message() {
 
     let encode_params = ParamsOfEncodeMessage {
         abi: abi.clone(),
-        address: None,
         deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
         call_set: Some(CallSet {
             function_name: "constructor".into(),
@@ -216,7 +213,7 @@ async fn test_process_message() {
             input: None,
         }),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
+        ..Default::default()
     };
 
     let encoded = client.encode_message(encode_params.clone()).await.unwrap();
@@ -265,7 +262,6 @@ async fn test_process_message() {
                 message_encode_params: ParamsOfEncodeMessage {
                     abi: abi.clone(),
                     address: Some(encoded.address.clone()),
-                    deploy_set: None,
                     call_set: CallSet::some_with_function_and_input(
                         "returnValue",
                         json!({
@@ -273,7 +269,7 @@ async fn test_process_message() {
                         }),
                     ),
                     signer: Signer::Keys { keys: keys.clone() },
-                    processing_try_index: None,
+                    ..Default::default()
                 },
                 send_events: true,
             },
@@ -336,9 +332,8 @@ async fn test_error_resolving() {
             ..Default::default()
         }),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
-        address: None,
         call_set: CallSet::some_with_function("constructor"),
+        ..Default::default()
     };
 
     let address = client
@@ -349,15 +344,14 @@ async fn test_error_resolving() {
 
     let mut run_params = ParamsOfEncodeMessage {
         abi: TestClient::abi(HELLO, None),
-        deploy_set: None,
         signer: Signer::Keys { keys },
-        processing_try_index: None,
         address: Some(address.clone()),
         call_set: Some(CallSet {
             function_name: "sendAllMoney".to_owned(),
             header: None,
             input: Some(json!({ "dest_addr": client.giver_address().await })),
         }),
+        ..Default::default()
     };
 
     let remp_enabled = remp_enabled(&client).await;
@@ -521,8 +515,7 @@ async fn test_retries() {
                 deploy_set: DeploySet::some_with_tvc(tvc.clone()),
                 call_set: CallSet::some_with_function("constructor"),
                 signer: Signer::Keys { keys: keys.clone() },
-                processing_try_index: None,
-                address: None,
+                ..Default::default()
             },
             None,
         )
@@ -542,9 +535,8 @@ async fn test_retries() {
                             abi,
                             address,
                             call_set: CallSet::some_with_function("touch"),
-                            deploy_set: None,
-                            processing_try_index: None,
                             signer: Signer::Keys { keys },
+                            ..Default::default()
                         },
                         send_events: false,
                     },
@@ -571,8 +563,7 @@ async fn test_fees() {
                 deploy_set: DeploySet::some_with_tvc(tvc.clone()),
                 call_set: CallSet::some_with_function("constructor"),
                 signer: Signer::Keys { keys: keys.clone() },
-                processing_try_index: None,
-                address: None,
+                ..Default::default()
             },
             None,
         )
@@ -589,9 +580,8 @@ async fn test_fees() {
                 "bounce": false
             })
         ),
-        deploy_set: None,
-        processing_try_index: None,
         signer: Signer::Keys { keys },
+        ..Default::default()
     };
 
     let account: String = client.fetch_account(&address).await["boc"]

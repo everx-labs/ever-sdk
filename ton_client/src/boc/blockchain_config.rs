@@ -38,12 +38,12 @@ pub async fn get_blockchain_config(
     let config = if let Ok(block) = 
         deserialize_object_from_boc::<ton_block::Block>(&context, &params.block_boc, "block").await
     {
-        extract_config_from_block(block.object)?
+        extract_config_from_block(&block.object)?
     } else {
         let zerostate = deserialize_object_from_boc::<ton_block::ShardStateUnsplit>(
             &context, &params.block_boc, "zerostate"
         ).await?;
-        extract_config_from_zerostate(zerostate.object)?
+        extract_config_from_zerostate(&zerostate.object)?
     };
 
     let cell = config.serialize()
@@ -57,7 +57,7 @@ pub async fn get_blockchain_config(
     })
 }
 
-pub(crate) fn extract_config_from_block(block: ton_block::Block) -> ClientResult<ton_block::ConfigParams> {
+pub(crate) fn extract_config_from_block(block: &ton_block::Block) -> ClientResult<ton_block::ConfigParams> {
     let extra = block
         .read_extra()
         .map_err(|err| Error::invalid_boc(format!("can not read `extra` from block: {}", err)))?;
@@ -74,7 +74,7 @@ pub(crate) fn extract_config_from_block(block: ton_block::Block) -> ClientResult
     ))?.clone())
 }
 
-pub(crate) fn extract_config_from_zerostate(zerostate: ton_block::ShardStateUnsplit) -> ClientResult<ton_block::ConfigParams> {
+pub(crate) fn extract_config_from_zerostate(zerostate: &ton_block::ShardStateUnsplit) -> ClientResult<ton_block::ConfigParams> {
     let master = zerostate
         .read_custom()
         .map_err(|err| Error::invalid_boc(format!("can not read `master` from zerostate: {}", err)))?

@@ -115,9 +115,7 @@ async fn test_clock_sync() {
             abi: TestClient::abi(HELLO, None),
             address: Some(client.giver_address().await),
             call_set: CallSet::some_with_function("touch"),
-            deploy_set: None,
-            processing_try_index: None,
-            signer: Signer::None,
+            ..Default::default()
         })
         .await
         .unwrap();

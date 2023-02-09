@@ -45,7 +45,7 @@ pub async fn calc_storage_fee(
 
     let storage = account.storage_info().ok_or(Error::invalid_account_boc("Account is None"))?;
     let addr = account.get_addr().ok_or(Error::invalid_account_boc("Account is None"))?;
-    let config = crate::tvm::types::get_default_config(&context).await?;
+    let config = crate::net::network_params::get_default_params(&context).await?.blockchain_config;
 
     if storage.last_paid() == 0 {
         return Err(Error::invalid_account_boc("Account `last_paid` field is not initialized"));

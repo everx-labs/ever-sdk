@@ -39,7 +39,7 @@ pub use client::{ClientConfig, ClientContext};
 pub use errors::{Error, ErrorCode};
 
 pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket};
-pub(crate) use client::{AppObject, NetworkUID};
+pub(crate) use client::{AppObject, NetworkUID, NetworkParams};
 
 use crate::error::ClientResult;
 use crate::json_interface::runtime::Runtime;
