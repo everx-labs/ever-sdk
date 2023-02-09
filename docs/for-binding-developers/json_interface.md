@@ -90,7 +90,7 @@ void tc_destroy_context(uint32_t context);
       const configWithBindingInfo = {
           ...config,
           binding: {
-              library: "you-binding-library",
+              library: "your-library-name",
               version: "1.0.0",
           },
       };
