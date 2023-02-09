@@ -84,6 +84,19 @@ void tc_destroy_context(uint32_t context);
   Providing binding information will help users and binding authors to determine
   possible error reason.
   The best way is to merge users config with binding information before calling `tc_create_config`.
+  Typical code snippet to merge binding info:
+  ```typescript
+  function createContext(config: ClientConfig): number {
+      const configWithBindingInfo = {
+          ...config,
+          binding: {
+              library: "you-binding-library",
+              version: "1.0.0",
+          },
+      };
+      return tc_create_context(JSON.stringify(configWithBindingInfo)));
+  }
+  ```
 
 - `tc_destroy_context` – closes and releases all recourses that was allocated and opened 
   by library during serving functions related to provided context.
