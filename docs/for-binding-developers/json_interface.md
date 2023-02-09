@@ -56,7 +56,7 @@ invalid after the string will be destroyed.
 All library functions requires _context_ – the main library object that encapsulates 
 configuration and state data.
 
-Application can create several different contexts and use them all together. 
+Application can create many contexts and use them all together. 
 For example – creates two contexts that configured to work with different blockchain networks.
 
 Context related functions:
@@ -78,6 +78,13 @@ void tc_destroy_context(uint32_t context);
   uint32_t context = parse_create_context_json(json.content, json.len);
   tc_free_string(json_ptr);
   ```
+  Config contains optional `binding` section with information about binding.
+  It is good practice to provide this information into core library because
+  core library includes this information into logs, errors etc.
+  Providing binding information will help users and binding authors to determine
+  possible error reason.
+  The best way is to merge users config with binding information before calling `tc_create_config`.
+
 - `tc_destroy_context` – closes and releases all recourses that was allocated and opened 
   by library during serving functions related to provided context.
    
