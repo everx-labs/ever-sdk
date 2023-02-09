@@ -1,6 +1,5 @@
 use super::dinterface::{
-    decode_answer_id, get_arg, get_bool_arg, get_num_arg, DebotInterface,
-    InterfaceResult,
+    decode_answer_id, get_arg, get_bool_arg, get_num_arg, DebotInterface, InterfaceResult,
 };
 use super::routines;
 use super::TonClient;
@@ -337,20 +336,16 @@ pub(super) struct EncryptionBoxInfoResult {
     pub public_info: String,
 }
 
-use std::convert::From;
+use crate::error::ClientError;
+use std::convert::{From, TryInto};
+
 impl From<EncryptionBoxInfo> for EncryptionBoxInfoResult {
     fn from(info: EncryptionBoxInfo) -> Self {
         Self {
             algorithm: info.algorithm.unwrap_or_default(),
             hdpath: info.hdpath.unwrap_or_default(),
-            options: info
-                .options
-                .map(|v| v.to_string())
-                .unwrap_or_default(),
-            public_info: info
-                .public
-                .map(|v| v.to_string())
-                .unwrap_or_default(),
+            options: info.options.map(|v| v.to_string()).unwrap_or_default(),
+            public_info: info.public.map(|v| v.to_string()).unwrap_or_default(),
         }
     }
 }
@@ -411,7 +406,9 @@ impl SdkInterface {
 
     fn mnemonic_from_random(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
-        let dict = get_num_arg::<u8>(args, "dict")?;
+        let dict = get_num_arg::<u8>(args, "dict")?
+            .try_into()
+            .map_err(|err: ClientError| err.to_string())?;
         let word_count = get_num_arg::<u8>(args, "wordCount")?;
         let result = mnemonic_from_random(
             self.ton.clone(),
@@ -421,10 +418,7 @@ impl SdkInterface {
             },
         )
         .map_err(|e| format!("{}", e))?;
-        Ok((
-            answer_id,
-            json!({ "phrase": result.phrase }),
-        ))
+        Ok((answer_id, json!({ "phrase": result.phrase })))
     }
 
     fn mnemonic_derive_sign_keys(&self, args: &Value) -> InterfaceResult {
@@ -478,10 +472,7 @@ impl SdkInterface {
             },
         )
         .map_err(|e| format!("{}", e))?;
-        Ok((
-            answer_id,
-            json!({ "xprv": result.xprv }),
-        ))
+        Ok((answer_id, json!({ "xprv": result.xprv })))
     }
 
     fn hdkey_public_from_xprv(&self, args: &Value) -> InterfaceResult {
@@ -506,10 +497,7 @@ impl SdkInterface {
             },
         )
         .map_err(|e| format!("{}", e))?;
-        Ok((
-            answer_id,
-            json!({ "xprv": result.xprv }),
-        ))
+        Ok((answer_id, json!({ "xprv": result.xprv })))
     }
 
     fn hdkey_derive_from_xprv_path(&self, args: &Value) -> InterfaceResult {
@@ -521,10 +509,7 @@ impl SdkInterface {
             ParamsOfHDKeyDeriveFromXPrvPath { xprv, path },
         )
         .map_err(|e| format!("{}", e))?;
-        Ok((
-            answer_id,
-            json!({ "xprv": result.xprv }),
-        ))
+        Ok((answer_id, json!({ "xprv": result.xprv })))
     }
 
     fn hdkey_secret_from_xprv(&self, args: &Value) -> InterfaceResult {
@@ -570,10 +555,7 @@ impl SdkInterface {
             return Err(format!("start + count is out of range"));
         }
         let sub_str = src_str.get(start..end).ok_or(format!("substring failed"))?;
-        Ok((
-            answer_id,
-            json!({ "substr": sub_str }),
-        ))
+        Ok((answer_id, json!({ "substr": sub_str })))
     }
 
     fn nacl_box(&self, args: &Value) -> InterfaceResult {
@@ -765,7 +747,8 @@ impl SdkInterface {
             RegisteredSigningBox {
                 handle: box_handle.into(),
             },
-        ).await;
+        )
+        .await;
 
         let (result, key) = match result {
             Ok(val) => (0, format!("0x{}", val.pubkey)),
@@ -777,10 +760,8 @@ impl SdkInterface {
     async fn sign_hash(&self, args: &Value) -> InterfaceResult {
         let answer_id = decode_answer_id(args)?;
         let box_handle = get_num_arg::<u32>(args, "boxHandle")?;
-        let sign_int = decode_abi_bigint(&get_arg(&args, "hash")?)
-            .map_err(|e| e.to_string())?;
-        let sign_hash = hex::decode(format!("{:064x}", sign_int))
-            .map_err(|e| e.to_string())?;
+        let sign_int = decode_abi_bigint(&get_arg(&args, "hash")?).map_err(|e| e.to_string())?;
+        let sign_hash = hex::decode(format!("{:064x}", sign_int)).map_err(|e| e.to_string())?;
 
         let signature = signing_box_sign(
             self.ton.clone(),

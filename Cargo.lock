@@ -75,7 +75,7 @@ checksum = "2cb2f989d18dd141ab8ae82f64d1a8cdd37e0840f73a406896cf5e99502fab61"
 
 [[package]]
 name = "api_derive"
-version = "1.40.0"
+version = "1.41.0"
 dependencies = [
  "api_info",
  "quote",
@@ -85,7 +85,7 @@ dependencies = [
 
 [[package]]
 name = "api_info"
-version = "1.40.0"
+version = "1.41.0"
 dependencies = [
  "serde",
  "serde_derive",
@@ -94,7 +94,7 @@ dependencies = [
 
 [[package]]
 name = "api_test"
-version = "1.40.0"
+version = "1.41.0"
 dependencies = [
  "api_derive",
  "api_info",
@@ -2560,7 +2560,7 @@ dependencies = [
 
 [[package]]
 name = "ton_client"
-version = "1.40.0"
+version = "1.41.0"
 dependencies = [
  "aes",
  "api_derive",
@@ -2638,7 +2638,7 @@ dependencies = [
 
 [[package]]
 name = "ton_sdk"
-version = "1.40.0"
+version = "1.41.0"
 dependencies = [
  "api_derive",
  "api_info",
@@ -2740,7 +2740,7 @@ dependencies = [
 
 [[package]]
 name = "toncli"
-version = "1.40.0"
+version = "1.41.0"
 dependencies = [
  "api_info",
  "assert_cmd",
