@@ -7,6 +7,11 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `message_id` and `message_dst` fields are added to all `ProcessingEvent` variants
+- Config parameter `binding: { library: string, version: string }`. Binding authors should mix 
+   this parameter at context initialization.
+- `tonclient-binding-library` and `tonclient-binding-version` GraphQL request headers.
+- `Error.data.binding_library` and `Error.data.binding_version` error data fields. 
+
 
 ## [1.40.0] – 2023-01-11
 
