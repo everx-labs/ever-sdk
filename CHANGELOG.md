@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `message_id` and `message_dst` fields are added to all `ProcessingEvent` variants
+- signature ID and `CapSignatureWithId` capability is supported
+- `net.get_signature_id` function
+- `abi.get_signature_data` function ouput parameter `hash` is renamed to `unsigned`
 
 ## [1.40.0] – 2023-01-11
 
