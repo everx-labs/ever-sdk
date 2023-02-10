@@ -7,6 +7,9 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `message_id` and `message_dst` fields are added to all `ProcessingEvent` variants
+- signature ID and `CapSignatureWithId` capability is supported
+- `net.get_signature_id` function
+- `abi.get_signature_data` function ouput parameter `hash` is renamed to `unsigned`
 - Changed type of the `dictionary` parameter or mnemonic crypto functions and crypto config.
   Now it uses `MnemonicDictionary` enum type instead of `number`. `MnemonicDictionary` numeric 
   constants are compatible with previous values. 

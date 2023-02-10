@@ -832,7 +832,7 @@ fn test_get_compiler_version() {
 #[test]
 fn encode_external_in_message() {
     TestClient::init_log();
-    let client = TestClient::new();
+    let client = TestClient::new_with_config(serde_json::json!({}));
     let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
     let keys = KeyPair {
         public: "4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499".into(),
@@ -844,7 +844,6 @@ fn encode_external_in_message() {
 
     let deploy_params = |signing: Signer| ParamsOfEncodeMessage {
         abi: abi.clone(),
-        address: None,
         deploy_set: Some(DeploySet {
             tvc: events_tvc.clone(),
             ..Default::default()
@@ -859,7 +858,7 @@ fn encode_external_in_message() {
             input: None,
         }),
         signer: signing,
-        processing_try_index: None,
+        ..Default::default()
     };
 
     let abi_encoded: ResultOfEncodeMessage = client

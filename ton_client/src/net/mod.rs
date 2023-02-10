@@ -26,6 +26,9 @@ pub use iterators::{
     iterator_next, remove_iterator, ChainIterator, ParamsOfIteratorNext, RegisteredIterator,
     ResultOfIteratorNext,
 };
+pub use network_params::{
+    get_signature_id, ResultOfGetSignatureId
+};
 pub use queries::{
     aggregate_collection, query, query_collection, query_counterparties, wait_for_collection,
     ParamsOfQuery, ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery,
@@ -58,6 +61,7 @@ mod endpoint;
 mod errors;
 mod gql;
 pub(crate) mod iterators;
+pub(crate) mod network_params;
 pub(crate) mod queries;
 mod server_link;
 pub(crate) mod subscriptions;

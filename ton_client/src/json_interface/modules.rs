@@ -540,6 +540,10 @@ fn register_net(handlers: &mut RuntimeHandlers) {
         crate::net::iterators::remove_iterator,
         crate::net::iterators::remove_iterator_api,
     );
+    module.register_async_fn_no_args(
+        crate::net::get_signature_id,
+        crate::net::network_params::get_signature_id_api
+    );
     module.register();
 }
 
