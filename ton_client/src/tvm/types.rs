@@ -13,17 +13,11 @@
  */
 
 use super::Error;
-use crate::client::ClientContext;
+use crate::client::{ClientContext, NetworkParams};
 use crate::error::ClientResult;
-use crate::{
-    boc::{
-        blockchain_config::{extract_config_from_block, extract_config_from_zerostate},
-        internal::{deserialize_object_from_base64, deserialize_object_from_boc},
-    },
-    net::{OrderBy, ParamsOfQueryCollection, ServerLink, SortDirection},
-};
+use crate::net::network_params::get_default_params;
+use crate::boc::internal::deserialize_object_from_boc;
 use std::sync::Arc;
-use ton_block::Deserializable;
 use ton_executor::BlockchainConfig;
 use ton_vm::executor::BehaviorModifiers;
 
@@ -40,10 +34,14 @@ pub struct ExecutionOptions {
     /// Overrides standard TVM behaviour.
     /// If set to `true` then CHKSIG always will return `true`.
     pub chksig_always_succeed: Option<bool>,
+    /// signature ID to be used in signature verifying instructions when CapSignatureWithId
+    /// capability is enabled
+    pub signature_id: Option<i32>,
 }
 
 pub(crate) struct ResolvedExecutionOptions {
     pub blockchain_config: Arc<BlockchainConfig>,
+    pub signature_id: i32,
     pub block_time: u32,
     pub block_lt: u64,
     pub transaction_lt: u64,
@@ -63,7 +61,9 @@ impl ResolvedExecutionOptions {
     ) -> ClientResult<Self> {
         let options = options.unwrap_or_default();
 
-        let config = resolve_blockchain_config(context, options.blockchain_config).await?;
+        let params = resolve_network_params(
+            context, options.blockchain_config, options.signature_id
+        ).await?;
 
         let block_lt = options
             .block_lt
@@ -79,87 +79,43 @@ impl ResolvedExecutionOptions {
         Ok(Self {
             block_lt,
             block_time,
-            blockchain_config: config,
+            blockchain_config: params.blockchain_config,
+            signature_id: params.global_id,
             transaction_lt,
             behavior_modifiers,
         })
     }
 }
 
-pub async fn resolve_blockchain_config(
+pub(crate) async fn resolve_network_params(
     context: &Arc<ClientContext>,
     provided_config: Option<String>,
-) -> ClientResult<Arc<BlockchainConfig>> {
-    if let Some(config) = provided_config {
-        blockchain_config_from_boc(context, &config).await.map(Arc::new)
-    } else {
-        get_default_config(context).await
+    provided_global_id: Option<i32>,
+) -> ClientResult<NetworkParams> {
+    match (provided_config, provided_global_id.or(context.config.network.signature_id)) {
+        (Some(config), Some(global_id)) => {
+            Ok(NetworkParams {
+                blockchain_config: Arc::new(blockchain_config_from_boc(context, &config).await?),
+                global_id,
+            })
+        },
+        (Some(config), None) => {
+            let default = get_default_params(context).await?;
+            Ok(NetworkParams {
+                blockchain_config: Arc::new(blockchain_config_from_boc(context, &config).await?),
+                global_id: default.global_id,
+            })
+        },
+        (None, Some(global_id)) => {
+            let default = get_default_params(context).await?;
+            Ok(NetworkParams {
+                blockchain_config: default.blockchain_config,
+                global_id,
+            })
+        },
+        (None, None) => {
+            get_default_params(context).await
+        }
     }
 }
 
-pub(crate) fn mainnet_config() -> BlockchainConfig {
-    let bytes = include_bytes!("../mainnet_config_10660619.boc");
-    BlockchainConfig::with_config(
-        ton_block::ConfigParams::construct_from_bytes(bytes).unwrap()
-    ).unwrap()
-}
-
-pub(crate) async fn get_default_config(context: &Arc<ClientContext>) -> ClientResult<Arc<BlockchainConfig>> {
-    if let Some(config) = &*context.blockchain_config.read().await {
-        return Ok(config.clone());
-    }
-
-    let mut config_lock = context.blockchain_config.write().await;
-    if let Some(config) = &*config_lock {
-        return Ok(config.clone());
-    }
-
-    let config = if let Ok(link) = context.get_server_link() {
-        get_network_config(link)
-            .await
-            .unwrap_or_else(|_| mainnet_config())
-    } else {
-        mainnet_config()
-    };
-    let config = Arc::new(config);
-
-    *config_lock = Some(config.clone());
-
-    Ok(config)
-}
-
-pub(crate) async fn get_network_config(link: &ServerLink) -> ClientResult<BlockchainConfig> {
-    let key_block = link.query_collection(ParamsOfQueryCollection {
-        collection: "blocks".to_owned(),
-        filter: Some(serde_json::json!({
-            "key_block": { "eq": true },
-            "workchain_id": { "eq": -1 },
-        })),
-        order: Some(vec![OrderBy { path: "seq_no".to_owned(), direction: SortDirection::DESC }]),
-        limit: Some(1),
-        result: "boc".to_owned(),
-    }, None).await?;
-
-    let config = if let Some(block_boc) = key_block[0]["boc"].as_str() {
-        let block = deserialize_object_from_base64(block_boc, "block")?;
-        extract_config_from_block(block.object)?
-    } else {
-        let zerostate = link.query_collection(ParamsOfQueryCollection {
-            collection: "zerostates".to_owned(),
-            filter: Some(serde_json::json!({
-                "id": { "eq": "zerostate:-1" },
-            })),
-            result: "boc".to_owned(),
-            ..Default::default()
-        }, None).await?;
-
-        let boc = zerostate[0]["boc"].as_str().ok_or(
-            Error::can_not_read_blockchain_config("Can not find key block or zerostate"))?;
-
-        let zerostate = deserialize_object_from_base64(boc, "block")?;
-        extract_config_from_zerostate(zerostate.object)?
-    };
-
-    BlockchainConfig::with_config(config)
-        .map_err(|err| Error::can_not_read_blockchain_config(err))
-}

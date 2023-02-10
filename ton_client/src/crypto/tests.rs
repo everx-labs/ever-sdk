@@ -1,3 +1,4 @@
+use std::convert::TryInto;
 use super::*;
 use crate::client::ParamsOfAppRequest;
 use crate::crypto::boxes::crypto_box::{
@@ -454,7 +455,7 @@ fn mnemonic() {
                 .request(
                     "crypto.mnemonic_from_random",
                     ParamsOfMnemonicFromRandom {
-                        dictionary: Some(dictionary),
+                        dictionary: Some(dictionary.try_into().unwrap()),
                         word_count: Some(*word_count),
                     },
                 )
@@ -468,7 +469,7 @@ fn mnemonic() {
             "crypto.mnemonic_from_entropy",
             ParamsOfMnemonicFromEntropy {
                 entropy: "00112233445566778899AABBCCDDEEFF".into(),
-                dictionary: Some(1),
+                dictionary: Some(MnemonicDictionary::English),
                 word_count: Some(12),
             },
         )
@@ -484,7 +485,7 @@ fn mnemonic() {
                 .request(
                     "crypto.mnemonic_from_random",
                     ParamsOfMnemonicFromRandom {
-                        dictionary: Some(dictionary),
+                        dictionary: Some(dictionary.try_into().unwrap()),
                         word_count: Some(*word_count),
                     },
                 )
@@ -494,7 +495,7 @@ fn mnemonic() {
                     "crypto.mnemonic_verify",
                     ParamsOfMnemonicVerify {
                         phrase: result.phrase,
-                        dictionary: Some(dictionary),
+                        dictionary: Some(dictionary.try_into().unwrap()),
                         word_count: Some(*word_count),
                     },
                 )
@@ -518,7 +519,7 @@ fn mnemonic() {
     let result: KeyPair = client.request("crypto.mnemonic_derive_sign_keys", ParamsOfMnemonicDeriveSignKeys {
         phrase: "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle".into(),
         path: None,
-        dictionary: Some(0),
+        dictionary: Some(MnemonicDictionary::Ton),
         word_count: Some(24),
     }).unwrap();
     let result: ResultOfConvertPublicKeyToTonSafeFormat = client
@@ -537,7 +538,7 @@ fn mnemonic() {
     let result: KeyPair = client.request("crypto.mnemonic_derive_sign_keys", ParamsOfMnemonicDeriveSignKeys {
         phrase: "unit follow zone decline glare flower crisp vocal adapt magic much mesh cherry teach mechanic rain float vicious solution assume hedgehog rail sort chuckle".into(),
         path: Some("m".into()),
-        dictionary: Some(0),
+        dictionary: Some(MnemonicDictionary::Ton),
         word_count: Some(24),
     }).unwrap();
     let result: ResultOfConvertPublicKeyToTonSafeFormat = client
@@ -592,7 +593,7 @@ fn mnemonic() {
         .request(
             "crypto.mnemonic_from_random",
             ParamsOfMnemonicFromRandom {
-                dictionary: Some(0),
+                dictionary: Some(MnemonicDictionary::Ton),
                 word_count: Some(12),
             },
         )
@@ -603,7 +604,7 @@ fn mnemonic() {
         .request(
             "crypto.mnemonic_from_random",
             ParamsOfMnemonicFromRandom {
-                dictionary: Some(1),
+                dictionary: Some(MnemonicDictionary::English),
                 word_count: Some(12),
             },
         )
@@ -1273,7 +1274,7 @@ async fn test_crypto_boxes() -> ton_types::Result<()> {
             ParamsOfCreateCryptoBox {
                 secret_encryption_salt: salt.to_string(),
                 secret: CryptoBoxSecret::RandomSeedPhrase {
-                    dictionary: Default::default(),
+                    dictionary: MnemonicDictionary::Ton,
                     wordcount: 12,
                 },
             },
@@ -1293,7 +1294,7 @@ async fn test_crypto_boxes() -> ton_types::Result<()> {
             "crypto.mnemonic_verify",
             ParamsOfMnemonicVerify {
                 phrase: seed_phrase.phrase.clone(),
-                dictionary: Some(0),
+                dictionary: Some(MnemonicDictionary::Ton),
                 word_count: Some(12),
             },
         )
@@ -1334,7 +1335,7 @@ async fn test_crypto_boxes() -> ton_types::Result<()> {
                 secret_encryption_salt: salt.to_string(),
                 secret: CryptoBoxSecret::PredefinedSeedPhrase {
                     phrase: seed_phrase.phrase.clone(),
-                    dictionary: 0,
+                    dictionary: MnemonicDictionary::Ton,
                     wordcount: 12,
                 },
             },
@@ -1624,7 +1625,7 @@ async fn test_crypto_box_derive_key_cache() -> ton_types::Result<()> {
                 ParamsOfCreateCryptoBox {
                     secret_encryption_salt: salt.to_string(),
                     secret: CryptoBoxSecret::PredefinedSeedPhrase {
-                        dictionary: 1,
+                        dictionary: MnemonicDictionary::English,
                         wordcount: 12,
                         phrase: phrase.into(),
                     },
@@ -1643,7 +1644,7 @@ async fn test_crypto_box_derive_key_cache() -> ton_types::Result<()> {
                 ParamsOfCreateCryptoBox {
                     secret_encryption_salt: format!("{}{}", salt, i),
                     secret: CryptoBoxSecret::PredefinedSeedPhrase {
-                        dictionary: 1,
+                        dictionary: MnemonicDictionary::English,
                         wordcount: 12,
                         phrase: phrase.into(),
                     },

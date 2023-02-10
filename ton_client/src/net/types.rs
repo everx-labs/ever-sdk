@@ -325,6 +325,15 @@ pub struct NetworkConfig {
     )]
     pub next_remp_status_timeout: u32,
 
+    /// Network segnature ID which is used by VM in signature verifying instructions if capability
+    /// `CapSignatureWithId` is enabled in blockchain configuration parameters. 
+    /// 
+    /// This parameter should be set to `global_id` field from any blockchain block if network can 
+    /// not be reachable at the moment of message encoding and the message is aimed to be sent into 
+    /// network with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically 
+    /// inside message encoding functions
+    pub signature_id: Option<i32>,
+
     /// Access key to GraphQL API (Project secret)
     pub access_key: Option<String>,
 }
@@ -364,6 +373,7 @@ impl Default for NetworkConfig {
             queries_protocol: default_queries_protocol(),
             first_remp_status_timeout: default_first_remp_status_timeout(),
             next_remp_status_timeout: default_next_remp_status_timeout(),
+            signature_id: None,
             access_key: None,
         }
     }

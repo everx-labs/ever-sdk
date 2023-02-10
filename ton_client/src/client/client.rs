@@ -51,6 +51,12 @@ pub(crate) struct NetworkUID {
     pub(crate) first_master_block_root_hash: UInt256,
 }
 
+#[derive(Clone, Default)]
+pub(crate) struct NetworkParams {
+    pub(crate) blockchain_config: Arc<ton_executor::BlockchainConfig>,
+    pub(crate) global_id: i32,
+}
+
 pub struct NetworkContext {
     pub(crate) server_link: Option<ServerLink>,
     pub(crate) subscriptions: Mutex<HashMap<u32, mpsc::Sender<SubscriptionAction>>>,
@@ -65,7 +71,7 @@ pub struct ClientContext {
     pub(crate) debots: LockfreeMap<u32, Mutex<DEngine>>,
     pub(crate) boxes: Boxes,
     pub(crate) bocs: Bocs,
-    pub(crate) blockchain_config: RwLock<Option<Arc<ton_executor::BlockchainConfig>>>,
+    pub(crate) network_params: RwLock<Option<NetworkParams>>,
 
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
     pub(crate) proofs_storage: RwLock<Option<Arc<dyn KeyValueStorage>>>,
@@ -123,7 +129,7 @@ Note that default values are used if parameters are omitted in config"#,
             debots: LockfreeMap::new(),
             boxes: Default::default(),
             bocs,
-            blockchain_config: RwLock::new(None),
+            network_params: RwLock::new(None),
             app_requests: Mutex::new(HashMap::new()),
             proofs_storage: Default::default(),
             derived_keys: DerivedKeys::new(env),

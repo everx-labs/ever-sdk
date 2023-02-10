@@ -11,7 +11,12 @@ All notable changes to this project will be documented in this file.
    this parameter at context initialization.
 - `tonclient-binding-library` and `tonclient-binding-version` GraphQL request headers.
 - `Error.data.binding_library` and `Error.data.binding_version` error data fields. 
-
+- signature ID and `CapSignatureWithId` capability is supported
+- `net.get_signature_id` function
+- `abi.get_signature_data` function ouput parameter `hash` is renamed to `unsigned`
+- Changed type of the `dictionary` parameter or mnemonic crypto functions and crypto config.
+  Now it uses `MnemonicDictionary` enum type instead of `number`. `MnemonicDictionary` numeric 
+  constants are compatible with previous values. 
 
 ## [1.40.0] – 2023-01-11
 

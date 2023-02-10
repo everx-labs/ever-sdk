@@ -16,32 +16,72 @@ use crate::crypto;
 use crate::crypto::hdkey::HDPrivateKey;
 use crate::crypto::internal::{hmac_sha512, key256, pbkdf2_hmac_sha512};
 use crate::crypto::keys::KeyPair;
-use crate::crypto::{CryptoConfig, default_hdkey_compliant};
+use crate::crypto::{default_hdkey_compliant, CryptoConfig};
 use crate::encoding::hex_decode;
-use crate::error::ClientResult;
+use crate::error::{ClientError, ClientResult};
 use bip39::{Language, Mnemonic, MnemonicType};
 use ed25519_dalek::{PublicKey, SecretKey};
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
 use rand::RngCore;
 use sha2::Sha512;
+use std::convert::TryFrom;
+use zeroize::Zeroize;
 
-const TON_DICTIONARY: u8 = 0;
-const ENGLISH_DICTIONARY: u8 = 1;
-const CHINESE_SIMPLIFIED_DICTIONARY: u8 = 2;
-const CHINESE_TRADITIONAL_DICTIONARY: u8 = 3;
-const FRENCH_DICTIONARY: u8 = 4;
-const ITALIAN_DICTIONARY: u8 = 5;
-const JAPANESE_DICTIONARY: u8 = 6;
-const KOREAN_DICTIONARY: u8 = 7;
-const SPANISH_DICTIONARY: u8 = 8;
+#[derive(Copy, Clone, Debug, Deserialize, Serialize, Zeroize, PartialEq, ApiType)]
+#[repr(u8)]
+pub enum MnemonicDictionary {
+    /// TON compatible dictionary
+    Ton = 0,
+    /// English BIP-39 dictionary
+    English = 1,
+    /// Chinese simplified BIP-39 dictionary
+    ChineseSimplified = 2,
+    /// Chinese traditional BIP-39 dictionary
+    ChineseTraditional = 3,
+    /// French BIP-39 dictionary
+    French = 4,
+    /// Italian BIP-39 dictionary
+    Italian = 5,
+    /// Japanese BIP-39 dictionary
+    Japanese = 6,
+    /// Korean BIP-39 dictionary
+    Korean = 7,
+    /// Spanish BIP-39 dictionary
+    Spanish = 8,
+}
+
+impl Default for MnemonicDictionary {
+    fn default() -> Self {
+        Self::English
+    }
+}
+
+impl TryFrom<u8> for MnemonicDictionary {
+    type Error = ClientError;
+
+    fn try_from(value: u8) -> Result<Self, Self::Error> {
+        Ok(match value {
+            0 => Self::Ton,
+            1 => Self::English,
+            2 => Self::ChineseSimplified,
+            3 => Self::ChineseTraditional,
+            4 => Self::French,
+            5 => Self::Italian,
+            6 => Self::Japanese,
+            7 => Self::Korean,
+            8 => Self::Spanish,
+            _ => return Err(crypto::Error::bip39_invalid_dictionary(value)),
+        })
+    }
+}
 
 //---------------------------------------------------------------------------------- mnemonic_words
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfMnemonicWords {
     /// Dictionary identifier
-    pub dictionary: Option<u8>,
+    pub dictionary: Option<MnemonicDictionary>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
@@ -71,7 +111,7 @@ pub fn mnemonic_words(
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfMnemonicFromRandom {
     /// Dictionary identifier
-    pub dictionary: Option<u8>,
+    pub dictionary: Option<MnemonicDictionary>,
     /// Mnemonic word count
     pub word_count: Option<u8>,
 }
@@ -103,7 +143,7 @@ pub struct ParamsOfMnemonicFromEntropy {
     /// Entropy bytes. Hex encoded.
     pub entropy: String,
     /// Dictionary identifier
-    pub dictionary: Option<u8>,
+    pub dictionary: Option<MnemonicDictionary>,
     /// Mnemonic word count
     pub word_count: Option<u8>,
 }
@@ -133,7 +173,7 @@ pub struct ParamsOfMnemonicVerify {
     /// Phrase
     pub phrase: String,
     /// Dictionary identifier
-    pub dictionary: Option<u8>,
+    pub dictionary: Option<MnemonicDictionary>,
     /// Word count
     pub word_count: Option<u8>,
 }
@@ -168,13 +208,13 @@ pub struct ParamsOfMnemonicDeriveSignKeys {
     /// Derivation path, for instance "m/44'/396'/0'/0/0"
     pub path: Option<String>,
     /// Dictionary identifier
-    pub dictionary: Option<u8>,
+    pub dictionary: Option<MnemonicDictionary>,
     /// Word count
     pub word_count: Option<u8>,
 }
 
 /// Derives a key pair for signing from the seed phrase
-/// 
+///
 /// Validates the seed phrase, generates master key and then derives
 /// the key pair from the master key and the specified path
 #[api_function]
@@ -193,14 +233,22 @@ pub fn mnemonic_derive_sign_keys(
 
 pub(super) fn mnemonics(
     config: &CryptoConfig,
-    dictionary: Option<u8>,
+    dictionary: Option<MnemonicDictionary>,
     word_count: Option<u8>,
 ) -> ClientResult<Box<dyn CryptoMnemonic>> {
     let dictionary = dictionary.unwrap_or(config.mnemonic_dictionary);
     let word_count = word_count.unwrap_or(config.mnemonic_word_count);
-    if dictionary == TON_DICTIONARY {
-        return Ok(Box::new(TonMnemonic::new(word_count)));
-    }
+    let language = match dictionary {
+        MnemonicDictionary::English => Language::English,
+        MnemonicDictionary::ChineseSimplified => Language::ChineseSimplified,
+        MnemonicDictionary::ChineseTraditional => Language::ChineseTraditional,
+        MnemonicDictionary::French => Language::French,
+        MnemonicDictionary::Italian => Language::Italian,
+        MnemonicDictionary::Japanese => Language::Japanese,
+        MnemonicDictionary::Korean => Language::Korean,
+        MnemonicDictionary::Spanish => Language::Spanish,
+        MnemonicDictionary::Ton => return Ok(Box::new(TonMnemonic::new(word_count))),
+    };
     let mnemonic_type = match word_count {
         12 => MnemonicType::Words12,
         15 => MnemonicType::Words15,
@@ -208,17 +256,6 @@ pub(super) fn mnemonics(
         21 => MnemonicType::Words21,
         24 => MnemonicType::Words24,
         _ => return Err(crypto::Error::bip39_invalid_word_count(word_count)),
-    };
-    let language = match dictionary {
-        ENGLISH_DICTIONARY => Language::English,
-        CHINESE_SIMPLIFIED_DICTIONARY => Language::ChineseSimplified,
-        CHINESE_TRADITIONAL_DICTIONARY => Language::ChineseTraditional,
-        FRENCH_DICTIONARY => Language::French,
-        ITALIAN_DICTIONARY => Language::Italian,
-        JAPANESE_DICTIONARY => Language::Japanese,
-        KOREAN_DICTIONARY => Language::Korean,
-        SPANISH_DICTIONARY => Language::Spanish,
-        _ => return Err(crypto::Error::bip39_invalid_dictionary(dictionary)),
     };
     Ok(Box::new(Bip39Mnemonic::new(mnemonic_type, language)))
 }
