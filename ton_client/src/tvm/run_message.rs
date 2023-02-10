@@ -393,7 +393,7 @@ where
         last_tr_lt: Arc::new(AtomicU64::new(options.transaction_lt)),
         behavior_modifiers: Some(options.behavior_modifiers),
         seed_block: UInt256::rand(),
-        signature_id: options.global_id,
+        signature_id: options.signature_id,
         ..ExecuteParams::default()
     };
     let transaction = match executor.execute_with_libs_and_params(Some(&msg), &mut account_root, params) {

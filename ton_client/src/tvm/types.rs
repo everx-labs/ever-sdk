@@ -41,7 +41,7 @@ pub struct ExecutionOptions {
 
 pub(crate) struct ResolvedExecutionOptions {
     pub blockchain_config: Arc<BlockchainConfig>,
-    pub global_id: i32,
+    pub signature_id: i32,
     pub block_time: u32,
     pub block_lt: u64,
     pub transaction_lt: u64,
@@ -80,7 +80,7 @@ impl ResolvedExecutionOptions {
             block_lt,
             block_time,
             blockchain_config: params.blockchain_config,
-            global_id: params.global_id,
+            signature_id: params.global_id,
             transaction_lt,
             behavior_modifiers,
         })

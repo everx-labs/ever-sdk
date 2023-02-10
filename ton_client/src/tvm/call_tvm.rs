@@ -16,7 +16,7 @@ use super::types::ResolvedExecutionOptions;
 use crate::{error::ClientResult, encoding::slice_from_cell};
 use crate::tvm::Error;
 use ton_block::{
-    Account, CommonMsgInfo, ConfigParams, CurrencyCollection, Deserializable, GlobalCapabilities,
+    Account, CommonMsgInfo, ConfigParams, CurrencyCollection, Deserializable,
     Message, MsgAddressInt, OutAction, OutActions, Serializable,
 };
 use ton_types::{Cell, HashmapType, SliceData, UInt256};
@@ -46,13 +46,6 @@ pub(crate) fn call_tvm(
         .put(4, &mut StackItem::Cell(data))
         .map_err(|err| Error::internal_error(format!("can not put data to registers: {}", err)))?;
 
-    let capabilities = options.blockchain_config.raw_config().capabilities() |
-        GlobalCapabilities::CapInitCodeHash as u64 |
-        GlobalCapabilities::CapMycode as u64 |
-        GlobalCapabilities::CapStorageFeeToTvm as u64;
-    #[cfg(feature = "include-zstd")]
-    let capabilities = capabilities | GlobalCapabilities::CapDiff as u64;
-
     let mut sci = build_contract_info(
         options.blockchain_config.raw_config(),
         addr,
@@ -63,7 +56,7 @@ pub(crate) fn call_tvm(
         code.clone(),
         account.init_code_hash(),
     );
-    sci.capabilities |= capabilities;
+    sci.capabilities = options.blockchain_config.capabilites();
     ctrls
         .put(7, &mut sci.into_temp_data_item())
         .map_err(|err| Error::internal_error(format!("can not put SCI to registers: {}", err)))?;
@@ -72,10 +65,7 @@ pub(crate) fn call_tvm(
     let gas = Gas::new(gas_limit, 0, gas_limit, 10);
 
     let mut engine = Engine::with_capabilities(
-        // TODO: use specific blockchain configs when they will be available
-        // TODO: for now use maximum available capabilities
-        // options.blockchain_config.capabilities()
-        capabilities
+        options.blockchain_config.capabilites()
     ).setup(
         slice_from_cell(code)?,
         Some(ctrls),
@@ -83,7 +73,7 @@ pub(crate) fn call_tvm(
         Some(gas),
     );
 
-    engine.set_signature_id(options.global_id);
+    engine.set_signature_id(options.signature_id);
     engine.modify_behavior(options.behavior_modifiers);
 
     match engine.execute() {

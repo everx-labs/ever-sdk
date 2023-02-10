@@ -26,7 +26,7 @@ use crate::boc::{
 use crate::error::ClientResult;
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
-use crate::net::network_params::mainnet_config;
+use crate::net::network_params::offline_config;
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
 use crate::tests::{TestClient, EXCEPTION, HELLO, SUBSCRIBE};
 use api_info::ApiModule;
@@ -867,10 +867,10 @@ async fn test_resolve_blockchain_config() {
         .await
         .unwrap()
         .blockchain_config;
-    assert_eq!(config.raw_config(), mainnet_config().0.raw_config());
+    assert_eq!(config.raw_config(), offline_config().0.raw_config());
 
     let config = resolve_network_params(&net_context, None, None).await.unwrap().blockchain_config;
-    assert_ne!(config.raw_config(), mainnet_config().0.raw_config());
+    assert_ne!(config.raw_config(), offline_config().0.raw_config());
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -1203,7 +1203,7 @@ async fn test_signature_id() {
     let keys = client.generate_sign_keys();
     let signer = Signer::Keys { keys };
 
-    let (orig_config, global_id) = mainnet_config();
+    let (orig_config, global_id) = offline_config();
     let mut config = orig_config.raw_config().clone();
     let mut global_version = config.get_global_version().unwrap();
     global_version.capabilities |= GlobalCapabilities::CapSignatureWithId as u64;

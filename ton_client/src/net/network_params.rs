@@ -42,8 +42,8 @@ pub async fn get_signature_id(context: std::sync::Arc<ClientContext>) -> ClientR
     }
 }
 
-pub(crate) fn mainnet_config() -> (BlockchainConfig, i32) {
-    let bytes = include_bytes!("../mainnet_config_10660619.boc");
+pub(crate) fn offline_config() -> (BlockchainConfig, i32) {
+    let bytes = include_bytes!("../default_config.boc");
     (
         BlockchainConfig::with_config(
             ton_block::ConfigParams::construct_from_bytes(bytes).unwrap()
@@ -65,9 +65,9 @@ pub(crate) async fn get_default_params(context: &Arc<ClientContext>) -> ClientRe
     let (config, global_id) = if let Ok(link) = context.get_server_link() {
         query_network_params(link)
             .await
-            .unwrap_or_else(|_| mainnet_config())
+            .unwrap_or_else(|_| offline_config())
     } else {
-        mainnet_config()
+        offline_config()
     };
     let params = NetworkParams { 
         blockchain_config: Arc::new(config),

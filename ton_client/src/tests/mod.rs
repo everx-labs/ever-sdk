@@ -398,7 +398,7 @@ impl TestClient {
 
     pub fn tvc(name: &str, abi_version: Option<u8>) -> String {
         base64::encode(
-            &std::fs::read(dbg!(format!("{}{}.tvc", Self::contracts_path(abi_version), name))).unwrap(),
+            &std::fs::read(format!("{}{}.tvc", Self::contracts_path(abi_version), name)).unwrap(),
         )
     }
 
