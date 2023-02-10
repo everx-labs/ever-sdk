@@ -304,7 +304,7 @@
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "BindingConfig"
+                "ref_name": "client.BindingConfig"
               },
               "summary": null,
               "description": null
@@ -568,6 +568,32 @@
                 "type": "String"
               },
               "summary": "Access key to GraphQL API (Project secret)",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "BindingConfig",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "library",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "version",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "String"
+              },
+              "summary": null,
               "description": null
             }
           ],
