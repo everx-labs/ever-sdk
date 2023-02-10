@@ -2470,8 +2470,8 @@ dependencies = [
 
 [[package]]
 name = "ton_abi"
-version = "2.3.54"
-source = "git+https://github.com/tonlabs/ton-labs-abi.git?tag=2.3.54#9f74516f372373a1800e164e42b6912ee0d411e5"
+version = "2.3.65"
+source = "git+https://github.com/tonlabs/ever-abi.git?tag=2.3.65#00fca4378ed42feb776b759cee8f08adf696630c"
 dependencies = [
  "base64 0.10.1",
  "byteorder",
@@ -2487,13 +2487,13 @@ dependencies = [
  "serde_json",
  "sha2 0.10.6",
  "ton_block",
- "ton_types 1.12.6",
+ "ton_types 1.12.7",
 ]
 
 [[package]]
 name = "ton_api"
-version = "0.2.167"
-source = "git+https://github.com/tonlabs/ton-labs-tl.git?tag=0.2.167#428777b6540f47e44bfe7c7330aa0328db3a413b"
+version = "0.2.178"
+source = "git+https://github.com/tonlabs/ever-tl.git?tag=0.2.178#65063ea49048c33007ee2a8abdcfd0a68791a4e9"
 dependencies = [
  "byteorder",
  "extfmt",
@@ -2507,13 +2507,13 @@ dependencies = [
  "serde_json",
  "ton_block",
  "ton_tl_codegen",
- "ton_types 1.12.6",
+ "ton_types 1.12.7",
 ]
 
 [[package]]
 name = "ton_block"
-version = "1.9.18"
-source = "git+https://github.com/tonlabs/ton-labs-block.git?tag=1.9.18#92e30b957192b566b81f622da337f0705a5fc65a"
+version = "1.9.28"
+source = "git+https://github.com/tonlabs/ever-block.git?tag=1.9.28#2d4130374d6b71e51156c51a589bfb92a05121bb"
 dependencies = [
  "base64 0.13.1",
  "crc 3.0.0",
@@ -2525,13 +2525,13 @@ dependencies = [
  "num",
  "num-traits",
  "sha2 0.10.6",
- "ton_types 1.12.6",
+ "ton_types 1.12.7",
 ]
 
 [[package]]
 name = "ton_block_json"
-version = "0.7.83"
-source = "git+https://github.com/tonlabs/ton-labs-block-json.git?tag=0.7.83#ad93ae1a98b77bd14ca7b19f503bf3907461e151"
+version = "0.7.95"
+source = "git+https://github.com/tonlabs/ever-block-json.git?tag=0.7.95#74639a4049778f4c31fa065bec3429629f1891db"
 dependencies = [
  "base64 0.13.1",
  "failure",
@@ -2543,7 +2543,7 @@ dependencies = [
  "serde_json",
  "ton_api",
  "ton_block",
- "ton_types 1.12.6",
+ "ton_types 1.12.7",
 ]
 
 [[package]]
@@ -2603,7 +2603,7 @@ dependencies = [
  "ton_client_processing",
  "ton_executor",
  "ton_sdk",
- "ton_types 1.12.6",
+ "ton_types 1.12.7",
  "ton_vm",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2628,19 +2628,19 @@ dependencies = [
  "serde_repr",
  "tokio",
  "ton_block",
- "ton_types 1.12.6",
+ "ton_types 1.12.7",
 ]
 
 [[package]]
 name = "ton_executor"
-version = "1.15.154"
-source = "git+https://github.com/tonlabs/ton-labs-executor.git?tag=1.15.154#39891cf0c01ddc298a6b7e4c470ea1326e53c679"
+version = "1.15.173"
+source = "git+https://github.com/tonlabs/ever-executor.git?tag=1.15.173#8a5beb9a08f3e3a518a1512944de0ae129d7c9b2"
 dependencies = [
  "failure",
  "lazy_static",
  "log",
  "ton_block",
- "ton_types 1.12.6",
+ "ton_types 1.12.7",
  "ton_vm",
 ]
 
@@ -2665,14 +2665,13 @@ dependencies = [
  "sha2 0.9.9",
  "ton_abi",
  "ton_block",
- "ton_types 1.12.6",
- "ton_vm",
+ "ton_types 1.12.7",
 ]
 
 [[package]]
 name = "ton_tl_codegen"
 version = "0.0.2"
-source = "git+https://github.com/tonlabs/ton-labs-tl.git?tag=0.2.167#428777b6540f47e44bfe7c7330aa0328db3a413b"
+source = "git+https://github.com/tonlabs/ever-tl.git?tag=0.2.178#65063ea49048c33007ee2a8abdcfd0a68791a4e9"
 dependencies = [
  "crc 1.8.1",
  "failure",
@@ -2706,8 +2705,8 @@ dependencies = [
 
 [[package]]
 name = "ton_types"
-version = "1.12.6"
-source = "git+https://github.com/tonlabs/ton-labs-types.git?tag=1.12.6#8e218813db6bacc138dbbec7ab4ccbf84220da31"
+version = "1.12.7"
+source = "git+https://github.com/tonlabs/ever-types.git?tag=1.12.7#5acf1cc4bf275bd1c58040581df469161297ee4d"
 dependencies = [
  "base64 0.13.1",
  "crc 1.8.1",
@@ -2726,8 +2725,8 @@ dependencies = [
 
 [[package]]
 name = "ton_vm"
-version = "1.8.96"
-source = "git+https://github.com/tonlabs/ton-labs-vm.git?tag=1.8.96#f95aa63eac1e1682dcc81fcdabe352415ffdfde7"
+version = "1.8.114"
+source = "git+https://github.com/tonlabs/ever-vm.git?tag=1.8.114#307eb2aa5733befca95515f5cb2acb4b1cf80707"
 dependencies = [
  "diffy",
  "ed25519",
@@ -2742,7 +2741,7 @@ dependencies = [
  "sha2 0.10.6",
  "similar",
  "ton_block",
- "ton_types 1.12.6",
+ "ton_types 1.12.7",
  "zstd",
 ]
 

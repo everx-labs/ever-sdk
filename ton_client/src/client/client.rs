@@ -57,11 +57,11 @@ pub struct ClientContext {
 
     // context
     pub(crate) config: ClientConfig,
-    pub(crate) blockchain_config: RwLock<Option<Arc<ton_executor::BlockchainConfig>>>,
     pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
 
     // client module
     pub(crate) env: Arc<ClientEnv>,
+    pub(crate) network_params: RwLock<Option<NetworkParams>>,
 
     // crypto module
     pub(crate) boxes: Boxes,
@@ -72,7 +72,6 @@ pub struct ClientContext {
 
     // net module
     pub(crate) net: Arc<NetworkContext>,
-    pub(crate) network_params: RwLock<Option<NetworkParams>>,
 
     // processing module
     pub(crate) message_monitor: Arc<MessageMonitor<SdkServices>>,
