@@ -263,7 +263,8 @@ type ExecutionOptions = {
     block_time?: number,
     block_lt?: bigint,
     transaction_lt?: bigint,
-    chksig_always_succeed?: boolean
+    chksig_always_succeed?: boolean,
+    signature_id?: number
 }
 ```
 - `blockchain_config`?: _string_ – boc with config
@@ -271,6 +272,7 @@ type ExecutionOptions = {
 - `block_lt`?: _bigint_ – block logical time
 - `transaction_lt`?: _bigint_ – transaction logical time
 - `chksig_always_succeed`?: _boolean_ – Overrides standard TVM behaviour. If set to `true` then CHKSIG always will return `true`.
+- `signature_id`?: _number_ – signature ID to be used in signature verifying instructions when CapSignatureWithId capability is enabled
 
 
 ## AccountForExecutorNoneVariant

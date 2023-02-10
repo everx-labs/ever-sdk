@@ -170,7 +170,8 @@ type ParamsOfEncodeMessageBody = {
     is_internal: boolean,
     signer: Signer,
     processing_try_index?: number,
-    address?: string
+    address?: string,
+    signature_id?: number
 }
 
 type ResultOfEncodeMessageBody = {
@@ -192,6 +193,7 @@ function encode_message_body(
 <br>Used in message processing with retries.<br><br>Encoder uses the provided try index to calculate message<br>expiration time.<br><br>Expiration timeouts will grow with every retry.<br><br>Default value is 0.
 - `address`?: _string_ – Destination address of the message
 <br>Since ABI version 2.3 destination address of external inbound message is used in message<br>body signature calculation. Should be provided when signed external inbound message body is<br>created. Otherwise can be omitted.
+- `signature_id`?: _number_ – Signature ID to be used in data to sign preparing when CapSignatureWithId capability is enabled
 
 
 ### Result
@@ -276,7 +278,8 @@ type ParamsOfEncodeMessage = {
     deploy_set?: DeploySet,
     call_set?: CallSet,
     signer: Signer,
-    processing_try_index?: number
+    processing_try_index?: number,
+    signature_id?: number
 }
 
 type ResultOfEncodeMessage = {
@@ -301,6 +304,7 @@ function encode_message(
 - `signer`: _[Signer](mod\_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
+- `signature_id`?: _number_ – Signature ID to be used in data to sign preparing when CapSignatureWithId capability is enabled
 
 
 ### Result
@@ -784,12 +788,13 @@ Extracts signature from message body and calculates hash to verify the signature
 ```ts
 type ParamsOfGetSignatureData = {
     abi: Abi,
-    message: string
+    message: string,
+    signature_id?: number
 }
 
 type ResultOfGetSignatureData = {
     signature: string,
-    hash: string
+    unsigned: string
 }
 
 function get_signature_data(
@@ -799,12 +804,13 @@ function get_signature_data(
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
 - `message`: _string_ – Message BOC encoded in `base64`.
+- `signature_id`?: _number_ – Signature ID to be used in unsigned data preparing when CapSignatureWithId capability is enabled
 
 
 ### Result
 
 - `signature`: _string_ – Signature from the message in `hex`.
-- `hash`: _string_ – Hash to verify the signature in `base64`.
+- `unsigned`: _string_ – Data to verify the signature in `base64`.
 
 
 # Types
@@ -1238,6 +1244,7 @@ When _type_ is _'EncodingParams'_
 - `signer`: _[Signer](mod\_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
+- `signature_id`?: _number_ – Signature ID to be used in data to sign preparing when CapSignatureWithId capability is enabled
 
 
 Variant constructors:
@@ -1347,7 +1354,8 @@ type ParamsOfEncodeMessageBody = {
     is_internal: boolean,
     signer: Signer,
     processing_try_index?: number,
-    address?: string
+    address?: string,
+    signature_id?: number
 }
 ```
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
@@ -1359,6 +1367,7 @@ type ParamsOfEncodeMessageBody = {
 <br>Used in message processing with retries.<br><br>Encoder uses the provided try index to calculate message<br>expiration time.<br><br>Expiration timeouts will grow with every retry.<br><br>Default value is 0.
 - `address`?: _string_ – Destination address of the message
 <br>Since ABI version 2.3 destination address of external inbound message is used in message<br>body signature calculation. Should be provided when signed external inbound message body is<br>created. Otherwise can be omitted.
+- `signature_id`?: _number_ – Signature ID to be used in data to sign preparing when CapSignatureWithId capability is enabled
 
 
 ## ResultOfEncodeMessageBody
@@ -1408,7 +1417,8 @@ type ParamsOfEncodeMessage = {
     deploy_set?: DeploySet,
     call_set?: CallSet,
     signer: Signer,
-    processing_try_index?: number
+    processing_try_index?: number,
+    signature_id?: number
 }
 ```
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
@@ -1421,6 +1431,7 @@ type ParamsOfEncodeMessage = {
 - `signer`: _[Signer](mod\_abi.md#signer)_ – Signing parameters.
 - `processing_try_index`?: _number_ – Processing try index.
 <br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
+- `signature_id`?: _number_ – Signature ID to be used in data to sign preparing when CapSignatureWithId capability is enabled
 
 
 ## ResultOfEncodeMessage
@@ -1758,21 +1769,23 @@ type ResultOfCalcFunctionId = {
 ```ts
 type ParamsOfGetSignatureData = {
     abi: Abi,
-    message: string
+    message: string,
+    signature_id?: number
 }
 ```
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
 - `message`: _string_ – Message BOC encoded in `base64`.
+- `signature_id`?: _number_ – Signature ID to be used in unsigned data preparing when CapSignatureWithId capability is enabled
 
 
 ## ResultOfGetSignatureData
 ```ts
 type ResultOfGetSignatureData = {
     signature: string,
-    hash: string
+    unsigned: string
 }
 ```
 - `signature`: _string_ – Signature from the message in `hex`.
-- `hash`: _string_ – Hash to verify the signature in `base64`.
+- `unsigned`: _string_ – Data to verify the signature in `base64`.
 
 

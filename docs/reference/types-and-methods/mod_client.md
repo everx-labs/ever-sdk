@@ -95,6 +95,7 @@ Returns Core Library API reference
 
 ```ts
 type ClientConfig = {
+    binding?: BindingConfig,
     network?: NetworkConfig,
     crypto?: CryptoConfig,
     abi?: AbiConfig,
@@ -109,6 +110,7 @@ function config(): Promise<ClientConfig>;
 
 ### Result
 
+- `binding`?: _BindingConfig_
 - `network`?: _[NetworkConfig](mod\_client.md#networkconfig)_
 - `crypto`?: _[CryptoConfig](mod\_client.md#cryptoconfig)_
 - `abi`?: _[AbiConfig](mod\_client.md#abiconfig)_
@@ -254,6 +256,7 @@ type ClientError = {
 ## ClientConfig
 ```ts
 type ClientConfig = {
+    binding?: BindingConfig,
     network?: NetworkConfig,
     crypto?: CryptoConfig,
     abi?: AbiConfig,
@@ -262,6 +265,7 @@ type ClientConfig = {
     local_storage_path?: string
 }
 ```
+- `binding`?: _BindingConfig_
 - `network`?: _[NetworkConfig](mod\_client.md#networkconfig)_
 - `crypto`?: _[CryptoConfig](mod\_client.md#cryptoconfig)_
 - `abi`?: _[AbiConfig](mod\_client.md#abiconfig)_
@@ -289,6 +293,7 @@ type NetworkConfig = {
     queries_protocol?: NetworkQueriesProtocol,
     first_remp_status_timeout?: number,
     next_remp_status_timeout?: number,
+    signature_id?: number,
     access_key?: string
 }
 ```
@@ -322,6 +327,8 @@ type NetworkConfig = {
 <br>First REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 1000 (1 sec).
 - `next_remp_status_timeout`?: _number_ – UNSTABLE.
 <br>Subsequent REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 5000 (5 sec).
+- `signature_id`?: _number_ – Network segnature ID which is used by VM in signature verifying instructions if capability `CapSignatureWithId` is enabled in blockchain configuration parameters.
+<br>This parameter should be set to `global_id` field from any blockchain block if network can<br>not be reachable at the moment of message encoding and the message is aimed to be sent into<br>network with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically<br>inside message encoding functions
 - `access_key`?: _string_ – Access key to GraphQL API (Project secret)
 
 
@@ -345,12 +352,12 @@ Crypto config.
 
 ```ts
 type CryptoConfig = {
-    mnemonic_dictionary?: number,
+    mnemonic_dictionary?: MnemonicDictionary,
     mnemonic_word_count?: number,
     hdkey_derivation_path?: string
 }
 ```
-- `mnemonic_dictionary`?: _number_ – Mnemonic dictionary that will be used by default in crypto functions. If not specified, 1 dictionary will be used.
+- `mnemonic_dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Mnemonic dictionary that will be used by default in crypto functions. If not specified, `English` dictionary will be used.
 - `mnemonic_word_count`?: _number_ – Mnemonic word count that will be used by default in crypto functions. If not specified the default value will be 12.
 - `hdkey_derivation_path`?: _string_ – Derivation path that will be used by default in crypto functions. If not specified `m/44'/396'/0'/0/0` will be used.
 

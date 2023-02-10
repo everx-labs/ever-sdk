@@ -275,6 +275,8 @@ Where:
 
 [remove_iterator](mod\_net.md#remove_iterator) – Removes an iterator
 
+[get_signature_id](mod\_net.md#get_signature_id) – Returns signature ID for configured network if it should be used in messages signature
+
 ## [debot](mod\_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
 
 [init](mod\_debot.md#init) – [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
