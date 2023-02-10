@@ -161,6 +161,8 @@ Crypto functions.
 
 [NaclSecretBoxParamsCB](mod\_crypto.md#naclsecretboxparamscb)
 
+[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)
+
 [ParamsOfFactorize](mod\_crypto.md#paramsoffactorize)
 
 [ResultOfFactorize](mod\_crypto.md#resultoffactorize)
@@ -1021,7 +1023,7 @@ Prints the list of words from the specified dictionary
 
 ```ts
 type ParamsOfMnemonicWords = {
-    dictionary?: number
+    dictionary?: MnemonicDictionary
 }
 
 type ResultOfMnemonicWords = {
@@ -1033,7 +1035,7 @@ function mnemonic_words(
 ): Promise<ResultOfMnemonicWords>;
 ```
 ### Parameters
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 
 
 ### Result
@@ -1049,7 +1051,7 @@ Generates a random mnemonic from the specified dictionary and word count
 
 ```ts
 type ParamsOfMnemonicFromRandom = {
-    dictionary?: number,
+    dictionary?: MnemonicDictionary,
     word_count?: number
 }
 
@@ -1062,7 +1064,7 @@ function mnemonic_from_random(
 ): Promise<ResultOfMnemonicFromRandom>;
 ```
 ### Parameters
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Mnemonic word count
 
 
@@ -1078,7 +1080,7 @@ Generates mnemonic from pre-generated entropy
 ```ts
 type ParamsOfMnemonicFromEntropy = {
     entropy: string,
-    dictionary?: number,
+    dictionary?: MnemonicDictionary,
     word_count?: number
 }
 
@@ -1093,7 +1095,7 @@ function mnemonic_from_entropy(
 ### Parameters
 - `entropy`: _string_ – Entropy bytes.
 <br>Hex encoded.
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Mnemonic word count
 
 
@@ -1112,7 +1114,7 @@ specified in BIP0039.
 ```ts
 type ParamsOfMnemonicVerify = {
     phrase: string,
-    dictionary?: number,
+    dictionary?: MnemonicDictionary,
     word_count?: number
 }
 
@@ -1126,7 +1128,7 @@ function mnemonic_verify(
 ```
 ### Parameters
 - `phrase`: _string_ – Phrase
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Word count
 
 
@@ -1146,7 +1148,7 @@ the key pair from the master key and the specified path
 type ParamsOfMnemonicDeriveSignKeys = {
     phrase: string,
     path?: string,
-    dictionary?: number,
+    dictionary?: MnemonicDictionary,
     word_count?: number
 }
 
@@ -1162,7 +1164,7 @@ function mnemonic_derive_sign_keys(
 ### Parameters
 - `phrase`: _string_ – Phrase
 - `path`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Word count
 
 
@@ -1179,7 +1181,7 @@ Generates an extended master private key that will be the root for all the deriv
 ```ts
 type ParamsOfHDKeyXPrvFromMnemonic = {
     phrase: string,
-    dictionary?: number,
+    dictionary?: MnemonicDictionary,
     word_count?: number
 }
 
@@ -1193,7 +1195,7 @@ function hdkey_xprv_from_mnemonic(
 ```
 ### Parameters
 - `phrase`: _string_ – String with seed phrase
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Mnemonic word count
 
 
@@ -1443,7 +1445,7 @@ type RegisteredCryptoBox = {
 
 type ResultOfGetCryptoBoxSeedPhrase = {
     phrase: string,
-    dictionary: number,
+    dictionary: MnemonicDictionary,
     wordcount: number
 }
 
@@ -1458,7 +1460,7 @@ function get_crypto_box_seed_phrase(
 ### Result
 
 - `phrase`: _string_
-- `dictionary`: _number_
+- `dictionary`: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_
 - `wordcount`: _number_
 
 
@@ -2101,11 +2103,11 @@ Get `encrypted_secret` with `get_crypto_box_info` function and store it on your 
 
 ```ts
 type CryptoBoxSecretRandomSeedPhraseVariant = {
-    dictionary: number,
+    dictionary: MnemonicDictionary,
     wordcount: number
 }
 ```
-- `dictionary`: _number_
+- `dictionary`: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_
 - `wordcount`: _number_
 
 
@@ -2120,12 +2122,12 @@ Get `encrypted_secret` with `get_crypto_box_info` function and store it on your 
 ```ts
 type CryptoBoxSecretPredefinedSeedPhraseVariant = {
     phrase: string,
-    dictionary: number,
+    dictionary: MnemonicDictionary,
     wordcount: number
 }
 ```
 - `phrase`: _string_
-- `dictionary`: _number_
+- `dictionary`: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_
 - `wordcount`: _number_
 
 
@@ -2170,7 +2172,7 @@ should use `EncryptedSecret` type instead.
 
 Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
 
-- `dictionary`: _number_
+- `dictionary`: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_
 - `wordcount`: _number_
 
 When _type_ is _'PredefinedSeedPhrase'_
@@ -2183,7 +2185,7 @@ initializations should use `EncryptedSecret` type instead.
 Get `encrypted_secret` with `get_crypto_box_info` function and store it on your side.
 
 - `phrase`: _string_
-- `dictionary`: _number_
+- `dictionary`: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_
 - `wordcount`: _number_
 
 When _type_ is _'EncryptedSecret'_
@@ -2203,8 +2205,8 @@ store it somewhere, and only after that initialize the wallet with `EncryptedSec
 Variant constructors:
 
 ```ts
-function cryptoBoxSecretRandomSeedPhrase(dictionary: number, wordcount: number): CryptoBoxSecret;
-function cryptoBoxSecretPredefinedSeedPhrase(phrase: string, dictionary: number, wordcount: number): CryptoBoxSecret;
+function cryptoBoxSecretRandomSeedPhrase(dictionary: MnemonicDictionary, wordcount: number): CryptoBoxSecret;
+function cryptoBoxSecretPredefinedSeedPhrase(phrase: string, dictionary: MnemonicDictionary, wordcount: number): CryptoBoxSecret;
 function cryptoBoxSecretEncryptedSecret(encrypted_secret: string): CryptoBoxSecret;
 ```
 
@@ -2304,6 +2306,33 @@ type NaclSecretBoxParamsCB = {
 }
 ```
 - `nonce`: _string_ – Nonce in `hex`
+
+
+## MnemonicDictionary
+```ts
+enum MnemonicDictionary {
+    Ton = 0,
+    English = 1,
+    ChineseSimplified = 2,
+    ChineseTraditional = 3,
+    French = 4,
+    Italian = 5,
+    Japanese = 6,
+    Korean = 7,
+    Spanish = 8
+}
+```
+One of the following value:
+
+- `Ton = 0` – TON compatible dictionary
+- `English = 1` – English BIP-39 dictionary
+- `ChineseSimplified = 2` – Chinese simplified BIP-39 dictionary
+- `ChineseTraditional = 3` – Chinese traditional BIP-39 dictionary
+- `French = 4` – French BIP-39 dictionary
+- `Italian = 5` – Italian BIP-39 dictionary
+- `Japanese = 6` – Japanese BIP-39 dictionary
+- `Korean = 7` – Korean BIP-39 dictionary
+- `Spanish = 8` – Spanish BIP-39 dictionary
 
 
 ## ParamsOfFactorize
@@ -2675,10 +2704,10 @@ type ParamsOfNaclSecretBoxOpen = {
 ## ParamsOfMnemonicWords
 ```ts
 type ParamsOfMnemonicWords = {
-    dictionary?: number
+    dictionary?: MnemonicDictionary
 }
 ```
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 
 
 ## ResultOfMnemonicWords
@@ -2693,11 +2722,11 @@ type ResultOfMnemonicWords = {
 ## ParamsOfMnemonicFromRandom
 ```ts
 type ParamsOfMnemonicFromRandom = {
-    dictionary?: number,
+    dictionary?: MnemonicDictionary,
     word_count?: number
 }
 ```
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Mnemonic word count
 
 
@@ -2714,13 +2743,13 @@ type ResultOfMnemonicFromRandom = {
 ```ts
 type ParamsOfMnemonicFromEntropy = {
     entropy: string,
-    dictionary?: number,
+    dictionary?: MnemonicDictionary,
     word_count?: number
 }
 ```
 - `entropy`: _string_ – Entropy bytes.
 <br>Hex encoded.
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Mnemonic word count
 
 
@@ -2737,12 +2766,12 @@ type ResultOfMnemonicFromEntropy = {
 ```ts
 type ParamsOfMnemonicVerify = {
     phrase: string,
-    dictionary?: number,
+    dictionary?: MnemonicDictionary,
     word_count?: number
 }
 ```
 - `phrase`: _string_ – Phrase
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Word count
 
 
@@ -2760,13 +2789,13 @@ type ResultOfMnemonicVerify = {
 type ParamsOfMnemonicDeriveSignKeys = {
     phrase: string,
     path?: string,
-    dictionary?: number,
+    dictionary?: MnemonicDictionary,
     word_count?: number
 }
 ```
 - `phrase`: _string_ – Phrase
 - `path`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Word count
 
 
@@ -2774,12 +2803,12 @@ type ParamsOfMnemonicDeriveSignKeys = {
 ```ts
 type ParamsOfHDKeyXPrvFromMnemonic = {
     phrase: string,
-    dictionary?: number,
+    dictionary?: MnemonicDictionary,
     word_count?: number
 }
 ```
 - `phrase`: _string_ – String with seed phrase
-- `dictionary`?: _number_ – Dictionary identifier
+- `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Mnemonic word count
 
 
@@ -3001,12 +3030,12 @@ type ResultOfGetCryptoBoxInfo = {
 ```ts
 type ResultOfGetCryptoBoxSeedPhrase = {
     phrase: string,
-    dictionary: number,
+    dictionary: MnemonicDictionary,
     wordcount: number
 }
 ```
 - `phrase`: _string_
-- `dictionary`: _number_
+- `dictionary`: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_
 - `wordcount`: _number_
 
 

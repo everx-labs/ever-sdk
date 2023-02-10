@@ -18,7 +18,7 @@ pub(crate) mod cache;
 pub(crate) mod encode;
 mod errors;
 pub(crate) mod common;
-pub(crate) mod internal;
+pub mod internal;
 pub(crate) mod parse;
 pub(crate) mod tvc;
 

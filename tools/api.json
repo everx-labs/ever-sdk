@@ -300,6 +300,16 @@
           "type": "Struct",
           "struct_fields": [
             {
+              "name": "binding",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Ref",
+                "ref_name": "BindingConfig"
+              },
+              "summary": null,
+              "description": null
+            },
+            {
               "name": "network",
               "type": "Optional",
               "optional_inner": {
@@ -541,6 +551,17 @@
               "description": "Subsequent REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.\n\nMust be specified in milliseconds. Default is 5000 (5 sec)."
             },
             {
+              "name": "signature_id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
+              },
+              "summary": "Network segnature ID which is used by VM in signature verifying instructions if capability `CapSignatureWithId` is enabled in blockchain configuration parameters.",
+              "description": "This parameter should be set to `global_id` field from any blockchain block if network can\nnot be reachable at the moment of message encoding and the message is aimed to be sent into\nnetwork with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically\ninside message encoding functions"
+            },
+            {
               "name": "access_key",
               "type": "Optional",
               "optional_inner": {
@@ -581,11 +602,10 @@
               "name": "mnemonic_dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number",
-                "number_type": "UInt",
-                "number_size": 8
+                "type": "Ref",
+                "ref_name": "crypto.MnemonicDictionary"
               },
-              "summary": "Mnemonic dictionary that will be used by default in crypto functions. If not specified, 1 dictionary will be used.",
+              "summary": "Mnemonic dictionary that will be used by default in crypto functions. If not specified, `English` dictionary will be used.",
               "description": null
             },
             {
@@ -1547,9 +1567,8 @@
               "struct_fields": [
                 {
                   "name": "dictionary",
-                  "type": "Number",
-                  "number_type": "UInt",
-                  "number_size": 8,
+                  "type": "Ref",
+                  "ref_name": "crypto.MnemonicDictionary",
                   "summary": null,
                   "description": null
                 },
@@ -1577,9 +1596,8 @@
                 },
                 {
                   "name": "dictionary",
-                  "type": "Number",
-                  "number_type": "UInt",
-                  "number_size": 8,
+                  "type": "Ref",
+                  "ref_name": "crypto.MnemonicDictionary",
                   "summary": null,
                   "description": null
                 },
@@ -1716,6 +1734,77 @@
               "name": "nonce",
               "type": "String",
               "summary": "Nonce in `hex`",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
+        },
+        {
+          "name": "MnemonicDictionary",
+          "type": "EnumOfConsts",
+          "enum_consts": [
+            {
+              "name": "Ton",
+              "type": "Number",
+              "value": "0",
+              "summary": "TON compatible dictionary",
+              "description": null
+            },
+            {
+              "name": "English",
+              "type": "Number",
+              "value": "1",
+              "summary": "English BIP-39 dictionary",
+              "description": null
+            },
+            {
+              "name": "ChineseSimplified",
+              "type": "Number",
+              "value": "2",
+              "summary": "Chinese simplified BIP-39 dictionary",
+              "description": null
+            },
+            {
+              "name": "ChineseTraditional",
+              "type": "Number",
+              "value": "3",
+              "summary": "Chinese traditional BIP-39 dictionary",
+              "description": null
+            },
+            {
+              "name": "French",
+              "type": "Number",
+              "value": "4",
+              "summary": "French BIP-39 dictionary",
+              "description": null
+            },
+            {
+              "name": "Italian",
+              "type": "Number",
+              "value": "5",
+              "summary": "Italian BIP-39 dictionary",
+              "description": null
+            },
+            {
+              "name": "Japanese",
+              "type": "Number",
+              "value": "6",
+              "summary": "Japanese BIP-39 dictionary",
+              "description": null
+            },
+            {
+              "name": "Korean",
+              "type": "Number",
+              "value": "7",
+              "summary": "Korean BIP-39 dictionary",
+              "description": null
+            },
+            {
+              "name": "Spanish",
+              "type": "Number",
+              "value": "8",
+              "summary": "Spanish BIP-39 dictionary",
               "description": null
             }
           ],
@@ -2372,9 +2461,8 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number",
-                "number_type": "UInt",
-                "number_size": 8
+                "type": "Ref",
+                "ref_name": "crypto.MnemonicDictionary"
               },
               "summary": "Dictionary identifier",
               "description": null
@@ -2405,9 +2493,8 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number",
-                "number_type": "UInt",
-                "number_size": 8
+                "type": "Ref",
+                "ref_name": "crypto.MnemonicDictionary"
               },
               "summary": "Dictionary identifier",
               "description": null
@@ -2455,9 +2542,8 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number",
-                "number_type": "UInt",
-                "number_size": 8
+                "type": "Ref",
+                "ref_name": "crypto.MnemonicDictionary"
               },
               "summary": "Dictionary identifier",
               "description": null
@@ -2505,9 +2591,8 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number",
-                "number_type": "UInt",
-                "number_size": 8
+                "type": "Ref",
+                "ref_name": "crypto.MnemonicDictionary"
               },
               "summary": "Dictionary identifier",
               "description": null
@@ -2564,9 +2649,8 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number",
-                "number_type": "UInt",
-                "number_size": 8
+                "type": "Ref",
+                "ref_name": "crypto.MnemonicDictionary"
               },
               "summary": "Dictionary identifier",
               "description": null
@@ -2600,9 +2684,8 @@
               "name": "dictionary",
               "type": "Optional",
               "optional_inner": {
-                "type": "Number",
-                "number_type": "UInt",
-                "number_size": 8
+                "type": "Ref",
+                "ref_name": "crypto.MnemonicDictionary"
               },
               "summary": "Dictionary identifier",
               "description": null
@@ -2920,9 +3003,8 @@
             },
             {
               "name": "dictionary",
-              "type": "Number",
-              "number_type": "UInt",
-              "number_size": 8,
+              "type": "Ref",
+              "ref_name": "crypto.MnemonicDictionary",
               "summary": null,
               "description": null
             },
@@ -6210,6 +6292,17 @@
               },
               "summary": "Destination address of the message",
               "description": "Since ABI version 2.3 destination address of external inbound message is used in message\nbody signature calculation. Should be provided when signed external inbound message body is\ncreated. Otherwise can be omitted."
+            },
+            {
+              "name": "signature_id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
+              },
+              "summary": "Signature ID to be used in data to sign preparing when CapSignatureWithId capability is enabled",
+              "description": null
             }
           ],
           "summary": null,
@@ -6342,6 +6435,17 @@
               },
               "summary": "Processing try index.",
               "description": "Used in message processing with retries (if contract's ABI includes \"expire\" header).\n\nEncoder uses the provided try index to calculate message\nexpiration time. The 1st message expiration time is specified in\nClient config.\n\nExpiration timeouts will grow with every retry.\nRetry grow factor is set in Client config:\n<.....add config parameter with default value here>\n\nDefault value is 0."
+            },
+            {
+              "name": "signature_id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
+              },
+              "summary": "Signature ID to be used in data to sign preparing when CapSignatureWithId capability is enabled",
+              "description": null
             }
           ],
           "summary": null,
@@ -7150,6 +7254,17 @@
               "type": "String",
               "summary": "Message BOC encoded in `base64`.",
               "description": null
+            },
+            {
+              "name": "signature_id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
+              },
+              "summary": "Signature ID to be used in unsigned data preparing when CapSignatureWithId capability is enabled",
+              "description": null
             }
           ],
           "summary": null,
@@ -7166,9 +7281,9 @@
               "description": null
             },
             {
-              "name": "hash",
+              "name": "unsigned",
               "type": "String",
-              "summary": "Hash to verify the signature in `base64`.",
+              "summary": "Data to verify the signature in `base64`.",
               "description": null
             }
           ],
@@ -11349,6 +11464,17 @@
               },
               "summary": "Overrides standard TVM behaviour. If set to `true` then CHKSIG always will return `true`.",
               "description": null
+            },
+            {
+              "name": "signature_id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
+              },
+              "summary": "signature ID to be used in signature verifying instructions when CapSignatureWithId capability is enabled",
+              "description": null
             }
           ],
           "summary": null,
@@ -13030,6 +13156,25 @@
           ],
           "summary": null,
           "description": null
+        },
+        {
+          "name": "ResultOfGetSignatureId",
+          "type": "Struct",
+          "struct_fields": [
+            {
+              "name": "signature_id",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Number",
+                "number_type": "Int",
+                "number_size": 32
+              },
+              "summary": "Signature ID for configured network if it should be used in messages signature",
+              "description": null
+            }
+          ],
+          "summary": null,
+          "description": null
         }
       ],
       "functions": [
@@ -13857,6 +14002,37 @@
             "generic_args": [
               {
                 "type": "None"
+              }
+            ]
+          },
+          "errors": null
+        },
+        {
+          "name": "get_signature_id",
+          "summary": "Returns signature ID for configured network if it should be used in messages signature",
+          "description": null,
+          "params": [
+            {
+              "name": "context",
+              "type": "Generic",
+              "generic_name": "Arc",
+              "generic_args": [
+                {
+                  "type": "Ref",
+                  "ref_name": "ClientContext"
+                }
+              ],
+              "summary": null,
+              "description": null
+            }
+          ],
+          "result": {
+            "type": "Generic",
+            "generic_name": "ClientResult",
+            "generic_args": [
+              {
+                "type": "Ref",
+                "ref_name": "net.ResultOfGetSignatureId"
               }
             ]
           },

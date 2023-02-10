@@ -449,9 +449,8 @@ async fn subscribe_for_transactions_with_addresses() {
             ..Default::default()
         }),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
-        address: None,
         call_set: CallSet::some_with_function("constructor"),
+        ..Default::default()
     };
     let msg = subscription_client
         .encode_message(deploy_params.clone())
@@ -612,11 +611,10 @@ async fn subscribe_for_transactions_with_addresses() {
             ParamsOfProcessMessage {
                 message_encode_params: ParamsOfEncodeMessage {
                     abi: TestClient::abi(HELLO, None),
-                    deploy_set: None,
                     signer: Signer::Keys { keys },
-                    processing_try_index: None,
                     address: Some(msg.address),
                     call_set: CallSet::some_with_function("touch"),
+                    ..Default::default()
                 },
                 send_events: false,
             },
@@ -1314,19 +1312,47 @@ fn collect(loaded_messages: &Vec<Value>, messages: &mut Vec<Value>, transactions
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn transaction_tree() {
     let client = TestClient::new();
+    let (abi, tvc) = TestClient::package(crate::tests::GIVER_V2, Some(2));
+    let keys = client.generate_sign_keys();
+
+    let address = client
+        .deploy_with_giver_async(
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                deploy_set: DeploySet::some_with_tvc(tvc.clone()),
+                call_set: CallSet::some_with_function("constructor"),
+                signer: Signer::Keys { keys: keys.clone() },
+                ..Default::default()
+            },
+            None,
+        )
+        .await;
+
 
     let run_result = client
         .net_process_function(
-            client.giver_address().await,
-            TestClient::giver_abi(),
+            address,
+            abi.clone(),
             "sendTransaction",
             json!({
                 "dest": "0:0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
-                "value": 500_000_000,
+                "value": 100_000_000,
                 "bounce": true,
             }),
-            Signer::Keys {
-                keys: TestClient::giver_keys(),
+            Signer::Keys { keys },
+        )
+        .await
+        .unwrap();
+
+    let abi_registry = vec![abi];
+    let result: ResultOfQueryTransactionTree = client
+        .request_async(
+            "net.query_transaction_tree",
+            ParamsOfQueryTransactionTree {
+                in_msg: run_result.transaction["in_msg"].as_str().unwrap().to_string(),
+                abi_registry: Some(abi_registry.clone()),
+                transaction_max_count: Some(0),
+                ..Default::default()
             },
         )
         .await
@@ -1362,21 +1388,7 @@ async fn transaction_tree() {
         .await
         .unwrap();
 
-    let abi_registry = vec![TestClient::giver_abi()];
-
     let mut has_decoded_bodies = false;
-    let result: ResultOfQueryTransactionTree = client
-        .request_async(
-            "net.query_transaction_tree",
-            ParamsOfQueryTransactionTree {
-                in_msg: messages.result[0]["id"].as_str().unwrap().to_string(),
-                abi_registry: Some(abi_registry.clone()),
-                transaction_max_count: Some(0),
-                ..Default::default()
-            },
-        )
-        .await
-        .unwrap();
     let mut ref_messages = Vec::new();
     let mut ref_transactions = Vec::new();
     collect(&messages.result, &mut ref_messages, &mut ref_transactions);

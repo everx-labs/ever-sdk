@@ -137,7 +137,7 @@ async fn block_iterator() {
         )
         .await
         .unwrap();
-    let resume_state = iterate(&client, iterator.handle, &mut ids, &mut extra_ids, 50).await;
+    let resume_state = iterate(&client, iterator.handle, &mut ids, &mut extra_ids, 20).await;
     remove_iterator(&client, iterator.handle).await;
 
     println!(">>> Resume");
@@ -189,7 +189,7 @@ async fn transaction_iterator() {
         )
         .await
         .unwrap();
-    let resume_state = iterate(&client, iterator.handle, &mut ids, &mut extra_ids, 50).await;
+    let resume_state = iterate(&client, iterator.handle, &mut ids, &mut extra_ids, 20).await;
     remove_iterator(&client, iterator.handle).await;
 
     println!(">>> Resume");

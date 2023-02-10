@@ -27,6 +27,7 @@ fn register_client(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::error::ClientError>();
     module.register_type::<crate::client::ClientConfig>();
     module.register_type::<crate::net::NetworkConfig>();
+    module.register_type::<crate::client::BindingConfig>();
     module.register_type::<crate::net::NetworkQueriesProtocol>();
     module.register_type::<crate::crypto::CryptoConfig>();
     module.register_type::<crate::abi::AbiConfig>();
@@ -75,6 +76,7 @@ fn register_crypto(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::crypto::ChaCha20ParamsCB>();
     module.register_type::<crate::crypto::NaclBoxParamsCB>();
     module.register_type::<crate::crypto::NaclSecretBoxParamsCB>();
+    module.register_type::<crate::crypto::MnemonicDictionary>();
 
     // Math
 
@@ -538,6 +540,10 @@ fn register_net(handlers: &mut RuntimeHandlers) {
     module.register_async_fn(
         crate::net::iterators::remove_iterator,
         crate::net::iterators::remove_iterator_api,
+    );
+    module.register_async_fn_no_args(
+        crate::net::get_signature_id,
+        crate::net::network_params::get_signature_id_api
     );
     module.register();
 }

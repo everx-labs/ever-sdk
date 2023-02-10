@@ -12,6 +12,8 @@ use ton_abi::Contract;
 use ton_block::{MsgAddressInt, CurrencyCollection};
 use ton_sdk::{ContractImage, FunctionCallSet};
 
+use super::types::extend_data_to_sign;
+
 //--------------------------------------------------------------------------- encode_deploy_message
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
@@ -225,6 +227,10 @@ pub struct ParamsOfEncodeMessage {
     ///
     /// Default value is 0.
     pub processing_try_index: Option<u8>,
+
+    /// Signature ID to be used in data to sign preparing when CapSignatureWithId
+    /// capability is enabled
+    pub signature_id: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
@@ -472,8 +478,9 @@ pub async fn encode_message(
         return Err(abi::Error::missing_required_call_set_for_encode_message());
     };
 
+    let data_to_sign = extend_data_to_sign(&context, params.signature_id, data_to_sign).await?;
     let (message, data_to_sign) = try_to_sign_message(
-        context, &abi, message, data_to_sign, &params.signer
+        context.clone(), &abi, message, data_to_sign, &params.signer
     ).await?;
 
     Ok(ResultOfEncodeMessage {
@@ -683,6 +690,10 @@ pub struct ParamsOfEncodeMessageBody {
     /// body signature calculation. Should be provided when signed external inbound message body is
     /// created. Otherwise can be omitted.
     pub address: Option<String>,
+
+    /// Signature ID to be used in data to sign preparing when CapSignatureWithId
+    /// capability is enabled
+    pub signature_id: Option<i32>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
@@ -758,6 +769,7 @@ pub async fn encode_message_body(
             .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?,
     )
     .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?;
+    let data_to_sign = extend_data_to_sign(&context, params.signature_id, data_to_sign).await?;
     if let Some(unsigned) = &data_to_sign {
         if let Some(signature) = params.signer.sign(context.clone(), unsigned).await? {
             let pubkey = public
@@ -775,6 +787,7 @@ pub async fn encode_message_body(
             });
         }
     }
+
     Ok(ResultOfEncodeMessageBody {
         body: base64::encode(&body),
         data_to_sign: data_to_sign.map(|x| base64::encode(&x)),

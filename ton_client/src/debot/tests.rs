@@ -486,9 +486,8 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
             ..Default::default()
         }),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
-        address: None,
         call_set: CallSet::some_with_function("constructor"),
+        ..Default::default()
     };
 
     let target_addr = client.encode_message(target_deploy_params.clone()).await.unwrap().address;
@@ -502,9 +501,8 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
                 ..Default::default()
             }),
             signer: Signer::Keys { keys: keys.clone() },
-            processing_try_index: None,
-            address: None,
             call_set: CallSet::some_with_function("constructor"),
+            ..Default::default()
         },
         None
     );
@@ -516,8 +514,6 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
                 ..Default::default()
             }),
             signer: Signer::Keys { keys: keys.clone() },
-            processing_try_index: None,
-            address: None,
             call_set: Some(CallSet {
                 function_name: "constructor".to_owned(),
                 header: None,
@@ -526,6 +522,7 @@ async fn init_debot(client: Arc<TestClient>) -> DebotData {
                     "targetAddr": target_addr,
                 }))
             }),
+            ..Default::default()
         },
         None
     );
@@ -567,9 +564,8 @@ async fn init_debot2(client: Arc<TestClient>) -> DebotData {
         abi: debot_abi.clone(),
         deploy_set: DeploySet::some_with_tvc(TestClient::tvc(TEST_DEBOT2, Some(2))),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
-        address: None,
         call_set,
+        ..Default::default()
     };
     let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(1_000_000_000u64)).await;
     let _ = client.net_process_function(
@@ -591,9 +587,8 @@ async fn init_debot4(client: Arc<TestClient>) -> DebotData {
         abi: target_abi.clone(),
         deploy_set: DeploySet::some_with_tvc(TestClient::tvc(TEST_DEBOT_TARGET, Some(2))),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
-        address: None,
         call_set: CallSet::some_with_function("constructor"),
+        ..Default::default()
     };
     let target_addr = client.encode_message(target_deploy_params.clone()).await.unwrap().address;
     client.get_tokens_from_giver_async(&target_addr, None).await;
@@ -608,9 +603,8 @@ async fn init_debot4(client: Arc<TestClient>) -> DebotData {
         abi: debot_abi.clone(),
         deploy_set: DeploySet::some_with_tvc(TestClient::tvc(TEST_DEBOT4, Some(2))),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
-        address: None,
         call_set,
+        ..Default::default()
     };
     let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(1_000_000_000u64)).await;
     let _ = client.net_process_function(
@@ -654,9 +648,8 @@ async fn init_simple_debot(client: Arc<TestClient>, name: &str) -> DebotData {
         abi: debot_abi.clone(),
         deploy_set: DeploySet::some_with_tvc(TestClient::tvc(name, Some(2))),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
-        address: None,
         call_set,
+        ..Default::default()
     };
     let debot_addr = client.deploy_with_giver_async(deploy_debot_params, Some(100_000_000_000u64)).await;
     let _ = client.net_process_function(
@@ -719,9 +712,8 @@ async fn init_debot_pair(client: Arc<TestClient>, debot1: &str, debot2: &str) ->
             ..Default::default()
         }),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
-        address: None,
         call_set: CallSet::some_with_function("constructor"),
+        ..Default::default()
     };
     let debot2_addr = client.encode_message(deploy_params2.clone()).await.unwrap().address;
 
@@ -733,9 +725,8 @@ async fn init_debot_pair(client: Arc<TestClient>, debot1: &str, debot2: &str) ->
         abi: debot1_abi.clone(),
         deploy_set: DeploySet::some_with_tvc(TestClient::tvc(debot1, Some(2))),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
-        address: None,
         call_set,
+        ..Default::default()
     };
     let debot1_addr = client.deploy_with_giver_async(deploy_params1, Some(1_000_000_000u64)).await;
     let _ = client.deploy_with_giver_async(deploy_params2, Some(1_000_000_000u64)).await;
@@ -1445,9 +1436,8 @@ async fn test_debot_custom_header() {
         abi: abi.clone(),
         deploy_set: DeploySet::some_with_tvc(TestClient::tvc("CustomReplayProtection", Some(2))),
         signer: Signer::Keys { keys: keys.clone() },
-        processing_try_index: None,
-        address: None,
         call_set,
+        ..Default::default()
     };
     let replay_contract = client.deploy_with_giver_async(deploy_params, Some(1_000_000_000u64)).await;
     //deploy debot
@@ -1651,11 +1641,9 @@ async fn assert_get_method(
 
     let call_params = ParamsOfEncodeMessage {
         abi: abi.clone(),
-        deploy_set: None,
-        signer: Signer::None,
-        processing_try_index: None,
         address: Some(addr.clone()),
         call_set: CallSet::some_with_function_and_input(func, params),
+        ..Default::default()
     };
 
     let message = client.encode_message(call_params).await.unwrap().message;

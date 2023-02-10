@@ -27,6 +27,7 @@ use super::{AppRequestResult, Error, ParamsOfAppRequest};
 use crate::abi::AbiConfig;
 use crate::boc::{cache::Bocs, BocConfig};
 use crate::client::storage::KeyValueStorage;
+use crate::client::{BindingConfig, update_binding_config};
 use crate::crypto::boxes::crypto_box::{CryptoBox, DerivedKeys};
 use crate::crypto::boxes::{encryption_box::EncryptionBox, signing_box::SigningBox};
 use crate::crypto::CryptoConfig;
@@ -43,6 +44,12 @@ pub struct Boxes {
     pub(crate) crypto_boxes: LockfreeMap<u32, CryptoBox>,
     pub(crate) signing_boxes: LockfreeMap<u32, Box<dyn SigningBox>>,
     pub(crate) encryption_boxes: LockfreeMap<u32, Box<dyn EncryptionBox>>,
+}
+
+#[derive(Clone, Default)]
+pub(crate) struct NetworkParams {
+    pub(crate) blockchain_config: Arc<ton_executor::BlockchainConfig>,
+    pub(crate) global_id: i32,
 }
 
 pub struct ClientContext {
@@ -65,6 +72,7 @@ pub struct ClientContext {
 
     // net module
     pub(crate) net: Arc<NetworkContext>,
+    pub(crate) network_params: RwLock<Option<NetworkParams>>,
 
     // processing module
     pub(crate) message_monitor: Arc<MessageMonitor<SdkServices>>,
@@ -85,7 +93,12 @@ impl ClientContext {
         self.env.set_timer(ms).await
     }
 
+    pub fn now_ms(&self) -> u64 {
+        self.env.now_ms()
+    }
+
     pub fn new(config: ClientConfig) -> ClientResult<ClientContext> {
+        update_binding_config(&config.binding);
         let env = Arc::new(ClientEnv::new()?);
 
         let server_link = if config.network.server_address.is_some()
@@ -124,7 +137,7 @@ Note that default values are used if parameters are omitted in config"#,
             debots: LockfreeMap::new(),
             boxes: Default::default(),
             bocs,
-            blockchain_config: RwLock::new(None),
+            network_params: RwLock::new(None),
             app_requests: Mutex::new(HashMap::new()),
             proofs_storage: Default::default(),
             derived_keys: DerivedKeys::new(env),
@@ -168,6 +181,8 @@ Note that default values are used if parameters are omitted in config"#,
 
 #[derive(Deserialize, Serialize, Debug, Clone, ApiType)]
 pub struct ClientConfig {
+    #[serde(default, deserialize_with = "deserialize_binding_config")]
+    pub binding: BindingConfig,
     #[serde(default, deserialize_with = "deserialize_network_config")]
     pub network: NetworkConfig,
     #[serde(default, deserialize_with = "deserialize_crypto_config")]
@@ -184,6 +199,12 @@ pub struct ClientConfig {
     /// Default (recommended) value is "~/.tonclient" for native environments and ".tonclient"
     /// for web-browser.
     pub local_storage_path: Option<String>,
+}
+
+fn deserialize_binding_config<'de, D: Deserializer<'de>>(
+    deserializer: D,
+) -> Result<BindingConfig, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or(Default::default()))
 }
 
 fn deserialize_network_config<'de, D: Deserializer<'de>>(
@@ -219,6 +240,7 @@ fn deserialize_proofs_config<'de, D: Deserializer<'de>>(
 impl Default for ClientConfig {
     fn default() -> Self {
         Self {
+            binding: Default::default(),
             network: Default::default(),
             crypto: Default::default(),
             abi: Default::default(),

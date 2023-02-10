@@ -48,6 +48,8 @@ Network access.
 
 [remove_iterator](mod\_net.md#remove_iterator) – Removes an iterator
 
+[get_signature_id](mod\_net.md#get_signature_id) – Returns signature ID for configured network if it should be used in messages signature
+
 ## Types
 [NetErrorCode](mod\_net.md#neterrorcode)
 
@@ -118,6 +120,8 @@ Network access.
 [ParamsOfIteratorNext](mod\_net.md#paramsofiteratornext)
 
 [ResultOfIteratorNext](mod\_net.md#resultofiteratornext)
+
+[ResultOfGetSignatureId](mod\_net.md#resultofgetsignatureid)
 
 
 # Functions
@@ -966,6 +970,24 @@ function remove_iterator(
 <br>Must be removed using `remove_iterator`<br>when it is no more needed for the application.
 
 
+## get_signature_id
+
+Returns signature ID for configured network if it should be used in messages signature
+
+```ts
+type ResultOfGetSignatureId = {
+    signature_id?: number
+}
+
+function get_signature_id(): Promise<ResultOfGetSignatureId>;
+```
+
+
+### Result
+
+- `signature_id`?: _number_ – Signature ID for configured network if it should be used in messages signature
+
+
 # Types
 ## NetErrorCode
 ```ts
@@ -1496,5 +1518,14 @@ type ResultOfIteratorNext = {
 - `has_more`: _boolean_ – Indicates that there are more available items in iterated range.
 - `resume_state`?: _any_ – Optional iterator state that can be used for resuming iteration.
 <br>This field is returned only if the `return_resume_state` parameter<br>is specified.<br><br>Note that `resume_state` corresponds to the iteration position<br>after the returned items.
+
+
+## ResultOfGetSignatureId
+```ts
+type ResultOfGetSignatureId = {
+    signature_id?: number
+}
+```
+- `signature_id`?: _number_ – Signature ID for configured network if it should be used in messages signature
 
 

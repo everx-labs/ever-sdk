@@ -27,34 +27,35 @@ pub(crate) mod encryption;
 #[cfg(test)]
 mod tests;
 
+pub use crate::crypto::boxes::crypto_box::ChaCha20ParamsCB;
+pub use crate::crypto::boxes::crypto_box::NaclBoxParamsCB;
+pub use crate::crypto::boxes::crypto_box::NaclSecretBoxParamsCB;
 pub use crate::crypto::boxes::crypto_box::{
-    create_crypto_box, remove_crypto_box, get_crypto_box_info, get_crypto_box_seed_phrase,
-    get_signing_box_from_crypto_box, get_encryption_box_from_crypto_box, clear_crypto_box_secret_cache,
-    ParamsOfCreateCryptoBox, ParamsOfGetSigningBoxFromCryptoBox, CryptoBoxHandle, RegisteredCryptoBox,
-    AppPasswordProvider, CryptoBoxSecret, BoxEncryptionAlgorithm,
-    ResultOfGetCryptoBoxInfo, ResultOfGetCryptoBoxSeedPhrase, ResultOfGetPassword,
+    clear_crypto_box_secret_cache, create_crypto_box, get_crypto_box_info,
+    get_crypto_box_seed_phrase, get_encryption_box_from_crypto_box,
+    get_signing_box_from_crypto_box, remove_crypto_box, AppPasswordProvider,
+    BoxEncryptionAlgorithm, CryptoBoxHandle, CryptoBoxSecret, ParamsOfCreateCryptoBox,
+    ParamsOfGetSigningBoxFromCryptoBox, RegisteredCryptoBox, ResultOfGetCryptoBoxInfo,
+    ResultOfGetCryptoBoxSeedPhrase, ResultOfGetPassword,
+};
+pub use crate::crypto::boxes::encryption_box::aes::{AesEncryptionBox, AesInfo, AesParamsEB};
+pub use crate::crypto::boxes::encryption_box::chacha20::{ChaCha20EncryptionBox, ChaCha20ParamsEB};
+pub use crate::crypto::boxes::encryption_box::nacl_box::{NaclBoxParamsEB, NaclEncryptionBox};
+pub use crate::crypto::boxes::encryption_box::nacl_secret_box::{
+    NaclSecretBoxParamsEB, NaclSecretEncryptionBox,
+};
+pub use crate::crypto::boxes::encryption_box::{
+    create_encryption_box, encryption_box_decrypt, encryption_box_encrypt, encryption_box_get_info,
+    register_encryption_box, remove_encryption_box, CipherMode, EncryptionAlgorithm, EncryptionBox,
+    EncryptionBoxHandle, EncryptionBoxInfo, ParamsOfEncryptionBoxDecrypt,
+    ParamsOfEncryptionBoxEncrypt, ParamsOfEncryptionBoxGetInfo, RegisteredEncryptionBox,
+    ResultOfEncryptionBoxDecrypt, ResultOfEncryptionBoxEncrypt, ResultOfEncryptionBoxGetInfo,
 };
 pub use crate::crypto::boxes::signing_box::{
     get_signing_box, register_signing_box, remove_signing_box, signing_box_get_public_key,
     signing_box_sign, ParamsOfSigningBoxSign, RegisteredSigningBox, ResultOfSigningBoxGetPublicKey,
     ResultOfSigningBoxSign, SigningBox, SigningBoxHandle,
 };
-pub use crate::crypto::boxes::encryption_box::{
-    register_encryption_box, remove_encryption_box, create_encryption_box,
-    encryption_box_get_info, encryption_box_encrypt, encryption_box_decrypt,
-    EncryptionBox, CipherMode, RegisteredEncryptionBox, EncryptionBoxHandle,
-    EncryptionBoxInfo, EncryptionAlgorithm,
-    ParamsOfEncryptionBoxGetInfo, ResultOfEncryptionBoxGetInfo,
-    ParamsOfEncryptionBoxEncrypt, ResultOfEncryptionBoxEncrypt,
-    ParamsOfEncryptionBoxDecrypt, ResultOfEncryptionBoxDecrypt,
-};
-pub use crate::crypto::boxes::encryption_box::aes::{AesInfo, AesParamsEB, AesEncryptionBox};
-pub use crate::crypto::boxes::encryption_box::chacha20::{ChaCha20ParamsEB, ChaCha20EncryptionBox};
-pub use crate::crypto::boxes::encryption_box::nacl_box::{NaclBoxParamsEB, NaclEncryptionBox};
-pub use crate::crypto::boxes::encryption_box::nacl_secret_box::{NaclSecretBoxParamsEB, NaclSecretEncryptionBox};
-pub use crate::crypto::boxes::crypto_box::ChaCha20ParamsCB;
-pub use crate::crypto::boxes::crypto_box::NaclBoxParamsCB;
-pub use crate::crypto::boxes::crypto_box::NaclSecretBoxParamsCB;
 pub use crate::crypto::encscrypt::{scrypt, ParamsOfScrypt, ResultOfScrypt};
 pub use crate::crypto::hash::{sha256, sha512, ParamsOfHash, ResultOfHash};
 pub use crate::crypto::hdkey::{
@@ -76,10 +77,10 @@ pub use crate::crypto::math::{
 };
 pub use crate::crypto::mnemonic::{
     mnemonic_derive_sign_keys, mnemonic_from_entropy, mnemonic_from_random, mnemonic_verify,
-    mnemonic_words, ParamsOfMnemonicDeriveSignKeys, ParamsOfMnemonicFromEntropy,
-    ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify, ParamsOfMnemonicWords,
-    ResultOfMnemonicFromEntropy, ResultOfMnemonicFromRandom, ResultOfMnemonicVerify,
-    ResultOfMnemonicWords,
+    mnemonic_words, MnemonicDictionary, ParamsOfMnemonicDeriveSignKeys,
+    ParamsOfMnemonicFromEntropy, ParamsOfMnemonicFromRandom, ParamsOfMnemonicVerify,
+    ParamsOfMnemonicWords, ResultOfMnemonicFromEntropy, ResultOfMnemonicFromRandom,
+    ResultOfMnemonicVerify, ResultOfMnemonicWords,
 };
 pub use crate::crypto::nacl::{
     nacl_box, nacl_box_keypair, nacl_box_keypair_from_secret_key, nacl_box_open, nacl_secret_box,
@@ -95,10 +96,6 @@ pub use encryption::{chacha20, ParamsOfChaCha20, ResultOfChaCha20};
 
 use serde::{Deserialize, Deserializer};
 
-pub fn default_mnemonic_dictionary() -> u8 {
-    1
-}
-
 pub fn default_mnemonic_word_count() -> u8 {
     12
 }
@@ -113,8 +110,8 @@ pub fn default_hdkey_compliant() -> bool {
 
 fn deserialize_mnemonic_dictionary<'de, D: Deserializer<'de>>(
     deserializer: D,
-) -> Result<u8, D::Error> {
-    Ok(Option::deserialize(deserializer)?.unwrap_or(default_mnemonic_dictionary()))
+) -> Result<MnemonicDictionary, D::Error> {
+    Ok(Option::deserialize(deserializer)?.unwrap_or_default())
 }
 
 fn deserialize_mnemonic_word_count<'de, D: Deserializer<'de>>(
@@ -129,16 +126,16 @@ fn deserialize_hdkey_derivation_path<'de, D: Deserializer<'de>>(
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_hdkey_derivation_path()))
 }
 
-#[derive(Deserialize, Serialize, Debug, Clone, ApiType)]
 /// Crypto config.
+#[derive(Deserialize, Serialize, Debug, Clone, ApiType)]
 pub struct CryptoConfig {
     /// Mnemonic dictionary that will be used by default in crypto functions.
-    /// If not specified, 1 dictionary will be used.
+    /// If not specified, `English` dictionary will be used.
     #[serde(
-        default = "default_mnemonic_dictionary",
+        default = "MnemonicDictionary::default",
         deserialize_with = "deserialize_mnemonic_dictionary"
     )]
-    pub mnemonic_dictionary: u8,
+    pub mnemonic_dictionary: MnemonicDictionary,
 
     /// Mnemonic word count that will be used by default in crypto functions.
     /// If not specified the default value will be 12.
@@ -160,7 +157,7 @@ pub struct CryptoConfig {
 impl Default for CryptoConfig {
     fn default() -> Self {
         Self {
-            mnemonic_dictionary: default_mnemonic_dictionary(),
+            mnemonic_dictionary: Default::default(),
             mnemonic_word_count: default_mnemonic_word_count(),
             hdkey_derivation_path: default_hdkey_derivation_path(),
         }
