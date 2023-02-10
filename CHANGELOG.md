@@ -7,6 +7,10 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `message_id` and `message_dst` fields are added to all `ProcessingEvent` variants
+- Config parameter `binding: { library: string, version: string }`. Binding authors should mix 
+   this parameter at context initialization.
+- `tonclient-binding-library` and `tonclient-binding-version` GraphQL request headers.
+- `Error.data.binding_library` and `Error.data.binding_version` error data fields. 
 - signature ID and `CapSignatureWithId` capability is supported
 - `net.get_signature_id` function
 - `abi.get_signature_data` function ouput parameter `hash` is renamed to `unsigned`

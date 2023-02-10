@@ -48,8 +48,35 @@ use std::sync::Arc;
 
 pub(crate) const LOCAL_STORAGE_DEFAULT_DIR_NAME: &str = ".tonclient";
 
+lazy_static! {
+    static ref BINDING_CONFIG: std::sync::RwLock<Option<BindingConfig>> =
+        std::sync::RwLock::new(None);
+}
+
 pub fn core_version() -> String {
     env!("CARGO_PKG_VERSION").into()
+}
+
+pub fn binding_config() -> Option<BindingConfig> {
+    (*BINDING_CONFIG).read().unwrap().clone()
+}
+
+fn binding_config_is_some() -> bool {
+    (*BINDING_CONFIG).read().unwrap().is_some()
+}
+
+pub fn update_binding_config(config: &BindingConfig) {
+    if !binding_config_is_some() {
+        *(*BINDING_CONFIG).write().unwrap() = Some(config.clone());
+    }
+}
+
+#[derive(Clone, Default, Deserialize, Serialize, Debug, ApiType)]
+pub struct BindingConfig {
+    #[serde(default)]
+    pub library: String,
+    #[serde(default)]
+    pub version: String,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]

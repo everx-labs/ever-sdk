@@ -1,4 +1,4 @@
-use crate::client::core_version;
+use crate::client::{binding_config, core_version};
 use serde_json::Value;
 use std::fmt::Display;
 use chrono::TimeZone;
@@ -123,6 +123,10 @@ impl ClientError {
     pub fn new(code: u32, message: String, data: Value) -> Self {
         let mut data = data;
         data["core_version"] = Value::String(core_version());
+        if let Some(binding) = binding_config() {
+            data["binding_library"] = Value::String(binding.library);
+            data["binding_version"] = Value::String(binding.version);
+        }
         Self {
             code,
             message,
