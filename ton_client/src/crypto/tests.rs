@@ -1274,7 +1274,7 @@ async fn test_crypto_boxes() -> ton_types::Result<()> {
             ParamsOfCreateCryptoBox {
                 secret_encryption_salt: salt.to_string(),
                 secret: CryptoBoxSecret::RandomSeedPhrase {
-                    dictionary: Default::default(),
+                    dictionary: MnemonicDictionary::Ton,
                     wordcount: 12,
                 },
             },
