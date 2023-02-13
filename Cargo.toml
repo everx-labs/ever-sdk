@@ -7,3 +7,36 @@ members = [
     'api/test',
     'tools/update_trusted_blocks'
 ]
+
+[patch.'https://github.com/tonlabs/ever-types.git']
+ton_types = { git = 'https://git@github.com:443/tonlabs/ever-types.git', tag = '1.12.7' }
+
+[patch.'https://github.com/tonlabs/ton-labs-types.git']
+ton_types = { git = 'https://git@github.com:443/tonlabs/ever-types.git', tag = '1.12.7' }
+
+[patch.'https://github.com/tonlabs/ever-block.git']
+ton_block = { git = 'https://github.com:443//tonlabs/ever-block.git', branch = 'consensus-updates' }
+
+[patch.'https://github.com/tonlabs/ton-labs-block.git']
+ton_block = { git = 'https://github.com:443//tonlabs/ever-block.git', branch = 'consensus-updates' }
+
+[patch.'https://github.com/tonlabs/ever-block-json.git']
+ton_block_json = { git = 'https://github.com:443//tonlabs/ever-block-json', branch = 'consensus-updates' }
+
+[patch.'https://github.com/tonlabs/ton-labs-block-json.git']
+ton_block_json = { git = 'https://github.com:443//tonlabs/ever-block-json', branch = 'consensus-updates' }
+
+[patch.'https://github.com/tonlabs/ever-tl.git']
+ton_api = { git = 'https://github.com:443//tonlabs/ever-tl', package = 'ton_api', branch = 'consensus-updates' }
+
+[patch.'https://github.com/tonlabs/ton-labs-abi.git']
+ton_abi = { git = 'https://github.com:443//tonlabs/ever-abi.git', tag = '2.3.54' }
+
+[patch.'https://github.com/tonlabs/ever-abi.git']
+ton_abi = { git = 'https://github.com:443//tonlabs/ever-abi.git', tag = '2.3.54' }
+
+[patch.'https://github.com/tonlabs/ever-vm.git']
+ton_vm = { git = 'https://github.com:443//tonlabs/ever-vm', branch = 'consensus-updates' }
+
+[patch.'https://github.com/tonlabs/ton-labs-vm.git']
+ton_vm = { git = 'https://github.com:443//tonlabs/ever-vm', branch = 'consensus-updates' }

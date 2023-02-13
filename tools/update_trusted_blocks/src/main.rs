@@ -7,6 +7,7 @@ use ton_client::ClientContext;
 use ton_client::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
 use ton_client::proofs::{ParamsOfProofBlockData, proof_block_data};
 use ton_types::{Result, UInt256};
+use std::str::FromStr;
 
 fn with_project(endpoint: &str) -> String {
     let key = "EVERCLOUD_AUTH_PROJECT";
@@ -135,8 +136,8 @@ async fn main() -> Result<()> {
         let endpoint = with_project(network).to_owned();
         let value = query_network_keyblocks(
             endpoint,
-            zs_root_hash,
-            trusted_key_blocks.remove(&zs_root_hash.inner()),
+            zs_root_hash.clone(),
+            trusted_key_blocks.remove(&zs_root_hash.clone().inner()),
         ).await?;
         trusted_key_blocks.insert(zs_root_hash.inner(), value);
     }
