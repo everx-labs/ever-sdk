@@ -17,8 +17,8 @@ All notable changes to this project will be documented in this file.
     inside message encoding functions.   
     ***Overwrite priority: ExecutionOptions.signature_id -> ClientConfig.network.signature_id -> last network block***
 
-    - `ClientConfig.network.signature_id` is extended with signature_id optional parameter. Specify it in case of offline work for all message signing operations to use. 
-    - `ExecutionOptions` is extended with signature_id optional parameter. Specify locally for a particular `run_tvm` or `run_executor` call. 
+    - `ClientConfig.network.signature_id` optional parameter is added. Specify it in case of offline work for all message signing operations to use. 
+    - `ExecutionOptions` is extended with `signature_id` optional parameter. Specify locally for a particular `run_tvm` or `run_executor` call. 
    - `net.get_signature_id` function returns `global_id` if `CapSignatureWithId` capability is enabled,
 
 - `message_id` and `message_dst` fields are added to all `ProcessingEvent` variants
