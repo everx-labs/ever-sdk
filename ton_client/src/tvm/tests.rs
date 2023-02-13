@@ -1037,7 +1037,7 @@ async fn test_run_executor_fees() {
         .unwrap();
 
     assert_eq!(2237000, return_value.fees.ext_in_msg_fee);
-    assert_eq!(1311900, return_value.fees.account_fees/10);
+    assert_eq!(1292700, return_value.fees.account_fees/10);
     assert_eq!(1000000, return_value.fees.total_fwd_fees);
 
     // use wrong signature
@@ -1106,7 +1106,7 @@ async fn test_run_executor_fees() {
         .unwrap();
 
     assert_eq!(2237000, return_value.fees.ext_in_msg_fee);
-    assert_eq!(1311900, return_value.fees.account_fees/10);
+    assert_eq!(1292700, return_value.fees.account_fees/10);
     assert_eq!(1000000, return_value.fees.total_fwd_fees);
 }
 
