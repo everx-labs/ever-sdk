@@ -6,19 +6,34 @@ All notable changes to this project will be documented in this file.
 
 ### New
 
+- `CapSignatureWithId` capability is supported:
+    Network segnature ID is used by VM in signature verifying instructions if capability
+    `CapSignatureWithId` is enabled in blockchain configuration parameters.     
+    This parameter should be set to `global_id` field from any blockchain block if network can 
+    not be reachable at the moment of message encoding and the message is aimed to be sent into 
+    network with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically 
+    inside message encoding functions. 
+  - `ClientConfig.network.signature_id` is extended with signature_id optional parameter. Specify it in case of offline work for all message signing operations to use. 
+  - `ExecutionOptions` is extended with signature_id optional parameter. Specify locally for a particular run_tvm or run_executor call. 
+  ***Overwrite priority: ExecutionOptions.signature_id -> ClientConfig.network.signature_id -> last network block***
+  - `net.get_signature_id` function returns `global_id` if `CapSignatureWithId` capability is enabled,
+
 - `message_id` and `message_dst` fields are added to all `ProcessingEvent` variants
 - Config parameter `binding: { library: string, version: string }`. Binding authors should define 
    this parameter at context initialization.
 - `tonclient-binding-library` and `tonclient-binding-version` GraphQL request headers.
 - `Error.data.binding_library` and `Error.data.binding_version` error data fields. 
-- `CapSignatureWithId` capability is supported
-- `net.get_signature_id` function
-- `abi.get_signature_data` function ouput parameter `hash` is renamed to `unsigned`
-
+  
+### Client breaking changes
+- `abi.get_signature_data` function ouput parameter `hash` is renamed to `unsigned` for consistency with other crypto functions parameters
+  
 ### Possible breaking change on binding side
 - Changed type of the `dictionary` parameter or mnemonic crypto functions and crypto config.
   Now it uses `MnemonicDictionary` enum type instead of `number`. `MnemonicDictionary` numeric 
   constants are compatible with previous values. 
+
+### Deprecated
+- `debot` engine module is deprecated. Debot engine development has migrated to a separate repository (soon will be published). So, in order to reduce sdk binary size, we will remove `debot` engine module from sdk in the next releases. 
 
 ## [1.40.0] – 2023-01-11
 
