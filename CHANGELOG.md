@@ -8,7 +8,7 @@ All notable changes to this project will be documented in this file.
 
 - `CapSignatureWithId` capability is supported.
   
-    Network segnature ID is used by VM in signature verifying instructions if capability
+    Network signature ID is used by VM in signature verifying instructions if capability
     `CapSignatureWithId` is enabled in blockchain configuration parameters.     
     
     This parameter should be set to `global_id` field from any blockchain block if network can 

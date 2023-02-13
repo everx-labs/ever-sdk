@@ -325,7 +325,7 @@ pub struct NetworkConfig {
     )]
     pub next_remp_status_timeout: u32,
 
-    /// Network segnature ID which is used by VM in signature verifying instructions if capability
+    /// Network signature ID which is used by VM in signature verifying instructions if capability
     /// `CapSignatureWithId` is enabled in blockchain configuration parameters. 
     /// 
     /// This parameter should be set to `global_id` field from any blockchain block if network can 
