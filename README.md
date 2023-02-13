@@ -1,6 +1,6 @@
 # Ever SDK
 
-Core Client Library built on the EVER OS GraphQL API for Everscale DApp development
+Rust Client Library (core) for DApp development in TVM networks (Everscale, TON, Venom, etc)
 
 **Get quick help in our telegram channel:**
 
@@ -8,23 +8,29 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 
 ## Content Table
 
-* [Ever SDK](README.md#ever-sdk)
-  * [Content Table](README.md#content-table)
-  * [Useful links](README.md#useful-links)
-  * [What is Core Everscale Client Library](README.md#what-is-core-everscale-client-library)
-  * [SDKs in other languages (bindings over Ever-SDK)](README.md#sdks-in-other-languages-bindings-over-ever-sdk)
-    * [Official Javascript(Typescript) SDK](README.md#official-javascripttypescript-sdk)
-    * [Community bindings](README.md#community-bindings)
-  * [How to use library](README.md#how-to-use-library)
-  * [How to avoid Soft Breaking Problems](README.md#how-to-avoid-soft-breaking-problems)
-  * [Build client library](README.md#build-client-library)
-  * [Build artifacts](README.md#build-artifacts)
-  * [Run tests](README.md#run-tests)
-  * [Download precompiled binaries](README.md#download-precompiled-binaries)
+- [Ever SDK](#ever-sdk)
+  - [Content Table](#content-table)
+  - [Quick Start](#quick-start)
+  - [What is Core Client Library](#what-is-core-client-library)
+  - [SDKs in other languages (bindings over Ever-SDK)](#sdks-in-other-languages-bindings-over-ever-sdk)
+    - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
+    - [Community bindings](#community-bindings)
+  - [How to use library](#how-to-use-library)
+  - [How to avoid Soft Breaking Problems](#how-to-avoid-soft-breaking-problems)
+  - [Build client library](#build-client-library)
+  - [Build artifacts](#build-artifacts)
+  - [Run tests](#run-tests)
+  - [Download precompiled binaries](#download-precompiled-binaries)
 
-## Useful links
 
-[Quick Start (Javascript)](docs/quick\_start.md)
+## Quick Start
+
+Get your endpoing at [dashboard.evercloud.dev](https://dashboard.evercloud.dev/)  
+
+See the list of available TVM networks:
+https://docs.evercloud.dev/products/evercloud/networks-endpoints
+
+[Quick Start (Javascript binding)](docs/quick\_start.md)
 
 [Error descriptions](docs/reference/error\_codes.md)
 
@@ -34,7 +40,7 @@ Core Client Library built on the EVER OS GraphQL API for Everscale DApp developm
 
 [Guides](docs/guides/installation/add\_sdk\_to\_your\_app.md)
 
-## What is Core Everscale Client Library
+## What is Core Client Library
 
 Core Client Library is written in Rust that can be dynamically linked. It provides all heavy-computation components and functions, such as TON Virtual Machine, TON Transaction Executor, ABI-related functions, boc-related functions, crypto functions.
 
@@ -65,7 +71,7 @@ Repository: [JavaScript SDK](https://github.com/tonlabs/ever-sdk-js)
 | Clojure    | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)                                                                                                                                                                                                                                                           |
 | Dart       | [freetonsurfer/ton\_client\_dart](https://github.com/freetonsurfer/ton\_client\_dart)                                                                                                                                                                                                                                                                   |
 | Golang     | <p><a href="https://github.com/radianceteam/ton-client-go">radianceteam/ton-client-go</a><br><a href="https://github.com/markgenuine/ever-client-go">markgenuine/ever-client-go</a></p>                                                                                                                                                                 |
-| Java       | [radianceteam/ton-client-java](https://github.com/radianceteam/ton-client-java)                                                                                                                                                                                                                                                                         |
+| Java       | <p><a href="https://github.com/radianceteam/ton-client-java">radianceteam/ton-client-java</a><br><a href="https://github.com/deplant/java4ever-binding">laugan/java4ever-binding</a></p>                                                                                                                                                                                                                                                                      |
 | Kotlin     | [mdorofeev/ton-client-kotlin](https://github.com/mdorofeev/ton-client-kotlin)                                                                                                                                                                                                                                                                           |
 | Lua        | [serge-medvedev/tonos-client-lua](https://github.com/serge-medvedev/tonos-client-lua)                                                                                                                                                                                                                                                                   |
 | .NET       | <p><a href="https://github.com/radianceteam/ton-client-dotnet">radianceteam/ton-client-dotnet</a><br><a href="https://github.com/everscale-actions/everscale-dotnet">everscale-actions/everscale-dotnet</a><br><a href="https://github.com/vcvetkovs/TonSdk">vcvetkovs/TonSdk</a><br><a href="https://github.com/staszx/Ton.Sdk">staszx/Ton.Sdk</a></p> |
