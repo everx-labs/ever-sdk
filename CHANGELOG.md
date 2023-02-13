@@ -6,17 +6,20 @@ All notable changes to this project will be documented in this file.
 
 ### New
 
-- `CapSignatureWithId` capability is supported:
+- `CapSignatureWithId` capability is supported.
+  
     Network segnature ID is used by VM in signature verifying instructions if capability
     `CapSignatureWithId` is enabled in blockchain configuration parameters.     
+    
     This parameter should be set to `global_id` field from any blockchain block if network can 
-    not be reachable at the moment of message encoding and the message is aimed to be sent into 
+    not be reached at the moment of message encoding and the message is aimed to be sent into 
     network with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically 
-    inside message encoding functions. 
-  - `ClientConfig.network.signature_id` is extended with signature_id optional parameter. Specify it in case of offline work for all message signing operations to use. 
-  - `ExecutionOptions` is extended with signature_id optional parameter. Specify locally for a particular run_tvm or run_executor call. 
-  ***Overwrite priority: ExecutionOptions.signature_id -> ClientConfig.network.signature_id -> last network block***
-  - `net.get_signature_id` function returns `global_id` if `CapSignatureWithId` capability is enabled,
+    inside message encoding functions.   
+    ***Overwrite priority: ExecutionOptions.signature_id -> ClientConfig.network.signature_id -> last network block***
+
+    - `ClientConfig.network.signature_id` is extended with signature_id optional parameter. Specify it in case of offline work for all message signing operations to use. 
+    - `ExecutionOptions` is extended with signature_id optional parameter. Specify locally for a particular `run_tvm` or `run_executor` call. 
+   - `net.get_signature_id` function returns `global_id` if `CapSignatureWithId` capability is enabled,
 
 - `message_id` and `message_dst` fields are added to all `ProcessingEvent` variants
 - Config parameter `binding: { library: string, version: string }`. Binding authors should define 
