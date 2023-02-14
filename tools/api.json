@@ -558,7 +558,7 @@
                 "number_type": "Int",
                 "number_size": 32
               },
-              "summary": "Network segnature ID which is used by VM in signature verifying instructions if capability `CapSignatureWithId` is enabled in blockchain configuration parameters.",
+              "summary": "Network signature ID which is used by VM in signature verifying instructions if capability `CapSignatureWithId` is enabled in blockchain configuration parameters.",
               "description": "This parameter should be set to `global_id` field from any blockchain block if network can\nnot be reachable at the moment of message encoding and the message is aimed to be sent into\nnetwork with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically\ninside message encoding functions"
             },
             {
@@ -11068,7 +11068,7 @@
                 "number_type": "Int",
                 "number_size": 32
               },
-              "summary": "signature ID to be used in signature verifying instructions when CapSignatureWithId capability is enabled",
+              "summary": "Signature ID to be used in signature verifying instructions when CapSignatureWithId capability is enabled",
               "description": null
             }
           ],

@@ -329,7 +329,7 @@ type NetworkConfig = {
 <br>First REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 1000 (1 sec).
 - `next_remp_status_timeout`?: _number_ – UNSTABLE.
 <br>Subsequent REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 5000 (5 sec).
-- `signature_id`?: _number_ – Network segnature ID which is used by VM in signature verifying instructions if capability `CapSignatureWithId` is enabled in blockchain configuration parameters.
+- `signature_id`?: _number_ – Network signature ID which is used by VM in signature verifying instructions if capability `CapSignatureWithId` is enabled in blockchain configuration parameters.
 <br>This parameter should be set to `global_id` field from any blockchain block if network can<br>not be reachable at the moment of message encoding and the message is aimed to be sent into<br>network with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically<br>inside message encoding functions
 - `access_key`?: _string_ – Access key to GraphQL API (Project secret)
 
