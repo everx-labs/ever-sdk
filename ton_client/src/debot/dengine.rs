@@ -276,11 +276,10 @@ impl DEngine {
 
         let msg_params = ParamsOfEncodeMessageBody {
             abi: self.abi.clone(),
-            signer: Signer::None,
-            processing_try_index: None,
             is_internal: true,
             call_set: CallSet::some_with_function_and_input(func_name, params).unwrap(),
             address: Some(self.addr.clone()),
+            ..Default::default()
         };
         let body = encode_message_body(self.ton.clone(), msg_params).await?.body;
         let (_, body_cell) = deserialize_cell_from_base64(&body, "message body")?;
@@ -715,14 +714,12 @@ impl DEngine {
         let msg_params = ParamsOfEncodeMessage {
             abi: abi.clone(),
             address: Some(addr.clone()),
-            deploy_set: None,
             call_set: if args.is_none() {
                 CallSet::some_with_function(func)
             } else {
                 CallSet::some_with_function_and_input(func, args.unwrap())
             },
-            signer: Signer::None,
-            processing_try_index: None,
+            ..Default::default()
         };
 
         let result = encode_message(ton.clone(), msg_params).await?;
@@ -775,7 +772,7 @@ impl DEngine {
                 Some(signing_box) => Signer::SigningBox { handle: signing_box },
                 None => Signer::None,
             },
-            processing_try_index: None,
+            ..Default::default()
         };
 
         let browser = self.browser.clone();
@@ -784,7 +781,7 @@ impl DEngine {
             let browser = browser.clone();
             async move {
                 match event {
-                    ProcessingEvent::WillSend { shard_block_id: _, message_id, message: _ } => {
+                    ProcessingEvent::WillSend { shard_block_id: _, message_id, message_dst: _, message: _ } => {
                         browser.log(format!("Sending message {}", message_id)).await;
                     },
                     _ => (),

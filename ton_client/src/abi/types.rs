@@ -211,3 +211,33 @@ impl MessageSource {
         })
     }
 }
+
+pub(crate) async fn resolve_signature_id(
+    context: &Arc<ClientContext>,
+    provided_signature_id: Option<i32>,
+) -> ClientResult<Option<i32>> {
+    if let Some(signature_id) = provided_signature_id.or(context.config.network.signature_id) {
+        return Ok(Some(signature_id));
+    }
+
+    Ok(crate::net::get_signature_id(context.clone()).await?.signature_id)
+}
+
+pub(crate) async fn extend_data_to_sign(
+    context: &Arc<ClientContext>,
+    provided_signature_id: Option<i32>,
+    data_to_sign: Option<Vec<u8>>
+) -> ClientResult<Option<Vec<u8>>> {
+    if let Some(data_to_sign) = data_to_sign {
+        if let Some(signature_id) = resolve_signature_id(context, provided_signature_id).await? {
+            let mut extended_data = Vec::with_capacity(4 + data_to_sign.len());
+            extended_data.extend_from_slice(&signature_id.to_be_bytes());
+            extended_data.extend_from_slice(&data_to_sign);
+            Ok(Some(extended_data))
+        } else {
+            Ok(Some(data_to_sign))
+        }
+    } else {
+        Ok(None)
+    }
+}

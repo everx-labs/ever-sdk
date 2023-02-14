@@ -12,8 +12,8 @@
  *
  */
 
-use super::types::resolve_blockchain_config;
 use super::*;
+use super::types::resolve_network_params;
 use crate::abi::{
     encode_account::{ParamsOfEncodeAccount, StateInitSource},
     Abi, CallSet, DeploySet, FunctionHeader, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
@@ -26,11 +26,12 @@ use crate::boc::{
 use crate::error::ClientResult;
 use crate::json_interface::modules::{AbiModule, TvmModule};
 use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
+use crate::net::network_params::offline_config;
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
 use crate::tests::{TestClient, EXCEPTION, HELLO, SUBSCRIBE};
-use crate::tvm::types::mainnet_config;
 use api_info::ApiModule;
 use serde_json::Value;
+use ton_block::{GlobalCapabilities, ConfigParamEnum, Serializable, ConfigParam8};
 use std::sync::Arc;
 use ton_types::{BuilderData, Cell, SliceData};
 use ton_vm::stack::{continuation::ContinuationData, StackItem};
@@ -218,8 +219,7 @@ async fn test_run_message<F>(
                     }),
                 ),
                 signer: Signer::Keys { keys: keys.clone() },
-                processing_try_index: None,
-                address: None,
+                ..Default::default()
             },
             None,
         )
@@ -245,8 +245,7 @@ async fn test_run_message<F>(
             abi: abi.clone(),
             call_set: CallSet::some_with_function_and_input("subscribe", subscribe_params.clone()),
             signer: Signer::Keys { keys: keys.clone() },
-            deploy_set: None,
-            processing_try_index: None,
+            ..Default::default()
         })
         .await
         .unwrap();
@@ -266,8 +265,7 @@ async fn test_run_message<F>(
             ),
             signer: Signer::Keys { keys: keys.clone() },
             address: Some(address.clone()),
-            deploy_set: None,
-            processing_try_index: None,
+            ..Default::default()
         })
         .await
         .unwrap();
@@ -349,7 +347,6 @@ async fn test_run_account_uninit() {
     let message = client
         .encode_message(ParamsOfEncodeMessage {
             abi: abi.clone(),
-            address: None,
             call_set: Some(CallSet {
                 function_name: "constructor".to_owned(),
                 header: None,
@@ -359,8 +356,8 @@ async fn test_run_account_uninit() {
                 tvc,
                 ..Default::default()
             }),
-            processing_try_index: None,
             signer: Signer::Keys { keys: keys.clone() },
+            ..Default::default()
         })
         .await
         .unwrap();
@@ -403,10 +400,8 @@ async fn profile_tvm() {
         .encode_message(ParamsOfEncodeMessage {
             abi: abi.clone(),
             call_set: CallSet::some_with_function("listContenders"),
-            signer: Signer::None,
             address: Some(address.clone()),
-            deploy_set: None,
-            processing_try_index: None,
+            ..Default::default()
         })
         .await
         .unwrap();
@@ -446,10 +441,8 @@ async fn profile_tvm() {
                             "id": id.as_str().unwrap(),
                         }),
                     ),
-                    signer: Signer::None,
                     address: Some(address.clone()),
-                    deploy_set: None,
-                    processing_try_index: None,
+                    ..Default::default()
                 })
                 .await
                 .unwrap();
@@ -864,18 +857,20 @@ async fn test_resolve_blockchain_config() {
     let block_config = base64::encode(&include_bytes!("../boc/test_data/block_config.boc"));
     let custom_config_params = deserialize_object_from_base64(&block_config, "config").unwrap();
 
-    let config = resolve_blockchain_config(&local_context, Some(block_config))
+    let config = resolve_network_params(&local_context, Some(block_config), None)
         .await
-        .unwrap();
+        .unwrap()
+        .blockchain_config;
     assert_eq!(config.raw_config(), &custom_config_params.object);
 
-    let config = resolve_blockchain_config(&local_context, None)
+    let config = resolve_network_params(&local_context, None, None)
         .await
-        .unwrap();
-    assert_eq!(config.raw_config(), mainnet_config().raw_config());
+        .unwrap()
+        .blockchain_config;
+    assert_eq!(config.raw_config(), offline_config().0.raw_config());
 
-    let config = resolve_blockchain_config(&net_context, None).await.unwrap();
-    assert_ne!(config.raw_config(), mainnet_config().raw_config());
+    let config = resolve_network_params(&net_context, None, None).await.unwrap().blockchain_config;
+    assert_ne!(config.raw_config(), offline_config().0.raw_config());
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -1042,7 +1037,7 @@ async fn test_run_executor_fees() {
         .unwrap();
 
     assert_eq!(2237000, return_value.fees.ext_in_msg_fee);
-    assert_eq!(1311900, return_value.fees.account_fees/10);
+    assert_eq!(1292700, return_value.fees.account_fees/10);
     assert_eq!(1000000, return_value.fees.total_fwd_fees);
 
     // use wrong signature
@@ -1111,7 +1106,7 @@ async fn test_run_executor_fees() {
         .unwrap();
 
     assert_eq!(2237000, return_value.fees.ext_in_msg_fee);
-    assert_eq!(1311900, return_value.fees.account_fees/10);
+    assert_eq!(1292700, return_value.fees.account_fees/10);
     assert_eq!(1000000, return_value.fees.total_fwd_fees);
 }
 
@@ -1198,4 +1193,74 @@ async fn test_gosh() {
             .await
             .unwrap();
     }
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_signature_id() {
+    let client = TestClient::new_with_config(json!({}));
+    let (abi, tvc) = TestClient::package("GiverV2", None);
+
+    let keys = client.generate_sign_keys();
+    let signer = Signer::Keys { keys };
+
+    let (orig_config, global_id) = offline_config();
+    let mut config = orig_config.raw_config().clone();
+    let mut global_version = config.get_global_version().unwrap();
+    global_version.capabilities |= GlobalCapabilities::CapSignatureWithId as u64;
+    config.set_config(ConfigParamEnum::ConfigParam8(ConfigParam8 { global_version })).unwrap();
+    let config = base64::encode(&config.write_to_bytes().unwrap());
+    let orig_config = base64::encode(&orig_config.raw_config().write_to_bytes().unwrap());
+
+    let deploy_message: ResultOfEncodeMessage = client
+        .request_async(
+            "abi.encode_message",
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                call_set: CallSet::some_with_function("constructor"),
+                deploy_set: DeploySet::some_with_tvc(tvc.clone()),
+                signer: signer.clone(),
+                signature_id: Some(global_id),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    client
+        .request_async::<_, ResultOfRunExecutor>(
+            "tvm.run_executor",
+            ParamsOfRunExecutor {
+                message: deploy_message.message.clone(),
+                account: AccountForExecutor::Uninit,
+                abi: Some(abi.clone()),
+                execution_options: Some(ExecutionOptions {
+                    blockchain_config: Some(config.clone()),
+                    signature_id: Some(global_id),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+
+    // check signature verification is failed if capability is disabled
+    let result = client
+        .request_async::<_, ResultOfRunExecutor>(
+            "tvm.run_executor",
+            ParamsOfRunExecutor {
+                message: deploy_message.message,
+                account: AccountForExecutor::Uninit,
+                abi: Some(abi.clone()),
+                execution_options: Some(ExecutionOptions {
+                    blockchain_config: Some(orig_config.clone()),
+                    signature_id: Some(global_id),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap_err();
+    assert_eq!(result.data["exit_code"].as_i64().unwrap(), StdContractError::InvalidSignature as i64);
 }

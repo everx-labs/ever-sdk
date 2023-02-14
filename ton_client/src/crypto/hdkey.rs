@@ -22,7 +22,7 @@ use hmac::*;
 use pbkdf2::pbkdf2;
 use libsecp256k1::{SecretKey, PublicKey};
 use sha2::{Digest, Sha512};
-use crate::crypto::default_hdkey_compliant;
+use crate::crypto::{default_hdkey_compliant, MnemonicDictionary};
 
 //----------------------------------------------------------------- crypto.hdkey_xprv_from_mnemonic
 
@@ -31,7 +31,7 @@ pub struct ParamsOfHDKeyXPrvFromMnemonic {
     /// String with seed phrase
     pub phrase: String,
     /// Dictionary identifier
-    pub dictionary: Option<u8>,
+    pub dictionary: Option<MnemonicDictionary>,
     /// Mnemonic word count
     pub word_count: Option<u8>,
 }

@@ -49,14 +49,21 @@ pub enum ProcessingEvent {
     /// from which block it will search for the transaction.
     ///
     /// Fetched block will be used later in waiting phase.
-    WillFetchFirstBlock {},
+    WillFetchFirstBlock {
+        message_id: String,
+        message_dst: String,
+    },
 
     /// Notifies the app that the client has failed to fetch the account's current
     /// shard block. This may happen due to the network issues.
     /// Receiving this event means that message processing will not proceed -
     /// message was not sent, and Developer can try to run `process_message` again,
     /// in the hope that the connection is restored.
-    FetchFirstBlockFailed { error: ClientError },
+    FetchFirstBlockFailed {
+        error: ClientError,
+        message_id: String,
+        message_dst: String,
+     },
 
     /// Notifies the app that the message will be sent to the network.
     /// This event means that the account's current shard block was successfully fetched
@@ -64,6 +71,7 @@ pub enum ProcessingEvent {
     WillSend {
         shard_block_id: String,
         message_id: String,
+        message_dst: String,
         message: String,
     },
 
@@ -77,6 +85,7 @@ pub enum ProcessingEvent {
     DidSend {
         shard_block_id: String,
         message_id: String,
+        message_dst: String,
         message: String,
     },
 
@@ -93,6 +102,7 @@ pub enum ProcessingEvent {
     SendFailed {
         shard_block_id: String,
         message_id: String,
+        message_dst: String,
         message: String,
         error: ClientError,
     },
@@ -109,6 +119,7 @@ pub enum ProcessingEvent {
     WillFetchNextBlock {
         shard_block_id: String,
         message_id: String,
+        message_dst: String,
         message: String,
     },
 
@@ -123,6 +134,7 @@ pub enum ProcessingEvent {
     FetchNextBlockFailed {
         shard_block_id: String,
         message_id: String,
+        message_dst: String,
         message: String,
         error: ClientError,
     },
@@ -139,6 +151,7 @@ pub enum ProcessingEvent {
     /// events will be repeated.
     MessageExpired {
         message_id: String,
+        message_dst: String,
         message: String,
         error: ClientError,
     },
@@ -146,30 +159,36 @@ pub enum ProcessingEvent {
     /// Notifies the app that the message has been delivered to the thread's validators
     RempSentToValidators {
         message_id: String,
+        message_dst: String,
         timestamp: u64,
         json: Value,
     },
     /// Notifies the app that the message has been successfully included into a block candidate by the thread's collator
     RempIncludedIntoBlock {
         message_id: String,
+        message_dst: String,
         timestamp: u64,
         json: Value,
     },
     /// Notifies the app that the block candidate with the message has been accepted by the thread's validators
     RempIncludedIntoAcceptedBlock {
         message_id: String,
+        message_dst: String,
         timestamp: u64,
         json: Value,
     },
     /// Notifies the app about some other minor REMP statuses occurring during message processing
     RempOther {
         message_id: String,
+        message_dst: String,
         timestamp: u64,
         json: Value,
     },
     /// Notifies the app about any problem that has occurred in REMP processing -
     /// in this case library switches to the fallback transaction awaiting scenario (sequential block reading).
     RempError {
+        message_id: String,
+        message_dst: String,
         error: ClientError,
     }
 }

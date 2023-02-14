@@ -272,9 +272,12 @@ Fetched block will be used later in waiting phase.
 
 ```ts
 type ProcessingEventWillFetchFirstBlockVariant = {
-
+    message_id: string,
+    message_dst: string
 }
 ```
+- `message_id`: _string_
+- `message_dst`: _string_
 
 
 ## ProcessingEventFetchFirstBlockFailedVariant
@@ -286,10 +289,14 @@ in the hope that the connection is restored.
 
 ```ts
 type ProcessingEventFetchFirstBlockFailedVariant = {
-    error: ClientError
+    error: ClientError,
+    message_id: string,
+    message_dst: string
 }
 ```
 - `error`: _[ClientError](mod\_client.md#clienterror)_
+- `message_id`: _string_
+- `message_dst`: _string_
 
 
 ## ProcessingEventWillSendVariant
@@ -299,11 +306,13 @@ Notifies the app that the message will be sent to the network. This event means 
 type ProcessingEventWillSendVariant = {
     shard_block_id: string,
     message_id: string,
+    message_dst: string,
     message: string
 }
 ```
 - `shard_block_id`: _string_
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 
 
@@ -316,11 +325,13 @@ Do not forget to specify abi of your contract as well, it is crucial for process
 type ProcessingEventDidSendVariant = {
     shard_block_id: string,
     message_id: string,
+    message_dst: string,
     message: string
 }
 ```
 - `shard_block_id`: _string_
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 
 
@@ -339,12 +350,14 @@ as well, it is crucial for processing. See `processing.wait_for_transaction` doc
 type ProcessingEventSendFailedVariant = {
     shard_block_id: string,
     message_id: string,
+    message_dst: string,
     message: string,
     error: ClientError
 }
 ```
 - `shard_block_id`: _string_
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 - `error`: _[ClientError](mod\_client.md#clienterror)_
 
@@ -363,11 +376,13 @@ as well, it is crucial for processing. See `processing.wait_for_transaction` doc
 type ProcessingEventWillFetchNextBlockVariant = {
     shard_block_id: string,
     message_id: string,
+    message_dst: string,
     message: string
 }
 ```
 - `shard_block_id`: _string_
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 
 
@@ -385,12 +400,14 @@ Another way to tune this is to specify long timeout in `NetworkConfig.wait_for_t
 type ProcessingEventFetchNextBlockFailedVariant = {
     shard_block_id: string,
     message_id: string,
+    message_dst: string,
     message: string,
     error: ClientError
 }
 ```
 - `shard_block_id`: _string_
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 - `error`: _[ClientError](mod\_client.md#clienterror)_
 
@@ -408,11 +425,13 @@ events will be repeated.
 ```ts
 type ProcessingEventMessageExpiredVariant = {
     message_id: string,
+    message_dst: string,
     message: string,
     error: ClientError
 }
 ```
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 - `error`: _[ClientError](mod\_client.md#clienterror)_
 
@@ -423,11 +442,13 @@ Notifies the app that the message has been delivered to the thread's validators
 ```ts
 type ProcessingEventRempSentToValidatorsVariant = {
     message_id: string,
+    message_dst: string,
     timestamp: bigint,
     json: any
 }
 ```
 - `message_id`: _string_
+- `message_dst`: _string_
 - `timestamp`: _bigint_
 - `json`: _any_
 
@@ -438,11 +459,13 @@ Notifies the app that the message has been successfully included into a block ca
 ```ts
 type ProcessingEventRempIncludedIntoBlockVariant = {
     message_id: string,
+    message_dst: string,
     timestamp: bigint,
     json: any
 }
 ```
 - `message_id`: _string_
+- `message_dst`: _string_
 - `timestamp`: _bigint_
 - `json`: _any_
 
@@ -453,11 +476,13 @@ Notifies the app that the block candidate with the message has been accepted by 
 ```ts
 type ProcessingEventRempIncludedIntoAcceptedBlockVariant = {
     message_id: string,
+    message_dst: string,
     timestamp: bigint,
     json: any
 }
 ```
 - `message_id`: _string_
+- `message_dst`: _string_
 - `timestamp`: _bigint_
 - `json`: _any_
 
@@ -468,11 +493,13 @@ Notifies the app about some other minor REMP statuses occurring during message p
 ```ts
 type ProcessingEventRempOtherVariant = {
     message_id: string,
+    message_dst: string,
     timestamp: bigint,
     json: any
 }
 ```
 - `message_id`: _string_
+- `message_dst`: _string_
 - `timestamp`: _bigint_
 - `json`: _any_
 
@@ -482,9 +509,13 @@ Notifies the app about any problem that has occurred in REMP processing - in thi
 
 ```ts
 type ProcessingEventRempErrorVariant = {
+    message_id: string,
+    message_dst: string,
     error: ClientError
 }
 ```
+- `message_id`: _string_
+- `message_dst`: _string_
 - `error`: _[ClientError](mod\_client.md#clienterror)_
 
 
@@ -526,6 +557,8 @@ Notifies the application that the account's current shard block will be fetched 
 
 Fetched block will be used later in waiting phase.
 
+- `message_id`: _string_
+- `message_dst`: _string_
 
 When _type_ is _'FetchFirstBlockFailed'_
 
@@ -536,6 +569,8 @@ message was not sent, and Developer can try to run `process_message` again,
 in the hope that the connection is restored.
 
 - `error`: _[ClientError](mod\_client.md#clienterror)_
+- `message_id`: _string_
+- `message_dst`: _string_
 
 When _type_ is _'WillSend'_
 
@@ -543,6 +578,7 @@ Notifies the app that the message will be sent to the network. This event means 
 
 - `shard_block_id`: _string_
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 
 When _type_ is _'DidSend'_
@@ -553,6 +589,7 @@ Do not forget to specify abi of your contract as well, it is crucial for process
 
 - `shard_block_id`: _string_
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 
 When _type_ is _'SendFailed'_
@@ -569,6 +606,7 @@ as well, it is crucial for processing. See `processing.wait_for_transaction` doc
 
 - `shard_block_id`: _string_
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 - `error`: _[ClientError](mod\_client.md#clienterror)_
 
@@ -585,6 +623,7 @@ as well, it is crucial for processing. See `processing.wait_for_transaction` doc
 
 - `shard_block_id`: _string_
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 
 When _type_ is _'FetchNextBlockFailed'_
@@ -600,6 +639,7 @@ Another way to tune this is to specify long timeout in `NetworkConfig.wait_for_t
 
 - `shard_block_id`: _string_
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 - `error`: _[ClientError](mod\_client.md#clienterror)_
 
@@ -615,6 +655,7 @@ the maximum retries count or receives a successful result.  All the processing
 events will be repeated.
 
 - `message_id`: _string_
+- `message_dst`: _string_
 - `message`: _string_
 - `error`: _[ClientError](mod\_client.md#clienterror)_
 
@@ -623,6 +664,7 @@ When _type_ is _'RempSentToValidators'_
 Notifies the app that the message has been delivered to the thread's validators
 
 - `message_id`: _string_
+- `message_dst`: _string_
 - `timestamp`: _bigint_
 - `json`: _any_
 
@@ -631,6 +673,7 @@ When _type_ is _'RempIncludedIntoBlock'_
 Notifies the app that the message has been successfully included into a block candidate by the thread's collator
 
 - `message_id`: _string_
+- `message_dst`: _string_
 - `timestamp`: _bigint_
 - `json`: _any_
 
@@ -639,6 +682,7 @@ When _type_ is _'RempIncludedIntoAcceptedBlock'_
 Notifies the app that the block candidate with the message has been accepted by the thread's validators
 
 - `message_id`: _string_
+- `message_dst`: _string_
 - `timestamp`: _bigint_
 - `json`: _any_
 
@@ -647,6 +691,7 @@ When _type_ is _'RempOther'_
 Notifies the app about some other minor REMP statuses occurring during message processing
 
 - `message_id`: _string_
+- `message_dst`: _string_
 - `timestamp`: _bigint_
 - `json`: _any_
 
@@ -654,25 +699,27 @@ When _type_ is _'RempError'_
 
 Notifies the app about any problem that has occurred in REMP processing - in this case library switches to the fallback transaction awaiting scenario (sequential block reading).
 
+- `message_id`: _string_
+- `message_dst`: _string_
 - `error`: _[ClientError](mod\_client.md#clienterror)_
 
 
 Variant constructors:
 
 ```ts
-function processingEventWillFetchFirstBlock(): ProcessingEvent;
-function processingEventFetchFirstBlockFailed(error: ClientError): ProcessingEvent;
-function processingEventWillSend(shard_block_id: string, message_id: string, message: string): ProcessingEvent;
-function processingEventDidSend(shard_block_id: string, message_id: string, message: string): ProcessingEvent;
-function processingEventSendFailed(shard_block_id: string, message_id: string, message: string, error: ClientError): ProcessingEvent;
-function processingEventWillFetchNextBlock(shard_block_id: string, message_id: string, message: string): ProcessingEvent;
-function processingEventFetchNextBlockFailed(shard_block_id: string, message_id: string, message: string, error: ClientError): ProcessingEvent;
-function processingEventMessageExpired(message_id: string, message: string, error: ClientError): ProcessingEvent;
-function processingEventRempSentToValidators(message_id: string, timestamp: bigint, json: any): ProcessingEvent;
-function processingEventRempIncludedIntoBlock(message_id: string, timestamp: bigint, json: any): ProcessingEvent;
-function processingEventRempIncludedIntoAcceptedBlock(message_id: string, timestamp: bigint, json: any): ProcessingEvent;
-function processingEventRempOther(message_id: string, timestamp: bigint, json: any): ProcessingEvent;
-function processingEventRempError(error: ClientError): ProcessingEvent;
+function processingEventWillFetchFirstBlock(message_id: string, message_dst: string): ProcessingEvent;
+function processingEventFetchFirstBlockFailed(error: ClientError, message_id: string, message_dst: string): ProcessingEvent;
+function processingEventWillSend(shard_block_id: string, message_id: string, message_dst: string, message: string): ProcessingEvent;
+function processingEventDidSend(shard_block_id: string, message_id: string, message_dst: string, message: string): ProcessingEvent;
+function processingEventSendFailed(shard_block_id: string, message_id: string, message_dst: string, message: string, error: ClientError): ProcessingEvent;
+function processingEventWillFetchNextBlock(shard_block_id: string, message_id: string, message_dst: string, message: string): ProcessingEvent;
+function processingEventFetchNextBlockFailed(shard_block_id: string, message_id: string, message_dst: string, message: string, error: ClientError): ProcessingEvent;
+function processingEventMessageExpired(message_id: string, message_dst: string, message: string, error: ClientError): ProcessingEvent;
+function processingEventRempSentToValidators(message_id: string, message_dst: string, timestamp: bigint, json: any): ProcessingEvent;
+function processingEventRempIncludedIntoBlock(message_id: string, message_dst: string, timestamp: bigint, json: any): ProcessingEvent;
+function processingEventRempIncludedIntoAcceptedBlock(message_id: string, message_dst: string, timestamp: bigint, json: any): ProcessingEvent;
+function processingEventRempOther(message_id: string, message_dst: string, timestamp: bigint, json: any): ProcessingEvent;
+function processingEventRempError(message_id: string, message_dst: string, error: ClientError): ProcessingEvent;
 ```
 
 ## ResultOfProcessMessage

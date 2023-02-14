@@ -1,5 +1,5 @@
 use crate::abi::Abi;
-use crate::boc::internal::{deserialize_object_from_boc, DeserializedObject};
+use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
 use crate::error::{AddNetworkUrl, ClientResult};
 use crate::net::{EndpointStat, ResultOfSubscription};
@@ -10,7 +10,7 @@ use std::convert::TryInto;
 use std::sync::Arc;
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
-use ton_block::Message;
+use ton_block::{Message, MsgAddressInt};
 
 use super::remp::{RempStatus, RempStatusData};
 
@@ -79,6 +79,9 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
         deserialize_object_from_boc::<Message>(&context, &params.message, "message")
             .await?;
     let message_id = message.cell.repr_hash().as_hex_string();
+    let message_dst = message.object
+        .dst()
+        .ok_or(Error::message_has_not_destination_address())?;
 
     let (sender, receiver) = mpsc::channel(10);
     let mut receiver = tokio_stream::wrappers::ReceiverStream::new(receiver).fuse();
@@ -109,7 +112,13 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
     let subscription = match subscription_result {
         Ok(result) => Some(result),
         Err(error) => {
-            if params.send_events { callback(ProcessingEvent::RempError { error }).await; }
+            if params.send_events {
+                callback(ProcessingEvent::RempError { 
+                    error,
+                    message_id: message_id.clone(),
+                    message_dst: message_dst.to_string(),
+                }).await;
+            }
             notify.notify_one();
             None
         }
@@ -125,7 +134,9 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
             _ = timer => {
                 if params.send_events {
                     callback(ProcessingEvent::RempError {
-                        error: Error::next_remp_status_timeout()
+                        error: Error::next_remp_status_timeout(),
+                        message_id: message_id.clone(),
+                        message_dst: message_dst.to_string(),
                     }).await;
                 }
                 notify.notify_one(); None
@@ -137,11 +148,18 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
                     context.clone(),
                     callback.clone(),
                     &params,
-                    &message,
+                    &message_id,
+                    &message_dst,
                     remp_message
                 ).await {
                     Err(error) => {
-                        if params.send_events { callback(ProcessingEvent::RempError { error }).await;}
+                        if params.send_events {
+                            callback(ProcessingEvent::RempError {
+                                error,
+                                message_id: message_id.clone(),
+                                message_dst: message_dst.to_string(),
+                            }).await;
+                        }
                         notify.notify_one();
                         None
                     },
@@ -167,7 +185,8 @@ async fn process_remp_message<F: futures::Future<Output = ()> + Send>(
     context: Arc<ClientContext>,
     callback: Arc<impl Fn(ProcessingEvent) -> F + Send + Sync>,
     params: &ParamsOfWaitForTransaction,
-    message: &DeserializedObject<Message>,
+    message_id: &str,
+    message_dst: &MsgAddressInt,
     remp_message: ClientResult<serde_json::Value>,
 ) -> ClientResult<Option<ClientResult<ResultOfProcessMessage>>> {
     let remp_message = remp_message?;
@@ -176,13 +195,13 @@ async fn process_remp_message<F: futures::Future<Output = ()> + Send>(
 
     match status {
         RempStatus::RejectedByFullnode(data) => {
-            Ok(Some(process_rejected_status(context.clone(), params, message, data).await))
+            Ok(Some(process_rejected_status(context.clone(), params, &message_dst, data).await))
         },
         RempStatus::Finalized(data) => {
-            Ok(Some(Ok(process_finalized_status(context.clone(), params, message, data).await?)))
+            Ok(Some(Ok(process_finalized_status(context.clone(), params, message_id, &message_dst, data).await?)))
         },
         _ => {
-            if params.send_events { callback(status.into()).await; }
+            if params.send_events { callback(status.into_event(message_dst.to_string())).await; }
             Ok(None)
         }
     }
@@ -191,14 +210,9 @@ async fn process_remp_message<F: futures::Future<Output = ()> + Send>(
 async fn process_rejected_status(
     context: Arc<ClientContext>,
     params: &ParamsOfWaitForTransaction,
-    message: &DeserializedObject<Message>,
+    message_dst: &MsgAddressInt,
     data: RempStatusData,
 ) -> ClientResult<ResultOfProcessMessage> {
-    let address = message
-        .object
-        .dst_ref()
-        .cloned()
-        .ok_or(Error::message_has_not_destination_address())?;
     let message_expiration_time =
         get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message).await?
         .unwrap_or_else(|| context.env.now_ms());
@@ -207,7 +221,7 @@ async fn process_rejected_status(
 
     let resolved = resolve_error(
         context.clone(),
-        &address,
+        message_dst,
         params.message.clone(),
         Error::message_rejected(&data.message_id, error),
         (message_expiration_time / 1000) as u32 - 1,
@@ -223,15 +237,10 @@ async fn process_rejected_status(
 async fn process_finalized_status(
     context: Arc<ClientContext>,
     params: &ParamsOfWaitForTransaction,
-    message: &DeserializedObject<Message>,
+    message_id: &str,
+    message_dst: &MsgAddressInt,
     data: RempStatusData,
 ) -> ClientResult<ResultOfProcessMessage> {
-    let message_id = message.cell.repr_hash().as_hex_string();
-    let address = message
-        .object
-        .dst_ref()
-        .cloned()
-        .ok_or(Error::message_has_not_destination_address())?;
     let message_expiration_time =
         get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message).await?
         .unwrap_or_else(|| context.env.now_ms());
@@ -245,11 +254,11 @@ async fn process_finalized_status(
     let result = fetching::fetch_transaction_result(
             &context,
             block_id,
-            &message_id,
+            message_id,
             &params.message,
             None,
             &params.abi,
-            address,
+            message_dst.clone(),
             (message_expiration_time / 1000) as u32,
             (context.env.now_ms() / 1000) as u32,
         )
