@@ -40,11 +40,13 @@ pub(crate) use message_monitor_sdk_services::SdkServices;
 pub use process_message::{process_message, ParamsOfProcessMessage};
 pub use send_message::{send_message, ParamsOfSendMessage, ResultOfSendMessage};
 pub use send_messages::{
-    send_messages, send_messages_api, ParamsOfSendMessages, ResultOfSendMessages,
+    send_messages, send_messages_api, MessageSendingParams, ParamsOfSendMessages,
+    ResultOfSendMessages,
 };
 pub use ton_client_processing::{
-    MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringTransaction,
-    MessageMonitoringTransactionCompute, MonitorFetchWait, MonitoredMessage, MonitoringQueueInfo,
+    MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
+    MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitorFetchWait,
+    MonitoredMessage, MonitoringQueueInfo,
 };
 pub use types::{DecodedOutput, ProcessingEvent, ProcessingResponseType, ResultOfProcessMessage};
 pub use wait_for_transaction::{wait_for_transaction, ParamsOfWaitForTransaction};
