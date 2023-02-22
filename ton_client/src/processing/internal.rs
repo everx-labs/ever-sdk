@@ -9,6 +9,8 @@ use std::sync::Arc;
 use ton_block::MsgAddressInt;
 use ton_sdk::{Block, MessageId};
 
+const ACCOUNT_NONEXIST: u8 = 3;
+
 /// Increments `retries` and returns `true` if `retries` hasn't reached `limit`.
 pub(crate) fn can_retry_more(retries: u8, limit: i8) -> bool {
     limit < 0 || retries < limit as u8
@@ -86,7 +88,11 @@ async fn get_local_error(
     time: u32,
     show_tips_on_error: bool,
 ) -> ClientResult<String> {
-    let account = fetch_account(context.clone(), address, "boc last_paid").await?;
+    let account = fetch_account(context.clone(), address, "boc last_paid acc_type").await?;
+
+    if account["acc_type"].as_i64() == Some(ACCOUNT_NONEXIST as i64) {
+        return Ok("Account is deleted".to_owned());
+    }
 
     let account: Account = serde_json::from_value(account)
         .map_err(|err| Error::invalid_data(format!("Can not parse account for error resolving: {}", err)))?;
