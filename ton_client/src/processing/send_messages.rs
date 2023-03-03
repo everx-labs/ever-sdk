@@ -21,25 +21,25 @@ use ton_client_processing::{MessageMonitoringParams, MonitoredMessage};
 #[derive(Serialize, Deserialize, ApiType, Default, Debug, Clone)]
 pub struct MessageSendingParams {
     /// BOC of the message, that must be sent to the blockchain.
-    boc: String,
+    pub boc: String,
 
     /// Expiration time of the message.
     /// Must be specified as a UNIX timestamp in seconds.
-    wait_until: u32,
+    pub wait_until: u32,
 
     /// User defined data associated with this message.
     /// Helps to identify this message when user received message processing results.
-    user_data: Option<Value>,
+    pub user_data: Option<Value>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug, Clone)]
 pub struct ParamsOfSendMessages {
     /// Messages that must be sent to the blockchain.
-    messages: Vec<MessageSendingParams>,
+    pub messages: Vec<MessageSendingParams>,
 
     /// Optional message monitor queue that starts monitoring for the processing
     /// results for sent messages.
-    monitor_queue: Option<String>,
+    pub monitor_queue: Option<String>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, PartialEq, Debug)]
