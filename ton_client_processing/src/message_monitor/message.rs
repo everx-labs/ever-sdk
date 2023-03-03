@@ -53,7 +53,7 @@ pub struct MessageMonitoringParams {
     pub wait_until: u32,
 
     /// User defined data associated with this message.
-    /// Helps to identify this message when user received message processing results.
+    /// Helps to identify this message when user received `MessageMonitoringResult`.
     pub user_data: Option<Value>,
 }
 
