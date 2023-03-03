@@ -67,7 +67,7 @@ pub struct ParamsOfFetchNextMonitorResults {
 #[derive(Serialize, ApiType)]
 pub struct ResultOfFetchNextMonitorResults {
     /// List of the resolved results.
-    results: Vec<MessageMonitoringResult>,
+    pub results: Vec<MessageMonitoringResult>,
 }
 
 /// Fetches next resolved results from the specified monitoring queue.
