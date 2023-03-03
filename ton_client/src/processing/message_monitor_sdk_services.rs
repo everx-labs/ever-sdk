@@ -69,15 +69,10 @@ impl From<ton_client_processing::Error> for ClientError {
 fn deserialize_subscription_data(
     value: ClientResult<ResultOfSubscription>,
 ) -> ton_client_processing::Result<Vec<MessageMonitoringResult>> {
-    value
-        .map(|result| {
-            serde_json::from_value::<Vec<GraphQLMessageMonitoringResult>>(result.result)
-                .unwrap()
-                .into_iter()
-                .map(|x| x.into())
-                .collect::<Vec<_>>()
-        })
-        .map_err(|err| err.into())
+    let result = serde_json::from_value::<GraphQLMessageMonitoringResult>(value?.result)
+        .map_err(|err| crate::net::Error::invalid_server_response(err))?
+        .into();
+    Ok(vec![result])
 }
 
 #[async_trait]
