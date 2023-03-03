@@ -203,6 +203,16 @@ Where:
 
 ## [processing](mod\_processing.md) – Message processing module.
 
+[monitor_messages](mod\_processing.md#monitor_messages) – Starts monitoring for the processing results of the specified messages.
+
+[get_monitor_info](mod\_processing.md#get_monitor_info) – Returns summary information about current state of the specified monitoring queue.
+
+[fetch_next_monitor_results](mod\_processing.md#fetch_next_monitor_results) – Fetches next resolved results from the specified monitoring queue.
+
+[cancel_monitor](mod\_processing.md#cancel_monitor) – Cancels all background activity and releases all allocated system resources for the specified monitoring queue.
+
+[send_messages](mod\_processing.md#send_messages) – Sends specified messages to the blockchain.
+
 [send_message](mod\_processing.md#send_message) – Sends message to the network
 
 [wait_for_transaction](mod\_processing.md#wait_for_transaction) – Performs monitoring of the network for the result transaction of the external inbound message processing.

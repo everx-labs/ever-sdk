@@ -23,6 +23,8 @@ Provides information about library.
 
 [NetworkConfig](mod\_client.md#networkconfig)
 
+[BindingConfig](mod\_client.md#bindingconfig)
+
 [NetworkQueriesProtocol](mod\_client.md#networkqueriesprotocol) – Network protocol used to perform GraphQL queries.
 
 [CryptoConfig](mod\_client.md#cryptoconfig) – Crypto config.
@@ -110,7 +112,7 @@ function config(): Promise<ClientConfig>;
 
 ### Result
 
-- `binding`?: _BindingConfig_
+- `binding`?: _[BindingConfig](mod\_client.md#bindingconfig)_
 - `network`?: _[NetworkConfig](mod\_client.md#networkconfig)_
 - `crypto`?: _[CryptoConfig](mod\_client.md#cryptoconfig)_
 - `abi`?: _[AbiConfig](mod\_client.md#abiconfig)_
@@ -265,7 +267,7 @@ type ClientConfig = {
     local_storage_path?: string
 }
 ```
-- `binding`?: _BindingConfig_
+- `binding`?: _[BindingConfig](mod\_client.md#bindingconfig)_
 - `network`?: _[NetworkConfig](mod\_client.md#networkconfig)_
 - `crypto`?: _[CryptoConfig](mod\_client.md#cryptoconfig)_
 - `abi`?: _[AbiConfig](mod\_client.md#abiconfig)_
@@ -330,6 +332,17 @@ type NetworkConfig = {
 - `signature_id`?: _number_ – Network segnature ID which is used by VM in signature verifying instructions if capability `CapSignatureWithId` is enabled in blockchain configuration parameters.
 <br>This parameter should be set to `global_id` field from any blockchain block if network can<br>not be reachable at the moment of message encoding and the message is aimed to be sent into<br>network with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically<br>inside message encoding functions
 - `access_key`?: _string_ – Access key to GraphQL API (Project secret)
+
+
+## BindingConfig
+```ts
+type BindingConfig = {
+    library?: string,
+    version?: string
+}
+```
+- `library`?: _string_
+- `version`?: _string_
 
 
 ## NetworkQueriesProtocol

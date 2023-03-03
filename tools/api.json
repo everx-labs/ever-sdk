@@ -10250,7 +10250,7 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": "User defined data associated with this message. Helps to identify this message when user received message processing results.",
+              "summary": "User defined data associated with this message. Helps to identify this message when user received `MessageMonitoringResult`.",
               "description": null
             }
           ],
@@ -10426,7 +10426,7 @@
                 "type": "Ref",
                 "ref_name": "Value"
               },
-              "summary": "User defined data associated with this message. Helps to identify this message when user received message processing results.",
+              "summary": "User defined data associated with this message. Helps to identify this message when user received `MessageMonitoringResult`.",
               "description": null
             }
           ],
