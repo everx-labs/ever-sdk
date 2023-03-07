@@ -475,7 +475,7 @@ impl ServerLink {
                         *operation_id.lock().await = id;
                         None
                     }
-                    GraphQLQueryEvent::Data(value) => Some(Ok(value[&collection_name].clone())),
+                    GraphQLQueryEvent::Data(mut value) => Some(Ok(value[&collection_name].take())),
                     GraphQLQueryEvent::Error(error) => Some(Err(error)),
                     GraphQLQueryEvent::Complete => Some(Ok(Value::Null)),
                 }

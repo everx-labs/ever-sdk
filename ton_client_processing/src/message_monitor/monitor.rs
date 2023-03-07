@@ -83,6 +83,7 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
         queue: &str,
         wait: MonitorFetchWait,
     ) -> crate::error::Result<Vec<MessageMonitoringResult>> {
+        let mut listen_queues = self.listen_queues.clone();
         loop {
             let results = {
                 let mut queues = self.queues.write().unwrap();
@@ -107,7 +108,7 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
                 }
                 return Ok(results);
             }
-            self.listen_queues.clone().changed().await.ok();
+            listen_queues.changed().await.unwrap();
         }
     }
 
@@ -160,8 +161,8 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
                 for queue in queues.write().unwrap().values_mut() {
                     queue.resolve(&results);
                 }
+                notify_queues.send(true).ok();
             }
-            notify_queues.send(true).ok();
             async {}
         };
         Ok(Some(

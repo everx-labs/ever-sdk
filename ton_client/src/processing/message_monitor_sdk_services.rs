@@ -119,6 +119,7 @@ impl MessageMonitorSdkServices for SdkServices {
 }
 
 #[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
 struct GraphQLMessageMonitoringParams {
     pub hash: Option<String>,
     pub address: Option<String>,
