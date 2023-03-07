@@ -1,6 +1,6 @@
 # Ever SDK
 
-Rust Client Library (core) for DApp development in TVM networks (Everscale, TON, Venom, etc)
+Rust Client Library (core) for DApp development in TVM blockchains (Everscale, TON, Venom Blockchain, etc)
 
 **Get quick help in our telegram channel:**
 
