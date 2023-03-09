@@ -761,7 +761,15 @@ impl SdkInterface {
         let answer_id = decode_answer_id(args)?;
         let box_handle = get_num_arg::<u32>(args, "boxHandle")?;
         let sign_int = decode_abi_bigint(&get_arg(&args, "hash")?).map_err(|e| e.to_string())?;
-        let sign_hash = hex::decode(format!("{:064x}", sign_int)).map_err(|e| e.to_string())?;
+        let mut sign_hash = hex::decode(format!("{:064x}", sign_int)).map_err(|e| e.to_string())?;
+
+        let signature_id = crate::net::get_signature_id(self.ton.clone())
+            .await
+            .map_err(|e| e.to_string())?
+            .signature_id;
+        if let Some(id) = signature_id {
+            sign_hash = Self::extend_sign_hash(id, sign_hash).await;
+        }
 
         let signature = signing_box_sign(
             self.ton.clone(),
@@ -775,6 +783,13 @@ impl SdkInterface {
         .signature;
 
         Ok((answer_id, json!({ "signature": signature })))
+    }
+
+    async fn extend_sign_hash(id: i32, signing_data: Vec<u8>) -> Vec<u8> {
+        let mut extended_data = Vec::with_capacity(4 + signing_data.len());
+        extended_data.extend_from_slice(&id.to_be_bytes());
+        extended_data.extend_from_slice(&signing_data);
+        extended_data
     }
 }
 

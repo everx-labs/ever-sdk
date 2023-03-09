@@ -211,14 +211,28 @@ async fn decode_and_fix_ext_msg(
     match signer {
         Signer::SigningBox { handle: _ } => {
             let sdata = if meta.abi_ver >= ABI_2_3 {
-                let mut sdata = msg.dst().unwrap_or_default().write_to_new_cell().map_err(msg_err)?;
+                let mut sdata = msg.dst()
+                    .unwrap_or_default()
+                    .write_to_new_cell()
+                    .map_err(msg_err)?;
                 sdata.append_builder(&new_body).map_err(msg_err)?;
                 sdata
             } else {
                 new_body.clone()
             };
-            let hash = sdata.into_cell().map_err(msg_err)?.repr_hash().as_slice().to_vec();
-            let signature = signer.sign(ton.clone(), &hash).await?;
+            let mut signing_data = sdata.into_cell()
+                .map_err(msg_err)?
+                .repr_hash()
+                .as_slice()
+                .to_vec();
+            let signature_id = crate::net::get_signature_id(ton.clone()).await?.signature_id;
+            if let Some(id) = signature_id {
+                let mut extended_data = Vec::with_capacity(4 + signing_data.len());
+                extended_data.extend_from_slice(&id.to_be_bytes());
+                extended_data.extend_from_slice(&signing_data);
+                signing_data = extended_data;
+            }
+            let signature = signer.sign(ton.clone(), &signing_data).await?;
             if let Some(signature) = signature {
                 signed_body
                     .append_bit_one()
