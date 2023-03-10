@@ -2470,8 +2470,8 @@ dependencies = [
 
 [[package]]
 name = "ton_abi"
-version = "2.3.65"
-source = "git+https://github.com/tonlabs/ever-abi.git?tag=2.3.65#00fca4378ed42feb776b759cee8f08adf696630c"
+version = "2.3.73"
+source = "git+https://github.com/tonlabs/ever-abi.git?tag=2.3.73#cc50dcb6f04e8b2f9300e12d91bb57f15aadd44c"
 dependencies = [
  "base64 0.10.1",
  "byteorder",
@@ -2486,14 +2486,14 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "sha2 0.10.6",
- "ton_block",
+ "ton_block 1.9.37",
  "ton_types 1.12.7",
 ]
 
 [[package]]
 name = "ton_api"
-version = "0.2.178"
-source = "git+https://github.com/tonlabs/ever-tl.git?tag=0.2.178#65063ea49048c33007ee2a8abdcfd0a68791a4e9"
+version = "0.2.185"
+source = "git+https://github.com/tonlabs/ever-tl.git?tag=0.2.185#562c422f3136fe78d99518b4df62f1855eb83958"
 dependencies = [
  "byteorder",
  "extfmt",
@@ -2505,7 +2505,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "serde_json",
- "ton_block",
+ "ton_block 1.9.37",
  "ton_tl_codegen",
  "ton_types 1.12.7",
 ]
@@ -2529,9 +2529,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "ton_block"
+version = "1.9.37"
+source = "git+https://github.com/tonlabs/ever-block.git?tag=1.9.37#3a5a1bb0c6c5f20563f678885031e0942cb39c08"
+dependencies = [
+ "base64 0.13.1",
+ "crc 3.0.0",
+ "ed25519",
+ "ed25519-dalek",
+ "failure",
+ "hex 0.4.3",
+ "log",
+ "num",
+ "num-traits",
+ "sha2 0.10.6",
+ "ton_types 1.12.7",
+]
+
+[[package]]
 name = "ton_block_json"
-version = "0.7.95"
-source = "git+https://github.com/tonlabs/ever-block-json.git?tag=0.7.95#74639a4049778f4c31fa065bec3429629f1891db"
+version = "0.7.105"
+source = "git+https://github.com/tonlabs/ever-block-json.git?tag=0.7.105#5405d633afa9638d2dcd89e5e4b1b8332b276ca5"
 dependencies = [
  "base64 0.13.1",
  "failure",
@@ -2542,7 +2560,7 @@ dependencies = [
  "serde_derive",
  "serde_json",
  "ton_api",
- "ton_block",
+ "ton_block 1.9.37",
  "ton_types 1.12.7",
 ]
 
@@ -2598,7 +2616,7 @@ dependencies = [
  "tokio-stream",
  "tokio-tungstenite",
  "ton_abi",
- "ton_block",
+ "ton_block 1.9.37",
  "ton_block_json",
  "ton_client_processing",
  "ton_executor",
@@ -2627,19 +2645,19 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "tokio",
- "ton_block",
+ "ton_block 1.9.28",
  "ton_types 1.12.7",
 ]
 
 [[package]]
 name = "ton_executor"
-version = "1.15.173"
-source = "git+https://github.com/tonlabs/ever-executor.git?tag=1.15.173#8a5beb9a08f3e3a518a1512944de0ae129d7c9b2"
+version = "1.15.185"
+source = "git+https://github.com/tonlabs/ever-executor.git?tag=1.15.185#a4de5692586262e61f052b03ce94201acb78c447"
 dependencies = [
  "failure",
  "lazy_static",
  "log",
- "ton_block",
+ "ton_block 1.9.37",
  "ton_types 1.12.7",
  "ton_vm",
 ]
@@ -2664,14 +2682,14 @@ dependencies = [
  "serde_json",
  "sha2 0.9.9",
  "ton_abi",
- "ton_block",
+ "ton_block 1.9.37",
  "ton_types 1.12.7",
 ]
 
 [[package]]
 name = "ton_tl_codegen"
 version = "0.0.2"
-source = "git+https://github.com/tonlabs/ever-tl.git?tag=0.2.178#65063ea49048c33007ee2a8abdcfd0a68791a4e9"
+source = "git+https://github.com/tonlabs/ever-tl.git?tag=0.2.185#562c422f3136fe78d99518b4df62f1855eb83958"
 dependencies = [
  "crc 1.8.1",
  "failure",
@@ -2725,8 +2743,8 @@ dependencies = [
 
 [[package]]
 name = "ton_vm"
-version = "1.8.114"
-source = "git+https://github.com/tonlabs/ever-vm.git?tag=1.8.114#307eb2aa5733befca95515f5cb2acb4b1cf80707"
+version = "1.8.125"
+source = "git+https://github.com/tonlabs/ever-vm.git?tag=1.8.125#f9383849449f56d2ed0013f2044e1180c5994870"
 dependencies = [
  "diffy",
  "ed25519",
@@ -2740,7 +2758,7 @@ dependencies = [
  "rand 0.7.3",
  "sha2 0.10.6",
  "similar",
- "ton_block",
+ "ton_block 1.9.37",
  "ton_types 1.12.7",
  "zstd",
 ]
