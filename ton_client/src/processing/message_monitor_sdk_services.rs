@@ -31,6 +31,7 @@ impl SdkServices {
                 error
                 transaction {
                     hash
+                    aborted
                     compute {
                         exit_code
                     }
@@ -69,7 +70,14 @@ impl From<ton_client_processing::Error> for ClientError {
 fn deserialize_subscription_data(
     value: ClientResult<ResultOfSubscription>,
 ) -> ton_client_processing::Result<Vec<MessageMonitoringResult>> {
-    let result = serde_json::from_value::<GraphQLMessageMonitoringResult>(value?.result)
+    let result = value?.result;
+    if result.is_null() {
+        return Ok(vec![]);
+    }
+    let statuses = result.get("recentExtInMessageStatuses").ok_or_else(|| {
+        crate::net::Error::invalid_server_response("missing required `recentExtInMessageStatuses`")
+    })?;
+    let result = serde_json::from_value::<GraphQLMessageMonitoringResult>(statuses.clone())
         .map_err(|err| crate::net::Error::invalid_server_response(err))?
         .into();
     Ok(vec![result])
