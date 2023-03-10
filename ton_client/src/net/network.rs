@@ -89,6 +89,22 @@ impl NetworkContext {
         self.run_subscription(subscription, callback).await
     }
 
+    pub async fn subscribe<F: Future<Output = ()> + Send>(
+        &self,
+        subscription: String,
+        variables: Option<serde_json::Value>,
+        callback: impl Fn(ClientResult<ResultOfSubscription>) -> F + Send + Sync + 'static,
+    ) -> ClientResult<u32> {
+        let server_link = self.get_server_link()?;
+        let subscription = server_link
+            .subscribe(subscription, variables)
+            .await
+            .map_err(|err| net::Error::queries_subscribe_failed(err))
+            .add_network_url(server_link)
+            .await?;
+        self.run_subscription(subscription, callback).await
+    }
+
     async fn run_subscription<F: Future<Output = ()> + Send>(
         &self,
         subscription: super::server_link::Subscription,
@@ -119,22 +135,6 @@ impl NetworkContext {
         }));
 
         Ok(handle)
-    }
-
-    pub async fn subscribe<F: Future<Output = ()> + Send>(
-        &self,
-        subscription: String,
-        variables: Option<serde_json::Value>,
-        callback: impl Fn(ClientResult<ResultOfSubscription>) -> F + Send + Sync + 'static,
-    ) -> ClientResult<u32> {
-        let server_link = self.get_server_link()?;
-        let subscription = server_link
-            .subscribe(subscription, variables)
-            .await
-            .map_err(|err| net::Error::queries_subscribe_failed(err))
-            .add_network_url(server_link)
-            .await?;
-        self.run_subscription(subscription, callback).await
     }
 
     pub(crate) async fn get_current_network_uid(&self) -> ton_types::Result<Arc<NetworkUID>> {

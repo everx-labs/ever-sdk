@@ -11,6 +11,13 @@ All notable changes to this project will be documented in this file.
 - Added `processing.send_messages` function.
 - Improved error resolving for deleted accounts
 
+
+### Fixed
+
+- `ParamsOfSubscribe` was not public.
+- `subscribe` did not trim subscription query text. It is required for some graphql servers 
+  expecting that query text starts from operation text.
+
 ## [1.41.0] – 2023-01-18
 
 ### New

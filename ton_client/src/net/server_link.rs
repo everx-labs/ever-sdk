@@ -495,7 +495,10 @@ impl ServerLink {
     ) -> ClientResult<Subscription> {
         let event_receiver = self
             .websocket_link
-            .start_operation(GraphQLQuery::with_subscription(subscription, variables))
+            .start_operation(GraphQLQuery::with_subscription(
+                subscription.trim().to_string(),
+                variables,
+            ))
             .await?;
         let event_receiver = tokio_stream::wrappers::ReceiverStream::new(event_receiver);
 

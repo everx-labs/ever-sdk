@@ -26,9 +26,7 @@ pub use iterators::{
     iterator_next, remove_iterator, ChainIterator, ParamsOfIteratorNext, RegisteredIterator,
     ResultOfIteratorNext,
 };
-pub use network_params::{
-    get_signature_id, ResultOfGetSignatureId
-};
+pub use network_params::{get_signature_id, ResultOfGetSignatureId};
 pub use queries::{
     aggregate_collection, query, query_collection, query_counterparties, wait_for_collection,
     ParamsOfQuery, ParamsOfWaitForCollection, ResultOfAggregateCollection, ResultOfQuery,
@@ -36,7 +34,7 @@ pub use queries::{
 };
 pub(crate) use server_link::{EndpointStat, NetworkState, ServerLink, MAX_TIMEOUT};
 pub use subscriptions::{
-    subscribe, subscribe_collection, unsubscribe, ParamsOfSubscribeCollection,
+    subscribe, subscribe_collection, unsubscribe, ParamsOfSubscribe, ParamsOfSubscribeCollection,
     ResultOfSubscribeCollection, ResultOfSubscription, SubscriptionResponseType,
 };
 pub use ton_gql::{
