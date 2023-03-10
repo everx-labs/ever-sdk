@@ -2,33 +2,33 @@
 
 Rust Client Library (core) for DApp development in TVM networks (Everscale, TON, Venom, etc)
 
+<figure><img src="docs/.gitbook/assets/vf-dev-program.png" alt=""><figcaption></figcaption></figure>
+
 **Get quick help in our telegram channel:**
 
 [![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ever\_sdk)
 
 ## Content Table
 
-- [Ever SDK](#ever-sdk)
-  - [Content Table](#content-table)
-  - [Quick Start](#quick-start)
-  - [What is Core Client Library](#what-is-core-client-library)
-  - [SDKs in other languages (bindings over Ever-SDK)](#sdks-in-other-languages-bindings-over-ever-sdk)
-    - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
-    - [Community bindings](#community-bindings)
-  - [How to use library](#how-to-use-library)
-  - [How to avoid Soft Breaking Problems](#how-to-avoid-soft-breaking-problems)
-  - [Build client library](#build-client-library)
-  - [Build artifacts](#build-artifacts)
-  - [Run tests](#run-tests)
-  - [Download precompiled binaries](#download-precompiled-binaries)
-
+* [Ever SDK](./#ever-sdk)
+  * [Content Table](./#content-table)
+  * [Quick Start](./#quick-start)
+  * [What is Core Client Library](./#what-is-core-client-library)
+  * [SDKs in other languages (bindings over Ever-SDK)](./#sdks-in-other-languages-bindings-over-ever-sdk)
+    * [Official Javascript(Typescript) SDK](./#official-javascripttypescript-sdk)
+    * [Community bindings](./#community-bindings)
+  * [How to use library](./#how-to-use-library)
+  * [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
+  * [Build client library](./#build-client-library)
+  * [Build artifacts](./#build-artifacts)
+  * [Run tests](./#run-tests)
+  * [Download precompiled binaries](./#download-precompiled-binaries)
 
 ## Quick Start
 
-Get your endpoing at [dashboard.evercloud.dev](https://dashboard.evercloud.dev/)  
+Get your endpoing at [dashboard.evercloud.dev](https://dashboard.evercloud.dev/)
 
-See the list of available TVM networks:
-https://docs.evercloud.dev/products/evercloud/networks-endpoints
+See the list of available TVM networks: https://docs.evercloud.dev/products/evercloud/networks-endpoints
 
 [Quick Start (Javascript binding)](docs/quick\_start.md)
 
@@ -71,7 +71,7 @@ Repository: [JavaScript SDK](https://github.com/tonlabs/ever-sdk-js)
 | Clojure    | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)                                                                                                                                                                                                                                                           |
 | Dart       | [freetonsurfer/ton\_client\_dart](https://github.com/freetonsurfer/ton\_client\_dart)                                                                                                                                                                                                                                                                   |
 | Golang     | <p><a href="https://github.com/radianceteam/ton-client-go">radianceteam/ton-client-go</a><br><a href="https://github.com/markgenuine/ever-client-go">markgenuine/ever-client-go</a></p>                                                                                                                                                                 |
-| Java       | <p><a href="https://github.com/radianceteam/ton-client-java">radianceteam/ton-client-java</a><br><a href="https://github.com/deplant/java4ever-binding">laugan/java4ever-binding</a></p>                                                                                                                                                                                                                                                                      |
+| Java       | <p><a href="https://github.com/radianceteam/ton-client-java">radianceteam/ton-client-java</a><br><a href="https://github.com/deplant/java4ever-binding">laugan/java4ever-binding</a></p>                                                                                                                                                                |
 | Kotlin     | [mdorofeev/ton-client-kotlin](https://github.com/mdorofeev/ton-client-kotlin)                                                                                                                                                                                                                                                                           |
 | Lua        | [serge-medvedev/tonos-client-lua](https://github.com/serge-medvedev/tonos-client-lua)                                                                                                                                                                                                                                                                   |
 | .NET       | <p><a href="https://github.com/radianceteam/ton-client-dotnet">radianceteam/ton-client-dotnet</a><br><a href="https://github.com/everscale-actions/everscale-dotnet">everscale-actions/everscale-dotnet</a><br><a href="https://github.com/vcvetkovs/TonSdk">vcvetkovs/TonSdk</a><br><a href="https://github.com/staszx/Ton.Sdk">staszx/Ton.Sdk</a></p> |
