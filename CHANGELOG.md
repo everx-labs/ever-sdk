@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.41.1] – 2023-03-14
+
+### Fixed
+
+- `api_derive` compilation errors
+- 
+
 ## [1.41.0] – 2023-02-13
 
 ### New
