@@ -272,7 +272,7 @@ type ExecutionOptions = {
 - `block_lt`?: _bigint_ – block logical time
 - `transaction_lt`?: _bigint_ – transaction logical time
 - `chksig_always_succeed`?: _boolean_ – Overrides standard TVM behaviour. If set to `true` then CHKSIG always will return `true`.
-- `signature_id`?: _number_ – signature ID to be used in signature verifying instructions when CapSignatureWithId capability is enabled
+- `signature_id`?: _number_ – Signature ID to be used in signature verifying instructions when CapSignatureWithId capability is enabled
 
 
 ## AccountForExecutorNoneVariant

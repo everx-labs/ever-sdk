@@ -441,6 +441,12 @@ fn mnemonic() {
     TestClient::init_log();
     let client = TestClient::new();
 
+    let params = serde_json::from_str::<ParamsOfMnemonicWords>(r#"{ "dictionary": 1 }"#).unwrap();
+    assert_eq!(params.dictionary, Some(MnemonicDictionary::English));
+
+    let params = serde_json::from_str::<ParamsOfMnemonicWords>(r#"{  }"#).unwrap();
+    assert_eq!(params.dictionary, None);
+
     let result: ResultOfMnemonicWords = client
         .request(
             "crypto.mnemonic_words",

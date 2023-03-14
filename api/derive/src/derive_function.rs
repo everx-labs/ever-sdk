@@ -1,13 +1,13 @@
+use proc_macro::{Span, TokenStream};
 use crate::utils::{doc_from, field_from, function_to_tokens, get_value_of, type_from};
 use api_info;
-use quote::__private::{Ident, Span};
 use quote::quote;
-use syn::{FnArg, Item, ItemFn, Meta, Pat, ReturnType};
+use syn::{FnArg, Ident, Item, ItemFn, Meta, Pat, ReturnType};
 
 pub fn impl_api_function(
-    attr: proc_macro::TokenStream,
-    item: proc_macro::TokenStream,
-) -> proc_macro::TokenStream {
+    attr: TokenStream,
+    item: TokenStream,
+) -> TokenStream {
     let syn_func = match syn::parse::<Item>(item.clone()).unwrap() {
         Item::Fn(ref f) => f.clone(),
         _ => panic!("api_function can only be applied to functions"),
@@ -16,14 +16,14 @@ pub fn impl_api_function(
     let syn_meta = syn::parse::<Meta>(attr).ok();
     let fn_impl_tokens = function_to_tokens(&function_from(syn_meta, syn_func));
 
-    let fn_ident = Ident::new(&format!("{}_api", name), Span::call_site());
+    let fn_ident = Ident::new(&format!("{}_api", name), Span::call_site().into());
     let fn_tokens = quote! {
         pub fn #fn_ident () -> api_info::Function {
             #fn_impl_tokens
         }
     };
-    let fn_tokens: proc_macro::TokenStream = fn_tokens.into();
-    let mut output = proc_macro::TokenStream::new();
+    let fn_tokens: TokenStream = fn_tokens.into();
+    let mut output = TokenStream::new();
     output.extend(item);
     output.extend(fn_tokens);
     output

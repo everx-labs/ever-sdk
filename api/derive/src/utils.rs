@@ -1,6 +1,6 @@
+use proc_macro2::TokenStream;
 use api_info;
 use api_info::NumberType;
-use quote::__private::TokenStream;
 use quote::quote;
 use syn::{
     AngleBracketedGenericArguments, Attribute, Fields, GenericArgument, Lit, Meta, MetaNameValue,

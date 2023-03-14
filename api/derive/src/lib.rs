@@ -10,22 +10,22 @@ use proc_macro::TokenStream;
 
 #[proc_macro_derive(ApiType)]
 pub fn api_type(input: TokenStream) -> TokenStream {
-    crate::derive_type::impl_api_type(input)
+    derive_type::impl_api_type(input)
 }
 
 #[proc_macro_derive(ApiModule, attributes(api_module))]
 pub fn api_module(input: TokenStream) -> TokenStream {
-    crate::derive_module::impl_api_module(input)
+    derive_module::impl_api_module(input)
 }
 
 #[proc_macro_attribute]
 pub fn api_function(attr: TokenStream, input: TokenStream) -> TokenStream {
-    crate::derive_function::impl_api_function(attr, input)
+    derive_function::impl_api_function(attr, input)
 }
 
 #[proc_macro_derive(ZeroizeOnDrop)]
 pub fn zeroize_on_drop(input: TokenStream) -> TokenStream {
-    crate::derive_type::impl_zeroize_on_drop(input)
+    derive_type::impl_zeroize_on_drop(input)
 }
 
 #[macro_use]

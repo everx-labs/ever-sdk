@@ -34,7 +34,7 @@ pub struct ExecutionOptions {
     /// Overrides standard TVM behaviour.
     /// If set to `true` then CHKSIG always will return `true`.
     pub chksig_always_succeed: Option<bool>,
-    /// signature ID to be used in signature verifying instructions when CapSignatureWithId
+    /// Signature ID to be used in signature verifying instructions when CapSignatureWithId
     /// capability is enabled
     pub signature_id: Option<i32>,
 }

@@ -24,11 +24,12 @@ use ed25519_dalek::{PublicKey, SecretKey};
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
 use rand::RngCore;
+use serde_repr::{Deserialize_repr, Serialize_repr};
 use sha2::Sha512;
 use std::convert::TryFrom;
 use zeroize::Zeroize;
 
-#[derive(Copy, Clone, Debug, Deserialize, Serialize, Zeroize, PartialEq, ApiType)]
+#[derive(Copy, Clone, Debug, Deserialize_repr, Serialize_repr, Zeroize, PartialEq, ApiType)]
 #[repr(u8)]
 pub enum MnemonicDictionary {
     /// TON compatible dictionary
