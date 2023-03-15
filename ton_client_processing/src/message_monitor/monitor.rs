@@ -90,7 +90,9 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
                 if let Some(queue) = queues.get_mut(queue) {
                     let is_ready = match wait {
                         MonitorFetchWait::NoWait => true,
-                        MonitorFetchWait::AtLeastOne => !queue.resolved.is_empty(),
+                        MonitorFetchWait::AtLeastOne => {
+                            !queue.resolved.is_empty() || queue.unresolved.is_empty()
+                        }
                         MonitorFetchWait::All => queue.unresolved.is_empty(),
                     };
                     if is_ready {

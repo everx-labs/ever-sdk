@@ -41,6 +41,45 @@ async fn test_fetch() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_fetch_at_least_one() {
+    let api = sdk_services();
+    let mon = MessageMonitor::new(api.clone());
+    mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
+        .await
+        .unwrap();
+    let results = mon
+        .fetch_next_monitor_results("1", MonitorFetchWait::NoWait)
+        .await
+        .unwrap();
+    assert_eq!(results, vec![]);
+    api.add_recent_ext_in_messages(vec![
+        msg_res(1, MessageMonitoringStatus::Finalized),
+        msg_res(2, MessageMonitoringStatus::Finalized),
+    ]);
+    let results = mon
+        .fetch_next_monitor_results("1", MonitorFetchWait::All)
+        .await
+        .unwrap();
+    assert_eq!(
+        sorted(results, |x| &x.hash),
+        vec![
+            msg_res(1, MessageMonitoringStatus::Finalized),
+            msg_res(2, MessageMonitoringStatus::Finalized)
+        ]
+    );
+    let results = mon
+        .fetch_next_monitor_results("1", MonitorFetchWait::All)
+        .await
+        .unwrap();
+    assert_eq!(results.len(), 0);
+    let results = mon
+        .fetch_next_monitor_results("1", MonitorFetchWait::AtLeastOne)
+        .await
+        .unwrap();
+    assert_eq!(results.len(), 0);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_fetch_wait_all() {
     let api = sdk_services();
     let mon = Arc::new(MessageMonitor::new(api.clone()));
