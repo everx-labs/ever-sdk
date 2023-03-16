@@ -524,9 +524,10 @@ impl LinkHandler {
         Ok(())
     }
 
-    async fn start_running_operations(&self, ws: &mut WSSender) -> ClientResult<()> {
-        for (id, operation) in &self.operations {
+    async fn start_running_operations(&mut self, ws: &mut WSSender) -> ClientResult<()> {
+        for (id, operation) in &mut self.operations {
             ws_send(ws, operation.operation.get_start_message(id.to_string())).await?;
+            operation.notify(GraphQLQueryEvent::Started).await;
         }
         Ok(())
     }
@@ -556,7 +557,11 @@ impl LinkHandler {
         }
 
         let result = if let Some(ws) = ws {
-            ws_send(ws, operation.operation.get_start_message(id.to_string())).await
+            let result = ws_send(ws, operation.operation.get_start_message(id.to_string())).await;
+            if result.is_ok() {
+                operation.notify(GraphQLQueryEvent::Started).await;
+            }
+            result
         } else {
             Ok(())
         };

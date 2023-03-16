@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
     `fetch_next_monitor_results`, `get_monitor_info`, `cancel_monitor****`.
 - Added `processing.send_messages` function.
 - Improved error resolving for deleted accounts
+- Network errors are returned on subscription creation if occured
 
 
 ### Fixed

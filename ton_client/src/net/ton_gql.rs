@@ -529,4 +529,5 @@ pub enum GraphQLQueryEvent {
     Data(Value),
     Error(ClientError),
     Complete,
+    Started,
 }

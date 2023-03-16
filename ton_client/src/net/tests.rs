@@ -435,11 +435,7 @@ async fn message_sending_addresses() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn subscribe_for_transactions_with_addresses() {
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": TestClient::endpoints(),
-        }
-    }));
+    let client =  TestClient::new();
     let subscription_client = TestClient::new();
     let keys = subscription_client.generate_sign_keys();
     let deploy_params = ParamsOfEncodeMessage {
@@ -524,25 +520,7 @@ async fn subscribe_for_transactions_with_addresses() {
         assert_eq!(notifications.len(), 0);
     }
 
-    // suspend subscription
-    let _: () = subscription_client
-        .request_async("net.suspend", ())
-        .await
-        .unwrap();
-
-    // deploy to create second transaction
-    client
-        .net_process_message(
-            ParamsOfProcessMessage {
-                message_encode_params: deploy_params,
-                send_events: false,
-            },
-            TestClient::default_callback,
-        )
-        .await
-        .unwrap();
-
-    // create second subscription while network is suspended
+    // create second subscription before suspend because it waits for resume at start
     let callback2 = move |result: serde_json::Value, response_type: SubscriptionResponseType| {
         let result = match response_type {
             SubscriptionResponseType::Ok => {
@@ -586,6 +564,25 @@ async fn subscribe_for_transactions_with_addresses() {
             callback2
         ).await.unwrap();
 
+    // suspend subscription
+    let _: () = subscription_client
+        .request_async("net.suspend", ())
+        .await
+        .unwrap();
+
+    // deploy to create second transaction
+    client
+        .net_process_message(
+            ParamsOfProcessMessage {
+                message_encode_params: deploy_params,
+                send_events: false,
+            },
+            TestClient::default_callback,
+        )
+        .await
+        .unwrap();
+
+
     // give some time for subscription to receive all data
     std::thread::sleep(std::time::Duration::from_millis(500));
     {
@@ -606,7 +603,7 @@ async fn subscribe_for_transactions_with_addresses() {
         .unwrap();
 
     // run contract function to create third transaction
-    subscription_client
+    client
         .net_process_message(
             ParamsOfProcessMessage {
                 message_encode_params: ParamsOfEncodeMessage {
@@ -1545,9 +1542,10 @@ async fn low_level_subscribe() {
             }
         }
         .unwrap();
+        let id = result.result["messages"]["id"].as_str().unwrap().to_string();
         let messages_copy = messages_copy.clone();
         async move {
-            messages_copy.lock().await.push(result.result);
+            messages_copy.lock().await.push(id);
         }
     };
 

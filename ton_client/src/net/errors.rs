@@ -22,6 +22,7 @@ pub enum ErrorCode {
     Unauthorized = 615,
     QueryTransactionTreeTimeout = 616,
     GraphqlConnectionError = 617,
+    WrongWebscoketProtocolSequence = 618,
 }
 
 pub struct Error;
@@ -209,5 +210,12 @@ impl Error {
         );
         err.data = json!({ "timeout": timeout });
         err
+    }
+
+    pub fn wrong_ws_protocol_sequence(err: &str) -> ClientError {
+        error(
+            ErrorCode::WrongWebscoketProtocolSequence,
+            format!("Wrong webscoket protocol sequence: {}", err),
+        )
     }
 }
