@@ -2,7 +2,15 @@
 
 Rust Client Library (core) for DApp development in TVM blockchains (Everscale, TON, Venom Blockchain, etc)
 
+<div>
+
+<figure><img src="docs/.gitbook/assets/Everscale Logo.png" alt=""><figcaption></figcaption></figure>
+
+ 
+
 <figure><img src="docs/.gitbook/assets/vf-dev-program.png" alt=""><figcaption></figcaption></figure>
+
+</div>
 
 **Get quick help in our telegram channel:**
 
