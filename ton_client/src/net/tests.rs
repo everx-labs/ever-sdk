@@ -1623,3 +1623,40 @@ async fn query_using_ws() {
 
     assert!(messages.result.len() > 0);
 }
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn return_network_error_on_subscribe() {
+    let client = TestClient::new_with_config(json!({
+        "network": {
+            "endpoints": ["a"],
+            "network_retries_count": 4,
+        }
+    }));
+
+    NetworkMock::build()
+        .url("a")
+        .repeat(5)
+        .network_err()
+        .reset_client(&client.context())
+        .await;
+
+    let result: ClientResult<ResultOfSubscribeCollection> = client
+        .request_async_callback(
+            "net.subscribe",
+            ParamsOfSubscribe {
+                subscription: r#"
+                subscription {
+                    messages {
+                        id
+                    }
+                }
+                "#
+                .to_string(),
+                variables: None,
+            },
+            TestClient::default_callback,
+        )
+        .await;
+
+    assert!(result.is_err());
+}

@@ -496,7 +496,8 @@ impl ServerLink {
                     {
                         continue;
                     }
-                    let is_retryable = crate::client::Error::is_network_error(&err);
+                    let is_retryable = err.code != ErrorCode::GraphqlWebsocketInitError as u32
+                        && crate::client::Error::is_network_error(&err);
                     retry_count += 1;
                     if !is_retryable || retry_count > network_retries_count {
                         return Err(err);
@@ -564,7 +565,7 @@ impl ServerLink {
         let network_retries_count = self.config.network_retries_count;
         let mut current_endpoint: Option<Arc<Endpoint>>;
         let mut retry_count = 0;
-        'retries: loop {
+        loop {
             let endpoint = if let Some(endpoint) = endpoint {
                 endpoint
             } else {
@@ -615,7 +616,7 @@ impl ServerLink {
                                 .set_timer(self.state.next_resume_timeout() as u64)
                                 .await;
                         }
-                        continue 'retries;
+                        continue;
                     }
                 }
             }
@@ -644,7 +645,8 @@ impl ServerLink {
                     {
                         continue;
                     }
-                    let is_retryable = crate::client::Error::is_network_error(&err);
+                    let is_retryable = err.code != ErrorCode::GraphqlWebsocketInitError as u32
+                        && crate::client::Error::is_network_error(&err);
                     result = Err(err);
                     retry_count += 1;
                     if !is_retryable || retry_count > network_retries_count {
