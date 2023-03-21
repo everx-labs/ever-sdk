@@ -537,7 +537,7 @@
                 "number_size": 32
               },
               "summary": "UNSTABLE.",
-              "description": "First REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.\n\nMust be specified in milliseconds. Default is 1000 (1 sec)."
+              "description": "First REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.\n\nMust be specified in milliseconds. Default is 1 (1 ms) in order to start fallback scenario\ntogether with REMP statuses processing while REMP is not properly tuned yet."
             },
             {
               "name": "next_remp_status_timeout",
@@ -558,7 +558,7 @@
                 "number_type": "Int",
                 "number_size": 32
               },
-              "summary": "Network segnature ID which is used by VM in signature verifying instructions if capability `CapSignatureWithId` is enabled in blockchain configuration parameters.",
+              "summary": "Network signature ID which is used by VM in signature verifying instructions if capability `CapSignatureWithId` is enabled in blockchain configuration parameters.",
               "description": "This parameter should be set to `global_id` field from any blockchain block if network can\nnot be reachable at the moment of message encoding and the message is aimed to be sent into\nnetwork with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically\ninside message encoding functions"
             },
             {
@@ -11677,7 +11677,7 @@
                 "number_type": "Int",
                 "number_size": 32
               },
-              "summary": "signature ID to be used in signature verifying instructions when CapSignatureWithId capability is enabled",
+              "summary": "Signature ID to be used in signature verifying instructions when CapSignatureWithId capability is enabled",
               "description": null
             }
           ],
@@ -12324,6 +12324,13 @@
               "name": "GraphqlConnectionError",
               "type": "Number",
               "value": "617",
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "WrongWebscoketProtocolSequence",
+              "type": "Number",
+              "value": "618",
               "summary": null,
               "description": null
             }

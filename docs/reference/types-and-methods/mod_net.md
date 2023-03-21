@@ -1008,7 +1008,8 @@ enum NetErrorCode {
     NetworkModuleResumed = 614,
     Unauthorized = 615,
     QueryTransactionTreeTimeout = 616,
-    GraphqlConnectionError = 617
+    GraphqlConnectionError = 617,
+    WrongWebscoketProtocolSequence = 618
 }
 ```
 One of the following value:
@@ -1030,6 +1031,7 @@ One of the following value:
 - `Unauthorized = 615`
 - `QueryTransactionTreeTimeout = 616`
 - `GraphqlConnectionError = 617`
+- `WrongWebscoketProtocolSequence = 618`
 
 
 ## OrderBy

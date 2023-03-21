@@ -326,7 +326,7 @@ type NetworkConfig = {
 - `queries_protocol`?: _[NetworkQueriesProtocol](mod\_client.md#networkqueriesprotocol)_ – Queries protocol.
 <br>`HTTP` or `WS`. <br>Default is `HTTP`.
 - `first_remp_status_timeout`?: _number_ – UNSTABLE.
-<br>First REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 1000 (1 sec).
+<br>First REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 1 (1 ms) in order to start fallback scenario<br>together with REMP statuses processing while REMP is not properly tuned yet.
 - `next_remp_status_timeout`?: _number_ – UNSTABLE.
 <br>Subsequent REMP status awaiting timeout. If no status received during the timeout than fallback transaction scenario is activated.<br><br>Must be specified in milliseconds. Default is 5000 (5 sec).
 - `signature_id`?: _number_ – Network signature ID which is used by VM in signature verifying instructions if capability `CapSignatureWithId` is enabled in blockchain configuration parameters.
