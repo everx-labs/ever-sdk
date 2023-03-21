@@ -448,83 +448,97 @@ impl ServerLink {
         filter: &Value,
         fields: &str,
     ) -> ClientResult<Subscription> {
-        let event_receiver = self
-            .websocket_link
-            .start_operation(GraphQLQuery::with_collection_subscription(
-                table, filter, fields,
-            ))
-            .await?;
-        let event_receiver = tokio_stream::wrappers::ReceiverStream::new(event_receiver);
-
-        let operation_id = Arc::new(Mutex::new(0u32));
-        let unsubscribe_operation_id = operation_id.clone();
-
-        let link = self.websocket_link.clone();
-        let unsubscribe = async move {
-            let id = *unsubscribe_operation_id.lock().await;
-            link.stop_operation(id).await;
-        };
-
-        let collection_name = table.to_string();
-        let data_receiver = event_receiver.filter_map(move |event| {
-            let operation_id = operation_id.clone();
-            let collection_name = collection_name.clone();
-            async move {
-                match event {
-                    GraphQLQueryEvent::Id(id) => {
-                        *operation_id.lock().await = id;
-                        None
-                    }
-                    GraphQLQueryEvent::Data(mut value) => Some(Ok(value[&collection_name].take())),
-                    GraphQLQueryEvent::Error(error) => Some(Err(error)),
-                    GraphQLQueryEvent::Complete => Some(Ok(Value::Null)),
-                }
-            }
-        });
-        Ok(Subscription {
-            data_stream: Box::pin(data_receiver),
-            unsubscribe: Box::pin(unsubscribe),
-        })
+        self.subscribe_operation(
+            GraphQLQuery::with_collection_subscription(table, filter, fields),
+            format!("/{}", table),
+        )
+        .await
     }
 
-    // Returns Stream with updates database fields by provided filter
     pub async fn subscribe(
         &self,
         subscription: String,
         variables: Option<Value>,
     ) -> ClientResult<Subscription> {
-        let event_receiver = self
-            .websocket_link
-            .start_operation(GraphQLQuery::with_subscription(
-                subscription.trim().to_string(),
-                variables,
-            ))
-            .await?;
+        self.subscribe_operation(
+            GraphQLQuery::with_subscription(subscription.trim().to_string(), variables),
+            String::new(),
+        )
+        .await
+    }
+
+    pub async fn subscribe_operation(
+        &self,
+        operation: GraphQLQuery,
+        result_path: String,
+    ) -> ClientResult<Subscription> {
+        let mut event_receiver = self.websocket_link.start_operation(operation).await?;
+
+        let mut id = None;
+        let network_retries_count = self.config.network_retries_count;
+        let mut retry_count = 0;
+        loop {
+            match event_receiver.recv().await {
+                Some(GraphQLQueryEvent::Id(received_id)) => id = Some(received_id),
+                Some(GraphQLQueryEvent::Data(_)) => {
+                    return Err(Error::wrong_ws_protocol_sequence(
+                        "data received before operation started",
+                    ));
+                }
+                Some(GraphQLQueryEvent::Complete) => {
+                    return Err(Error::wrong_ws_protocol_sequence(
+                        "operation completed before started",
+                    ));
+                }
+                Some(GraphQLQueryEvent::Error(err)) => {
+                    if err.code == ErrorCode::NetworkModuleSuspended as u32
+                        || err.code == ErrorCode::NetworkModuleResumed as u32
+                    {
+                        continue;
+                    }
+                    let is_retryable = err.code != ErrorCode::GraphqlWebsocketInitError as u32
+                        && crate::client::Error::is_network_error(&err);
+                    retry_count += 1;
+                    if !is_retryable || retry_count > network_retries_count {
+                        return Err(err);
+                    }
+                }
+                Some(GraphQLQueryEvent::Started) => break,
+                None => {
+                    return Err(Error::wrong_ws_protocol_sequence(
+                        "receiver stream is closed before operation started",
+                    ));
+                }
+            }
+        }
+
+        let id =
+            id.ok_or_else(|| Error::wrong_ws_protocol_sequence("operation ID is not provided"))?;
+        let result_path = Arc::new(result_path);
         let event_receiver = tokio_stream::wrappers::ReceiverStream::new(event_receiver);
-
-        let operation_id = Arc::new(Mutex::new(0u32));
-        let unsubscribe_operation_id = operation_id.clone();
-
-        let link = self.websocket_link.clone();
-        let unsubscribe = async move {
-            let id = *unsubscribe_operation_id.lock().await;
-            link.stop_operation(id).await;
-        };
-
         let data_receiver = event_receiver.filter_map(move |event| {
-            let operation_id = operation_id.clone();
+            let result_path = result_path.clone();
             async move {
                 match event {
-                    GraphQLQueryEvent::Id(id) => {
-                        *operation_id.lock().await = id;
-                        None
-                    }
-                    GraphQLQueryEvent::Data(value) => Some(Ok(value.clone())),
+                    GraphQLQueryEvent::Data(mut value) => Some(Ok(value
+                        .pointer_mut(&result_path)
+                        .map(|val| val.take())
+                        .unwrap_or_default())),
                     GraphQLQueryEvent::Error(error) => Some(Err(error)),
                     GraphQLQueryEvent::Complete => Some(Ok(Value::Null)),
+                    GraphQLQueryEvent::Id(_) => Some(Err(Error::wrong_ws_protocol_sequence(
+                        "ID has changed after operation started",
+                    ))),
+                    GraphQLQueryEvent::Started => None,
                 }
             }
         });
+
+        let link = self.websocket_link.clone();
+        let unsubscribe = async move {
+            link.stop_operation(id).await;
+        };
+
         Ok(Subscription {
             data_stream: Box::pin(data_receiver),
             unsubscribe: Box::pin(unsubscribe),
@@ -551,7 +565,7 @@ impl ServerLink {
         let network_retries_count = self.config.network_retries_count;
         let mut current_endpoint: Option<Arc<Endpoint>>;
         let mut retry_count = 0;
-        'retries: loop {
+        loop {
             let endpoint = if let Some(endpoint) = endpoint {
                 endpoint
             } else {
@@ -602,7 +616,7 @@ impl ServerLink {
                                 .set_timer(self.state.next_resume_timeout() as u64)
                                 .await;
                         }
-                        continue 'retries;
+                        continue;
                     }
                 }
             }
@@ -631,13 +645,15 @@ impl ServerLink {
                     {
                         continue;
                     }
-                    let is_retryable = crate::client::Error::is_network_error(&err);
+                    let is_retryable = err.code != ErrorCode::GraphqlWebsocketInitError as u32
+                        && crate::client::Error::is_network_error(&err);
                     result = Err(err);
                     retry_count += 1;
                     if !is_retryable || retry_count > network_retries_count {
                         break;
                     }
                 }
+                Some(GraphQLQueryEvent::Started) => {}
                 None => break,
             }
         }
