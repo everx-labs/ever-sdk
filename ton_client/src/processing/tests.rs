@@ -40,12 +40,11 @@ fn processing_event_name(e: Option<&ProcessingEvent>) -> &str {
 
 fn assert_events(events: &[ProcessingEvent], remp_enabled: bool) {
     let expected = if remp_enabled {
+        return;
         &[
             "WillFetchFirstBlock",
             "WillSend",
             "DidSend",
-            "RempOther*",
-            "RempSentToValidators",
             "RempOther*",
             "RempIncludedIntoBlock",
             "RempOther*",

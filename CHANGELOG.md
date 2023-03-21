@@ -10,8 +10,9 @@ All notable changes to this project will be documented in this file.
     `fetch_next_monitor_results`, `get_monitor_info`, `cancel_monitor****`.
 - Added `processing.send_messages` function.
 - Improved error resolving for deleted accounts
+- `net.first_remp_status_timeout` config parameter default value set to 1 ms in order to start 
+fallback scenario together with REMP statuses processing while REMP is not properly tuned yet.
 - Network errors are returned on subscription creation if occured
-
 
 ### Fixed
 
