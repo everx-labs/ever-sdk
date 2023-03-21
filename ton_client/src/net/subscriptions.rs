@@ -41,7 +41,7 @@ pub struct ParamsOfSubscribe {
     pub variables: Option<serde_json::Value>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Default, Clone)]
+#[derive(Serialize, Deserialize, ApiType, Default, Clone, Debug)]
 pub struct ResultOfSubscribeCollection {
     /// Subscription handle. Must be closed with `unsubscribe`
     pub handle: u32,
