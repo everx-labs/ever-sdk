@@ -2,7 +2,7 @@ use crate::error::ClientResult;
 use crate::ClientContext;
 use std::sync::Arc;
 use ton_client_processing::{
-    MessageMonitoringParams, MessageMonitoringResult, MonitorFetchWait, MonitoringQueueInfo,
+    MessageMonitoringParams, MessageMonitoringResult, MonitorFetchWaitMode, MonitoringQueueInfo,
 };
 
 #[derive(Deserialize, Default, ApiType)]
@@ -61,7 +61,7 @@ pub struct ParamsOfFetchNextMonitorResults {
     /// Name of the monitoring queue.
     pub queue: String,
     /// Wait mode. Default is `NO_WAIT`.
-    pub wait: Option<MonitorFetchWait>,
+    pub waitMode: Option<MonitorFetchWaitMode>,
 }
 
 #[derive(Serialize, ApiType)]
@@ -83,7 +83,7 @@ pub async fn fetch_next_monitor_results(
         .message_monitor
         .fetch_next_monitor_results(
             &params.queue,
-            params.wait.unwrap_or(MonitorFetchWait::NoWait),
+            params.waitMode.unwrap_or(MonitorFetchWaitMode::NoWait),
         )
         .await?;
     Ok(ResultOfFetchNextMonitorResults { results })

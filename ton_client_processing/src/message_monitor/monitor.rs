@@ -27,16 +27,12 @@ pub struct MonitoringQueueInfo {
 }
 
 #[derive(Deserialize, Serialize, ApiType)]
-pub enum MonitorFetchWait {
+pub enum MonitorFetchWaitMode {
     /// If there are an unresolved messages and no resolved results yet,
     /// then monitor awaits for the next resolved result.
-    /// If there are no unresolved messages then monitor immediately
-    /// returns a resolved list (even if it is empty).
     AtLeastOne,
 
     /// Monitor waits until all unresolved messages will be resolved.
-    /// If there are no unresolved messages then monitor immediately
-    /// returns a resolved list (even if it is empty).
     All,
 
     // Monitor does not any awaits even if there are no resolved results yet.
@@ -81,7 +77,7 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
     pub async fn fetch_next_monitor_results(
         &self,
         queue: &str,
-        wait: MonitorFetchWait,
+        wait: MonitorFetchWaitMode,
     ) -> crate::error::Result<Vec<MessageMonitoringResult>> {
         let mut listen_queues = self.listen_queues.clone();
         loop {
@@ -89,11 +85,9 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
                 let mut queues = self.queues.write().unwrap();
                 if let Some(queue) = queues.get_mut(queue) {
                     let is_ready = match wait {
-                        MonitorFetchWait::NoWait => true,
-                        MonitorFetchWait::AtLeastOne => {
-                            !queue.resolved.is_empty() || queue.unresolved.is_empty()
-                        }
-                        MonitorFetchWait::All => queue.unresolved.is_empty(),
+                        MonitorFetchWaitMode::NoWait => true,
+                        MonitorFetchWaitMode::AtLeastOne => !queue.resolved.is_empty(),
+                        MonitorFetchWaitMode::All => queue.unresolved.is_empty() && !queue.resolved.is_empty(),
                     };
                     if is_ready {
                         Some(queue.fetch_resolved())
@@ -101,7 +95,11 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
                         None
                     }
                 } else {
-                    Some(vec![])
+                    match wait {
+                        MonitorFetchWaitMode::NoWait => Some(vec![]),
+                        MonitorFetchWaitMode::AtLeastOne => None,
+                        MonitorFetchWaitMode::All => None,
+                    }
                 }
             };
             if let Some(results) = results {
