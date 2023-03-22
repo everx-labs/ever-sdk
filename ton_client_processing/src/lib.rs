@@ -29,7 +29,7 @@ mod tests;
 pub use error::{Error, Result};
 pub use message_monitor::{
     MessageMonitor, MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
-    MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitorFetchWait,
+    MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitorFetchWaitMode,
     MonitoredMessage, MonitoringQueueInfo,
 };
 pub use sdk_services::{MessageMonitorSdkServices, NetSubscription};

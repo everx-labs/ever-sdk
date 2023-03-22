@@ -1,7 +1,7 @@
 use crate::message_monitor::{MessageMonitoringParams, MessageMonitoringResult};
+use crate::{MessageMonitorSdkServices, MonitorFetchWaitMode};
 use std::collections::HashMap;
 use std::mem;
-use crate::MessageMonitorSdkServices;
 
 pub(crate) struct MonitoringQueue {
     pub unresolved: HashMap<String, MessageMonitoringParams>,
@@ -9,7 +9,11 @@ pub(crate) struct MonitoringQueue {
 }
 
 impl MonitoringQueue {
-    pub fn add_unresolved<Sdk: MessageMonitorSdkServices>(&mut self, sdk: &Sdk, message: MessageMonitoringParams) -> crate::Result<()> {
+    pub fn add_unresolved<Sdk: MessageMonitorSdkServices>(
+        &mut self,
+        sdk: &Sdk,
+        message: MessageMonitoringParams,
+    ) -> crate::Result<()> {
         self.unresolved.insert(message.message.hash(sdk)?, message);
         Ok(())
     }
@@ -33,7 +37,19 @@ impl MonitoringQueue {
         }
     }
 
-    pub fn fetch_resolved(&mut self) -> Vec<MessageMonitoringResult> {
-        mem::take(&mut self.resolved)
+    pub fn fetch_next(
+        &mut self,
+        wait_mode: MonitorFetchWaitMode,
+    ) -> Option<Vec<MessageMonitoringResult>> {
+        let is_ready = match wait_mode {
+            MonitorFetchWaitMode::NoWait => true,
+            MonitorFetchWaitMode::AtLeastOne => !self.resolved.is_empty(),
+            MonitorFetchWaitMode::All => self.unresolved.is_empty() && !self.resolved.is_empty(),
+        };
+        if is_ready {
+            Some(mem::take(&mut self.resolved))
+        } else {
+            None
+        }
     }
 }

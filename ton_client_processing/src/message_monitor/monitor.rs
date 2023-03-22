@@ -26,17 +26,13 @@ pub struct MonitoringQueueInfo {
     pub resolved: u32,
 }
 
-#[derive(Deserialize, Serialize, ApiType)]
-pub enum MonitorFetchWait {
-    /// If there are an unresolved messages and no resolved results yet,
-    /// then monitor awaits for the next resolved result.
-    /// If there are no unresolved messages then monitor immediately
-    /// returns a resolved list (even if it is empty).
+#[derive(Deserialize, Serialize, ApiType, Copy, Clone)]
+pub enum MonitorFetchWaitMode {
+    /// If there are no resolved results yet, then monitor awaits for the next resolved result.
     AtLeastOne,
 
     /// Monitor waits until all unresolved messages will be resolved.
-    /// If there are no unresolved messages then monitor immediately
-    /// returns a resolved list (even if it is empty).
+    /// If there are no unresolved messages then monitor will wait.
     All,
 
     // Monitor does not any awaits even if there are no resolved results yet.
@@ -81,34 +77,15 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
     pub async fn fetch_next_monitor_results(
         &self,
         queue: &str,
-        wait: MonitorFetchWait,
+        wait_mode: MonitorFetchWaitMode,
     ) -> crate::error::Result<Vec<MessageMonitoringResult>> {
         let mut listen_queues = self.listen_queues.clone();
         loop {
-            let results = {
-                let mut queues = self.queues.write().unwrap();
-                if let Some(queue) = queues.get_mut(queue) {
-                    let is_ready = match wait {
-                        MonitorFetchWait::NoWait => true,
-                        MonitorFetchWait::AtLeastOne => {
-                            !queue.resolved.is_empty() || queue.unresolved.is_empty()
-                        }
-                        MonitorFetchWait::All => queue.unresolved.is_empty(),
-                    };
-                    if is_ready {
-                        Some(queue.fetch_resolved())
-                    } else {
-                        None
-                    }
-                } else {
-                    Some(vec![])
-                }
-            };
-            if let Some(results) = results {
-                if !results.is_empty() {
+            if let Some(fetched) = self.fetch_next(queue, wait_mode).await {
+                if !fetched.is_empty() {
                     self.notify_queues.send(true).ok();
                 }
-                return Ok(results);
+                return Ok(fetched);
             }
             listen_queues.changed().await.unwrap();
         }
@@ -182,5 +159,20 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
             }
         }
         messages
+    }
+
+    async fn fetch_next(
+        &self,
+        queue: &str,
+        wait_mode: MonitorFetchWaitMode,
+    ) -> Option<Vec<MessageMonitoringResult>> {
+        let mut queues = self.queues.write().unwrap();
+        if let Some(queue) = queues.get_mut(queue) {
+            queue.fetch_next(wait_mode)
+        } else if let MonitorFetchWaitMode::NoWait = wait_mode {
+            Some(vec![])
+        } else {
+            None
+        }
     }
 }

@@ -45,7 +45,7 @@ pub use send_messages::{
 };
 pub use ton_client_processing::{
     MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
-    MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitorFetchWait,
+    MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitorFetchWaitMode,
     MonitoredMessage, MonitoringQueueInfo,
 };
 pub use types::{DecodedOutput, ProcessingEvent, ProcessingResponseType, ResultOfProcessMessage};

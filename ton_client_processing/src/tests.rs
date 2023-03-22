@@ -1,6 +1,6 @@
 use crate::message_monitor::{
     MessageMonitor, MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
-    MessageMonitoringTransaction, MonitorFetchWait,
+    MessageMonitoringTransaction, MonitorFetchWaitMode,
 };
 use crate::sdk_services::MockSdkServices;
 use crate::MonitoredMessage;
@@ -19,7 +19,7 @@ async fn test_fetch() {
         .await
         .unwrap();
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::NoWait)
+        .fetch_next_monitor_results("1", MonitorFetchWaitMode::NoWait)
         .await
         .unwrap();
     assert_eq!(results, vec![]);
@@ -28,7 +28,7 @@ async fn test_fetch() {
         msg_res(2, MessageMonitoringStatus::Finalized),
     ]);
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::All)
+        .fetch_next_monitor_results("1", MonitorFetchWaitMode::All)
         .await
         .unwrap();
     assert_eq!(
@@ -48,7 +48,7 @@ async fn test_fetch_at_least_one() {
         .await
         .unwrap();
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::NoWait)
+        .fetch_next_monitor_results("1", MonitorFetchWaitMode::NoWait)
         .await
         .unwrap();
     assert_eq!(results, vec![]);
@@ -57,7 +57,7 @@ async fn test_fetch_at_least_one() {
         msg_res(2, MessageMonitoringStatus::Finalized),
     ]);
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::All)
+        .fetch_next_monitor_results("1", MonitorFetchWaitMode::All)
         .await
         .unwrap();
     assert_eq!(
@@ -68,12 +68,7 @@ async fn test_fetch_at_least_one() {
         ]
     );
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::All)
-        .await
-        .unwrap();
-    assert_eq!(results.len(), 0);
-    let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::AtLeastOne)
+        .fetch_next_monitor_results("1", MonitorFetchWaitMode::NoWait)
         .await
         .unwrap();
     assert_eq!(results.len(), 0);
@@ -95,7 +90,7 @@ async fn test_fetch_wait_all() {
     let spawned_mon = mon.clone();
     tokio::spawn(async move {
         let results = spawned_mon
-            .fetch_next_monitor_results("1", MonitorFetchWait::All)
+            .fetch_next_monitor_results("1", MonitorFetchWaitMode::All)
             .await
             .unwrap();
         *results_from_spawned.write().unwrap() = results;
@@ -103,7 +98,7 @@ async fn test_fetch_wait_all() {
 
     // Resolved queue must be empty yet
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::NoWait)
+        .fetch_next_monitor_results("1", MonitorFetchWaitMode::NoWait)
         .await
         .unwrap();
     assert_eq!(results, vec![]);
@@ -119,7 +114,7 @@ async fn test_fetch_wait_all() {
 
     // Queue should be empty
     let results = mon
-        .fetch_next_monitor_results("1", MonitorFetchWait::All)
+        .fetch_next_monitor_results("1", MonitorFetchWaitMode::NoWait)
         .await
         .unwrap();
     assert_eq!(results, vec![]);

@@ -8,4 +8,4 @@ pub use message::{
     MessageMonitoringParams, MessageMonitoringResult, MessageMonitoringStatus,
     MessageMonitoringTransaction, MessageMonitoringTransactionCompute, MonitoredMessage,
 };
-pub use monitor::{MessageMonitor, MonitorFetchWait, MonitoringQueueInfo};
+pub use monitor::{MessageMonitor, MonitorFetchWaitMode, MonitoringQueueInfo};
