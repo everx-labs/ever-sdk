@@ -13,8 +13,8 @@ pub struct MessageMonitor<Sdk: MessageMonitorSdkServices> {
     sdk: Sdk,
     /// Active queues
     queues: Arc<RwLock<HashMap<String, MonitoringQueue>>>,
-    notify_queues: Arc<tokio::sync::watch::Sender<bool>>,
-    listen_queues: tokio::sync::watch::Receiver<bool>,
+    notify_resolved: Arc<tokio::sync::watch::Sender<bool>>,
+    listen_resolved: tokio::sync::watch::Receiver<bool>,
     active_subscription: Mutex<Option<NetSubscription>>,
 }
 
@@ -26,17 +26,13 @@ pub struct MonitoringQueueInfo {
     pub resolved: u32,
 }
 
-#[derive(Deserialize, Serialize, ApiType)]
-pub enum MonitorFetchWait {
-    /// If there are an unresolved messages and no resolved results yet,
-    /// then monitor awaits for the next resolved result.
-    /// If there are no unresolved messages then monitor immediately
-    /// returns a resolved list (even if it is empty).
+#[derive(Deserialize, Serialize, ApiType, Copy, Clone)]
+pub enum MonitorFetchWaitMode {
+    /// If there are no resolved results yet, then monitor awaits for the next resolved result.
     AtLeastOne,
 
     /// Monitor waits until all unresolved messages will be resolved.
-    /// If there are no unresolved messages then monitor immediately
-    /// returns a resolved list (even if it is empty).
+    /// If there are no unresolved messages then monitor will wait.
     All,
 
     // Monitor does not any awaits even if there are no resolved results yet.
@@ -51,8 +47,8 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
             sdk,
             queues: Arc::new(RwLock::new(HashMap::new())),
             active_subscription: Mutex::new(None),
-            notify_queues: Arc::new(sender),
-            listen_queues: receiver,
+            notify_resolved: Arc::new(sender),
+            listen_resolved: receiver,
         }
     }
 
@@ -72,7 +68,6 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
             for message in messages {
                 queue.add_unresolved(&self.sdk, message)?;
             }
-            self.notify_queues.send(true).ok();
         }
         self.resubscribe().await?;
         Ok(())
@@ -81,36 +76,14 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
     pub async fn fetch_next_monitor_results(
         &self,
         queue: &str,
-        wait: MonitorFetchWait,
+        wait_mode: MonitorFetchWaitMode,
     ) -> crate::error::Result<Vec<MessageMonitoringResult>> {
-        let mut listen_queues = self.listen_queues.clone();
+        let mut listen_resolved = self.listen_resolved.clone();
         loop {
-            let results = {
-                let mut queues = self.queues.write().unwrap();
-                if let Some(queue) = queues.get_mut(queue) {
-                    let is_ready = match wait {
-                        MonitorFetchWait::NoWait => true,
-                        MonitorFetchWait::AtLeastOne => {
-                            !queue.resolved.is_empty() || queue.unresolved.is_empty()
-                        }
-                        MonitorFetchWait::All => queue.unresolved.is_empty(),
-                    };
-                    if is_ready {
-                        Some(queue.fetch_resolved())
-                    } else {
-                        None
-                    }
-                } else {
-                    Some(vec![])
-                }
-            };
-            if let Some(results) = results {
-                if !results.is_empty() {
-                    self.notify_queues.send(true).ok();
-                }
-                return Ok(results);
+            if let Some(fetched) = self.fetch_next(queue, wait_mode) {
+                return Ok(fetched);
             }
-            listen_queues.changed().await.unwrap();
+            listen_resolved.changed().await.unwrap();
         }
     }
 
@@ -130,7 +103,6 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
     pub fn cancel_monitor(&self, queue: &str) -> crate::error::Result<()> {
         let mut queues = self.queues.write().unwrap();
         queues.remove(queue);
-        self.notify_queues.send(true).ok();
         Ok(())
     }
 }
@@ -157,13 +129,13 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
             return Ok(None);
         }
         let queues = self.queues.clone();
-        let notify_queues = self.notify_queues.clone();
+        let notify_resolved = self.notify_resolved.clone();
         let callback = move |results| {
             if let Ok(results) = results {
                 for queue in queues.write().unwrap().values_mut() {
                     queue.resolve(&results);
                 }
-                notify_queues.send(true).ok();
+                notify_resolved.send(true).ok();
             }
             async {}
         };
@@ -182,5 +154,26 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
             }
         }
         messages
+    }
+
+    fn fetch_next(
+        &self,
+        queue: &str,
+        wait_mode: MonitorFetchWaitMode,
+    ) -> Option<Vec<MessageMonitoringResult>> {
+        let mut queues = self.queues.write().unwrap();
+        let (fetched, queue_should_be_removed) = if let Some(queue) = queues.get_mut(queue) {
+            let next = queue.fetch_next(wait_mode);
+            let should_be_removed = queue.resolved.is_empty() && queue.unresolved.is_empty();
+            (next, should_be_removed)
+        } else if let MonitorFetchWaitMode::NoWait = wait_mode {
+            (Some(vec![]), false)
+        } else {
+            (None, false)
+        };
+        if queue_should_be_removed {
+            queues.remove(queue);
+        }
+        fetched
     }
 }

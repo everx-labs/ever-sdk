@@ -568,7 +568,7 @@ fn register_processing(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::processing::MessageMonitoringTransaction>();
     module.register_type::<crate::processing::MessageMonitoringParams>();
     module.register_type::<crate::processing::MessageMonitoringResult>();
-    module.register_type::<crate::processing::MonitorFetchWait>();
+    module.register_type::<crate::processing::MonitorFetchWaitMode>();
     module.register_type::<crate::processing::MonitoredMessage>();
     module.register_type::<crate::processing::MessageMonitoringStatus>();
     module.register_type::<crate::processing::MessageSendingParams>();
