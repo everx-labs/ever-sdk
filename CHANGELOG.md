@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.0] – 2023-03-22
+
+### New
+
+- Added message monitoring functions to the `processing` module: `monitor_messages`, 
+    `fetch_next_monitor_results`, `get_monitor_info`, `cancel_monitor****`.
+- Added `processing.send_messages` function.
+- Improved error resolving for deleted accounts
+- `net.first_remp_status_timeout` config parameter default value set to 1 ms in order to start 
+fallback scenario together with REMP statuses processing while REMP is not properly tuned yet.
+- Network errors are returned on subscription creation if occured
+
+### Fixed
+
+- `ParamsOfSubscribe` was not public.
+- `subscribe` did not trim subscription query text. It is required for some graphql servers 
+  expecting that query text starts from operation text.
+
 ## [1.41.1] – 2023-03-14
 
 ### Fixed
@@ -9,7 +27,7 @@ All notable changes to this project will be documented in this file.
 - `api_derive` compilation errors
 - 
 
-## [1.41.0] – 2023-02-13
+## [1.41.0] – 2023-01-18
 
 ### New
 

@@ -30,6 +30,7 @@ use std::pin::Pin;
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 use std::sync::Arc;
 use tokio::sync::{watch, Mutex, RwLock};
+use ton_types::UInt256;
 
 use super::ErrorCode;
 
@@ -260,25 +261,28 @@ impl NetworkState {
     pub async fn resolve_endpoint(&self, address: &str) -> ClientResult<Arc<Endpoint>> {
         let endpoint = Endpoint::resolve(&self.client_env, &self.config, address).await?;
         let endpoint = Arc::new(endpoint);
-        self.add_resolved_endpoint(address.to_owned(), endpoint.clone()).await;
+        self.add_resolved_endpoint(address.to_owned(), endpoint.clone())
+            .await;
         Ok(endpoint)
-
     }
 
     async fn select_querying_endpoint(self: &Arc<NetworkState>) -> ClientResult<Arc<Endpoint>> {
-        let is_better = |a: &ClientResult<Arc<Endpoint>>, b: &ClientResult<Arc<Endpoint>>| match (a, b) {
-            (Ok(a), Ok(b)) => a.latency() < b.latency(),
-            (Ok(_), Err(_)) => true,
-            (Err(_), Err(_)) => true,
-            _ => false,
-        };
+        let is_better =
+            |a: &ClientResult<Arc<Endpoint>>, b: &ClientResult<Arc<Endpoint>>| match (a, b) {
+                (Ok(a), Ok(b)) => a.latency() < b.latency(),
+                (Ok(_), Err(_)) => true,
+                (Err(_), Err(_)) => true,
+                _ => false,
+            };
         let mut retry_count = 0i8;
         loop {
             let mut futures = vec![];
             for address in self.endpoint_addresses.read().await.iter() {
                 let address = address.clone();
                 let self_copy = self.clone();
-                futures.push(Box::pin(async move { self_copy.resolve_endpoint(&address).await }));
+                futures.push(Box::pin(async move {
+                    self_copy.resolve_endpoint(&address).await
+                }));
             }
             let mut selected = Err(crate::client::Error::net_module_not_init());
             let mut unauthorised = None;
@@ -347,20 +351,24 @@ impl NetworkState {
 
     pub async fn add_resolved_endpoint(&self, address: String, endpoint: Arc<Endpoint>) {
         let mut lock = self.resolved_endpoints.write().await;
-        lock.insert(address, ResolvedEndpoint { endpoint, time_added: self.client_env.now_ms() });
+        lock.insert(
+            address,
+            ResolvedEndpoint {
+                endpoint,
+                time_added: self.client_env.now_ms(),
+            },
+        );
     }
 
     pub async fn get_resolved_endpoint(&self, address: &str) -> Option<Arc<Endpoint>> {
         let lock = self.resolved_endpoints.read().await;
-        lock
-            .get(address)
-            .and_then(|endpoint| 
-                if endpoint.time_added + ENDPOINT_CACHE_TIMEOUT > self.client_env.now_ms() {
-                    Some(endpoint.endpoint.clone())
-                } else {
-                    None
-                }
-            )
+        lock.get(address).and_then(|endpoint| {
+            if endpoint.time_added + ENDPOINT_CACHE_TIMEOUT > self.client_env.now_ms() {
+                Some(endpoint.endpoint.clone())
+            } else {
+                None
+            }
+        })
     }
 }
 
@@ -440,80 +448,97 @@ impl ServerLink {
         filter: &Value,
         fields: &str,
     ) -> ClientResult<Subscription> {
-        let event_receiver = self
-            .websocket_link
-            .start_operation(GraphQLQuery::with_collection_subscription(
-                table, filter, fields,
-            ))
-            .await?;
-        let event_receiver = tokio_stream::wrappers::ReceiverStream::new(event_receiver);
-
-        let operation_id = Arc::new(Mutex::new(0u32));
-        let unsubscribe_operation_id = operation_id.clone();
-
-        let link = self.websocket_link.clone();
-        let unsubscribe = async move {
-            let id = *unsubscribe_operation_id.lock().await;
-            link.stop_operation(id).await;
-        };
-
-        let collection_name = table.to_string();
-        let data_receiver = event_receiver.filter_map(move |event| {
-            let operation_id = operation_id.clone();
-            let collection_name = collection_name.clone();
-            async move {
-                match event {
-                    GraphQLQueryEvent::Id(id) => {
-                        *operation_id.lock().await = id;
-                        None
-                    }
-                    GraphQLQueryEvent::Data(value) => Some(Ok(value[&collection_name].clone())),
-                    GraphQLQueryEvent::Error(error) => Some(Err(error)),
-                    GraphQLQueryEvent::Complete => Some(Ok(Value::Null)),
-                }
-            }
-        });
-        Ok(Subscription {
-            data_stream: Box::pin(data_receiver),
-            unsubscribe: Box::pin(unsubscribe),
-        })
+        self.subscribe_operation(
+            GraphQLQuery::with_collection_subscription(table, filter, fields),
+            format!("/{}", table),
+        )
+        .await
     }
 
-    // Returns Stream with updates database fields by provided filter
     pub async fn subscribe(
         &self,
         subscription: String,
         variables: Option<Value>,
     ) -> ClientResult<Subscription> {
-        let event_receiver = self
-            .websocket_link
-            .start_operation(GraphQLQuery::with_subscription(subscription, variables))
-            .await?;
+        self.subscribe_operation(
+            GraphQLQuery::with_subscription(subscription.trim().to_string(), variables),
+            String::new(),
+        )
+        .await
+    }
+
+    pub async fn subscribe_operation(
+        &self,
+        operation: GraphQLQuery,
+        result_path: String,
+    ) -> ClientResult<Subscription> {
+        let mut event_receiver = self.websocket_link.start_operation(operation).await?;
+
+        let mut id = None;
+        let network_retries_count = self.config.network_retries_count;
+        let mut retry_count = 0;
+        loop {
+            match event_receiver.recv().await {
+                Some(GraphQLQueryEvent::Id(received_id)) => id = Some(received_id),
+                Some(GraphQLQueryEvent::Data(_)) => {
+                    return Err(Error::wrong_ws_protocol_sequence(
+                        "data received before operation started",
+                    ));
+                }
+                Some(GraphQLQueryEvent::Complete) => {
+                    return Err(Error::wrong_ws_protocol_sequence(
+                        "operation completed before started",
+                    ));
+                }
+                Some(GraphQLQueryEvent::Error(err)) => {
+                    if err.code == ErrorCode::NetworkModuleSuspended as u32
+                        || err.code == ErrorCode::NetworkModuleResumed as u32
+                    {
+                        continue;
+                    }
+                    let is_retryable = err.code != ErrorCode::GraphqlWebsocketInitError as u32
+                        && crate::client::Error::is_network_error(&err);
+                    retry_count += 1;
+                    if !is_retryable || retry_count > network_retries_count {
+                        return Err(err);
+                    }
+                }
+                Some(GraphQLQueryEvent::Started) => break,
+                None => {
+                    return Err(Error::wrong_ws_protocol_sequence(
+                        "receiver stream is closed before operation started",
+                    ));
+                }
+            }
+        }
+
+        let id =
+            id.ok_or_else(|| Error::wrong_ws_protocol_sequence("operation ID is not provided"))?;
+        let result_path = Arc::new(result_path);
         let event_receiver = tokio_stream::wrappers::ReceiverStream::new(event_receiver);
-
-        let operation_id = Arc::new(Mutex::new(0u32));
-        let unsubscribe_operation_id = operation_id.clone();
-
-        let link = self.websocket_link.clone();
-        let unsubscribe = async move {
-            let id = *unsubscribe_operation_id.lock().await;
-            link.stop_operation(id).await;
-        };
-
         let data_receiver = event_receiver.filter_map(move |event| {
-            let operation_id = operation_id.clone();
+            let result_path = result_path.clone();
             async move {
                 match event {
-                    GraphQLQueryEvent::Id(id) => {
-                        *operation_id.lock().await = id;
-                        None
-                    }
-                    GraphQLQueryEvent::Data(value) => Some(Ok(value.clone())),
+                    GraphQLQueryEvent::Data(mut value) => Some(Ok(value
+                        .pointer_mut(&result_path)
+                        .map(|val| val.take())
+                        .unwrap_or_default())),
                     GraphQLQueryEvent::Error(error) => Some(Err(error)),
                     GraphQLQueryEvent::Complete => Some(Ok(Value::Null)),
+                    GraphQLQueryEvent::Id(_) => Some(Err(Error::wrong_ws_protocol_sequence(
+                        "ID has changed after operation started",
+                    ))),
+                    GraphQLQueryEvent::Started => None,
                 }
             }
         });
+
+        let link = self.websocket_link.clone();
+        let unsubscribe = async move {
+            link.stop_operation(id).await;
+        };
+
         Ok(Subscription {
             data_stream: Box::pin(data_receiver),
             unsubscribe: Box::pin(unsubscribe),
@@ -540,7 +565,7 @@ impl ServerLink {
         let network_retries_count = self.config.network_retries_count;
         let mut current_endpoint: Option<Arc<Endpoint>>;
         let mut retry_count = 0;
-        'retries: loop {
+        loop {
             let endpoint = if let Some(endpoint) = endpoint {
                 endpoint
             } else {
@@ -586,9 +611,12 @@ impl ServerLink {
                     retry_count += 1;
                     if retry_count <= network_retries_count {
                         if !multiple_endpoints {
-                            let _ = self.client_env.set_timer(self.state.next_resume_timeout() as u64).await;
+                            let _ = self
+                                .client_env
+                                .set_timer(self.state.next_resume_timeout() as u64)
+                                .await;
                         }
-                        continue 'retries;
+                        continue;
                     }
                 }
             }
@@ -612,18 +640,20 @@ impl ServerLink {
                 }
                 Some(GraphQLQueryEvent::Complete) => break,
                 Some(GraphQLQueryEvent::Error(err)) => {
-                    if  err.code == ErrorCode::NetworkModuleSuspended as u32 ||
-                        err.code == ErrorCode::NetworkModuleResumed as u32
+                    if err.code == ErrorCode::NetworkModuleSuspended as u32
+                        || err.code == ErrorCode::NetworkModuleResumed as u32
                     {
                         continue;
                     }
-                    let is_retryable = crate::client::Error::is_network_error(&err);
+                    let is_retryable = err.code != ErrorCode::GraphqlWebsocketInitError as u32
+                        && crate::client::Error::is_network_error(&err);
                     result = Err(err);
                     retry_count += 1;
                     if !is_retryable || retry_count > network_retries_count {
                         break;
                     }
                 }
+                Some(GraphQLQueryEvent::Started) => {}
                 None => break,
             }
         }
@@ -753,6 +783,33 @@ impl ServerLink {
         // but client didn't receive response
         if let Err(err) = &result {
             log::warn!("Post message error: {}", err.message);
+        }
+
+        Ok(result.err())
+    }
+
+    pub async fn send_messages(
+        &self,
+        messages: Vec<(UInt256, String)>,
+        endpoint: Option<&Endpoint>,
+    ) -> ClientResult<Option<ClientError>> {
+        let mut requests = Vec::with_capacity(messages.len());
+        for (hash, boc) in messages {
+            requests.push(PostRequest {
+                id: base64::encode(hash.as_slice()),
+                body: boc,
+            })
+        }
+        self.state.check_sync(endpoint).await?;
+
+        let result = self
+            .query(&GraphQLQuery::with_post_requests(&requests), endpoint)
+            .await;
+
+        // Send messages is always successful in order to process case when server received message
+        // but client didn't receive response
+        if let Err(err) = &result {
+            log::warn!("Send messages error: {}", err.message);
         }
 
         Ok(result.err())

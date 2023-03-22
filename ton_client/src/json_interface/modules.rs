@@ -564,6 +564,36 @@ fn register_processing(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::processing::ResultOfProcessMessage>();
     module.register_type::<crate::processing::DecodedOutput>();
 
+    module.register_type::<crate::processing::MessageMonitoringTransactionCompute>();
+    module.register_type::<crate::processing::MessageMonitoringTransaction>();
+    module.register_type::<crate::processing::MessageMonitoringParams>();
+    module.register_type::<crate::processing::MessageMonitoringResult>();
+    module.register_type::<crate::processing::MonitorFetchWaitMode>();
+    module.register_type::<crate::processing::MonitoredMessage>();
+    module.register_type::<crate::processing::MessageMonitoringStatus>();
+    module.register_type::<crate::processing::MessageSendingParams>();
+
+    module.register_async_fn(
+        crate::processing::monitor_messages,
+        crate::processing::monitor_messages_api,
+    );
+    module.register_async_fn(
+        crate::processing::get_monitor_info,
+        crate::processing::get_monitor_info_api,
+    );
+    module.register_async_fn(
+        crate::processing::fetch_next_monitor_results,
+        crate::processing::fetch_next_monitor_results_api,
+    );
+    module.register_async_fn(
+        crate::processing::cancel_monitor,
+        crate::processing::cancel_monitor_api,
+    );
+    module.register_async_fn(
+        crate::processing::send_messages,
+        crate::processing::send_messages_api,
+    );
+
     module.register_async_fn_with_callback(
         super::processing::send_message,
         super::processing::send_message_api,
@@ -576,6 +606,7 @@ fn register_processing(handlers: &mut RuntimeHandlers) {
         super::processing::process_message,
         super::processing::process_message_api,
     );
+
     module.register();
 }
 

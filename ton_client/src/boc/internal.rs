@@ -11,18 +11,18 @@
 * limitations under the License.
 */
 
-use crate::ClientContext;
 use crate::boc::{BocCacheType, Error};
 use crate::error::ClientResult;
+use crate::ClientContext;
 use std::io::Cursor;
 #[allow(unused_imports)]
 use std::str::FromStr;
 use ton_block::{Deserializable, Serializable};
-use ton_types::{UInt256, deserialize_tree_of_cells};
+use ton_types::{deserialize_tree_of_cells, UInt256};
 
-pub fn get_boc_hash(boc: &[u8]) -> ClientResult<String> {
-    let cells = deserialize_tree_of_cells(&mut Cursor::new(boc))
-        .map_err(|err| Error::invalid_boc(err))?;
+pub(crate) fn get_boc_hash(boc: &[u8]) -> ClientResult<String> {
+    let cells =
+        deserialize_tree_of_cells(&mut Cursor::new(boc)).map_err(|err| Error::invalid_boc(err))?;
     let id: Vec<u8> = cells.repr_hash().as_slice()[..].into();
     Ok(hex::encode(&id))
 }
@@ -34,10 +34,9 @@ pub fn deserialize_cell_from_base64(
     let bytes = base64::decode(&b64)
         .map_err(|err| Error::invalid_boc(format!("error decode {} BOC base64: {}", name, err)))?;
 
-    let cell = deserialize_tree_of_cells(&mut Cursor::new(&bytes))
-        .map_err(|err| {
-            Error::invalid_boc(format!("{} BOC deserialization error: {}", name, err))
-        })?;
+    let cell = deserialize_tree_of_cells(&mut Cursor::new(&bytes)).map_err(|err| {
+        Error::invalid_boc(format!("{} BOC deserialization error: {}", name, err))
+    })?;
 
     Ok((bytes, cell))
 }
@@ -47,7 +46,9 @@ pub fn deserialize_object_from_cell<S: Deserializable>(
     name: &str,
 ) -> ClientResult<S> {
     let tip = match name {
-        "message" => "Please check that you have specified the message's BOC, not body, as a parameter.",
+        "message" => {
+            "Please check that you have specified the message's BOC, not body, as a parameter."
+        }
         _ => "",
     };
     let tip_full = if tip.len() > 0 {
@@ -55,12 +56,12 @@ pub fn deserialize_object_from_cell<S: Deserializable>(
     } else {
         "".to_string()
     };
-    S::construct_from_cell(cell)
-        .map_err(|err|
-            Error::invalid_boc(
-                format!("cannot deserialize {} from BOC: {}{}", name, err, tip_full)
-            )
-        )
+    S::construct_from_cell(cell).map_err(|err| {
+        Error::invalid_boc(format!(
+            "cannot deserialize {} from BOC: {}{}",
+            name, err, tip_full
+        ))
+    })
 }
 
 #[derive(Clone)]
@@ -73,7 +74,7 @@ impl DeserializedBoc {
     pub fn bytes(self, name: &str) -> ClientResult<Vec<u8>> {
         match self {
             DeserializedBoc::Bytes(vec) => Ok(vec),
-            DeserializedBoc::Cell(cell) => serialize_cell_to_bytes(&cell, name)
+            DeserializedBoc::Cell(cell) => serialize_cell_to_bytes(&cell, name),
         }
     }
 }
@@ -128,21 +129,7 @@ pub fn serialize_object_to_base64<S: Serializable>(
 pub async fn deserialize_cell_from_boc(
     context: &ClientContext, boc: &str, name: &str
 ) -> ClientResult<(DeserializedBoc, ton_types::Cell)> {
-    if boc.starts_with("*") {
-        let hash = UInt256::from_str(&boc[1..])
-            .map_err(|err| Error::invalid_boc(
-                format!("BOC start with `*` but contains invalid hash: {}", err)
-            ))?;
-
-        let cell = context.bocs
-            .get(&hash)
-            .await
-            .ok_or(Error::boc_ref_not_found(boc))?;
-        Ok((DeserializedBoc::Cell(cell.clone()), cell))
-    } else {
-        deserialize_cell_from_base64(boc, name)
-            .map(|(bytes, cell)| (DeserializedBoc::Bytes(bytes), cell))
-    }
+    context.bocs.deserialize_cell(boc, name)
 }
 
 pub async fn deserialize_object_from_boc<S: Deserializable>(
@@ -152,21 +139,16 @@ pub async fn deserialize_object_from_boc<S: Deserializable>(
 
     let object = deserialize_object_from_cell(cell.clone(), name)?;
 
-    Ok(DeserializedObject {
-        boc,
-        cell,
-        object,
-    })
+    Ok(DeserializedObject { boc, cell, object })
 }
 
 pub fn deserialize_object_from_boc_bin<S: Deserializable>(
     boc: &[u8],
 ) -> ClientResult<(S, UInt256)> {
-    let cell = deserialize_tree_of_cells(&mut Cursor::new(boc))
-        .map_err(|err| Error::invalid_boc(err))?;
+    let cell =
+        deserialize_tree_of_cells(&mut Cursor::new(boc)).map_err(|err| Error::invalid_boc(err))?;
     let root_hash = cell.repr_hash();
-    let object = S::construct_from_cell(cell)
-        .map_err(|err| Error::invalid_boc(err))?;
+    let object = S::construct_from_cell(cell).map_err(|err| Error::invalid_boc(err))?;
 
     Ok((object, root_hash))
 }
@@ -175,8 +157,9 @@ pub async fn serialize_cell_to_boc(
     context: &ClientContext, cell: ton_types::Cell, name: &str, boc_cache: Option<BocCacheType>,
 ) -> ClientResult<String> {
     if let Some(cache_type) = boc_cache {
-        context.bocs.add(cache_type, cell, None)
-            .await
+        context
+            .bocs
+            .add(cache_type, cell, None)
             .map(|hash| format!("*{:x}", hash))
     } else {
         serialize_cell_to_base64(&cell, name)

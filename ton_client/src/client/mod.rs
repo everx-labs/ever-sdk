@@ -14,9 +14,9 @@
 mod client;
 mod client_env;
 pub(crate) mod errors;
-pub(crate) mod storage;
 #[cfg(not(feature = "wasm-base"))]
 mod std_client_env;
+pub(crate) mod storage;
 #[cfg(not(feature = "wasm-base"))]
 pub(crate) use std_client_env::{ClientEnv, LocalStorage};
 #[cfg(feature = "wasm-base")]
@@ -26,7 +26,7 @@ pub(crate) use wasm_client_env::{ClientEnv, LocalStorage};
 
 #[cfg(not(feature = "wasm-base"))]
 #[cfg(test)]
-pub(crate) use crate::client::network_mock::{NetworkMock};
+pub(crate) use crate::client::network_mock::NetworkMock;
 
 #[cfg(test)]
 mod tests;
@@ -38,8 +38,8 @@ mod network_mock;
 pub use client::{ClientConfig, ClientContext};
 pub use errors::{Error, ErrorCode};
 
+pub(crate) use client::{AppObject, NetworkParams};
 pub(crate) use client_env::{FetchMethod, FetchResult, WebSocket};
-pub(crate) use client::{AppObject, NetworkUID, NetworkParams};
 
 use crate::error::ClientResult;
 use crate::json_interface::runtime::Runtime;
@@ -142,23 +142,25 @@ pub struct ParamsOfAppRequest {
 }
 
 #[derive(Serialize, Deserialize, ApiType, Clone)]
-#[serde(tag="type")]
+#[serde(tag = "type")]
 pub enum AppRequestResult {
     /// Error occurred during request processing
     Error {
         /// Error description
-        text: String
+        text: String,
     },
     /// Request processed successfully
     Ok {
         /// Request processing result
-        result: serde_json::Value
-    }
+        result: serde_json::Value,
+    },
 }
 
 impl Default for AppRequestResult {
     fn default() -> Self {
-        AppRequestResult::Error{ text: Default::default() }
+        AppRequestResult::Error {
+            text: Default::default(),
+        }
     }
 }
 
@@ -177,13 +179,15 @@ pub async fn resolve_app_request(
     params: ParamsOfResolveAppRequest,
 ) -> ClientResult<()> {
     let request_id = params.app_request_id;
-    let sender = context.app_requests
+    let sender = context
+        .app_requests
         .lock()
         .await
         .remove(&request_id)
         .ok_or(Error::no_such_request(request_id))?;
 
-    sender.send(params.result)
+    sender
+        .send(params.result)
         .map_err(|_| Error::can_not_send_request_result(request_id))
 }
 
@@ -192,4 +196,3 @@ pub async fn resolve_app_request(
 pub fn config(context: Arc<ClientContext>) -> ClientResult<ClientConfig> {
     Ok(context.config.clone())
 }
-

@@ -18,10 +18,9 @@ use crate::proofs::validators::{
     calc_subset_for_workchain, calc_workchain_id, calc_workchain_id_by_adnl_id,
 };
 use crate::proofs::{
-    get_current_network_uid, is_transaction_refers_to_message, message_get_required_data,
-    proof_message_data, proof_transaction_data, query_current_network_uid,
-    resolve_initial_trusted_key_block, transaction_get_required_data, BlockProof,
-    ParamsOfProofBlockData, ParamsOfProofMessageData, ParamsOfProofTransactionData,
+    is_transaction_refers_to_message, message_get_required_data, proof_message_data,
+    proof_transaction_data, resolve_initial_trusted_key_block, transaction_get_required_data,
+    BlockProof, ParamsOfProofBlockData, ParamsOfProofMessageData, ParamsOfProofTransactionData,
     INITIAL_TRUSTED_KEY_BLOCKS,
 };
 use crate::tests::TestClient;
@@ -221,7 +220,10 @@ async fn test_query_current_network_zerostate_root_hash() -> Result<()> {
     let client = TestClient::new_with_config(mainnet_config());
 
     assert_eq!(
-        query_current_network_uid(client.context())
+        client
+            .context()
+            .net
+            .query_current_network_uid()
             .await?
             .zerostate_root_hash
             .as_hex_string(),
@@ -239,7 +241,9 @@ async fn test_get_current_network_zerostate_root_hash() -> Result<()> {
     assert!(context.net.network_uid.read().await.is_none());
 
     assert_eq!(
-        get_current_network_uid(&context)
+        context
+            .net
+            .get_current_network_uid()
             .await?
             .zerostate_root_hash
             .as_hex_string(),
@@ -261,7 +265,9 @@ async fn test_get_current_network_zerostate_root_hash() -> Result<()> {
 
     // Second time in order to ensure that value wasn't broken after caching:
     assert_eq!(
-        get_current_network_uid(&context)
+        context
+            .net
+            .get_current_network_uid()
             .await?
             .zerostate_root_hash
             .as_hex_string(),

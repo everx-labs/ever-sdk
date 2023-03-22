@@ -67,7 +67,7 @@ pub fn default_queries_protocol() -> NetworkQueriesProtocol {
 }
 
 pub fn default_first_remp_status_timeout() -> u32 {
-    1000
+    1
 }
 
 pub fn default_next_remp_status_timeout() -> u32 {
@@ -308,7 +308,8 @@ pub struct NetworkConfig {
     /// UNSTABLE. First REMP status awaiting timeout. If no status received during the timeout than fallback
     /// transaction scenario is activated.
     ///
-    /// Must be specified in milliseconds. Default is 1000 (1 sec).
+    /// Must be specified in milliseconds. Default is 1 (1 ms) in order to start fallback scenario
+    /// together with REMP statuses processing while REMP is not properly tuned yet.
     #[serde(
         default = "default_first_remp_status_timeout",
         deserialize_with = "deserialize_first_remp_status_timeout"

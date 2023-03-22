@@ -306,6 +306,7 @@ fn encode_int_deploy(
     pubkey: Option<&str>,
     ihr_disabled: bool,
     bounce: bool,
+    value: CurrencyCollection,
 ) -> ClientResult<(Vec<u8>, MsgAddressInt)> {
     let address = image.msg_address(workchain_id);
     let message = ton_sdk::Contract::get_int_deploy_message_bytes(
@@ -315,6 +316,7 @@ fn encode_int_deploy(
         workchain_id,
         ihr_disabled,
         bounce,
+        value,
     ).map_err(|err| abi::Error::encode_deploy_message_failed(err))?;
 
     Ok((message, address))
@@ -344,6 +346,7 @@ fn encode_empty_int_deploy(
     workchain_id: i32,
     ihr_disabled: bool,
     bounce: bool,
+    value: CurrencyCollection,
 ) -> ClientResult<(Vec<u8>, MsgAddressInt)> {
     let address = image.msg_address(workchain_id);
     let message = ton_sdk::Contract::construct_int_deploy_message_no_constructor(
@@ -351,7 +354,8 @@ fn encode_empty_int_deploy(
         image,
         workchain_id,
         ihr_disabled,
-        bounce
+        bounce,
+        value,
     ).map_err(|x| abi::Error::encode_deploy_message_failed(x))?;
 
     Ok((
@@ -569,6 +573,14 @@ pub async  fn encode_internal_message(
     };
     let ihr_disabled = !params.enable_ihr.unwrap_or(false);
     let bounce = params.bounce.unwrap_or(true);
+    let value = CurrencyCollection::with_grams(
+        u64::from_str(&params.value)
+            .map_err(|err| abi::Error::encode_run_message_failed(
+                err,
+                params.call_set.as_ref()
+                    .map(|call_set| call_set.function_name.as_str()),
+            ))?
+    );
 
     let (message, address) = if let Some(deploy_set) = params.deploy_set {
         let abi = params.abi
@@ -598,9 +610,10 @@ pub async  fn encode_internal_message(
                 Some(&public),
                 ihr_disabled,
                 bounce,
+                value,
             )?
         } else {
-            encode_empty_int_deploy(src_address, image, workchain_id, ihr_disabled, bounce)?
+            encode_empty_int_deploy(src_address, image, workchain_id, ihr_disabled, bounce, value)?
         }
     } else {
         let address = params
@@ -608,14 +621,6 @@ pub async  fn encode_internal_message(
             .as_ref()
             .ok_or(abi::Error::required_address_missing_for_encode_message())?;
         let address = account_decode(address)?;
-        let value = CurrencyCollection::with_grams(
-            u64::from_str(&params.value)
-                .map_err(|err| abi::Error::encode_run_message_failed(
-                    err,
-                    params.call_set.as_ref()
-                        .map(|call_set| call_set.function_name.as_str()),
-                ))?
-        );
         if let Some(call_set) = &params.call_set {
             let abi = params.abi
                 .ok_or_else(|| Error::invalid_abi("abi is undefined"))?

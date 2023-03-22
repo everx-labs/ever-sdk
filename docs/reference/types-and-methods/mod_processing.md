@@ -7,6 +7,16 @@ processing scenarios.
 
 
 ## Functions
+[monitor_messages](mod\_processing.md#monitor_messages) – Starts monitoring for the processing results of the specified messages.
+
+[get_monitor_info](mod\_processing.md#get_monitor_info) – Returns summary information about current state of the specified monitoring queue.
+
+[fetch_next_monitor_results](mod\_processing.md#fetch_next_monitor_results) – Fetches next resolved results from the specified monitoring queue.
+
+[cancel_monitor](mod\_processing.md#cancel_monitor) – Cancels all background activity and releases all allocated system resources for the specified monitoring queue.
+
+[send_messages](mod\_processing.md#send_messages) – Sends specified messages to the blockchain.
+
 [send_message](mod\_processing.md#send_message) – Sends message to the network
 
 [wait_for_transaction](mod\_processing.md#wait_for_transaction) – Performs monitoring of the network for the result transaction of the external inbound message processing.
@@ -48,6 +58,42 @@ processing scenarios.
 
 [DecodedOutput](mod\_processing.md#decodedoutput)
 
+[MessageMonitoringTransactionCompute](mod\_processing.md#messagemonitoringtransactioncompute)
+
+[MessageMonitoringTransaction](mod\_processing.md#messagemonitoringtransaction)
+
+[MessageMonitoringParams](mod\_processing.md#messagemonitoringparams)
+
+[MessageMonitoringResult](mod\_processing.md#messagemonitoringresult)
+
+[MonitorFetchWaitMode](mod\_processing.md#monitorfetchwaitmode)
+
+[MonitoredMessageBocVariant](mod\_processing.md#monitoredmessagebocvariant) – BOC of the message.
+
+[MonitoredMessageHashAddressVariant](mod\_processing.md#monitoredmessagehashaddressvariant) – Message's hash and destination address.
+
+[MonitoredMessage](mod\_processing.md#monitoredmessage)
+
+[MessageMonitoringStatus](mod\_processing.md#messagemonitoringstatus)
+
+[MessageSendingParams](mod\_processing.md#messagesendingparams)
+
+[ParamsOfMonitorMessages](mod\_processing.md#paramsofmonitormessages)
+
+[ParamsOfGetMonitorInfo](mod\_processing.md#paramsofgetmonitorinfo)
+
+[MonitoringQueueInfo](mod\_processing.md#monitoringqueueinfo)
+
+[ParamsOfFetchNextMonitorResults](mod\_processing.md#paramsoffetchnextmonitorresults)
+
+[ResultOfFetchNextMonitorResults](mod\_processing.md#resultoffetchnextmonitorresults)
+
+[ParamsOfCancelMonitor](mod\_processing.md#paramsofcancelmonitor)
+
+[ParamsOfSendMessages](mod\_processing.md#paramsofsendmessages)
+
+[ResultOfSendMessages](mod\_processing.md#resultofsendmessages)
+
 [ParamsOfSendMessage](mod\_processing.md#paramsofsendmessage)
 
 [ResultOfSendMessage](mod\_processing.md#resultofsendmessage)
@@ -58,6 +104,159 @@ processing scenarios.
 
 
 # Functions
+## monitor_messages
+
+Starts monitoring for the processing results of the specified messages.
+
+Message monitor performs background monitoring for a message processing results
+for the specified set of messages.
+
+Message monitor can serve several isolated monitoring queues.
+Each monitor queue has a unique application defined identifier (or name) used
+to separate several queue's.
+
+There are two important lists inside of the monitoring queue:
+
+- unresolved messages: contains messages requested by the application for monitoring
+  and not yet resolved;
+
+- resolved results: contains resolved processing results for monitored messages.
+
+Each monitoring queue tracks own unresolved and resolved lists.
+Application can add more messages to the monitoring queue at any time.
+
+Message monitor accumulates resolved results.
+Application should fetch this results with `fetchNextMonitorResults` function.
+
+When both unresolved and resolved lists becomes empty, monitor stops any background activity
+and frees all allocated internal memory.
+
+If monitoring queue with specified name already exists then messages will be added
+to the unresolved list.
+
+If monitoring queue with specified name does not exist then monitoring queue will be created
+with specified unresolved messages.
+
+```ts
+type ParamsOfMonitorMessages = {
+    queue: string,
+    messages: MessageMonitoringParams[]
+}
+
+function monitor_messages(
+    params: ParamsOfMonitorMessages,
+): Promise<void>;
+```
+### Parameters
+- `queue`: _string_ – Name of the monitoring queue.
+- `messages`: _[MessageMonitoringParams](mod\_processing.md#messagemonitoringparams)[]_ – Messages to start monitoring for.
+
+
+## get_monitor_info
+
+Returns summary information about current state of the specified monitoring queue.
+
+```ts
+type ParamsOfGetMonitorInfo = {
+    queue: string
+}
+
+type MonitoringQueueInfo = {
+    unresolved: number,
+    resolved: number
+}
+
+function get_monitor_info(
+    params: ParamsOfGetMonitorInfo,
+): Promise<MonitoringQueueInfo>;
+```
+### Parameters
+- `queue`: _string_ – Name of the monitoring queue.
+
+
+### Result
+
+- `unresolved`: _number_ – Count of the unresolved messages.
+- `resolved`: _number_ – Count of resolved results.
+
+
+## fetch_next_monitor_results
+
+Fetches next resolved results from the specified monitoring queue.
+
+Results and waiting options are depends on the `wait` parameter.
+All returned results will be removed from the queue's resolved list.
+
+```ts
+type ParamsOfFetchNextMonitorResults = {
+    queue: string,
+    wait_mode?: MonitorFetchWaitMode
+}
+
+type ResultOfFetchNextMonitorResults = {
+    results: MessageMonitoringResult[]
+}
+
+function fetch_next_monitor_results(
+    params: ParamsOfFetchNextMonitorResults,
+): Promise<ResultOfFetchNextMonitorResults>;
+```
+### Parameters
+- `queue`: _string_ – Name of the monitoring queue.
+- `wait_mode`?: _[MonitorFetchWaitMode](mod\_processing.md#monitorfetchwaitmode)_ – Wait mode.
+<br>Default is `NO_WAIT`.
+
+
+### Result
+
+- `results`: _[MessageMonitoringResult](mod\_processing.md#messagemonitoringresult)[]_ – List of the resolved results.
+
+
+## cancel_monitor
+
+Cancels all background activity and releases all allocated system resources for the specified monitoring queue.
+
+```ts
+type ParamsOfCancelMonitor = {
+    queue: string
+}
+
+function cancel_monitor(
+    params: ParamsOfCancelMonitor,
+): Promise<void>;
+```
+### Parameters
+- `queue`: _string_ – Name of the monitoring queue.
+
+
+## send_messages
+
+Sends specified messages to the blockchain.
+
+```ts
+type ParamsOfSendMessages = {
+    messages: MessageSendingParams[],
+    monitor_queue?: string
+}
+
+type ResultOfSendMessages = {
+    messages: MessageMonitoringParams[]
+}
+
+function send_messages(
+    params: ParamsOfSendMessages,
+): Promise<ResultOfSendMessages>;
+```
+### Parameters
+- `messages`: _[MessageSendingParams](mod\_processing.md#messagesendingparams)[]_ – Messages that must be sent to the blockchain.
+- `monitor_queue`?: _string_ – Optional message monitor queue that starts monitoring for the processing results for sent messages.
+
+
+### Result
+
+- `messages`: _[MessageMonitoringParams](mod\_processing.md#messagemonitoringparams)[]_ – Messages that was sent to the blockchain for execution.
+
+
 ## send_message
 
 Sends message to the network
@@ -749,6 +948,238 @@ type DecodedOutput = {
 - `out_messages`: _[DecodedMessageBody](mod\_abi.md#decodedmessagebody)?[]_ – Decoded bodies of the out messages.
 <br>If the message can't be decoded, then `None` will be stored in<br>the appropriate position.
 - `output`?: _any_ – Decoded body of the function output message.
+
+
+## MessageMonitoringTransactionCompute
+```ts
+type MessageMonitoringTransactionCompute = {
+    exit_code: number
+}
+```
+- `exit_code`: _number_ – Compute phase exit code.
+
+
+## MessageMonitoringTransaction
+```ts
+type MessageMonitoringTransaction = {
+    hash?: string,
+    aborted: boolean,
+    compute?: MessageMonitoringTransactionCompute
+}
+```
+- `hash`?: _string_ – Hash of the transaction. Present if transaction was included into the blocks. When then transaction was emulated this field will be missing.
+- `aborted`: _boolean_ – Aborted field of the transaction.
+- `compute`?: _[MessageMonitoringTransactionCompute](mod\_processing.md#messagemonitoringtransactioncompute)_ – Optional information about the compute phase of the transaction.
+
+
+## MessageMonitoringParams
+```ts
+type MessageMonitoringParams = {
+    message: MonitoredMessage,
+    wait_until: number,
+    user_data?: any
+}
+```
+- `message`: _[MonitoredMessage](mod\_processing.md#monitoredmessage)_ – Monitored message identification. Can be provided as a message's BOC or (hash, address) pair. BOC is a preferable way because it helps to determine possible error reason (using TVM execution of the message).
+- `wait_until`: _number_ – Block time Must be specified as a UNIX timestamp in seconds
+- `user_data`?: _any_ – User defined data associated with this message. Helps to identify this message when user received `MessageMonitoringResult`.
+
+
+## MessageMonitoringResult
+```ts
+type MessageMonitoringResult = {
+    hash: string,
+    status: MessageMonitoringStatus,
+    transaction?: MessageMonitoringTransaction,
+    error?: string,
+    user_data?: any
+}
+```
+- `hash`: _string_ – Hash of the message.
+- `status`: _[MessageMonitoringStatus](mod\_processing.md#messagemonitoringstatus)_ – Processing status.
+- `transaction`?: _[MessageMonitoringTransaction](mod\_processing.md#messagemonitoringtransaction)_ – In case of `Finalized` the transaction is extracted from the block. In case of `Timeout` the transaction is emulated using the last known account state.
+- `error`?: _string_ – In case of `Timeout` contains possible error reason.
+- `user_data`?: _any_ – User defined data related to this message. This is the same value as passed before with `MessageMonitoringParams` or `SendMessageParams`.
+
+
+## MonitorFetchWaitMode
+```ts
+enum MonitorFetchWaitMode {
+    AtLeastOne = "AtLeastOne",
+    All = "All",
+    NoWait = "NoWait"
+}
+```
+One of the following value:
+
+- `AtLeastOne = "AtLeastOne"` – If there are no resolved results yet, then monitor awaits for the next resolved result.
+- `All = "All"` – Monitor waits until all unresolved messages will be resolved. If there are no unresolved messages then monitor will wait.
+- `NoWait = "NoWait"`
+
+
+## MonitoredMessageBocVariant
+BOC of the message.
+
+```ts
+type MonitoredMessageBocVariant = {
+    boc: string
+}
+```
+- `boc`: _string_
+
+
+## MonitoredMessageHashAddressVariant
+Message's hash and destination address.
+
+```ts
+type MonitoredMessageHashAddressVariant = {
+    hash: string,
+    address: string
+}
+```
+- `hash`: _string_ – Hash of the message.
+- `address`: _string_ – Destination address of the message.
+
+
+## MonitoredMessage
+```ts
+type MonitoredMessage = ({
+    type: 'Boc'
+} & MonitoredMessageBocVariant) | ({
+    type: 'HashAddress'
+} & MonitoredMessageHashAddressVariant)
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'Boc'_
+
+BOC of the message.
+
+- `boc`: _string_
+
+When _type_ is _'HashAddress'_
+
+Message's hash and destination address.
+
+- `hash`: _string_ – Hash of the message.
+- `address`: _string_ – Destination address of the message.
+
+
+Variant constructors:
+
+```ts
+function monitoredMessageBoc(boc: string): MonitoredMessage;
+function monitoredMessageHashAddress(hash: string, address: string): MonitoredMessage;
+```
+
+## MessageMonitoringStatus
+```ts
+enum MessageMonitoringStatus {
+    Finalized = "Finalized",
+    Timeout = "Timeout",
+    Reserved = "Reserved"
+}
+```
+One of the following value:
+
+- `Finalized = "Finalized"` – Returned when the messages was processed and included into finalized block before `wait_until` block time.
+- `Timeout = "Timeout"` – Returned when the message was not processed until `wait_until` block time.
+- `Reserved = "Reserved"` – Reserved for future statuses.
+<br>Is never returned. Application should wait for one of the `Finalized` or `Timeout` statuses.<br>All other statuses are intermediate.
+
+
+## MessageSendingParams
+```ts
+type MessageSendingParams = {
+    boc: string,
+    wait_until: number,
+    user_data?: any
+}
+```
+- `boc`: _string_ – BOC of the message, that must be sent to the blockchain.
+- `wait_until`: _number_ – Expiration time of the message. Must be specified as a UNIX timestamp in seconds.
+- `user_data`?: _any_ – User defined data associated with this message. Helps to identify this message when user received `MessageMonitoringResult`.
+
+
+## ParamsOfMonitorMessages
+```ts
+type ParamsOfMonitorMessages = {
+    queue: string,
+    messages: MessageMonitoringParams[]
+}
+```
+- `queue`: _string_ – Name of the monitoring queue.
+- `messages`: _[MessageMonitoringParams](mod\_processing.md#messagemonitoringparams)[]_ – Messages to start monitoring for.
+
+
+## ParamsOfGetMonitorInfo
+```ts
+type ParamsOfGetMonitorInfo = {
+    queue: string
+}
+```
+- `queue`: _string_ – Name of the monitoring queue.
+
+
+## MonitoringQueueInfo
+```ts
+type MonitoringQueueInfo = {
+    unresolved: number,
+    resolved: number
+}
+```
+- `unresolved`: _number_ – Count of the unresolved messages.
+- `resolved`: _number_ – Count of resolved results.
+
+
+## ParamsOfFetchNextMonitorResults
+```ts
+type ParamsOfFetchNextMonitorResults = {
+    queue: string,
+    wait_mode?: MonitorFetchWaitMode
+}
+```
+- `queue`: _string_ – Name of the monitoring queue.
+- `wait_mode`?: _[MonitorFetchWaitMode](mod\_processing.md#monitorfetchwaitmode)_ – Wait mode.
+<br>Default is `NO_WAIT`.
+
+
+## ResultOfFetchNextMonitorResults
+```ts
+type ResultOfFetchNextMonitorResults = {
+    results: MessageMonitoringResult[]
+}
+```
+- `results`: _[MessageMonitoringResult](mod\_processing.md#messagemonitoringresult)[]_ – List of the resolved results.
+
+
+## ParamsOfCancelMonitor
+```ts
+type ParamsOfCancelMonitor = {
+    queue: string
+}
+```
+- `queue`: _string_ – Name of the monitoring queue.
+
+
+## ParamsOfSendMessages
+```ts
+type ParamsOfSendMessages = {
+    messages: MessageSendingParams[],
+    monitor_queue?: string
+}
+```
+- `messages`: _[MessageSendingParams](mod\_processing.md#messagesendingparams)[]_ – Messages that must be sent to the blockchain.
+- `monitor_queue`?: _string_ – Optional message monitor queue that starts monitoring for the processing results for sent messages.
+
+
+## ResultOfSendMessages
+```ts
+type ResultOfSendMessages = {
+    messages: MessageMonitoringParams[]
+}
+```
+- `messages`: _[MessageMonitoringParams](mod\_processing.md#messagemonitoringparams)[]_ – Messages that was sent to the blockchain for execution.
 
 
 ## ParamsOfSendMessage

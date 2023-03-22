@@ -16,8 +16,8 @@ use serde::{de::DeserializeOwned, Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 use std::sync::Arc;
-use tokio::sync::{mpsc, oneshot, Mutex, RwLock};
-use ton_types::UInt256;
+use tokio::sync::{oneshot, Mutex, RwLock};
+use ton_client_processing::MessageMonitor;
 
 #[cfg(not(feature = "wasm-base"))]
 use super::std_client_env::ClientEnv;
@@ -35,7 +35,8 @@ use crate::debot::DEngine;
 use crate::error::ClientResult;
 use crate::json_interface::interop::ResponseType;
 use crate::json_interface::request::Request;
-use crate::net::{subscriptions::SubscriptionAction, ChainIterator, NetworkConfig, ServerLink};
+use crate::net::{NetworkConfig, NetworkContext, ServerLink};
+use crate::processing::SdkServices;
 use crate::proofs::ProofsConfig;
 
 #[derive(Default)]
@@ -45,47 +46,46 @@ pub struct Boxes {
     pub(crate) encryption_boxes: LockfreeMap<u32, Box<dyn EncryptionBox>>,
 }
 
-#[derive(Debug)]
-pub(crate) struct NetworkUID {
-    pub(crate) zerostate_root_hash: UInt256,
-    pub(crate) first_master_block_root_hash: UInt256,
-}
-
 #[derive(Clone, Default)]
 pub(crate) struct NetworkParams {
     pub(crate) blockchain_config: Arc<ton_executor::BlockchainConfig>,
     pub(crate) global_id: i32,
 }
 
-pub struct NetworkContext {
-    pub(crate) server_link: Option<ServerLink>,
-    pub(crate) subscriptions: Mutex<HashMap<u32, mpsc::Sender<SubscriptionAction>>>,
-    pub(crate) iterators: Mutex<HashMap<u32, Arc<Mutex<Box<dyn ChainIterator + Send + Sync>>>>>,
-    pub(crate) network_uid: RwLock<Option<Arc<NetworkUID>>>,
-}
-
 pub struct ClientContext {
-    pub(crate) net: NetworkContext,
+    next_id: AtomicU32,
+
+    // context
     pub(crate) config: ClientConfig,
+    pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
+
+    // client module
     pub(crate) env: Arc<ClientEnv>,
-    pub(crate) debots: LockfreeMap<u32, Mutex<DEngine>>,
-    pub(crate) boxes: Boxes,
-    pub(crate) bocs: Bocs,
     pub(crate) network_params: RwLock<Option<NetworkParams>>,
 
-    pub(crate) app_requests: Mutex<HashMap<u32, oneshot::Sender<AppRequestResult>>>,
-    pub(crate) proofs_storage: RwLock<Option<Arc<dyn KeyValueStorage>>>,
+    // crypto module
+    pub(crate) boxes: Boxes,
     pub(crate) derived_keys: DerivedKeys,
 
-    next_id: AtomicU32,
+    // boc module
+    pub(crate) bocs: Arc<Bocs>,
+
+    // net module
+    pub(crate) net: Arc<NetworkContext>,
+
+    // processing module
+    pub(crate) message_monitor: Arc<MessageMonitor<SdkServices>>,
+
+    // proofs module
+    pub(crate) proofs_storage: RwLock<Option<Arc<dyn KeyValueStorage>>>,
+
+    // debot module
+    pub(crate) debots: LockfreeMap<u32, Mutex<DEngine>>,
 }
 
 impl ClientContext {
     pub(crate) fn get_server_link(&self) -> ClientResult<&ServerLink> {
-        self.net
-            .server_link
-            .as_ref()
-            .ok_or_else(|| Error::net_module_not_init())
+        self.net.get_server_link()
     }
 
     pub async fn set_timer(&self, ms: u64) -> ClientResult<()> {
@@ -116,14 +116,21 @@ Note that default values are used if parameters are omitted in config"#,
             None
         };
 
-        let bocs = Bocs::new(config.boc.cache_max_size);
+        let bocs = Arc::new(Bocs::new(config.boc.cache_max_size));
+        let net = Arc::new(NetworkContext {
+            env: env.clone(),
+            server_link,
+            subscriptions: Default::default(),
+            iterators: Default::default(),
+            network_uid: Default::default(),
+        });
+        let message_monitor = Arc::new(MessageMonitor::new(SdkServices::new(
+            net.clone(),
+            bocs.clone(),
+        )));
         Ok(Self {
-            net: NetworkContext {
-                server_link,
-                subscriptions: Default::default(),
-                iterators: Default::default(),
-                network_uid: Default::default(),
-            },
+            net,
+            message_monitor,
             config,
             env: env.clone(),
             debots: LockfreeMap::new(),
