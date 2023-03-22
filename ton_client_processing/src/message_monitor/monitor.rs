@@ -80,7 +80,7 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
     ) -> crate::error::Result<Vec<MessageMonitoringResult>> {
         let mut listen_resolved = self.listen_resolved.clone();
         loop {
-            if let Some(fetched) = self.fetch_next(queue, wait_mode).await {
+            if let Some(fetched) = self.fetch_next(queue, wait_mode) {
                 return Ok(fetched);
             }
             listen_resolved.changed().await.unwrap();
@@ -156,7 +156,7 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
         messages
     }
 
-    async fn fetch_next(
+    fn fetch_next(
         &self,
         queue: &str,
         wait_mode: MonitorFetchWaitMode,
