@@ -10308,19 +10308,19 @@
           "description": null
         },
         {
-          "name": "MonitorFetchWait",
+          "name": "MonitorFetchWaitMode",
           "type": "EnumOfConsts",
           "enum_consts": [
             {
               "name": "AtLeastOne",
               "type": "None",
-              "summary": "If there are an unresolved messages and no resolved results yet, then monitor awaits for the next resolved result. If there are no unresolved messages then monitor immediately returns a resolved list (even if it is empty).",
+              "summary": "If there are no resolved results yet, then monitor awaits for the next resolved result.",
               "description": null
             },
             {
               "name": "All",
               "type": "None",
-              "summary": "Monitor waits until all unresolved messages will be resolved. If there are no unresolved messages then monitor immediately returns a resolved list (even if it is empty).",
+              "summary": "Monitor waits until all unresolved messages will be resolved. If there are no unresolved messages then monitor will wait.",
               "description": null
             },
             {
@@ -10506,11 +10506,11 @@
               "description": null
             },
             {
-              "name": "wait",
+              "name": "wait_mode",
               "type": "Optional",
               "optional_inner": {
                 "type": "Ref",
-                "ref_name": "processing.MonitorFetchWait"
+                "ref_name": "processing.MonitorFetchWaitMode"
               },
               "summary": "Wait mode.",
               "description": "Default is `NO_WAIT`."

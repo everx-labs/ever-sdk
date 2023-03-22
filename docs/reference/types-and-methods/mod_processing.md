@@ -66,7 +66,7 @@ processing scenarios.
 
 [MessageMonitoringResult](mod\_processing.md#messagemonitoringresult)
 
-[MonitorFetchWait](mod\_processing.md#monitorfetchwait)
+[MonitorFetchWaitMode](mod\_processing.md#monitorfetchwaitmode)
 
 [MonitoredMessageBocVariant](mod\_processing.md#monitoredmessagebocvariant) – BOC of the message.
 
@@ -190,7 +190,7 @@ All returned results will be removed from the queue's resolved list.
 ```ts
 type ParamsOfFetchNextMonitorResults = {
     queue: string,
-    wait?: MonitorFetchWait
+    wait_mode?: MonitorFetchWaitMode
 }
 
 type ResultOfFetchNextMonitorResults = {
@@ -203,7 +203,7 @@ function fetch_next_monitor_results(
 ```
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
-- `wait`?: _[MonitorFetchWait](mod\_processing.md#monitorfetchwait)_ – Wait mode.
+- `wait_mode`?: _[MonitorFetchWaitMode](mod\_processing.md#monitorfetchwaitmode)_ – Wait mode.
 <br>Default is `NO_WAIT`.
 
 
@@ -1002,9 +1002,9 @@ type MessageMonitoringResult = {
 - `user_data`?: _any_ – User defined data related to this message. This is the same value as passed before with `MessageMonitoringParams` or `SendMessageParams`.
 
 
-## MonitorFetchWait
+## MonitorFetchWaitMode
 ```ts
-enum MonitorFetchWait {
+enum MonitorFetchWaitMode {
     AtLeastOne = "AtLeastOne",
     All = "All",
     NoWait = "NoWait"
@@ -1012,8 +1012,8 @@ enum MonitorFetchWait {
 ```
 One of the following value:
 
-- `AtLeastOne = "AtLeastOne"` – If there are an unresolved messages and no resolved results yet, then monitor awaits for the next resolved result. If there are no unresolved messages then monitor immediately returns a resolved list (even if it is empty).
-- `All = "All"` – Monitor waits until all unresolved messages will be resolved. If there are no unresolved messages then monitor immediately returns a resolved list (even if it is empty).
+- `AtLeastOne = "AtLeastOne"` – If there are no resolved results yet, then monitor awaits for the next resolved result.
+- `All = "All"` – Monitor waits until all unresolved messages will be resolved. If there are no unresolved messages then monitor will wait.
 - `NoWait = "NoWait"`
 
 
@@ -1136,11 +1136,11 @@ type MonitoringQueueInfo = {
 ```ts
 type ParamsOfFetchNextMonitorResults = {
     queue: string,
-    wait?: MonitorFetchWait
+    wait_mode?: MonitorFetchWaitMode
 }
 ```
 - `queue`: _string_ – Name of the monitoring queue.
-- `wait`?: _[MonitorFetchWait](mod\_processing.md#monitorfetchwait)_ – Wait mode.
+- `wait_mode`?: _[MonitorFetchWaitMode](mod\_processing.md#monitorfetchwaitmode)_ – Wait mode.
 <br>Default is `NO_WAIT`.
 
 
