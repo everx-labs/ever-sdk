@@ -455,8 +455,9 @@ impl Contract {
         workchain_id: i32,
         ihr_disabled: bool,
         bounce: bool,
+        value: CurrencyCollection,
     ) -> Result<TvmMessage> {
-        Self::create_int_deploy_message(src, None, image, workchain_id, ihr_disabled, bounce)
+        Self::create_int_deploy_message(src, None, image, workchain_id, ihr_disabled, bounce, value)
     }
 
     // Packs given image and input into Message struct without signature and returns data to sign.
@@ -493,6 +494,7 @@ impl Contract {
         workchain_id: i32,
         ihr_disabled: bool,
         bounce: bool,
+        value: CurrencyCollection,
     ) -> Result<Vec<u8>> {
         let msg_body = ton_abi::encode_function_call(
             params.abi,
@@ -505,7 +507,7 @@ impl Contract {
         )?;
 
         let cell = SliceData::load_cell(msg_body.into_cell()?)?;
-        let msg = Self::create_int_deploy_message(src, Some(cell), image, workchain_id, ihr_disabled, bounce)?;
+        let msg = Self::create_int_deploy_message(src, Some(cell), image, workchain_id, ihr_disabled, bounce, value)?;
 
         Self::serialize_message(&msg)
             .map(|(msg_data, _id)| msg_data)
@@ -639,6 +641,7 @@ impl Contract {
         workchain_id: i32,
         ihr_disabled: bool,
         bounce: bool,
+        value: CurrencyCollection,
     ) -> Result<TvmMessage> {
         let dst = image.msg_address(workchain_id);
         let mut msg_header = InternalMessageHeader::default();
@@ -648,6 +651,7 @@ impl Contract {
         msg_header.set_dst(dst);
         msg_header.ihr_disabled = ihr_disabled;
         msg_header.bounce = bounce;
+        msg_header.value = value;
 
         let mut msg = TvmMessage::with_int_header(msg_header);
         msg.set_state_init(image.state_init());
