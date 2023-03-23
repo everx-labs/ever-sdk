@@ -127,19 +127,25 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
     // wait for REMP statuses and process them
     // if no statuses received during timeout or any error occurred then activate fallback
     let mut timeout = context.config.network.first_remp_status_timeout;
+    let mut fallback_activated = false;
     loop {
         let timer = context.env.set_timer(timeout as u64).fuse();
         futures::pin_mut!(timer);
         let result = futures::select! {
             _ = timer => {
-                if params.send_events {
-                    callback(ProcessingEvent::RempError {
-                        error: Error::next_remp_status_timeout(),
-                        message_id: message_id.clone(),
-                        message_dst: message_dst.to_string(),
-                    }).await;
+                if !fallback_activated {
+                    if params.send_events {
+                        callback(ProcessingEvent::RempError {
+                            error: Error::next_remp_status_timeout(),
+                            message_id: message_id.clone(),
+                            message_dst: message_dst.to_string(),
+                        }).await;
+                    }
+                    timeout = std::u32::MAX;
+                    notify.notify_one();
+                    fallback_activated = true;
                 }
-                notify.notify_one(); None
+                None
             },
             fallback = fallback_fut => Some(fallback),
             remp_message = receiver.select_next_some() => {
