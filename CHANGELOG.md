@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.42.1] – 2023-03-23
+
+### Fixed
+
+- Client was notified about every REMP status timeout. Now it is notified only once when fallback 
+scenario is started
+
 ## [1.42.0] – 2023-03-22
 
 ### New
