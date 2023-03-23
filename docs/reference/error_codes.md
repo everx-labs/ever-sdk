@@ -9,21 +9,21 @@ You can find error codes with descriptions on this page
 
 ## SDK Errors
 
-[Client Error codes (1-99)](types-and-methods/mod\_client.md#clienterrorcode)
+[Client Error codes (1-99)](https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod\_client#clienterrorcode)
 
 [Crypto Error codes (100-199)](https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod\_crypto#cryptoerrorcode)
 
 [Boc error codes(200-299)](https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod\_boc#bocerrorcode)
 
-[Abi Error codes (300-399)](types-and-methods/mod\_abi.md#AbiErrorCode)
+[Abi Error codes (300-399)](https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod\_abi#abierrorcode)
 
 [TVM Error codes (400-499)](https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod\_tvm#tvmerrorcode)
 
-[Processing Error codes (500-599)](types-and-methods/mod\_processing.md#processingerrorcode)
+[Processing Error codes (500-599)](https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod\_processing#processingerrorcode)
 
-[Net Error Codes (600-699)](types-and-methods/mod\_net.md#neterrorcode)
+[Net Error Codes (600-699)](https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod\_net#neterrorcode)
 
-[DeBot Error Codes (800-899)](types-and-methods/mod\_debot.md#deboterrorcode)
+[DeBot Error Codes (800-899)](https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod\_debot#deboterrorcode)
 
 ## Solidity Runtime Errors
 
