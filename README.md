@@ -18,19 +18,37 @@ Rust Client Library (core) for DApp development in TVM blockchains (Everscale, T
 
 ## Content Table
 
-* [Ever SDK](./#ever-sdk)
-  * [Content Table](./#content-table)
-  * [Quick Start](./#quick-start)
-  * [What is Core Client Library](./#what-is-core-client-library)
-  * [SDKs in other languages (bindings over Ever-SDK)](./#sdks-in-other-languages-bindings-over-ever-sdk)
-    * [Official Javascript(Typescript) SDK](./#official-javascripttypescript-sdk)
-    * [Community bindings](./#community-bindings)
-  * [How to use library](./#how-to-use-library)
-  * [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
-  * [Build client library](./#build-client-library)
-  * [Build artifacts](./#build-artifacts)
-  * [Run tests](./#run-tests)
-  * [Download precompiled binaries](./#download-precompiled-binaries)
+- [Ever SDK](#ever-sdk)
+  - [Content Table](#content-table)
+  - [Use-cases](#use-cases)
+  - [Quick Start](#quick-start)
+  - [What is Core Client Library](#what-is-core-client-library)
+  - [SDKs in other languages (bindings over Ever-SDK)](#sdks-in-other-languages-bindings-over-ever-sdk)
+    - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
+    - [Community bindings](#community-bindings)
+  - [How to use library](#how-to-use-library)
+  - [How to avoid Soft Breaking Problems](#how-to-avoid-soft-breaking-problems)
+  - [Build client library](#build-client-library)
+  - [Build artifacts](#build-artifacts)
+  - [Run tests](#run-tests)
+  - [Download precompiled binaries](#download-precompiled-binaries)
+
+## Use-cases
+
+With Ever-SDK you can implement logic of any complexity on TVM compatible blockchains (Everscale, TON, Venom, Gosh, etc).
+
+- Create and send messages to blockchain
+- Process messages reliably (supports retries and message expiration mechanics)
+- Supports Everscale Solidity and ABI compatible contracts
+- Emulate transactions locally
+- Run get methods
+- Get account state 
+- Query blockchain data (blocks, transactions, messages)
+- Subscripe to events and any other blockchain updates (literally)
+- Sign data/check signature, calculate hashes (sha256, sha512), encrypt/decrypt data
+- Validate addresses
+- Work with blockchain native types (bag of cells or BOCs): encode, decode, calculate hash, etc
+- Works on top of GraphQL API and compatible with Evernode-SE/DS, Evercloud.
 
 ## Quick Start
 
