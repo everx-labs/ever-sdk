@@ -16,3 +16,4 @@ This section contains the following guides on working with contracts:
 * [Decode Message](decode\_message.md)
 * [Estimate Fees](estimate\_fees.md)
 * [Validate address, convert address](validate\_address\_convert\_address.md)
+* [Trace message processing with REMP](trace-message-processing-with-remp.md)
