@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.43.0] – 2023-03-30
+
+### New
+
+- `network.network_retries_count` config parameter is finally deprecated and not used in SDK.
+`max_reconnect_timeout` is used instead
+- Message monitoring erros received by subscription are returned from
+`processing.fetch_next_monitor_results` function
+
 ## [1.42.1] – 2023-03-23
 
 ### Fixed

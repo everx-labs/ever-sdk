@@ -10,7 +10,7 @@ name = 'ton_client_processing'
 crate-type = [ 'cdylib', 'rlib', 'staticlib' ]
 
 [dependencies]
-ton_block = { git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.28' }
+ton_block = { git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.39' }
 ton_types = { git = 'https://github.com/tonlabs/ever-types.git', tag = '1.12.7' }
 api_derive = { path = '../api/derive' }
 api_info = { path = '../api/info' }

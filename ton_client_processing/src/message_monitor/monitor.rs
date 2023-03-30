@@ -13,8 +13,8 @@ pub struct MessageMonitor<Sdk: MessageMonitorSdkServices> {
     sdk: Sdk,
     /// Active queues
     queues: Arc<RwLock<HashMap<String, MonitoringQueue>>>,
-    notify_resolved: Arc<tokio::sync::watch::Sender<bool>>,
-    listen_resolved: tokio::sync::watch::Receiver<bool>,
+    notify_resolved: Arc<tokio::sync::watch::Sender<crate::error::Result<()>>>,
+    listen_resolved: tokio::sync::watch::Receiver<crate::error::Result<()>>,
     active_subscription: Mutex<Option<NetSubscription>>,
 }
 
@@ -42,7 +42,7 @@ pub enum MonitorFetchWaitMode {
 // pub
 impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
     pub fn new(sdk: SdkServices) -> Self {
-        let (sender, receiver) = tokio::sync::watch::channel(false);
+        let (sender, receiver) = tokio::sync::watch::channel(Ok(()));
         Self {
             sdk,
             queues: Arc::new(RwLock::new(HashMap::new())),
@@ -84,6 +84,9 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
                 return Ok(fetched);
             }
             listen_resolved.changed().await.unwrap();
+            if let Err(err) = listen_resolved.borrow().as_ref() {
+                return Err(err.clone());
+            }
         }
     }
 
@@ -131,13 +134,18 @@ impl<SdkServices: MessageMonitorSdkServices> MessageMonitor<SdkServices> {
         let queues = self.queues.clone();
         let notify_resolved = self.notify_resolved.clone();
         let callback = move |results| {
-            if let Ok(results) = results {
-                for queue in queues.write().unwrap().values_mut() {
-                    queue.resolve(&results);
+            match results {
+                Ok(results) => {
+                    for queue in queues.write().unwrap().values_mut() {
+                        queue.resolve(&results);
+                    }
+                    notify_resolved.send(Ok(())).ok();
+                },
+                Err(err) => {
+                    notify_resolved.send(Err(err)).ok();
                 }
-                notify_resolved.send(true).ok();
             }
-            async {}
+            futures::future::ready(())
         };
         Ok(Some(
             self.sdk
