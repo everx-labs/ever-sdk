@@ -412,6 +412,7 @@ impl LinkHandler {
                             .await;
                     };
                 } else {
+                    self.state.reset_resume_timeout();
                     self.notify_with_remove(false, &id, GraphQLQueryEvent::Data(data))
                         .await;
                 };
