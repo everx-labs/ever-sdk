@@ -182,7 +182,7 @@ pub struct NetworkConfig {
 
     /// List of Evernode endpoints. Any correct URL format can be specified, including IP addresses.
     /// This parameter is prevailing over `server_address`.
-    /// Check the full list of [supported network endpoints](https://docs.everos.dev/ever-sdk/reference/ever-os-api/networks).
+    /// Check the full list of [supported network endpoints](https://docs.evercloud.dev/products/evercloud/networks-endpoints).
     pub endpoints: Option<Vec<String>>,
 
     /// Deprecated. You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout.
