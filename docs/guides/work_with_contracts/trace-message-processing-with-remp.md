@@ -2,15 +2,23 @@
 
 ## Introduction
 
-REMP (Reliable External Messaging Protocol) is a set of protocols and data structures that are designed to keep trace of incoming external messages and predict with a high probability whether a message will be processed successfully..
+REMP (Reliable External Messaging Protocol) is a set of protocols and data structures that are designed to keep trace of incoming external messages and predict with a high probability whether a message will be processed successfully.
 
 REMP adds some additional guarantees/features for external messages processing:
 
-1. **Replay protection**. If a message is processed and added into an accepted block, then the same message will not be collated for some time period. If the message has some expiration time, then this effectively makes efficient replay protection.
-2. **A message may be sent only once** — if there will be a possibility to accept it and add it to a block, then it will be done. No messages are lost — except for blockchain overloading reasons.
-3. **One can trace the message processing**. There are several checkpoints on the message processing path and depending on the message importance one may trade efficiency for reliability in the software. With REMP most messages could be considered processed when validators acknowledge that messages were received. On the other hand, if a transaction is really important, then you can wait till the block with the transaction result is issued.
+**1. Replay protection**
 
-During validation, a message passes through several stages (that is, changes some statuses), and validator sends receipts about each.
+If a message is processed and added into an accepted block, then the same message **(that is, the message with the same hash)** will not be collated for some time period. If the message has some expiration time (corresponding to the time period), then this effectively makes efficient replay protection.
+
+**2. No messages are lost**
+
+You only need to send the message once. If there will be a possibility to accept it and add it to a block, then it will be done. Message loss may occur only for blockchain overloading reasons.
+
+**3. One can trace the message processing.**
+
+There are several checkpoints on the message processing path (when validators received the message, when message was added to a block, when the block was finalized, etc). Upon reaching certain checkpoints one can predict that the message will be successfully processed with a high accuracy - most messages can be considered to be processed when validators acknowledge that they were received (this happens in 100-200 ms; after that it’s highly unlikely that the message is declined). Thus, depending on the message importance one may trade efficiency for reliability in the software, choosing not to trace further processing results. On the other hand, if a transaction is really important, then you can wait till the block with the transaction result is issued.
+
+During validation, as the message passes through various stages (that is, changes some statuses), validator sends receipts about each.
 
 This guide teaches to work with REMP and REMP receipts in EVER SDK.
 
@@ -164,3 +172,7 @@ Guides for working with REMP in GraphQL API:
 {% embed url="https://docs.evercloud.dev/samples/graphql-samples/subscribe-for-remp-receipts" %}
 
 {% embed url="https://docs.evercloud.dev/samples/graphql-samples/send-message" %}
+
+REMP Architecture documentation:
+
+{% embed url="https://docs.everscale.network/arch/remp" %}
