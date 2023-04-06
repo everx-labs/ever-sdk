@@ -7,10 +7,14 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `network.network_retries_count` config parameter is finally deprecated and not used in SDK.
-`max_reconnect_timeout` is used instead
-- Message monitoring erros received by subscription are returned from
-`processing.fetch_next_monitor_results` function
+  `max_reconnect_timeout` is used instead
+- Message monitoring errors received by subscription are returned from
+  `processing.fetch_next_monitor_results` function
+- Message monitor buffers new messages for delayed start of the subscription. New subscription
+  starts when 1 second has passed since the last addition. Or when 5 seconds has passed since
+- Message monitor uses more than one subscription.  
 
+ 
 ## [1.42.1] – 2023-03-23
 
 ### Fixed

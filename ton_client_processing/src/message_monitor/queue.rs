@@ -1,28 +1,24 @@
-use crate::message_monitor::{MessageMonitoringParams, MessageMonitoringResult};
-use crate::{MessageMonitorSdkServices, MonitorFetchWaitMode};
+use crate::message_monitor::MessageMonitoringResult;
+use crate::MonitorFetchWaitMode;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::mem;
 
 pub(crate) struct MonitoringQueue {
-    pub unresolved: HashMap<String, MessageMonitoringParams>,
+    pub unresolved: HashMap<String, Option<Value>>,
     pub resolved: Vec<MessageMonitoringResult>,
 }
 
 impl MonitoringQueue {
-    pub fn add_unresolved<Sdk: MessageMonitorSdkServices>(
-        &mut self,
-        sdk: &Sdk,
-        message: MessageMonitoringParams,
-    ) -> crate::Result<()> {
-        self.unresolved.insert(message.message.hash(sdk)?, message);
-        Ok(())
+    pub fn add_unresolved(&mut self, hash: String, user_data: Option<Value>) {
+        self.unresolved.insert(hash, user_data);
     }
 
     pub fn resolve(&mut self, results: &Vec<MessageMonitoringResult>) {
         for result in results {
-            if let Some(params) = self.unresolved.remove(&result.hash) {
+            if let Some(user_data) = self.unresolved.remove(&result.hash) {
                 let mut result = result.clone();
-                result.user_data = params.user_data;
+                result.user_data = user_data;
                 self.resolved.push(result);
             }
         }
