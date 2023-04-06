@@ -64,7 +64,8 @@ fn test_parallel_requests() {
 fn test_deferred_init() {
     let client = TestClient::new_with_config(json!({
         "network": {
-            "endpoints": ["123"]
+            "endpoints": ["123"],
+            "max_reconnect_timeout": 0,
         }
     }));
 

@@ -155,6 +155,10 @@ impl NetworkState {
         timeout
     }
 
+    pub fn reset_resume_timeout(&self) {
+        self.resume_timeout.store(0, Ordering::Relaxed);
+    }
+
     pub async fn internal_suspend(&self) {
         let mut regulation = self.suspend_regulation.lock().await;
         if regulation.internal_suspend {
@@ -274,7 +278,7 @@ impl NetworkState {
                 (Err(_), Err(_)) => true,
                 _ => false,
             };
-        let mut retry_count = 0i8;
+        let start = self.client_env.now_ms();
         loop {
             let mut futures = vec![];
             for address in self.endpoint_addresses.read().await.iter() {
@@ -314,14 +318,13 @@ impl NetworkState {
             if let Some(unauthorised) = unauthorised {
                 return Err(unauthorised);
             }
-            retry_count += 1;
-            if retry_count > self.config.network_retries_count {
+            if !self.can_retry_network_error(start) {
                 return selected;
             }
-            if retry_count > 1 {
-                let delay = (100 * (retry_count - 1) as u64).max(5000);
-                let _ = self.client_env.set_timer(delay).await;
-            }
+            let _ = self
+                .client_env
+                .set_timer(self.next_resume_timeout() as u64)
+                .await;
         }
     }
 
@@ -369,6 +372,14 @@ impl NetworkState {
                 None
             }
         })
+    }
+
+    pub fn can_retry_network_error(&self, start: u64) -> bool {
+        self.client_env.now_ms() < start + self.config.max_reconnect_timeout as u64
+    }
+
+    pub fn env(&self) -> &Arc<ClientEnv> {
+        &self.client_env
     }
 }
 
@@ -475,8 +486,7 @@ impl ServerLink {
         let mut event_receiver = self.websocket_link.start_operation(operation).await?;
 
         let mut id = None;
-        let network_retries_count = self.config.network_retries_count;
-        let mut retry_count = 0;
+        let start = self.client_env.now_ms();
         loop {
             match event_receiver.recv().await {
                 Some(GraphQLQueryEvent::Id(received_id)) => id = Some(received_id),
@@ -498,8 +508,7 @@ impl ServerLink {
                     }
                     let is_retryable = err.code != ErrorCode::GraphqlWebsocketInitError as u32
                         && crate::client::Error::is_network_error(&err);
-                    retry_count += 1;
-                    if !is_retryable || retry_count > network_retries_count {
+                    if !is_retryable || !self.state.can_retry_network_error(start) {
                         return Err(err);
                     }
                 }
@@ -562,9 +571,8 @@ impl ServerLink {
             headers.insert(name, value);
         }
 
-        let network_retries_count = self.config.network_retries_count;
         let mut current_endpoint: Option<Arc<Endpoint>>;
-        let mut retry_count = 0;
+        let start = self.client_env.now_ms();
         loop {
             let endpoint = if let Some(endpoint) = endpoint {
                 endpoint
@@ -586,6 +594,7 @@ impl ServerLink {
             let result = match result {
                 Err(err) => Err(err),
                 Ok(response) => {
+                    self.state.reset_resume_timeout();
                     if response.status == 401 {
                         Err(Error::unauthorized(&response))
                     } else {
@@ -608,8 +617,7 @@ impl ServerLink {
                         self.websocket_link.suspend().await;
                         self.websocket_link.resume().await;
                     }
-                    retry_count += 1;
-                    if retry_count <= network_retries_count {
+                    if self.state.can_retry_network_error(start) {
                         if !multiple_endpoints {
                             let _ = self
                                 .client_env
@@ -629,8 +637,7 @@ impl ServerLink {
         let mut receiver = self.websocket_link.start_operation(query.clone()).await?;
         let mut id = None::<u32>;
         let mut result = Ok(Value::Null);
-        let network_retries_count = self.config.network_retries_count;
-        let mut retry_count = 0;
+        let start = self.client_env.now_ms();
         loop {
             match receiver.recv().await {
                 Some(GraphQLQueryEvent::Id(received_id)) => id = Some(received_id),
@@ -648,8 +655,7 @@ impl ServerLink {
                     let is_retryable = err.code != ErrorCode::GraphqlWebsocketInitError as u32
                         && crate::client::Error::is_network_error(&err);
                     result = Err(err);
-                    retry_count += 1;
-                    if !is_retryable || retry_count > network_retries_count {
+                    if !is_retryable || !self.state.can_retry_network_error(start) {
                         break;
                     }
                 }
