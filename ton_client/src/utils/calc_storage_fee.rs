@@ -58,6 +58,6 @@ pub async fn calc_storage_fee(
     );
 
     Ok(ResultOfCalcStorageFee {
-        fee: format!("{}", fee)
+        fee: format!("{:?}", fee)
     })
 }
