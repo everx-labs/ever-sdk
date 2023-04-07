@@ -59,6 +59,6 @@ pub async fn calc_storage_fee(
     .map_err(|err| Error::invalid_account_boc(format!("can not calculate storage fee: {}", err)))?;
 
     Ok(ResultOfCalcStorageFee {
-        fee: format!("{:?}", fee)
+        fee: format!("{}", fee.as_u128())
     })
 }
