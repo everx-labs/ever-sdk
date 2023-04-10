@@ -972,7 +972,7 @@ fn test_init_data() {
 
     let data = client
         .request::<_, ResultOfDecodeStateInit>(
-            "boc.decode_tvc",
+            "boc.decode_state_init",
             ParamsOfDecodeStateInit {
                 state_init: tvc,
                 boc_cache: None,

@@ -739,7 +739,7 @@ fn test_code_salt() {
 fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeStateInit) {
     let result: ResultOfDecodeStateInit = client
         .request(
-            "boc.decode_tvc",
+            "boc.decode_state_init",
             ParamsOfDecodeStateInit {
                 state_init: tvc.clone(),
                 boc_cache: None,
@@ -750,7 +750,7 @@ fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeSta
 
     let result: ResultOfEncodeStateInit = client
         .request(
-            "boc.encode_tvc",
+            "boc.encode_state_init",
             ParamsOfEncodeStateInit {
                 code: result.code,
                 data: result.data,
@@ -812,7 +812,7 @@ fn test_get_compiler_version() {
 
     let code = client
         .request::<_, ResultOfDecodeStateInit>(
-            "boc.decode_tvc",
+            "boc.decode_state_init",
             ParamsOfDecodeStateInit {
                 state_init: tvc,
                 boc_cache: None,
@@ -883,7 +883,7 @@ fn encode_external_in_message() {
         .parsed;
     let init = client
         .request::<ParamsOfEncodeStateInit, ResultOfEncodeStateInit>(
-            "boc.encode_tvc",
+            "boc.encode_state_init",
             ParamsOfEncodeStateInit {
                 code: abi_parsed["code"].as_str().map(|x| x.to_string()),
                 data: abi_parsed["data"].as_str().map(|x| x.to_string()),
