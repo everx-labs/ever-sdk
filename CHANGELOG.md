@@ -7,9 +7,12 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - `network.network_retries_count` config parameter is finally deprecated and not used in SDK.
-`max_reconnect_timeout` is used instead
-- Message monitoring erros received by subscription are returned from
-`processing.fetch_next_monitor_results` function
+  `max_reconnect_timeout` is used instead
+- Message monitoring errors received by subscription are returned from
+  `processing.fetch_next_monitor_results` function
+- `boc.encode_tvc` and `boc.decode_tvc` are renamed to `boc.encode_state_init` 
+  and `boc.decode_state_init`.
+- `boc.decode_tvc` decodes TVC BOC according to the TVC spec.
 
 ## [1.42.1] – 2023-03-23
 

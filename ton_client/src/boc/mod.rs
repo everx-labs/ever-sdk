@@ -15,20 +15,19 @@ use serde::{Deserialize, Deserializer};
 
 pub(crate) mod blockchain_config;
 pub(crate) mod cache;
+pub(crate) mod common;
 pub(crate) mod encode;
 mod errors;
-pub(crate) mod common;
 pub mod internal;
 pub(crate) mod parse;
-pub(crate) mod tvc;
+pub(crate) mod state_init;
 
+pub(crate) mod encode_external_in_message;
 #[cfg(test)]
 pub(crate) mod tests;
-pub(crate) mod encode_external_in_message;
+pub(crate) mod tvc;
+mod tvc_serialization;
 
-pub use encode_external_in_message::{
-    encode_external_in_message, ParamsOfEncodeExternalInMessage, ResultOfEncodeExternalInMessage,
-};
 pub use blockchain_config::{
     get_blockchain_config, ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig,
 };
@@ -36,22 +35,29 @@ pub use cache::{
     cache_get, cache_set, cache_unpin, BocCacheType, ParamsOfBocCacheGet, ParamsOfBocCacheSet,
     ParamsOfBocCacheUnpin, ResultOfBocCacheGet, ResultOfBocCacheSet,
 };
-pub use encode::{encode_boc, BuilderOp, ParamsOfEncodeBoc, ResultOfEncodeBoc};
-pub use errors::{Error, ErrorCode};
 pub use common::{
-    get_boc_depth, get_boc_hash,
-    ParamsOfGetBocDepth, ResultOfGetBocDepth, ParamsOfGetBocHash, ResultOfGetBocHash,
+    get_boc_depth, get_boc_hash, ParamsOfGetBocDepth, ParamsOfGetBocHash, ResultOfGetBocDepth,
+    ResultOfGetBocHash,
 };
+pub use encode::{encode_boc, BuilderOp, ParamsOfEncodeBoc, ResultOfEncodeBoc};
+pub use encode_external_in_message::{
+    encode_external_in_message, ParamsOfEncodeExternalInMessage, ResultOfEncodeExternalInMessage,
+};
+pub use errors::{Error, ErrorCode};
 pub use parse::{
     parse_account, parse_block, parse_message, parse_shardstate, parse_transaction, required_boc,
     source_boc, ParamsOfParse, ParamsOfParseShardstate, ResultOfParse,
 };
-pub use tvc::{
-    decode_tvc, encode_tvc, get_code_from_tvc, get_code_salt, get_compiler_version, get_compiler_version_from_cell, set_code_salt,
-    ParamsOfDecodeTvc, ParamsOfEncodeTvc, ParamsOfGetCodeFromTvc, ParamsOfGetCodeSalt,
-    ParamsOfGetCompilerVersion, ParamsOfSetCodeSalt, ResultOfDecodeTvc, ResultOfEncodeTvc,
-    ResultOfGetCodeFromTvc, ResultOfGetCodeSalt, ResultOfGetCompilerVersion, ResultOfSetCodeSalt,
+pub use state_init::{
+    decode_state_init, encode_state_init, get_code_from_tvc, get_code_salt, get_compiler_version,
+    get_compiler_version_from_cell, set_code_salt, ParamsOfDecodeStateInit,
+    ParamsOfEncodeStateInit, ParamsOfGetCodeFromTvc, ParamsOfGetCodeSalt,
+    ParamsOfGetCompilerVersion, ParamsOfSetCodeSalt, ResultOfDecodeStateInit,
+    ResultOfEncodeStateInit, ResultOfGetCodeFromTvc, ResultOfGetCodeSalt,
+    ResultOfGetCompilerVersion, ResultOfSetCodeSalt,
 };
+
+pub use tvc::{decode_tvc, Tvc, TvcFrst, TvcFrstMetadata, TvcFrstVersion};
 
 pub fn default_cache_max_size() -> u32 {
     10 * 1024 // * 1024 = 10 MB

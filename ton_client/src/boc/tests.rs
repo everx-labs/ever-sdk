@@ -16,6 +16,7 @@ use crate::abi::{
     CallSet, DeploySet, FunctionHeader, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::api_info::ApiModule;
+use crate::boc::tvc::{ParamsOfDecodeTvc, ResultOfDecodeTvc};
 use crate::crypto::KeyPair;
 use crate::json_interface::modules::BocModule;
 use crate::tests::{TestClient, EVENTS};
@@ -118,7 +119,9 @@ async fn test_encode_boc() {
         .append_builder(&burner_address)
         .unwrap();
     let inner_cell = inner_builder.into_cell().unwrap();
-    builder.checked_append_reference(inner_cell.clone()).unwrap();
+    builder
+        .checked_append_reference(inner_cell.clone())
+        .unwrap();
 
     let cell = builder.into_cell().unwrap();
     let boc = serialize_cell_to_base64(&cell, "cell").unwrap();
@@ -733,22 +736,22 @@ fn test_code_salt() {
     assert_eq!(result.salt, None);
 }
 
-fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeTvc) {
-    let result: ResultOfDecodeTvc = client
+fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeStateInit) {
+    let result: ResultOfDecodeStateInit = client
         .request(
             "boc.decode_tvc",
-            ParamsOfDecodeTvc {
-                tvc: tvc.clone(),
+            ParamsOfDecodeStateInit {
+                state_init: tvc.clone(),
                 boc_cache: None,
             },
         )
         .unwrap();
     assert_eq!(result, decoded);
 
-    let result: ResultOfEncodeTvc = client
+    let result: ResultOfEncodeStateInit = client
         .request(
             "boc.encode_tvc",
-            ParamsOfEncodeTvc {
+            ParamsOfEncodeStateInit {
                 code: result.code,
                 data: result.data,
                 library: result.library,
@@ -759,7 +762,7 @@ fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeTvc
             },
         )
         .unwrap();
-    assert_eq!(result.tvc, tvc);
+    assert_eq!(result.state_init, tvc);
 }
 
 #[test]
@@ -767,7 +770,7 @@ fn test_tvc_encode() {
     let client = TestClient::new();
 
     let tvc = TestClient::tvc("t24_initdata", Some(2));
-    let decoded = ResultOfDecodeTvc {
+    let decoded = ResultOfDecodeStateInit {
         code: Some(String::from("te6ccgECEAEAAYkABCSK7VMg4wMgwP/jAiDA/uMC8gsNAgEPAoTtRNDXScMB+GYh2zzTAAGfgQIA1xgg+QFY+EL5EPKo3tM/AfhDIbnytCD4I4ED6KiCCBt3QKC58rT4Y9MfAds88jwFAwNK7UTQ10nDAfhmItDXCwOpOADcIccA4wIh1w0f8rwh4wMB2zzyPAwMAwIoIIIQBoFGw7rjAiCCEGi1Xz+64wIIBAIiMPhCbuMA+Ebyc9H4ANs88gAFCQIW7UTQ10nCAYqOgOILBgFccO1E0PQFcSGAQPQOk9cLB5Fw4vhqciGAQPQPjoDf+GuAQPQO8r3XC//4YnD4YwcBAogPA3Aw+Eby4Ez4Qm7jANHbPCKOICTQ0wH6QDAxyM+HIM6AYs9AXgHPkhoFGw7LB8zJcPsAkVvi4wDyAAsKCQAq+Ev4SvhD+ELIy//LP8+DywfMye1UAAj4SvhLACztRNDT/9M/0wAx0wfU0fhr+Gr4Y/hiAAr4RvLgTAIK9KQg9KEPDgAUc29sIDAuNTEuMAAA")),
         code_depth: Some(7),
         code_hash: Some(String::from("0ad23f96d7b1c1ce78dae573ac8cdf71523dc30f36316b5aaa5eb3cc540df0e0")),
@@ -784,7 +787,7 @@ fn test_tvc_encode() {
     check_encode_tvc(&client, tvc, decoded);
 
     let tvc = base64::encode(include_bytes!("test_data/state_init_lib.boc"));
-    let decoded = ResultOfDecodeTvc {
+    let decoded = ResultOfDecodeStateInit {
         code: Some(String::from("te6ccgEBBAEAhwABFP8A9KQT9LzyyAsBAgEgAwIA36X//3aiaGmP6f/o5CxSZ4WPkOeF/+T2qmRnxET/s2X/wQgC+vCAfQFANeegZLh9gEB354V/wQgD39JAfQFANeegZLhkZ82JA6Mrm6RBCAOt5or9AUA156BF6kMrY2N5YQO7e5NjIQxni2S4fYB9gEAAAtI=")),
         code_depth: Some(2),
         code_hash: Some(String::from("45910e27fe37d8dcf1fac777ebb3bda38ae1ea8389f81bfb1bc0079f3f67ef5b")),
@@ -808,10 +811,10 @@ fn test_get_compiler_version() {
     let tvc = TestClient::tvc("t24_initdata", Some(2));
 
     let code = client
-        .request::<_, ResultOfDecodeTvc>(
+        .request::<_, ResultOfDecodeStateInit>(
             "boc.decode_tvc",
-            ParamsOfDecodeTvc {
-                tvc,
+            ParamsOfDecodeStateInit {
+                state_init: tvc,
                 boc_cache: None,
             },
         )
@@ -878,18 +881,24 @@ fn encode_external_in_message() {
         )
         .unwrap()
         .parsed;
-    let init = client.request::<ParamsOfEncodeTvc, ResultOfEncodeTvc>("boc.encode_tvc", ParamsOfEncodeTvc {
-        code: abi_parsed["code"].as_str().map(|x|x.to_string()),
-        data: abi_parsed["data"].as_str().map(|x|x.to_string()),
-        library: abi_parsed["library"].as_str().map(|x|x.to_string()),
-        ..Default::default()
-    }).unwrap().tvc;
+    let init = client
+        .request::<ParamsOfEncodeStateInit, ResultOfEncodeStateInit>(
+            "boc.encode_tvc",
+            ParamsOfEncodeStateInit {
+                code: abi_parsed["code"].as_str().map(|x| x.to_string()),
+                data: abi_parsed["data"].as_str().map(|x| x.to_string()),
+                library: abi_parsed["library"].as_str().map(|x| x.to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .state_init;
     let boc_encoded: ResultOfEncodeExternalInMessage = client
         .request(
             "boc.encode_external_in_message",
             ParamsOfEncodeExternalInMessage {
                 dst: abi_encoded.address.clone(),
-                body: abi_parsed["body"].as_str().map(|x|x.to_string()),
+                body: abi_parsed["body"].as_str().map(|x| x.to_string()),
                 init: Some(init),
                 ..Default::default()
             },
@@ -897,4 +906,73 @@ fn encode_external_in_message() {
         .unwrap();
 
     assert_eq!(boc_encoded.message, abi_encoded.message);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_decode_tvc() {
+    let client = TestClient::new();
+    let commit = "4e97449a48c05600af00027d652519de61190b53";
+    let tvc_boc = "te6ccgEBBwEAkQACEYtfJDO5aqEbwAQBAmkAAAAAY/Oo2xCuwtjYyuisZqbS2uDYykDuwtjYyuhA7GZAxt7c6OTCxuhA7tLo0EDmyuLc3wMCADROl0SaSMBWAK8AAn1lJRneYRkLU3YwLjIuMgA0TpdEmkjAVgCvAAJ9ZSUZ3mEZC1N2MC4xLjEBAAUBFP8A9KQT9LzyyAsGAALT";
+    let code_boc = "te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT";
+    let expected = ResultOfDecodeTvc {
+        tvc: Tvc::Frst(TvcFrst {
+            code: code_boc.to_string(),
+            meta: Some(TvcFrstMetadata {
+                sold: TvcFrstVersion {
+                    commit: commit.to_string(),
+                    semantic: "v0.1.1".to_string(),
+                },
+                linker: TvcFrstVersion {
+                    commit: commit.to_string(),
+                    semantic: "v0.2.2".to_string(),
+                },
+                compiled_at: "1676912859".to_string(),
+                name: "WalletV3".to_string(),
+                desc: "Simple wallet v3 contract with seqno".to_string(),
+            }),
+        }),
+    };
+
+    let decoded = decode_tvc(
+        client.context().clone(),
+        ParamsOfDecodeTvc {
+            tvc: tvc_boc.to_string(),
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(expected, decoded);
+
+    let expected = json!({
+        "tvc": {
+            "type": "Frst",
+            "value": {
+                "code": code_boc,
+                "meta": {
+                    "sold": {
+                        "commit": commit,
+                        "semantic": "v0.1.1",
+                    },
+                    "linker": {
+                        "commit": commit,
+                        "semantic": "v0.2.2",
+                    },
+                    "compiled_at": "1676912859",
+                    "name": "WalletV3",
+                    "desc": "Simple wallet v3 contract with seqno",
+                }
+            },
+        },
+    });
+
+    let decoded = client
+        .request_async::<Value, Value>(
+            "boc.decode_tvc",
+            json!({
+                "tvc": tvc_boc,
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(expected, decoded);
 }

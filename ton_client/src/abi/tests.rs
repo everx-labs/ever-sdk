@@ -10,7 +10,7 @@ use crate::boc::internal::{
     deserialize_object_from_base64, get_boc_hash, serialize_cell_to_base64,
     serialize_object_to_base64
 };
-use crate::boc::{ParamsOfDecodeTvc, ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfDecodeTvc, ResultOfGetCodeFromTvc};
+use crate::boc::{ParamsOfDecodeStateInit, ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfDecodeStateInit, ResultOfGetCodeFromTvc};
 use crate::crypto::KeyPair;
 use crate::encoding::account_decode;
 use crate::tests::{EVENTS, HELLO, TestClient};
@@ -971,17 +971,17 @@ fn test_init_data() {
     let (abi, tvc) = TestClient::package("t24_initdata", Some(2));
 
     let data = client
-        .request::<_, ResultOfDecodeTvc>(
+        .request::<_, ResultOfDecodeStateInit>(
             "boc.decode_tvc",
-            ParamsOfDecodeTvc {
-                tvc,
+            ParamsOfDecodeStateInit {
+                state_init: tvc,
                 boc_cache: None,
             },
         )
         .unwrap()
         .data
         .unwrap();
-    
+
     let result: ResultOfDecodeInitialData = client
         .request(
             "abi.decode_initial_data",
@@ -1111,7 +1111,7 @@ fn test_decode_boc() {
     let client = TestClient::new();
     let decoded = client.request::<_, ResultOfDecodeBoc>(
         "abi.decode_boc",
-        ParamsOfDecodeBoc { 
+        ParamsOfDecodeBoc {
             boc: boc.clone(),
             params: params.clone(),
             allow_partial: false
@@ -1133,7 +1133,7 @@ fn test_decode_boc() {
 
     let decoded = client.request::<_, ResultOfDecodeBoc>(
         "abi.decode_boc",
-        ParamsOfDecodeBoc { 
+        ParamsOfDecodeBoc {
             boc: boc.clone(),
             params: params.clone(),
             allow_partial: true
