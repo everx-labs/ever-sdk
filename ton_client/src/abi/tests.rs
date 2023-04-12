@@ -7,22 +7,31 @@ use crate::abi::encode_message::{
 use crate::abi::internal::{create_tvc_image, is_empty_pubkey, resolve_pubkey};
 use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
 use crate::boc::internal::{
-    deserialize_object_from_base64, get_boc_hash, serialize_cell_to_base64,
-    serialize_object_to_base64
+    deserialize_object_from_base64, deserialize_object_from_cell, get_boc_hash,
+    serialize_cell_to_base64, serialize_object_to_base64,
 };
-use crate::boc::{ParamsOfDecodeStateInit, ParamsOfGetCodeFromTvc, ParamsOfParse, ResultOfDecodeStateInit, ResultOfGetCodeFromTvc};
+use crate::boc::{
+    parse_message, ParamsOfDecodeStateInit, ParamsOfGetCodeFromTvc, ParamsOfParse,
+    ResultOfDecodeStateInit, ResultOfGetCodeFromTvc,
+};
 use crate::crypto::KeyPair;
 use crate::encoding::account_decode;
-use crate::tests::{EVENTS, HELLO, TestClient};
+use crate::tests::{TestClient, EVENTS, EVENTS_OLD, HELLO, T24_INIT_DATA};
 use crate::utils::conversion::abi_uint;
 use crate::{
     abi::decode_message::{DecodedMessageBody, MessageBodyType, ParamsOfDecodeMessage},
     boc::ResultOfParse,
 };
+use std::future::Future;
 
+use crate::boc::tvc::resolve_state_init_cell;
+use crate::boc::tvc_serialization::{Metadata, SmallStr, TvcFrst, TvmSmc, Version, TVC};
+use serde_json::Value;
 use std::io::Cursor;
 use ton_abi::Contract;
-use ton_block::{CurrencyCollection, Deserializable, InternalMessageHeader, Message, Serializable};
+use ton_block::{
+    CurrencyCollection, Deserializable, InternalMessageHeader, Message, Serializable, StateInit,
+};
 use ton_sdk::ContractImage;
 use ton_types::{BuilderData, IBitstring, Result};
 
@@ -84,7 +93,7 @@ fn test_encode_v2_params(ethalons: EncodeCheckEthalons, signature_id: Option<i32
             "signature_id": signature_id
         }
     }));
-    let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
+    let (events_abi, events_tvc) = TestClient::package(EVENTS_OLD, Some(2));
     let keys = KeyPair {
         public: "4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499".into(),
         secret: "cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7".into(),
@@ -144,7 +153,10 @@ fn test_encode_v2_params(ethalons: EncodeCheckEthalons, signature_id: Option<i32
         )
         .unwrap();
     assert_eq!(unsigned.message, ethalons.deploy_unsigned_message);
-    assert_eq!(unsigned.data_to_sign.as_ref().unwrap(), ethalons.deploy_unsigned_data_to_sign );
+    assert_eq!(
+        unsigned.data_to_sign.as_ref().unwrap(),
+        ethalons.deploy_unsigned_data_to_sign
+    );
     let signature = client.sign_detached(&unsigned.data_to_sign.unwrap(), &keys);
     assert_eq!(signature, ethalons.deploy_signature);
     let signed: ResultOfAttachSignature = client
@@ -179,13 +191,9 @@ fn test_encode_v2_params(ethalons: EncodeCheckEthalons, signature_id: Option<i32
     assert_eq!(signed_with_box.message, ethalons.deploy_signed_message);
 
     let without_sign: ResultOfEncodeMessage = client
-        .request(
-            "abi.encode_message",
-            deploy_params(Signer::None),
-        )
+        .request("abi.encode_message", deploy_params(Signer::None))
         .unwrap();
     assert_eq!(without_sign.message, ethalons.deploy_without_sign_message);
-
 
     // check run params
 
@@ -217,11 +225,8 @@ fn test_encode_v2_params(ethalons: EncodeCheckEthalons, signature_id: Option<i32
         ..Default::default()
     };
     let extract_body = |message| {
-        let unsigned_parsed: crate::boc::ResultOfParse = client
-            .request(
-                "boc.parse_message",
-                crate::boc::ParamsOfParse { boc: message },
-            )
+        let unsigned_parsed: ResultOfParse = client
+            .request("boc.parse_message", ParamsOfParse { boc: message })
             .unwrap();
         unsigned_parsed.parsed["body"].as_str().unwrap().to_owned()
     };
@@ -237,7 +242,10 @@ fn test_encode_v2_params(ethalons: EncodeCheckEthalons, signature_id: Option<i32
         )
         .unwrap();
     assert_eq!(unsigned.message, ethalons.run_unsigned_message);
-    assert_eq!(unsigned.data_to_sign.clone().unwrap(), ethalons.run_unsigned_data_to_sign);
+    assert_eq!(
+        unsigned.data_to_sign.clone().unwrap(),
+        ethalons.run_unsigned_data_to_sign
+    );
 
     let unsigned_body = extract_body(unsigned.message.clone());
 
@@ -351,7 +359,7 @@ fn test_encode_v2_params(ethalons: EncodeCheckEthalons, signature_id: Option<i32
 fn decode_v2() {
     TestClient::init_log();
     let client = TestClient::new();
-    let (events_abi, _events_tvc) = TestClient::package(EVENTS, Some(2));
+    let (events_abi, _events_tvc) = TestClient::package(EVENTS_OLD, Some(2));
 
     let decode_events = |message: &str| {
         let result: DecodedMessageBody = client
@@ -364,10 +372,10 @@ fn decode_v2() {
                 },
             )
             .unwrap();
-        let parsed: crate::boc::ResultOfParse = client
+        let parsed: ResultOfParse = client
             .request(
                 "boc.parse_message",
-                crate::boc::ParamsOfParse {
+                ParamsOfParse {
                     boc: message.into(),
                 },
             )
@@ -463,10 +471,10 @@ async fn test_resolve_pubkey() -> Result<()> {
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let tvc = base64::encode(include_bytes!("../tests/contracts/abi_v2/Hello.tvc"));
     let mut deploy_set = DeploySet {
-        tvc: tvc.clone(),
+        tvc: Some(tvc.clone()),
         ..Default::default()
     };
-    let mut image = create_tvc_image(&context, "", None, &tvc).await?;
+    let mut image = create_tvc_image("", None, resolve_state_init_cell(&context, &tvc).await?)?;
     assert!(resolve_pubkey(&deploy_set, &image, &None)?.is_none());
 
     let external_pub_key =
@@ -573,14 +581,18 @@ async fn test_encode_message_pubkey() -> Result<()> {
 async fn test_encode_message_pubkey_internal(
     client: &TestClient,
     abi: &Abi,
-    tvc: &String,
+    tvc: &Option<String>,
     initial_pubkey: &Option<ed25519_dalek::PublicKey>,
     tvc_pubkey: &Option<ed25519_dalek::PublicKey>,
     signer_pubkey: &Option<ed25519_dalek::PublicKey>,
     expected_pubkey: &Option<ed25519_dalek::PublicKey>,
 ) -> Result<()> {
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
-    let mut image = create_tvc_image(&context, &abi.json_string()?, None, &tvc).await?;
+    let mut image = create_tvc_image(
+        &abi.json_string()?,
+        None,
+        resolve_state_init_cell(&context, tvc.as_ref().unwrap()).await?,
+    )?;
     if let Some(tvc_pubkey) = tvc_pubkey {
         image.set_public_key(tvc_pubkey)?;
     }
@@ -590,7 +602,7 @@ async fn test_encode_message_pubkey_internal(
     let deploy_params = ParamsOfEncodeMessage {
         abi: abi.clone(),
         deploy_set: Some(DeploySet {
-            tvc,
+            tvc: Some(tvc),
             initial_pubkey: initial_pubkey.map(|key| hex::encode(key.as_bytes())),
             ..Default::default()
         }),
@@ -633,7 +645,11 @@ async fn test_encode_internal_message() -> Result<()> {
     let contract = Contract::load(abi.json_string().unwrap().as_bytes()).unwrap();
     let func_id = contract.function("sayHello").unwrap().get_input_id();
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
-    let image = create_tvc_image(&context, &abi.json_string()?, None, &tvc).await?;
+    let image = create_tvc_image(
+        &abi.json_string()?,
+        None,
+        resolve_state_init_cell(&context, tvc.as_ref().unwrap()).await?,
+    )?;
     let address =
         String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
 
@@ -806,7 +822,7 @@ async fn test_encode_internal_message_deploy(
     client: &TestClient,
     image: &ContractImage,
     abi: &Abi,
-    tvc: &String,
+    tvc: &Option<String>,
     call_set: Option<CallSet>,
     expected_boc: Option<&str>,
 ) -> Result<()> {
@@ -819,9 +835,7 @@ async fn test_encode_internal_message_deploy(
                 address: None,
                 deploy_set: Some(DeploySet {
                     tvc: tvc.clone(),
-                    workchain_id: None,
-                    initial_data: None,
-                    initial_pubkey: None,
+                    ..Default::default()
                 }),
                 call_set,
                 value: "1000000000".to_string(),
@@ -852,7 +866,9 @@ async fn test_encode_internal_message_deploy(
     let code_from_tvc: ResultOfGetCodeFromTvc = client
         .request_async(
             "boc.get_code_from_tvc",
-            ParamsOfGetCodeFromTvc { tvc: tvc.clone() },
+            ParamsOfGetCodeFromTvc {
+                tvc: tvc.clone().unwrap_or_default(),
+            },
         )
         .await?;
 
@@ -869,7 +885,7 @@ async fn test_encode_internal_message_deploy(
 #[test]
 fn test_tips() {
     let client = TestClient::new();
-    let (abi, _tvc) = TestClient::package(EVENTS, Some(2));
+    let (abi, _tvc) = TestClient::package(EVENTS_OLD, Some(2));
     let err = client.request::<_, DecodedMessageBody>(
         "abi.decode_message",
         ParamsOfDecodeMessage {
@@ -934,16 +950,22 @@ const ACCOUNT_ABI: &str = r#"{
 #[test]
 fn test_decode_account_data() {
     let abi = Abi::Json(ACCOUNT_ABI.to_owned());
-    let state = deserialize_object_from_base64::<ton_block::StateInit>(ACCOUNT_STATE, "state").unwrap();
+    let state =
+        deserialize_object_from_base64::<ton_block::StateInit>(ACCOUNT_STATE, "state").unwrap();
     let data = serialize_cell_to_base64(&state.object.data.unwrap(), "data").unwrap();
 
     let client = TestClient::new();
-    let decoded = client.request::<_, ResultOfDecodeAccountData>(
-        "abi.decode_account_data",
-        ParamsOfDecodeAccountData { data, abi, allow_partial: false, },
-    )
-    .unwrap()
-    .data;
+    let decoded = client
+        .request::<_, ResultOfDecodeAccountData>(
+            "abi.decode_account_data",
+            ParamsOfDecodeAccountData {
+                data,
+                abi,
+                allow_partial: false,
+            },
+        )
+        .unwrap()
+        .data;
 
     assert_eq!(
         decoded,
@@ -974,7 +996,7 @@ fn test_init_data() {
         .request::<_, ResultOfDecodeStateInit>(
             "boc.decode_state_init",
             ParamsOfDecodeStateInit {
-                state_init: tvc,
+                state_init: tvc.unwrap(),
                 boc_cache: None,
             },
         )
@@ -996,14 +1018,14 @@ fn test_init_data() {
     assert_eq!(result.initial_pubkey, hex::encode(&[0u8; 32]));
 
     let result: ResultOfEncodeInitialData = client
-    .request(
-        "abi.encode_initial_data",
-        ParamsOfEncodeInitialData {
-            abi: Some(abi.clone()),
-            ..Default::default()
-        },
-    )
-    .unwrap();
+        .request(
+            "abi.encode_initial_data",
+            ParamsOfEncodeInitialData {
+                abi: Some(abi.clone()),
+                ..Default::default()
+            },
+        )
+        .unwrap();
 
     assert_eq!(result.data, data);
 
@@ -1012,7 +1034,8 @@ fn test_init_data() {
         "s": "some string",
     });
 
-    const ENCODED_INITIAL_DATA: &str = "te6ccgEBBwEARwABAcABAgPPoAQCAQFIAwAWc29tZSBzdHJpbmcCASAGBQA\
+    const ENCODED_INITIAL_DATA: &str =
+        "te6ccgEBBwEARwABAcABAgPPoAQCAQFIAwAWc29tZSBzdHJpbmcCASAGBQA\
         DHuAAQQiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIiIoA==";
 
     let result: ResultOfEncodeInitialData = client
@@ -1085,7 +1108,9 @@ fn test_init_data() {
 fn test_decode_boc() {
     let mut builder = BuilderData::new();
     builder.append_u32(0).unwrap();
-    builder.checked_append_reference(123u64.write_to_new_cell().unwrap().into_cell().unwrap()).unwrap();
+    builder
+        .checked_append_reference(123u64.write_to_new_cell().unwrap().into_cell().unwrap())
+        .unwrap();
     builder.append_bit_one().unwrap();
 
     let boc = serialize_cell_to_base64(&builder.into_cell().unwrap(), "").unwrap();
@@ -1109,16 +1134,17 @@ fn test_decode_boc() {
     ];
 
     let client = TestClient::new();
-    let decoded = client.request::<_, ResultOfDecodeBoc>(
-        "abi.decode_boc",
-        ParamsOfDecodeBoc {
-            boc: boc.clone(),
-            params: params.clone(),
-            allow_partial: false
-        },
-    )
-    .unwrap()
-    .data;
+    let decoded = client
+        .request::<_, ResultOfDecodeBoc>(
+            "abi.decode_boc",
+            ParamsOfDecodeBoc {
+                boc: boc.clone(),
+                params: params.clone(),
+                allow_partial: false,
+            },
+        )
+        .unwrap()
+        .data;
 
     assert_eq!(
         decoded,
@@ -1131,16 +1157,17 @@ fn test_decode_boc() {
 
     params.pop();
 
-    let decoded = client.request::<_, ResultOfDecodeBoc>(
-        "abi.decode_boc",
-        ParamsOfDecodeBoc {
-            boc: boc.clone(),
-            params: params.clone(),
-            allow_partial: true
-        },
-    )
-    .unwrap()
-    .data;
+    let decoded = client
+        .request::<_, ResultOfDecodeBoc>(
+            "abi.decode_boc",
+            ParamsOfDecodeBoc {
+                boc: boc.clone(),
+                params: params.clone(),
+                allow_partial: true,
+            },
+        )
+        .unwrap()
+        .data;
 
     assert_eq!(
         decoded,
@@ -1156,27 +1183,43 @@ fn test_encode_boc() {
     let client = TestClient::new();
 
     let params = vec![
-        AbiParam { name: "dest".to_owned(), param_type: "address".to_owned(), ..Default::default() },
-        AbiParam { name: "value".to_owned(), param_type: "uint128".to_owned(), ..Default::default() },
-        AbiParam { name: "bounce".to_owned(), param_type: "bool".to_owned(), ..Default::default() },
+        AbiParam {
+            name: "dest".to_owned(),
+            param_type: "address".to_owned(),
+            ..Default::default()
+        },
+        AbiParam {
+            name: "value".to_owned(),
+            param_type: "uint128".to_owned(),
+            ..Default::default()
+        },
+        AbiParam {
+            name: "bounce".to_owned(),
+            param_type: "bool".to_owned(),
+            ..Default::default()
+        },
     ];
 
-    let boc = client.request::<_, ResultOfAbiEncodeBoc>(
-        "abi.encode_boc",
-        ParamsOfAbiEncodeBoc {
-            params,
-            data: json!({
-                "dest": "-1:3333333333333333333333333333333333333333333333333333333333333333",
-                "value": 1234567,
-                "bounce": true,
-            }),
-            boc_cache: None,
-        },
-    )
+    let boc = client
+        .request::<_, ResultOfAbiEncodeBoc>(
+            "abi.encode_boc",
+            ParamsOfAbiEncodeBoc {
+                params,
+                data: json!({
+                    "dest": "-1:3333333333333333333333333333333333333333333333333333333333333333",
+                    "value": 1234567,
+                    "bounce": true,
+                }),
+                boc_cache: None,
+            },
+        )
         .unwrap()
         .boc;
 
-    assert_eq!(boc, "te6ccgEBAQEANAAAY5/mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmAAAAAAAAAAAAAAAAACWtD4");
+    assert_eq!(
+        boc,
+        "te6ccgEBAQEANAAAY5/mZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmZmAAAAAAAAAAAAAAAAACWtD4"
+    );
 }
 
 #[test]
@@ -1184,29 +1227,32 @@ fn test_calc_function_id() {
     let client = TestClient::new();
     let abi = TestClient::abi("GiverV2", Some(2));
 
-    let result: ResultOfCalcFunctionId = client.request(
-        "abi.calc_function_id",
-        ParamsOfCalcFunctionId {
-            abi: abi.clone(),
-            function_name: "getMessages".to_owned(),
-            ..Default::default()
-        },
-    ).unwrap();
+    let result: ResultOfCalcFunctionId = client
+        .request(
+            "abi.calc_function_id",
+            ParamsOfCalcFunctionId {
+                abi: abi.clone(),
+                function_name: "getMessages".to_owned(),
+                ..Default::default()
+            },
+        )
+        .unwrap();
 
     assert_eq!(result.function_id, 0x7744C7E2);
 
-    let result: ResultOfCalcFunctionId = client.request(
-        "abi.calc_function_id",
-        ParamsOfCalcFunctionId {
-            abi: abi.clone(),
-            function_name: "getMessages".to_owned(),
-            output: Some(true),
-        },
-    ).unwrap();
+    let result: ResultOfCalcFunctionId = client
+        .request(
+            "abi.calc_function_id",
+            ParamsOfCalcFunctionId {
+                abi: abi.clone(),
+                function_name: "getMessages".to_owned(),
+                output: Some(true),
+            },
+        )
+        .unwrap();
 
     assert_eq!(result.function_id, 0xF744C7E2);
 }
-
 
 #[test]
 fn decode_responsible() {
@@ -1250,4 +1296,218 @@ fn decode_responsible() {
         .unwrap();
 
     assert_eq!(expected, result);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_deploy_code_variants() -> Result<()> {
+    test_deploy_code_variants_with_contract(EVENTS_OLD, None, true).await?;
+    test_deploy_code_variants_with_contract(EVENTS, None, false).await?;
+    test_deploy_code_variants_with_contract(
+        T24_INIT_DATA,
+        Some(json!({
+            "a": 123,
+            "s": "abc"
+        })),
+        false,
+    )
+    .await?;
+    Ok(())
+}
+
+async fn test_deploy_code_variants_with_contract(
+    contract: &str,
+    initial_data: Option<Value>,
+    ignore_data: bool,
+) -> Result<()> {
+    test_deploy_code_variants_with_fn(
+        encode_internal_deploy,
+        contract,
+        initial_data.clone(),
+        ignore_data,
+    )
+    .await?;
+    test_deploy_code_variants_with_fn(encode_deploy, contract, initial_data, ignore_data).await?;
+    Ok(())
+}
+
+async fn test_deploy_code_variants_with_fn<
+    F: Fn(Abi, Option<String>, Option<Value>, Option<String>, Option<String>, Option<String>) -> R,
+    R: Future<Output = Value>,
+>(
+    encode: F,
+    contract: &str,
+    initial_data: Option<Value>,
+    ignore_data: bool,
+) -> Result<()> {
+    let client = TestClient::new();
+    let (abi, unknown_tvc) = TestClient::package(contract, Some(2));
+    let keys = KeyPair {
+        public: "4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499".into(),
+        secret: "cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7".into(),
+    };
+    let state_init_cell =
+        resolve_state_init_cell(&client.context(), &unknown_tvc.clone().unwrap()).await?;
+    let state_init =
+        deserialize_object_from_cell::<StateInit>(state_init_cell.clone(), "state init")?;
+
+    let encoded_with_unknown_tvc = encode(
+        abi.clone(),
+        Some(keys.public.clone()),
+        initial_data.clone(),
+        unknown_tvc.clone(),
+        None,
+        None,
+    )
+    .await;
+
+    let encoded_with_code = encode(
+        abi.clone(),
+        Some(keys.public.clone()),
+        initial_data.clone(),
+        None,
+        Some(serialize_cell_to_base64(
+            &state_init.code.clone().unwrap(),
+            "state init",
+        )?),
+        None,
+    )
+    .await;
+    assert_eq!(
+        convert_parsed(&encoded_with_unknown_tvc, ignore_data),
+        convert_parsed(&encoded_with_code, ignore_data)
+    );
+
+    let encoded_with_state_init = encode(
+        abi.clone(),
+        Some(keys.public.clone()),
+        initial_data.clone(),
+        None,
+        None,
+        Some(serialize_cell_to_base64(&state_init_cell, "state init").unwrap()),
+    )
+    .await;
+    assert_eq!(encoded_with_unknown_tvc, encoded_with_state_init);
+
+    let tvc = base64::encode(
+        &TVC {
+            tvc: TvmSmc::TvcFrst(TvcFrst {
+                code: state_init.code.clone().unwrap(),
+                meta: Some(Metadata {
+                    name: SmallStr {
+                        string: "Some Toolchain".to_string(),
+                    },
+                    compiled_at: 123,
+                    sold: Version::new([0u8; 20], "v1.2.3".to_string()),
+                    linker: Version::new([0u8; 20], "v1.2.3".to_string()),
+                    desc: "Some Contract".to_string(),
+                }),
+            }),
+        }
+        .write_to_bytes()
+        .unwrap(),
+    );
+    let encoded_with_tvc = encode(
+        abi.clone(),
+        Some(keys.public.clone()),
+        initial_data.clone(),
+        Some(tvc),
+        None,
+        None,
+    )
+    .await;
+    assert_eq!(
+        convert_parsed(&encoded_with_unknown_tvc, ignore_data),
+        convert_parsed(&encoded_with_tvc, ignore_data)
+    );
+    Ok(())
+}
+
+async fn encode_internal_deploy(
+    abi: Abi,
+    initial_pubkey: Option<String>,
+    initial_data: Option<Value>,
+    tvc: Option<String>,
+    code: Option<String>,
+    state_init: Option<String>,
+) -> Value {
+    let client = TestClient::new();
+    let encoded: ResultOfEncodeInternalMessage = client
+        .request_async(
+            "abi.encode_internal_message",
+            ParamsOfEncodeInternalMessage {
+                abi: Some(abi),
+                deploy_set: Some(DeploySet {
+                    tvc,
+                    code,
+                    state_init,
+                    initial_pubkey,
+                    initial_data,
+                    ..Default::default()
+                }),
+                value: "1000000000".to_string(),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    parse_message(
+        client.context().clone(),
+        ParamsOfParse {
+            boc: encoded.message,
+        },
+    )
+    .await
+    .unwrap()
+    .parsed
+}
+
+async fn encode_deploy(
+    abi: Abi,
+    initial_pubkey: Option<String>,
+    initial_data: Option<Value>,
+    tvc: Option<String>,
+    code: Option<String>,
+    state_init: Option<String>,
+) -> Value {
+    let client = TestClient::new();
+    let encoded: ResultOfEncodeMessage = client
+        .request_async(
+            "abi.encode_message",
+            ParamsOfEncodeMessage {
+                abi,
+                deploy_set: Some(DeploySet {
+                    tvc,
+                    code,
+                    state_init,
+                    initial_pubkey,
+                    initial_data,
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+        )
+        .await
+        .unwrap();
+    parse_message(
+        client.context().clone(),
+        ParamsOfParse {
+            boc: encoded.message,
+        },
+    )
+    .await
+    .unwrap()
+    .parsed
+}
+
+fn convert_parsed(value: &Value, strip_data: bool) -> Value {
+    if !strip_data {
+        return value.clone();
+    }
+    let mut value = value.clone();
+    if let Value::Object(obj) = &mut value {
+        for field in ["id", "boc", "data", "data_hash", "dst"] {
+            obj.remove(field);
+        }
+    }
+    value
 }

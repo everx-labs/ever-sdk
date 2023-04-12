@@ -789,7 +789,7 @@ async fn get_code_hash_from_tvc(client: Arc<TestClient>, name: &str) -> String {
     let debot_tvc = TestClient::tvc(name, Some(2));
     let result: ResultOfGetCodeFromTvc = client.request_async(
         "boc.get_code_from_tvc",
-        ParamsOfGetCodeFromTvc { tvc: debot_tvc }
+        ParamsOfGetCodeFromTvc { tvc: debot_tvc.unwrap_or_default() }
     ).await.unwrap();
 
     let result: ResultOfGetBocHash = client.request_async(

@@ -26,7 +26,7 @@ pub(crate) mod encode_external_in_message;
 #[cfg(test)]
 pub(crate) mod tests;
 pub(crate) mod tvc;
-mod tvc_serialization;
+pub(crate) mod tvc_serialization;
 
 pub use blockchain_config::{
     get_blockchain_config, ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig,

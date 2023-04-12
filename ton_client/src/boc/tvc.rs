@@ -14,10 +14,15 @@
     limitations under the License.
 */
 
-use crate::boc::internal::{deserialize_object_from_boc, serialize_cell_to_base64};
+use crate::boc::internal::{
+    deserialize_cell_from_boc, deserialize_object_from_boc, serialize_cell_to_base64,
+    serialize_object_to_cell,
+};
 use crate::boc::tvc_serialization::{TvmSmc, Version, TVC};
 use crate::error::ClientResult;
 use crate::ClientContext;
+use ton_block::StateInit;
+use ton_types::Cell;
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfDecodeTvc {
@@ -91,4 +96,28 @@ pub async fn decode_tvc(
         }),
     };
     Ok(ResultOfDecodeTvc { tvc })
+}
+
+pub(crate) fn state_init_with_code(code: Cell) -> ClientResult<Cell> {
+    let mut state_init = StateInit::default();
+    state_init.set_code(code);
+    serialize_object_to_cell(&state_init, "state init")
+}
+
+pub(crate) async fn resolve_state_init_cell(
+    context: &ClientContext,
+    tvc_or_state_init: &str,
+) -> ClientResult<Cell> {
+    if let Ok(tvc) = deserialize_object_from_boc::<TVC>(context, tvc_or_state_init, "TVC").await {
+        match &tvc.object.tvc {
+            TvmSmc::TvcFrst(frst) => state_init_with_code(frst.code.clone()),
+            TvmSmc::None => Err(crate::boc::Error::invalid_boc("TVC or StateInit"))?,
+        }
+    } else {
+        Ok(
+            deserialize_cell_from_boc(context, tvc_or_state_init, "state init")
+                .await?
+                .1,
+        )
+    }
 }

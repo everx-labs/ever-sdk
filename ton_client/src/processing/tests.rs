@@ -11,7 +11,7 @@ use crate::processing::{
     ErrorCode, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
     ProcessingEvent, ProcessingResponseType,
 };
-use crate::tests::{TestClient, EVENTS, HELLO};
+use crate::tests::{TestClient, EVENTS_OLD, HELLO};
 use crate::tvm::ErrorCode as TvmErrorCode;
 use crate::utils::conversion::abi_uint;
 use api_info::ApiModule;
@@ -96,7 +96,7 @@ async fn remp_enabled(client: &TestClient) -> bool {
 async fn test_wait_message() {
     TestClient::init_log();
     let client = TestClient::new();
-    let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
+    let (events_abi, events_tvc) = TestClient::package(EVENTS_OLD, Some(2));
     let keys = client.generate_sign_keys();
     let abi = events_abi.clone();
 
@@ -185,7 +185,7 @@ async fn test_wait_message() {
 async fn test_process_message() {
     TestClient::init_log();
     let client = TestClient::new();
-    let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
+    let (events_abi, events_tvc) = TestClient::package(EVENTS_OLD, Some(2));
     let keys = client.generate_sign_keys();
     let abi = events_abi.clone();
 
@@ -596,7 +596,7 @@ async fn test_fees() {
     let local_result: ResultOfRunExecutor = client.request_async(
         "tvm.run_executor",
         ParamsOfRunExecutor {
-            account: AccountForExecutor::Account { 
+            account: AccountForExecutor::Account {
                 boc: account,
                 unlimited_balance: None
             },
