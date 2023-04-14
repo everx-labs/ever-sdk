@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 `max_reconnect_timeout` is used instead
 - Message monitoring erros received by subscription are returned from
 `processing.fetch_next_monitor_results` function
+- Removed logic related to client-server clock sync. 
 
 ## [1.42.1] – 2023-03-23
 
