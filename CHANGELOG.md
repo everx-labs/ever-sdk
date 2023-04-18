@@ -2,14 +2,6 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.44.0] – 2023-04-18
-
-### Fixed
-
-- Upped dependency versions
-- Version of ton_types upped to 2.0.0
-- Fixed code for changed dependencies api.
-
 ## [1.43.0] – 2023-03-30
 
 ### New
@@ -18,6 +10,12 @@ All notable changes to this project will be documented in this file.
 `max_reconnect_timeout` is used instead
 - Message monitoring erros received by subscription are returned from
 `processing.fetch_next_monitor_results` function
+
+### Fixed
+
+- Upped dependency versions
+- Version of ton_types upped to 2.0.0
+- Fixed code for changed dependencies api.
 
 ## [1.42.1] – 2023-03-23
 
