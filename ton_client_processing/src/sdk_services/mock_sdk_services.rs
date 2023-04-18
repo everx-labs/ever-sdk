@@ -3,10 +3,9 @@ use crate::{error, Error, MessageMonitorSdkServices, NetSubscription};
 use base64::Engine;
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
-use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
-use std::time::Duration;
-use ton_types::{deserialize_tree_of_cells, Cell};
+use std::time::{Duration, SystemTime};
+use ton_types::Cell;
 
 #[derive(Clone)]
 pub struct MockSdkServices {
@@ -91,7 +90,7 @@ impl State {
             .map_err(|err| {
                 Error::invalid_boc(format!("error decode {} BOC base64: {}", name, err))
             })?;
-        deserialize_tree_of_cells(&mut Cursor::new(&bytes)).map_err(|err| {
+        ton_types::boc::read_single_root_boc(&bytes).map_err(|err| {
             Error::invalid_boc(format!("{} BOC deserialization error: {}", name, err))
         })
     }
@@ -112,6 +111,10 @@ impl MockSdkServices {
         let mut recent = self.state.results.write().unwrap();
         recent.extend(messages.into_iter().map(|x| (x.hash.clone(), x)))
     }
+
+    pub fn active_subscription_count(&self) -> usize {
+        self.state.subscriptions.read().unwrap().len()
+    }
 }
 
 #[async_trait]
@@ -131,7 +134,23 @@ impl MessageMonitorSdkServices for MockSdkServices {
         Ok(())
     }
 
+    async fn sleep(&self, ms: u64) -> crate::Result<()> {
+        tokio::time::sleep(Duration::from_millis(ms)).await;
+        Ok(())
+    }
+
+    fn spawn(&self, future: impl Future<Output = ()> + Send + 'static) {
+        tokio::spawn(future);
+    }
+
     fn cell_from_boc(&self, boc: &str, name: &str) -> error::Result<Cell> {
         State::cell_from_boc(boc, name)
+    }
+
+    fn now_ms(&self) -> u64 {
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64
     }
 }
