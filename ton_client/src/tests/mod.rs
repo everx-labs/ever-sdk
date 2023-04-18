@@ -730,6 +730,14 @@ impl TestClient {
             .await
             .unwrap();
 
+        assert!(
+            matches!(
+                run_result.transaction["out_msgs"].as_array(),
+                Some(out_msgs) if !out_msgs.is_empty()
+            ),
+            "The giver's topup call should result in at least 1 internal outbound message"
+        );
+
         // wait for tokens reception
         let _: ResultOfQueryTransactionTree = self
             .request_async(
