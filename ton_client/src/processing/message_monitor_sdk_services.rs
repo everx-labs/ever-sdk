@@ -4,8 +4,8 @@ use crate::net::{NetworkContext, ResultOfSubscription};
 use async_trait::async_trait;
 use serde_json::Value;
 use std::future::Future;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
-use std::sync::atomic::{Ordering, AtomicU64};
 use ton_client_processing::{
     MessageMonitorSdkServices, MessageMonitoringParams, MessageMonitoringResult,
     MessageMonitoringStatus, MessageMonitoringTransaction, MessageMonitoringTransactionCompute,
@@ -114,7 +114,7 @@ impl MessageMonitorSdkServices for SdkServices {
                             Ok(evt) => {
                                 retry_start.store(0, Ordering::Relaxed);
                                 callback(deserialize_subscription_data(evt)).await;
-                            },
+                            }
                             Err(err) => {
                                 let mut start = retry_start.load(Ordering::Relaxed);
                                 if start == 0 {
@@ -122,12 +122,13 @@ impl MessageMonitorSdkServices for SdkServices {
                                     retry_start.store(start, Ordering::Relaxed);
                                 }
                                 if err.code == crate::net::ErrorCode::NetworkModuleSuspended as u32
-                                    || err.code == crate::net::ErrorCode::NetworkModuleResumed as u32
+                                    || err.code
+                                        == crate::net::ErrorCode::NetworkModuleResumed as u32
                                 {
                                     return;
                                 }
-                                if !crate::client::Error::is_network_error(&err) ||
-                                    !net_state.can_retry_network_error(start)
+                                if !crate::client::Error::is_network_error(&err)
+                                    || !net_state.can_retry_network_error(start)
                                 {
                                     callback(Err(err.into()));
                                 }
@@ -145,6 +146,19 @@ impl MessageMonitorSdkServices for SdkServices {
         subscription: NetSubscription,
     ) -> ton_client_processing::Result<()> {
         Ok(self.net.unsubscribe(subscription.0 as u32).await?)
+    }
+
+    fn spawn(&self, future: impl Future<Output = ()> + Send + 'static) {
+        self.net.env.spawn(future);
+    }
+
+    async fn sleep(&self, ms: u64) -> ton_client_processing::Result<()> {
+        self.net.env.set_timer(ms).await?;
+        Ok(())
+    }
+
+    fn now_ms(&self) -> u64 {
+        self.net.env.now_ms()
     }
 
     fn cell_from_boc(&self, boc: &str, name: &str) -> ton_client_processing::Result<Cell> {

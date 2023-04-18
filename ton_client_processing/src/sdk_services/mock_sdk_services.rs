@@ -4,8 +4,8 @@ use base64::Engine;
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::sync::{Arc, Mutex, RwLock};
-use std::time::Duration;
-use ton_types::{Cell};
+use std::time::{Duration, SystemTime};
+use ton_types::Cell;
 
 #[derive(Clone)]
 pub struct MockSdkServices {
@@ -111,6 +111,10 @@ impl MockSdkServices {
         let mut recent = self.state.results.write().unwrap();
         recent.extend(messages.into_iter().map(|x| (x.hash.clone(), x)))
     }
+
+    pub fn active_subscription_count(&self) -> usize {
+        self.state.subscriptions.read().unwrap().len()
+    }
 }
 
 #[async_trait]
@@ -130,7 +134,23 @@ impl MessageMonitorSdkServices for MockSdkServices {
         Ok(())
     }
 
+    async fn sleep(&self, ms: u64) -> crate::Result<()> {
+        tokio::time::sleep(Duration::from_millis(ms)).await;
+        Ok(())
+    }
+
+    fn spawn(&self, future: impl Future<Output = ()> + Send + 'static) {
+        tokio::spawn(future);
+    }
+
     fn cell_from_boc(&self, boc: &str, name: &str) -> error::Result<Cell> {
         State::cell_from_boc(boc, name)
+    }
+
+    fn now_ms(&self) -> u64 {
+        SystemTime::now()
+            .duration_since(SystemTime::UNIX_EPOCH)
+            .unwrap()
+            .as_millis() as u64
     }
 }
