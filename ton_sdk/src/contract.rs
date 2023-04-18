@@ -50,7 +50,6 @@ pub struct ContractImage {
     id: AccountId,
 }
 
-#[allow(dead_code)]
 impl ContractImage {
     // Creating contract image from code data and library bags of cells
     pub fn from_code_data_and_library<T>(
