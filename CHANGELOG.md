@@ -11,7 +11,7 @@ All notable changes to this project will be documented in this file.
 - Message monitoring errors received by subscription are returned from
   `processing.fetch_next_monitor_results` function
 - Message monitor buffers new messages for delayed start of the subscription. New subscription
-  starts when 1 second has passed since the last addition. Or when 5 seconds has passed since
+  starts when 1 second has passed since the last addition or when 5 seconds has passed since last sending
 - Message monitor uses more than one subscription.  
 
  
