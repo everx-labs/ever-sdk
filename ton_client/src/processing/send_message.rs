@@ -81,8 +81,7 @@ impl SendingMessage {
     ) -> ClientResult<Self> {
         // Check message
         let deserialized =
-            deserialize_object_from_boc::<Message>(&context, serialized, "message")
-                .await?;
+            deserialize_object_from_boc::<Message>(&context, serialized, "message").await?;
         let id = deserialized.cell.repr_hash().as_hex_string();
         let dst = deserialized
             .object
@@ -115,17 +114,19 @@ impl SendingMessage {
             callback(ProcessingEvent::WillFetchFirstBlock {
                 message_id: self.id.to_string(),
                 message_dst: self.dst.to_string(),
-            }).await;
+            })
+            .await;
         }
         let shard_block_id = match find_last_shard_block(&context, &self.dst, None).await {
             Ok(block) => block.to_string(),
             Err(err) => {
                 if let Some(callback) = &callback {
-                    callback(ProcessingEvent::FetchFirstBlockFailed { 
+                    callback(ProcessingEvent::FetchFirstBlockFailed {
                         message_id: self.id.to_string(),
                         message_dst: self.dst.to_string(),
                         error: err.clone(),
-                    }).await;
+                    })
+                    .await;
                 }
                 return Err(Error::fetch_first_block_failed(err, &self.id));
             }
@@ -152,7 +153,7 @@ impl SendingMessage {
                 .await
                 .add_endpoint_from_context(&context, &endpoint)
                 .await
-                .map(|_| vec![address])
+                .map(|_| vec![address]);
         }
 
         let addresses = context.get_server_link()?.get_addresses_for_sending().await;
@@ -169,7 +170,8 @@ impl SendingMessage {
                     if result.is_err() {
                         context
                             .get_server_link()?
-                            .update_stat(&[address.to_owned()], EndpointStat::MessageUndelivered).await;
+                            .update_stat(&[address.to_owned()], EndpointStat::MessageUndelivered)
+                            .await;
                     }
                     result
                 }));
@@ -181,17 +183,7 @@ impl SendingMessage {
                         break 'sending;
                     }
                 }
-                // If one of the endpoints responds with clock out of sync error
-                // we leave this error as a final error.
-                // This is required by out of sync unit test.
-                let last_result_is_out_of_sync = if let Some(Err(err)) = &last_result {
-                    err.code == crate::net::ErrorCode::ClockOutOfSync as u32
-                } else {
-                    false
-                };
-                if !last_result_is_out_of_sync {
-                    last_result = Some(result);
-                }
+                last_result = Some(result);
             }
         }
         if succeeded.len() > 0 {
@@ -217,8 +209,7 @@ impl SendingMessage {
         };
 
         // Send
-        link
-            .send_message(&hex_decode(&self.id)?, &self.body, Some(&endpoint))
+        link.send_message(&hex_decode(&self.id)?, &self.body, Some(&endpoint))
             .await
             .add_endpoint_from_context(&context, &endpoint)
             .await

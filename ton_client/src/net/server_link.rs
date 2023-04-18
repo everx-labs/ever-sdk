@@ -243,25 +243,6 @@ impl NetworkState {
         self.query_endpoint.read().await.clone()
     }
 
-    async fn check_sync_endpoint(&self, endpoint: &Endpoint) -> ClientResult<()> {
-        let server_time_delta = endpoint.time_delta().abs();
-        let threshold = self.config.out_of_sync_threshold;
-        if server_time_delta >= threshold as i64 {
-            Err(Error::clock_out_of_sync(server_time_delta, threshold))
-        } else {
-            Ok(())
-        }
-    }
-
-    async fn check_sync(self: &Arc<NetworkState>, endpoint: Option<&Endpoint>) -> ClientResult<()> {
-        if let Some(endpoint) = endpoint {
-            self.check_sync_endpoint(endpoint).await
-        } else {
-            self.check_sync_endpoint(self.get_query_endpoint().await?.as_ref())
-                .await
-        }
-    }
-
     pub async fn resolve_endpoint(&self, address: &str) -> ClientResult<Arc<Endpoint>> {
         let endpoint = Endpoint::resolve(&self.client_env, &self.config, address).await?;
         let endpoint = Arc::new(endpoint);
@@ -779,8 +760,6 @@ impl ServerLink {
             body: base64::encode(value),
         };
 
-        self.state.check_sync(endpoint).await?;
-
         let result = self
             .query(&GraphQLQuery::with_post_requests(&[request]), endpoint)
             .await;
@@ -806,8 +785,6 @@ impl ServerLink {
                 body: boc,
             })
         }
-        self.state.check_sync(endpoint).await?;
-
         let result = self
             .query(&GraphQLQuery::with_post_requests(&requests), endpoint)
             .await;

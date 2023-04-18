@@ -34,10 +34,6 @@ pub fn default_wait_for_timeout() -> u32 {
     40000
 }
 
-pub fn default_out_of_sync_threshold() -> u32 {
-    15000
-}
-
 pub fn default_sending_endpoint_count() -> u8 {
     1
 }
@@ -96,12 +92,6 @@ fn deserialize_wait_for_timeout<'de, D: Deserializer<'de>>(
     deserializer: D,
 ) -> Result<u32, D::Error> {
     Ok(Option::deserialize(deserializer)?.unwrap_or(default_wait_for_timeout()))
-}
-
-fn deserialize_out_of_sync_threshold<'de, D: Deserializer<'de>>(
-    deserializer: D,
-) -> Result<u32, D::Error> {
-    Ok(Option::deserialize(deserializer)?.unwrap_or(default_out_of_sync_threshold()))
 }
 
 fn deserialize_sending_endpoint_count<'de, D: Deserializer<'de>>(
@@ -240,16 +230,8 @@ pub struct NetworkConfig {
     )]
     pub wait_for_timeout: u32,
 
-    /// Maximum time difference between server and client. If client's device time is out of sync and difference is more than
-    /// the threshold then error will occur. Also an error will occur if the specified threshold is more than
-    /// `message_processing_timeout/2`.
-    ///
-    /// Must be specified in milliseconds. Default is 15000 (15 sec).
-    #[serde(
-        default = "default_out_of_sync_threshold",
-        deserialize_with = "deserialize_out_of_sync_threshold"
-    )]
-    pub out_of_sync_threshold: u32,
+    /// **DEPRECATED**: This parameter was deprecated.
+    pub out_of_sync_threshold: Option<u32>,
 
     /// Maximum number of randomly chosen endpoints the library uses to broadcast a message.
     ///
@@ -327,11 +309,11 @@ pub struct NetworkConfig {
     pub next_remp_status_timeout: u32,
 
     /// Network signature ID which is used by VM in signature verifying instructions if capability
-    /// `CapSignatureWithId` is enabled in blockchain configuration parameters. 
-    /// 
-    /// This parameter should be set to `global_id` field from any blockchain block if network can 
-    /// not be reachable at the moment of message encoding and the message is aimed to be sent into 
-    /// network with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically 
+    /// `CapSignatureWithId` is enabled in blockchain configuration parameters.
+    ///
+    /// This parameter should be set to `global_id` field from any blockchain block if network can
+    /// not be reachable at the moment of message encoding and the message is aimed to be sent into
+    /// network with `CapSignatureWithId` enabled. Otherwise signature ID is detected automatically
     /// inside message encoding functions
     pub signature_id: Option<i32>,
 
@@ -366,7 +348,7 @@ impl Default for NetworkConfig {
             message_retries_count: default_message_retries_count(),
             message_processing_timeout: default_message_processing_timeout(),
             wait_for_timeout: default_wait_for_timeout(),
-            out_of_sync_threshold: default_out_of_sync_threshold(),
+            out_of_sync_threshold: None,
             sending_endpoint_count: default_sending_endpoint_count(),
             latency_detection_interval: default_latency_detection_frequency(),
             max_latency: default_max_latency(),

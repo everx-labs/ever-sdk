@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - Message monitor uses more than one subscription.
 - Version of `ton_types` upped to 2.0.0
 - Fixed code for changed dependencies api
+- Removed logic related to client-server clock sync
 
 ## [1.42.1] – 2023-03-23
 
