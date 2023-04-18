@@ -3,10 +3,9 @@ use crate::{error, Error, MessageMonitorSdkServices, NetSubscription};
 use base64::Engine;
 use std::collections::{HashMap, HashSet};
 use std::future::Future;
-use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, SystemTime};
-use ton_types::{deserialize_tree_of_cells, Cell};
+use ton_types::Cell;
 
 #[derive(Clone)]
 pub struct MockSdkServices {
@@ -91,7 +90,7 @@ impl State {
             .map_err(|err| {
                 Error::invalid_boc(format!("error decode {} BOC base64: {}", name, err))
             })?;
-        deserialize_tree_of_cells(&mut Cursor::new(&bytes)).map_err(|err| {
+        ton_types::boc::read_single_root_boc(&bytes).map_err(|err| {
             Error::invalid_boc(format!("{} BOC deserialization error: {}", name, err))
         })
     }

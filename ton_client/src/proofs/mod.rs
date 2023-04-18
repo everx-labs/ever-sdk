@@ -1,6 +1,5 @@
 use std::borrow::Cow;
 use std::collections::HashMap;
-use std::io::Cursor;
 use std::str::FromStr;
 use std::sync::Arc;
 
@@ -525,7 +524,7 @@ impl BlockProof {
         let signatures_json = &value["signatures"];
         let root_boc = base64::decode(signatures_json.get_str("proof")?)?;
 
-        let root = ton_types::deserialize_tree_of_cells(&mut Cursor::new(&root_boc))?;
+        let root = ton_types::boc::read_single_root_boc(&root_boc)?;
 
         let mut pure_signatures = Vec::new();
         let signatures_json_vec = signatures_json.get_array("signatures")?;

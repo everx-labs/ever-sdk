@@ -49,7 +49,7 @@ pub async fn get_blockchain_config(
     let cell = config.serialize()
         .map_err(|err| Error::serialization_error(err, "config to cells"))?;
 
-    let bytes = ton_types::serialize_toc(&cell)
+    let bytes = ton_types::boc::write_boc(&cell)
         .map_err(|err| Error::serialization_error(err, "config cells to bytes"))?;
 
     Ok(ResultOfGetBlockchainConfig {

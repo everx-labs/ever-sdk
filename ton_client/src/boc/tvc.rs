@@ -127,7 +127,8 @@ fn builder_to_cell(builder: BuilderData) -> ClientResult<Cell> {
 }
 
 fn set_salt(cell: Cell, salt: Cell, replace_last_ref: bool) -> ClientResult<Cell> {
-    let mut builder: BuilderData = cell.into();
+    let mut builder = BuilderData::from_cell(&cell)
+        .map_err(|_| Error::invalid_boc("can't create Builder from Cell"))?;
     if replace_last_ref {
         builder.replace_reference_cell(builder.references_used() - 1, salt);
     } else {
@@ -150,7 +151,8 @@ fn set_new_selector_salt(code: Cell, salt: Cell) -> ClientResult<Cell> {
         private_selector, salt, get_new_selector_salt_and_ver(&code)?.0.is_some()
     )?;
 
-    let mut builder: BuilderData = code.into();
+    let mut builder = BuilderData::from_cell(&code)
+        .map_err(|_| Error::invalid_boc("can't create Builder from Cell"))?;
     builder.replace_reference_cell(0, private_selector);
     builder_to_cell(builder)
 }
@@ -160,7 +162,8 @@ fn set_mycode_selector_salt(code: Cell, salt: Cell) -> ClientResult<Cell> {
         .map_err(|_| Error::invalid_boc("no new selector in mycode selector"))?;
     let new_selector = set_new_selector_salt(new_selector, salt)?;
 
-    let mut builder: BuilderData = code.into();
+    let mut builder = BuilderData::from_cell(&code)
+        .map_err(|_| Error::invalid_boc("can't create Builder from Cell"))?;
     builder.replace_reference_cell(1, new_selector);
     builder_to_cell(builder)
 }
