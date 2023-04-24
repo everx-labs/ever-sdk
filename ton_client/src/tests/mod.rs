@@ -708,17 +708,7 @@ impl TestClient {
                     })
                 )
             },
-            "v2" => {
-                (
-                    "sendTransaction",
-                    json!({
-                        "dest": account.to_string(),
-                        "value": value.unwrap_or(500_000_000u64),
-                        "bounce": false,
-                    })
-                )
-            },
-            "v3" => {
+            "v2" | "v3" => {
                 (
                     "sendTransaction",
                     json!({
@@ -743,13 +733,9 @@ impl TestClient {
             .await
             .unwrap();
 
-        assert!(
-            matches!(
-                run_result.transaction["out_msgs"].as_array(),
-                Some(out_msgs) if !out_msgs.is_empty()
-            ),
-            "The giver's topup call should result in at least 1 internal outbound message"
-        );
+        if run_result.transaction["out_msgs"][0].is_null() {
+            panic!("The giver's topup call should result in at least 1 internal outbound message");
+        }
 
         // wait for tokens reception
         let _: ResultOfQueryTransactionTree = self
