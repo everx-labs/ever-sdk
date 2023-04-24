@@ -57,7 +57,7 @@ pub use state_init::{
     ResultOfGetCompilerVersion, ResultOfSetCodeSalt,
 };
 
-pub use tvc::{decode_tvc, Tvc, TvcFrst, TvcFrstMetadata, TvcFrstVersion};
+pub use tvc::{decode_tvc, Tvc, TvcV1, TvcV1Metadata, TvcV1Version};
 
 pub fn default_cache_max_size() -> u32 {
     10 * 1024 // * 1024 = 10 MB

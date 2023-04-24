@@ -148,31 +148,31 @@ impl Deserializable for Metadata {
 }
 
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
-pub struct TvcFrst {
+pub struct TvcV1 {
     pub code: Cell,
     pub meta: Option<Metadata>,
 }
 
-impl TvcFrst {
+impl TvcV1 {
     pub fn new(code: Cell, meta: Option<Metadata>) -> Self {
         Self { code, meta }
     }
 }
 
 // tvc_none#fa90fdb2 = TvmSmc;
-// tvc_frst#b96aa11b code:^Cell meta:(Maybe ^Metadata) = TvmSmc;
+// tvc_v1#b96aa11b code:^Cell meta:(Maybe ^Metadata) = TvmSmc;
 #[derive(Clone, Debug, Default, Eq, PartialEq)]
 pub enum TvmSmc {
     #[default]
     None,
-    TvcFrst(TvcFrst),
+    TvcV1(TvcV1),
 }
 
 impl TvmSmc {
     const TVC_NONE_TAG: u32 = 0xfa90fdb2;
-    const TVC_FRST_TAG: u32 = 0xb96aa11b;
+    const TVC_V1_TAG: u32 = 0xb96aa11b;
 
-    fn tvc_frst_from_slice(slice: &mut SliceData) -> ton_types::Result<Self> {
+    fn tvc_v1_from_slice(slice: &mut SliceData) -> ton_types::Result<Self> {
         let code = Cell::construct_from_cell(slice.reference(0)?)?;
 
         let meta = if slice.get_next_bit()? {
@@ -181,7 +181,7 @@ impl TvmSmc {
             None
         };
 
-        Ok(Self::TvcFrst(TvcFrst::new(code, meta)))
+        Ok(Self::TvcV1(TvcV1::new(code, meta)))
     }
 }
 
@@ -192,11 +192,11 @@ impl Serializable for TvmSmc {
             return Ok(());
         }
 
-        if let TvmSmc::TvcFrst(tvc_frst) = self {
-            builder.append_u32(Self::TVC_FRST_TAG)?;
-            builder.checked_append_reference(tvc_frst.code.serialize()?)?;
+        if let TvmSmc::TvcV1(tvc_v1) = self {
+            builder.append_u32(Self::TVC_V1_TAG)?;
+            builder.checked_append_reference(tvc_v1.code.serialize()?)?;
 
-            if let Some(meta) = &tvc_frst.meta {
+            if let Some(meta) = &tvc_v1.meta {
                 builder.append_bit_one()?;
                 builder.checked_append_reference(meta.serialize()?)?;
             } else {
@@ -216,7 +216,7 @@ impl Deserializable for TvmSmc {
 
         *self = match tag {
             Self::TVC_NONE_TAG => Self::None,
-            Self::TVC_FRST_TAG => Self::tvc_frst_from_slice(slice)?,
+            Self::TVC_V1_TAG => Self::tvc_v1_from_slice(slice)?,
             _ => return Err(DeserializationError::UnexpectedTLBTag.into()),
         };
 

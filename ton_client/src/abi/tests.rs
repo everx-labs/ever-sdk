@@ -25,7 +25,7 @@ use crate::{
 use std::future::Future;
 
 use crate::boc::tvc::resolve_state_init_cell;
-use crate::boc::tvc_serialization::{Metadata, SmallStr, TvcFrst, TvmSmc, Version, TVC};
+use crate::boc::tvc_serialization::{Metadata, SmallStr, TvcV1, TvmSmc, Version, TVC};
 use serde_json::Value;
 use std::io::Cursor;
 use ton_abi::Contract;
@@ -1390,7 +1390,7 @@ async fn test_deploy_code_variants_with_fn<
 
     let tvc = base64::encode(
         &TVC {
-            tvc: TvmSmc::TvcFrst(TvcFrst {
+            tvc: TvmSmc::TvcV1(TvcV1 {
                 code: state_init.code.clone().unwrap(),
                 meta: Some(Metadata {
                     name: SmallStr {

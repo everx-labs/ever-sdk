@@ -40,31 +40,31 @@ pub struct ResultOfDecodeTvc {
 #[serde(tag = "type", content = "value")]
 pub enum Tvc {
     None,
-    Frst(TvcFrst),
+    V1(TvcV1),
 }
 
 #[derive(Serialize, ApiType, Eq, PartialEq, Debug)]
-pub struct TvcFrst {
+pub struct TvcV1 {
     pub code: String,
-    pub meta: Option<TvcFrstMetadata>,
+    pub meta: Option<TvcV1Metadata>,
 }
 
 #[derive(Serialize, ApiType, Eq, PartialEq, Debug)]
-pub struct TvcFrstMetadata {
-    pub sold: TvcFrstVersion,
-    pub linker: TvcFrstVersion,
+pub struct TvcV1Metadata {
+    pub sold: TvcV1Version,
+    pub linker: TvcV1Version,
     pub compiled_at: String,
     pub name: String,
     pub desc: String,
 }
 
 #[derive(Serialize, ApiType, Eq, PartialEq, Debug)]
-pub struct TvcFrstVersion {
+pub struct TvcV1Version {
     pub commit: String,
     pub semantic: String,
 }
 
-impl From<Version> for TvcFrstVersion {
+impl From<Version> for TvcV1Version {
     fn from(value: Version) -> Self {
         Self {
             commit: hex::encode(value.commit),
@@ -84,9 +84,9 @@ pub async fn decode_tvc(
         .object;
     let tvc = match tvc.tvc {
         TvmSmc::None => Tvc::None,
-        TvmSmc::TvcFrst(tvc) => Tvc::Frst(TvcFrst {
+        TvmSmc::TvcV1(tvc) => Tvc::V1(TvcV1 {
             code: serialize_cell_to_base64(&tvc.code, "TVC code")?,
-            meta: tvc.meta.map(|x| TvcFrstMetadata {
+            meta: tvc.meta.map(|x| TvcV1Metadata {
                 sold: x.sold.into(),
                 linker: x.linker.into(),
                 compiled_at: x.compiled_at.to_string(),
@@ -110,7 +110,7 @@ pub(crate) async fn resolve_state_init_cell(
 ) -> ClientResult<Cell> {
     if let Ok(tvc) = deserialize_object_from_boc::<TVC>(context, tvc_or_state_init, "TVC").await {
         match &tvc.object.tvc {
-            TvmSmc::TvcFrst(frst) => state_init_with_code(frst.code.clone()),
+            TvmSmc::TvcV1(v1) => state_init_with_code(v1.code.clone()),
             TvmSmc::None => Err(crate::boc::Error::invalid_boc("TVC or StateInit"))?,
         }
     } else {

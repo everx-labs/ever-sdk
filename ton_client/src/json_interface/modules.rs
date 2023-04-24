@@ -401,9 +401,9 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::boc::BocCacheType>();
     module.register_type::<BuilderOp>();
     module.register_type::<crate::boc::Tvc>();
-    module.register_type::<crate::boc::TvcFrst>();
-    module.register_type::<crate::boc::TvcFrstMetadata>();
-    module.register_type::<crate::boc::TvcFrstVersion>();
+    module.register_type::<crate::boc::TvcV1>();
+    module.register_type::<crate::boc::TvcV1Metadata>();
+    module.register_type::<crate::boc::TvcV1Version>();
 
     module.register_error_code::<crate::boc::ErrorCode>();
     module.register_async_fn(crate::boc::decode_tvc, crate::boc::tvc::decode_tvc_api);

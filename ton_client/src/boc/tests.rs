@@ -451,6 +451,21 @@ fn get_code_from_tvc() {
         result.code,
         "te6ccgECFgEAA/8AAib/APSkICLAAZL0oOGK7VNYMPShAwEBCvSkIPShAgAAAgEgBgQB6P9/IdMAAY4mgQIA1xgg+QEBcO1E0PQFgED0DvKK1wv/Ae1HIm917VcDAfkQ8qje7UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+LTPwHtR28TIbkgBQBgnzAg+COBA+iogggbd0Cgud6Z7Uchb1Mg7VcwlIA08vDiMNMfAfgjvPK50x8B8UABAgEgEgcCASALCAEJuotV8/gJAfrtR29hbo477UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+Le7UdvFpLyM5ftR3FvVu1X4gD4ANH4I7Uf7UcgbxEwAcjLH8nQb1HtV+1HbxLI9ADtR28Tzws/7UdvFgoAHM8LAO1HbxHPFsntVHBqAgFqDwwBCbQAGtbADQH87UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi3u1Hb2UgbpIwcN5w7UdvEoBA9A7yitcL/7ry4GT4APpA0SDIyfsEgQPocIEAgMhxzwsBIs8KAHHPQPgoDgCOzxYkzxYj+gJxz0Bw+gJw+gKAQM9A+CPPCx9yz0AgySL7AF8FMO1HbxLI9ADtR28Tzws/7UdvFs8LAO1HbxHPFsntVHBq2zABCbRl9ovAEAH47UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi3tHtR28R1wsfyIIQUMvtF4IQgAAAALHPCx8hzwsfyHPPCwH4KM8Wcs9A+CXPCz+AIc9AIM81Is8xvBEAeJZxz0AhzxeVcc9BIc3iIMlx+wBbIcD/jh7tR28SyPQA7UdvE88LP+1HbxbPCwDtR28RzxbJ7VTecWrbMAIBIBUTAQm7cxLkWBQA+O1Hb2FujjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t74ANH4I7Uf7UcgbxEwAcjLH8nQb1HtV+1HbxLI9ADtR28Tzws/7UdvFs8LAO1HbxHPFsntVHBq2zAAyt1wIddJIMEgjisgwACOHCPQc9ch1wsAIMABltswXwfbMJbbMF8H2zDjBNmW2zBfBtsw4wTZ4CLTHzQgdLsgjhUwIIIQ/////7ogmTAgghD////+ut/fltswXwfbMOAjIfFAAV8H"
     );
+
+    let tvc_boc = "te6ccgEBBwEAkQACEYtfJDO5aqEbwAQBAmkAAAAAY/Oo2xCuwtjYyuisZqbS2uDYykDuwtjYyuhA7GZAxt7c6OTCxuhA7tLo0EDmyuLc3wMCADROl0SaSMBWAK8AAn1lJRneYRkLU3YwLjIuMgA0TpdEmkjAVgCvAAJ9ZSUZ3mEZC1N2MC4xLjEBAAUBFP8A9KQT9LzyyAsGAALT";
+    let code_boc = "te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT";
+
+    let result: ResultOfGetCodeFromTvc = client.request(
+        "boc.get_code_from_tvc",
+        ParamsOfGetCodeFromTvc {
+            tvc: tvc_boc.to_string()
+        }
+    ).unwrap();
+
+    assert_eq!(
+        result.code,
+        code_boc
+    );
 }
 
 #[test]
@@ -915,14 +930,14 @@ async fn test_decode_tvc() {
     let tvc_boc = "te6ccgEBBwEAkQACEYtfJDO5aqEbwAQBAmkAAAAAY/Oo2xCuwtjYyuisZqbS2uDYykDuwtjYyuhA7GZAxt7c6OTCxuhA7tLo0EDmyuLc3wMCADROl0SaSMBWAK8AAn1lJRneYRkLU3YwLjIuMgA0TpdEmkjAVgCvAAJ9ZSUZ3mEZC1N2MC4xLjEBAAUBFP8A9KQT9LzyyAsGAALT";
     let code_boc = "te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT";
     let expected = ResultOfDecodeTvc {
-        tvc: Tvc::Frst(TvcFrst {
+        tvc: Tvc::V1(TvcV1 {
             code: code_boc.to_string(),
-            meta: Some(TvcFrstMetadata {
-                sold: TvcFrstVersion {
+            meta: Some(TvcV1Metadata {
+                sold: TvcV1Version {
                     commit: commit.to_string(),
                     semantic: "v0.1.1".to_string(),
                 },
-                linker: TvcFrstVersion {
+                linker: TvcV1Version {
                     commit: commit.to_string(),
                     semantic: "v0.2.2".to_string(),
                 },
@@ -945,7 +960,7 @@ async fn test_decode_tvc() {
 
     let expected = json!({
         "tvc": {
-            "type": "Frst",
+            "type": "V1",
             "value": {
                 "code": code_boc,
                 "meta": {
