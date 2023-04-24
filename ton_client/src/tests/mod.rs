@@ -117,6 +117,7 @@ pub const SUBSCRIBE: &str = "Subscription";
 // pub const PIGGY_BANK: &str = "Piggy";
 // pub const WALLET: &str = "LimitWallet";
 // pub const SIMPLE_WALLET: &str = "Wallet";
+pub const GIVER_V3: &str = "GiverV3";
 pub const GIVER_V2: &str = "GiverV2";
 pub const HELLO: &str = "Hello";
 pub const EVENTS: &str = "Events";
@@ -284,6 +285,7 @@ impl TestClient {
 
     pub fn giver_abi() -> Abi {
         match env::giver_type().as_str() {
+            "v3" => Self::abi(GIVER_V3, Some(2)),
             "v2" => Self::abi(GIVER_V2, Some(2)),
             "v1" => Self::abi("Giver", Some(1)),
             _ => panic!("Unknown giver type")
@@ -292,6 +294,7 @@ impl TestClient {
 
     pub fn giver_tvc() -> String {
         match env::giver_type().as_str() {
+            "v3" => Self::tvc(GIVER_V3, Some(2)),
             "v2" => Self::tvc(GIVER_V2, Some(2)),
             "v1" => Self::tvc("Giver", Some(1)),
             _ => panic!("Unknown giver type")
@@ -705,7 +708,7 @@ impl TestClient {
                     })
                 )
             },
-            "v2" => {
+            "v2" | "v3" => {
                 (
                     "sendTransaction",
                     json!({
@@ -729,6 +732,10 @@ impl TestClient {
             )
             .await
             .unwrap();
+
+        if run_result.transaction["out_msgs"][0].is_null() {
+            panic!("The giver's topup call should result in at least 1 internal outbound message");
+        }
 
         // wait for tokens reception
         let _: ResultOfQueryTransactionTree = self
