@@ -16,6 +16,7 @@ use crate::abi::{
     encode_message, Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::client::*;
+use crate::net::{ParamsOfQuery, ResultOfQuery};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
@@ -698,6 +699,29 @@ impl TestClient {
     }
 
     pub(crate) async fn get_tokens_from_giver_async(&self, account: &str, value: Option<u64>) -> ResultOfProcessMessage {
+        let giver_exists: ResultOfQuery = self
+            .request_async(
+                "net.query",
+                ParamsOfQuery {
+                    query: r#"query($addr: String!) {
+                        blockchain {
+                            account(address: $addr) {
+                                info {
+                                    acc_type
+                                }
+                            }
+                        }
+                    }"#.to_string(),
+                    variables: Some(json!({"addr": self.giver_address().await})),
+                },
+            )
+            .await
+            .unwrap_or_default();
+
+        if giver_exists.result["data"]["blockchain"]["account"]["info"]["acc_type"].as_i64().unwrap_or_default() != 1 {
+            panic!("The giver contract should be deployed and active");
+        }
+
         let (function, input) = match env::giver_type().as_str() {
             "v1" => {
                 (
