@@ -1,5 +1,5 @@
 {
-  "version": "1.42.1",
+  "version": "1.43.0",
   "modules": [
     {
       "name": "client",
@@ -395,7 +395,7 @@
                 }
               },
               "summary": "List of Evernode endpoints.",
-              "description": "Any correct URL format can be specified, including IP addresses. This parameter is prevailing over `server_address`.\nCheck the full list of [supported network endpoints](https://docs.everos.dev/ever-sdk/reference/ever-os-api/networks)."
+              "description": "Any correct URL format can be specified, including IP addresses. This parameter is prevailing over `server_address`.\nCheck the full list of [supported network endpoints](https://docs.evercloud.dev/products/evercloud/networks-endpoints)."
             },
             {
               "name": "network_retries_count",
@@ -471,8 +471,8 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Maximum time difference between server and client.",
-              "description": "If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than\n`message_processing_timeout/2`.\n\nMust be specified in milliseconds. Default is 15000 (15 sec)."
+              "summary": "**DEPRECATED**: This parameter was deprecated.",
+              "description": null
             },
             {
               "name": "sending_endpoint_count",
@@ -10342,8 +10342,16 @@
               "type": "Struct",
               "struct_fields": [
                 {
-                  "name": "boc",
-                  "type": "String",
+                  "name": "value",
+                  "type": "Struct",
+                  "struct_fields": [
+                    {
+                      "name": "boc",
+                      "type": "String",
+                      "summary": null,
+                      "description": null
+                    }
+                  ],
                   "summary": null,
                   "description": null
                 }
@@ -10356,15 +10364,23 @@
               "type": "Struct",
               "struct_fields": [
                 {
-                  "name": "hash",
-                  "type": "String",
-                  "summary": "Hash of the message.",
-                  "description": null
-                },
-                {
-                  "name": "address",
-                  "type": "String",
-                  "summary": "Destination address of the message.",
+                  "name": "value",
+                  "type": "Struct",
+                  "struct_fields": [
+                    {
+                      "name": "hash",
+                      "type": "String",
+                      "summary": "Hash of the message.",
+                      "description": null
+                    },
+                    {
+                      "name": "address",
+                      "type": "String",
+                      "summary": "Destination address of the message.",
+                      "description": null
+                    }
+                  ],
+                  "summary": null,
                   "description": null
                 }
               ],
