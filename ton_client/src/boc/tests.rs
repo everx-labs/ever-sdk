@@ -452,20 +452,19 @@ fn get_code_from_tvc() {
         "te6ccgECFgEAA/8AAib/APSkICLAAZL0oOGK7VNYMPShAwEBCvSkIPShAgAAAgEgBgQB6P9/IdMAAY4mgQIA1xgg+QEBcO1E0PQFgED0DvKK1wv/Ae1HIm917VcDAfkQ8qje7UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+LTPwHtR28TIbkgBQBgnzAg+COBA+iogggbd0Cgud6Z7Uchb1Mg7VcwlIA08vDiMNMfAfgjvPK50x8B8UABAgEgEgcCASALCAEJuotV8/gJAfrtR29hbo477UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+Le7UdvFpLyM5ftR3FvVu1X4gD4ANH4I7Uf7UcgbxEwAcjLH8nQb1HtV+1HbxLI9ADtR28Tzws/7UdvFgoAHM8LAO1HbxHPFsntVHBqAgFqDwwBCbQAGtbADQH87UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi3u1Hb2UgbpIwcN5w7UdvEoBA9A7yitcL/7ry4GT4APpA0SDIyfsEgQPocIEAgMhxzwsBIs8KAHHPQPgoDgCOzxYkzxYj+gJxz0Bw+gJw+gKAQM9A+CPPCx9yz0AgySL7AF8FMO1HbxLI9ADtR28Tzws/7UdvFs8LAO1HbxHPFsntVHBq2zABCbRl9ovAEAH47UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi3tHtR28R1wsfyIIQUMvtF4IQgAAAALHPCx8hzwsfyHPPCwH4KM8Wcs9A+CXPCz+AIc9AIM81Is8xvBEAeJZxz0AhzxeVcc9BIc3iIMlx+wBbIcD/jh7tR28SyPQA7UdvE88LP+1HbxbPCwDtR28RzxbJ7VTecWrbMAIBIBUTAQm7cxLkWBQA+O1Hb2FujjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t74ANH4I7Uf7UcgbxEwAcjLH8nQb1HtV+1HbxLI9ADtR28Tzws/7UdvFs8LAO1HbxHPFsntVHBq2zAAyt1wIddJIMEgjisgwACOHCPQc9ch1wsAIMABltswXwfbMJbbMF8H2zDjBNmW2zBfBtsw4wTZ4CLTHzQgdLsgjhUwIIIQ/////7ogmTAgghD////+ut/fltswXwfbMOAjIfFAAV8H"
     );
 
-    let tvc_boc = "te6ccgEBBwEAkQACEYtfJDO5aqEbwAQBAmkAAAAAY/Oo2xCuwtjYyuisZqbS2uDYykDuwtjYyuhA7GZAxt7c6OTCxuhA7tLo0EDmyuLc3wMCADROl0SaSMBWAK8AAn1lJRneYRkLU3YwLjIuMgA0TpdEmkjAVgCvAAJ9ZSUZ3mEZC1N2MC4xLjEBAAUBFP8A9KQT9LzyyAsGAALT";
+    let tvc_boc = "te6ccgEBBQEAMgACCQFn9wzgAwEBAtACACZTb21lIFNtYXJ0IENvbnRyYWN0ART/APSkE/S88sgLBAAC0w==";
     let code_boc = "te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT";
 
-    let result: ResultOfGetCodeFromTvc = client.request(
-        "boc.get_code_from_tvc",
-        ParamsOfGetCodeFromTvc {
-            tvc: tvc_boc.to_string()
-        }
-    ).unwrap();
+    let result: ResultOfGetCodeFromTvc = client
+        .request(
+            "boc.get_code_from_tvc",
+            ParamsOfGetCodeFromTvc {
+                tvc: tvc_boc.to_string(),
+            },
+        )
+        .unwrap();
 
-    assert_eq!(
-        result.code,
-        code_boc
-    );
+    assert_eq!(result.code, code_boc);
 }
 
 #[test]
@@ -751,7 +750,7 @@ fn test_code_salt() {
     assert_eq!(result.salt, None);
 }
 
-fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeStateInit) {
+fn check_encode_state_init(client: &TestClient, tvc: String, decoded: ResultOfDecodeStateInit) {
     let result: ResultOfDecodeStateInit = client
         .request(
             "boc.decode_state_init",
@@ -781,10 +780,10 @@ fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeSta
 }
 
 #[test]
-fn test_tvc_encode() {
+fn test_state_init_encode() {
     let client = TestClient::new();
 
-    let tvc = TestClient::tvc("t24_initdata", Some(2));
+    let state_init = TestClient::tvc("t24_initdata", Some(2));
     let decoded = ResultOfDecodeStateInit {
         code: Some(String::from("te6ccgECEAEAAYkABCSK7VMg4wMgwP/jAiDA/uMC8gsNAgEPAoTtRNDXScMB+GYh2zzTAAGfgQIA1xgg+QFY+EL5EPKo3tM/AfhDIbnytCD4I4ED6KiCCBt3QKC58rT4Y9MfAds88jwFAwNK7UTQ10nDAfhmItDXCwOpOADcIccA4wIh1w0f8rwh4wMB2zzyPAwMAwIoIIIQBoFGw7rjAiCCEGi1Xz+64wIIBAIiMPhCbuMA+Ebyc9H4ANs88gAFCQIW7UTQ10nCAYqOgOILBgFccO1E0PQFcSGAQPQOk9cLB5Fw4vhqciGAQPQPjoDf+GuAQPQO8r3XC//4YnD4YwcBAogPA3Aw+Eby4Ez4Qm7jANHbPCKOICTQ0wH6QDAxyM+HIM6AYs9AXgHPkhoFGw7LB8zJcPsAkVvi4wDyAAsKCQAq+Ev4SvhD+ELIy//LP8+DywfMye1UAAj4SvhLACztRNDT/9M/0wAx0wfU0fhr+Gr4Y/hiAAr4RvLgTAIK9KQg9KEPDgAUc29sIDAuNTEuMAAA")),
         code_depth: Some(7),
@@ -799,9 +798,9 @@ fn test_tvc_encode() {
         compiler_version: Some("sol 0.51.0".to_owned()),
     };
 
-    check_encode_tvc(&client, tvc.unwrap(), decoded);
+    check_encode_state_init(&client, state_init.unwrap(), decoded);
 
-    let tvc = base64::encode(include_bytes!("test_data/state_init_lib.boc"));
+    let state_init = base64::encode(include_bytes!("test_data/state_init_lib.boc"));
     let decoded = ResultOfDecodeStateInit {
         code: Some(String::from("te6ccgEBBAEAhwABFP8A9KQT9LzyyAsBAgEgAwIA36X//3aiaGmP6f/o5CxSZ4WPkOeF/+T2qmRnxET/s2X/wQgC+vCAfQFANeegZLh9gEB354V/wQgD39JAfQFANeegZLhkZ82JA6Mrm6RBCAOt5or9AUA156BF6kMrY2N5YQO7e5NjIQxni2S4fYB9gEAAAtI=")),
         code_depth: Some(2),
@@ -816,20 +815,20 @@ fn test_tvc_encode() {
         compiler_version: None,
     };
 
-    check_encode_tvc(&client, tvc, decoded);
+    check_encode_state_init(&client, state_init, decoded);
 }
 
 #[test]
 fn test_get_compiler_version() {
     let client = TestClient::new();
 
-    let tvc = TestClient::tvc("t24_initdata", Some(2)).unwrap();
+    let state_init = TestClient::tvc("t24_initdata", Some(2)).unwrap();
 
     let code = client
         .request::<_, ResultOfDecodeStateInit>(
             "boc.decode_state_init",
             ParamsOfDecodeStateInit {
-                state_init: tvc,
+                state_init,
                 boc_cache: None,
             },
         )
@@ -926,25 +925,14 @@ fn encode_external_in_message() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_decode_tvc() {
     let client = TestClient::new();
-    let commit = "4e97449a48c05600af00027d652519de61190b53";
-    let tvc_boc = "te6ccgEBBwEAkQACEYtfJDO5aqEbwAQBAmkAAAAAY/Oo2xCuwtjYyuisZqbS2uDYykDuwtjYyuhA7GZAxt7c6OTCxuhA7tLo0EDmyuLc3wMCADROl0SaSMBWAK8AAn1lJRneYRkLU3YwLjIuMgA0TpdEmkjAVgCvAAJ9ZSUZ3mEZC1N2MC4xLjEBAAUBFP8A9KQT9LzyyAsGAALT";
+    let tvc_boc = "te6ccgEBBQEAMgACCQFn9wzgAwEBAtACACZTb21lIFNtYXJ0IENvbnRyYWN0ART/APSkE/S88sgLBAAC0w==";
     let code_boc = "te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT";
+    let description = "Some Smart Contract";
+
     let expected = ResultOfDecodeTvc {
         tvc: Tvc::V1(TvcV1 {
-            code: code_boc.to_string(),
-            meta: Some(TvcV1Metadata {
-                sold: TvcV1Version {
-                    commit: commit.to_string(),
-                    semantic: "v0.1.1".to_string(),
-                },
-                linker: TvcV1Version {
-                    commit: commit.to_string(),
-                    semantic: "v0.2.2".to_string(),
-                },
-                compiled_at: "1676912859".to_string(),
-                name: "WalletV3".to_string(),
-                desc: "Simple wallet v3 contract with seqno".to_string(),
-            }),
+            code: Some(code_boc.to_string()),
+            description: Some(description.to_string()),
         }),
     };
 
@@ -963,19 +951,7 @@ async fn test_decode_tvc() {
             "type": "V1",
             "value": {
                 "code": code_boc,
-                "meta": {
-                    "sold": {
-                        "commit": commit,
-                        "semantic": "v0.1.1",
-                    },
-                    "linker": {
-                        "commit": commit,
-                        "semantic": "v0.2.2",
-                    },
-                    "compiled_at": "1676912859",
-                    "name": "WalletV3",
-                    "desc": "Simple wallet v3 contract with seqno",
-                }
+                "description": description
             },
         },
     });

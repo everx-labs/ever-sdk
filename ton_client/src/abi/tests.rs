@@ -25,7 +25,7 @@ use crate::{
 use std::future::Future;
 
 use crate::boc::tvc::resolve_state_init_cell;
-use crate::boc::tvc_serialization::{Metadata, SmallStr, TvcV1, TvmSmc, Version, TVC};
+use crate::boc::tvc_serialization::TVC;
 use serde_json::Value;
 use std::io::Cursor;
 use ton_abi::Contract;
@@ -951,7 +951,7 @@ const ACCOUNT_ABI: &str = r#"{
 fn test_decode_account_data() {
     let abi = Abi::Json(ACCOUNT_ABI.to_owned());
     let state =
-        deserialize_object_from_base64::<ton_block::StateInit>(ACCOUNT_STATE, "state").unwrap();
+        deserialize_object_from_base64::<StateInit>(ACCOUNT_STATE, "state").unwrap();
     let data = serialize_cell_to_base64(&state.object.data.unwrap(), "data").unwrap();
 
     let client = TestClient::new();
@@ -1389,20 +1389,13 @@ async fn test_deploy_code_variants_with_fn<
     assert_eq!(encoded_with_unknown_tvc, encoded_with_state_init);
 
     let tvc = base64::encode(
-        &TVC {
-            tvc: TvmSmc::TvcV1(TvcV1 {
-                code: state_init.code.clone().unwrap(),
-                meta: Some(Metadata {
-                    name: SmallStr {
-                        string: "Some Toolchain".to_string(),
-                    },
-                    compiled_at: 123,
-                    sold: Version::new([0u8; 20], "v1.2.3".to_string()),
-                    linker: Version::new([0u8; 20], "v1.2.3".to_string()),
-                    desc: "Some Contract".to_string(),
-                }),
-            }),
-        }
+        &TVC::new(
+            Some(state_init.code.clone().unwrap()),
+            Some(
+                "Some Contract\nSome Toolchain\ncompiled at: 123\nsold: v1.2.3\nlinker: v1.2.3"
+                    .to_string(),
+            ),
+        )
         .write_to_bytes()
         .unwrap(),
     );

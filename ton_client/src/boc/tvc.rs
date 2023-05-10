@@ -18,7 +18,7 @@ use crate::boc::internal::{
     deserialize_cell_from_boc, deserialize_object_from_boc, serialize_cell_to_base64,
     serialize_object_to_cell,
 };
-use crate::boc::tvc_serialization::{TvmSmc, Version, TVC};
+use crate::boc::tvc_serialization::TVC;
 use crate::error::ClientResult;
 use crate::ClientContext;
 use ton_block::StateInit;
@@ -39,38 +39,13 @@ pub struct ResultOfDecodeTvc {
 #[derive(Serialize, ApiType, Eq, PartialEq, Debug)]
 #[serde(tag = "type", content = "value")]
 pub enum Tvc {
-    None,
     V1(TvcV1),
 }
 
 #[derive(Serialize, ApiType, Eq, PartialEq, Debug)]
 pub struct TvcV1 {
-    pub code: String,
-    pub meta: Option<TvcV1Metadata>,
-}
-
-#[derive(Serialize, ApiType, Eq, PartialEq, Debug)]
-pub struct TvcV1Metadata {
-    pub sold: TvcV1Version,
-    pub linker: TvcV1Version,
-    pub compiled_at: String,
-    pub name: String,
-    pub desc: String,
-}
-
-#[derive(Serialize, ApiType, Eq, PartialEq, Debug)]
-pub struct TvcV1Version {
-    pub commit: String,
-    pub semantic: String,
-}
-
-impl From<Version> for TvcV1Version {
-    fn from(value: Version) -> Self {
-        Self {
-            commit: hex::encode(value.commit),
-            semantic: value.semantic,
-        }
-    }
+    pub code: Option<String>,
+    pub description: Option<String>,
 }
 
 /// Decodes tvc into code, data, libraries and special options.
@@ -82,19 +57,13 @@ pub async fn decode_tvc(
     let tvc = deserialize_object_from_boc::<TVC>(&context, &params.tvc, "TVC")
         .await?
         .object;
-    let tvc = match tvc.tvc {
-        TvmSmc::None => Tvc::None,
-        TvmSmc::TvcV1(tvc) => Tvc::V1(TvcV1 {
-            code: serialize_cell_to_base64(&tvc.code, "TVC code")?,
-            meta: tvc.meta.map(|x| TvcV1Metadata {
-                sold: x.sold.into(),
-                linker: x.linker.into(),
-                compiled_at: x.compiled_at.to_string(),
-                name: x.name.string,
-                desc: x.desc.to_string(),
-            }),
-        }),
-    };
+    let tvc = Tvc::V1(TvcV1 {
+        code: tvc
+            .code
+            .map(|x| serialize_cell_to_base64(&x, "TVC code"))
+            .transpose()?,
+        description: tvc.desc,
+    });
     Ok(ResultOfDecodeTvc { tvc })
 }
 
@@ -109,9 +78,10 @@ pub(crate) async fn resolve_state_init_cell(
     tvc_or_state_init: &str,
 ) -> ClientResult<Cell> {
     if let Ok(tvc) = deserialize_object_from_boc::<TVC>(context, tvc_or_state_init, "TVC").await {
-        match &tvc.object.tvc {
-            TvmSmc::TvcV1(v1) => state_init_with_code(v1.code.clone()),
-            TvmSmc::None => Err(crate::boc::Error::invalid_boc("TVC or StateInit"))?,
+        if let Some(code) = tvc.object.code {
+            state_init_with_code(code)
+        } else {
+            Err(crate::boc::Error::invalid_boc("TVC or StateInit"))?
         }
     } else {
         Ok(
