@@ -255,7 +255,7 @@ Where&#x20;
 
 `value` parameter is the amount of nanotokens to be spent on deployment (can be omitted, in which case 10 tokens from giver will be spent)
 
-`owner_public_key` is usually [the public key](add\_to\_exchange.md#6.-create-deposit-account-signer) of `deposit_signer` in the form `0x...`.
+`owner_public_key` is usually [the public key](add\_to\_backend.md#6.-create-deposit-account-signer) of `deposit_signer` in the form `0x...`.
 
 `lifetime` - time in seconds that a transaction in multi-owner accounts will persits and be available for signing by other owners. For a simple multi owner account may be set to any value, as it will be executed immediately anyway.
 
@@ -568,7 +568,7 @@ npm run subscribe-tr
 Not all transactions that are successful are valid transfers and not all transactions that are aborted actually failed. Read below how to understand which transfers are successful transfers and which are not.
 {% endhint %}
 
-<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
+<figure><img src=".gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
 
 ## Withdrawing from wallet accounts&#x20;
 
