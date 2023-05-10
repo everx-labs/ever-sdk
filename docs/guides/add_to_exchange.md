@@ -1,33 +1,37 @@
-# Add EVER to your Exchange
+---
+description: >-
+  This document describes the various ways to accomplish the most important
+  tasks of running a backend project that supports EVER.
+---
+
+# Add EVER to your backend
 
 ## Introduction
 
-This document describes the various ways to accomplish the most important tasks of running a crypto exchange that supports EVER.
+This document describes the various ways to accomplish the most important tasks of running a backend application that supports EVER.
 
 There are a few different ways to accomplish the necessary tasks:
 
-* Blockchain access may be set up either through the [Evercloud](https://docs.everos.dev/evernode-platform/products/evercloud/get-started) or through your own  node - the [DApp server](https://docs.everos.dev/evernode-platform/products/dapp-server-ds).
+* Blockchain access may be set up either through the [Evercloud](https://docs.evercloud.dev/products/evercloud/get-started) or through your own supernode - the [DApp server](https://docs.evercloud.dev/products/dapp-server-ds).
 * Deposit account management can be accomplished either through the [everdev](https://docs.everos.dev/everdev/) command line tool or integrate into your backend with  EVER-SDK client libraries. Both of these approaches are compatible with either of the blockchain access setups.
 
 ## Setting up Blockchain Access
 
-There are two ways you can set up access to the Everscale blockchain: you may use [Evercloud](https://docs.everos.dev/evernode-platform/products/evercloud/get-started), or set up your own [DApp server](https://docs.everos.dev/evernode-platform/products/dapp-server-ds).
-
 ### Using Evercloud
 
-Using [Evercloud](https://docs.everos.dev/evernode-platform/products/evercloud/get-started) allows you to work with Everscale blockchain and the Development Network without having to run your own node. Everdev and SDK can connect to it, as if it were a regular node. It has the same API as a node, and provides all capabilities required for running an exchange.
+Using [Evercloud](https://docs.evercloud.dev/products/evercloud/get-started) allows you to work with TVM blockchains without having to run your own node. Everdev and SDK can connect to it, as if it were a regular node. It has the same API as a node, and provides all neede capabilities.
 
-This page lists the [cloud endpoints](https://docs.everos.dev/ever-sdk/reference/ever-os-api/networks). To get access credentials go through this [guide](https://docs.everos.dev/evernode-platform/products/evercloud/get-started).
+This page lists the [cloud endpoints](https://docs.evercloud.dev/products/evercloud/networks-endpoints). To get access credentials go through this [guide](https://docs.evercloud.dev/products/evercloud/get-started).
 
 Whenever you have to specify a network endpoint in the examples given below, use the endpoints and credentials you receive in the [Evercloud dashboard](https://dashboard.evercloud.dev/projects).
 
 {% hint style="info" %}
-Note: We highly recommend testing out the full setup on the developer network first.
+Note: We recommend testing out the full setup on the developer network first.
 {% endhint %}
 
 ### Using DApp Server&#x20;
 
-If you prefer to run your own node, you may set up your own [DApp server](https://docs.everos.dev/evernode-platform/products/dapp-server-ds). It is a client node, that may be set up on your own servers and provide full access to either Everscale or the Developer network. To connect to it with Everdev or SDK, it needs to have a domain name and a DNS record. You can specify its URL whenever you have to set the network in the examples given below.
+If you prefer to run your own node, you may set up your own [DApp server](https://docs.evercloud.dev/products/dapp-server-ds). It is a client supernode, that may be set up on your own servers and provide full access to TVM networks. To connect to it with Everdev or SDK, it needs to have a domain name and a DNS record. You can specify its URL whenever you have to set the network in the examples given below.
 
 Get the setup scripts in this repository: [https://github.com/tonlabs/evernode-ds](https://github.com/tonlabs/evernode-ds)
 
@@ -37,60 +41,86 @@ Get the setup scripts in this repository: [https://github.com/tonlabs/evernode-d
 | ------------- | ----------- | --------- | ------------- | ---------------- |
 | Recommended   | 24          | 128       | 2000          | 1                |
 
-SSD disks are recommended for storage.
-
-
-
-#### 2. Prerequisites&#x20;
-
-**2.1 Set the Environment**&#x20;
-
-Set the network in `/scripts/env.sh`: use `main.ton.dev` for the main network and `net.ton.dev` for the developer network. You can also specify notification email.
+NVMe SSD disks are recommended for storage.
 
 {% hint style="info" %}
-**Note**: We highly recommend testing out the full setup on the developer network first.&#x20;
+For simplicity, all services are deployed on one host and the system requirements for it are high, so it makes sense to distribute services across different servers.\
+After understanding this installation process, you can easily customize it for yourself.
+
+[itgoldio/everscale-dapp-server](https://github.com/itgoldio/everscale-dapp-server): Consider this project if you prefer deployment via Ansible.
 {% endhint %}
 
-```shell
-$ cd  ./scripts/
-$ . ./env.sh 
+#### 2.1 Prerequisites
+
+* Host OS: Linux (all scripts tested on Ubuntu 20.04).
+* DApp server is accessed via HTTPS, so your server must have a fully qualified domain name.\
+  A self-signed certificate will be received on start-up and will be renewed automatically.
+* Installed Git, Docker Engine, Docker CLI, Docker Compose v2 or later.
+
+#### 2.2 Configuration
+
+**2.2.1 Set variables**
+
+Check `configure.sh` and set at least these environment variables:
+
+* NETWORK\_TYPE
+* EVERNODE\_FQDN
+* LETSENCRYPT\_EMAIL
+* HTPASSWD. Set this variable if you need access to the ArangoDB web interface.\
+  For example: HTPASSWD='admin:$apr1$zpnuu5ho$Swc8jhnhlHV.qqgoaLGdO1'. Single quoutes needed to escape "$" symbols.\
+  You can generate HTPASSWD running `htpasswd -nb admin 12345`
+
+**2.2.2 Run configuration script**
+
+```
+$ ./configure.sh
 ```
 
-#### 2.2 Install Dependencies&#x20;
+This script creates `./deploy` directory
 
-Ubuntu 20.04:
+#### 2.3 Deployment
 
-```shell
-$ ./install_deps.sh
+Run `./up.sh`.
+
+After the script completes normally (it takes 30 min approx.), the node starts synchronizing its state, which can take several hours.\
+Use the following command to check the progress:
+
+```
+    docker exec rnode /ton-node/tools/console -C /ton-node/configs/console.json --cmd getstats
 ```
 
-**Note**: Make sure to add your user to the docker group, or run subsequent command as superuser:
+Script output example:
 
-```shell
-sudo usermod -a -G docker $USER
+```
+tonlabs console 0.1.286
+COMMIT_ID: 5efe6bb8f2a974ba0e6b1ea3e58233632236e182
+BUILD_DATE: 2022-10-17 02:32:44 +0300
+COMMIT_DATE: 2022-08-12 00:22:07 +0300
+GIT_BRANCH: master
+{
+	"sync_status":	"synchronization_finished",
+	"masterchainblocktime":	1665988670,
+	"masterchainblocknumber":	9194424,
+	"node_version":	"0.51.1",
+	"public_overlay_key_id":	"S4TaVdGitzTApe7GFCj8DbuRIkVEbg+ODzBxhQGIUG0=",
+	"timediff":	6,
+	"shards_timediff":	6,
+     ----%<---------------------
+}
 ```
 
-#### 2.3 Deploy Full Node
+If the `timediff` parameter is less than 10 seconds, synchronization with masterchain is complete.\
+`"sync_status": "synchronization finished"` means synchronization with workchains is complete
 
-Deploy full node:
+## Setting up Wallet Account
 
-```shell
-$ ./deploy.sh 2>&1 | tee ./deploy.log
-```
+Currently we can recommend the [SetcodeMultisig](https://github.com/EverSurf/multisig2) contract for use in deposit accounts. It is well tested and secure, supports multiple custodians, and can be set up to require several independent signatures for any transfers.&#x20;
 
-**Note**: the log generated by this command will be located in the `evernode-ds/scripts/` folder and can be useful for troubleshooting.
+### Using CLI tool&#x20;
 
-## Setting up Deposit Account&#x20;
+[Everdev](https://docs.everos.dev/everdev/), the command line tool for development on the Everscale blockchain, allows to write scripts to deploy any smart contracts to the blockchain, call all contract methods, sign transactions, and generally manage an account.
 
-Currently we can recommend the formally verified [SafeMultisig](https://github.com/tonlabs/ton-labs-contracts/tree/master/solidity/safemultisig) contract for use in deposit accounts. It is well tested and secure, supports multiple custodians, and can be set up to require several independent signatures for any transfers. However it has certain limitations, that may prove problematic for exchanges: it is not possible to send tokens transfers in batches to multiple addresses.
-
-If this functionality is required, you can develop a contract with the needed capabilities or get one developed by someone in the Everscale community.
-
-### Using command line tool&#x20;
-
-[Everdev](https://docs.everos.dev/everdev/), the command line tool for development on the Everscale blockchain, allows to deploy any smart contracts to the blockchain, call all contract methods, sign transactions, and generally manage an account.
-
-It supports the Evercloud and DApp server-based approaches both.
+It works with both Evercloud and DApp server.
 
 #### 1. Install Everdev&#x20;
 
@@ -106,42 +136,34 @@ If you experience any problems with installation, check out our [troubleshooting
 
 Everdev has a built-in [network](https://docs.everos.dev/everdev/command-line-interface/network-tool) tool to manage your networks and access credentials.
 
-* Evercloud endpoints for mainnet and devnet are already configured by default.
-* If you are setting up a connection via your own DApp server, user the following command to add it to the network list.
+**Using Evercloud endpoints**
+
+Add your Evercloud endpoint to everdev and make it default:
+
+```
+everdev network add networkName <your-evercloud-endpoint>
+everdev network default networkName
+```
+
+**Using DApp Server endpoint**
+
+* If you are setting up a connection via your own DApp server, user the following command to add it to the network list (it will be named `dappserver`).
 
 ```shell
-everdev network add dappserver <your_dapp_server_url>
+everdev network add dappserver <your_dapp_server_endpoint>
 ```
 
-To set your target network as default (so you will not have to specify it in further steps), use the following command:
+To set your `dappserver` network as default, use the following command:
 
 ```sh
-everdev network default network_name
+everdev network default dappserver
 ```
 
-#### 3. Set credentials (only for Evercloud)
-
-If you plan to use [Evercloud](add\_to\_exchange.md#using-evercloud) (devnet or mainnet), you need to configure authorization credentials.
-
-Go to your Evercloud [dashboard](https://dashboard.evercloud.dev/), find your "Project Id" and "Secret" (optional) on the "Security" tab, and pass them as parameters:
-
-```sh
-everdev network credentials network_name --project <Project Id> --access-key <Secret>
-```
-
-Example for mainnet:
-
-```
-everdev network credentials main --project 01234567890123456789012345678901 --access-key 98765432109876543210987654321098
-```
-
-If are using your own DApp Server, skip this step.
-
-#### 4. Set a giver contract on your network
+#### 3. Set a giver contract on your network
 
 On Everscale, you need to sponsor a contract address in advance to be able to deploy the contract.
 
-Everdev provides a way to set an account of your choice as a giver for deployment operations, so you will not have to do a separate step of sending tokens to a new contract address every time you deploy something. This contract can be a multisig you own, for example your [Surf](https://ever.surf/) account.
+Everdev provides a way to set an account of your choice as a giver for deployment operations, so you will not have to do a separate step of sending tokens to a new contract address every time you deploy something. This contract can some multisig wallet, for example your [Surf](https://ever.surf/) account.
 
 **Note**: To work automatically, the giver contract should have only one custodian.
 
@@ -159,41 +181,53 @@ everdev network giver network_name giver_address --signer giver_sign --type give
 
 Where
 
-`giver_type` us the type of the giver contract you selected (GiverV1 | GiverV2 | GiverV3 | SafeMultisigWallet | SetcodeMultisigWallet)
+`giver_type` is the type of the giver contract you selected (GiverV1 | GiverV2 | GiverV3 | SafeMultisigWallet | MsigV2| SetcodeMultisigWallet)
 
-#### 5. Get deposit account contract files&#x20;
+{% hint style="warning" %}
+We recommend using [Multisig 2.0 ](https://github.com/EverSurf/multisig2)as giver, for that use `MsigV2` giver\_type.&#x20;
+{% endhint %}
 
-To use the recommended SafeMultisig, get the contract files:
+#### 4. Get wallet account contract files&#x20;
+
+We recommend using[ Multisig 2.0](https://github.com/EverSurf/multisig2) contracts as a wallet. They can be found [here](https://github.com/EverSurf/multisig2). In this guide SetcodeMultisig specifically is used.
+
+Download the contract files and place them in the working folder. Direct links to its files are as follows:
 
 **.tvc** - Compiled contract code
 
-SafeMultisigWallet.tvc direct link:
+SetcodeMultisig.tvc direct link:
 
-{% embed url="https://github.com/tonlabs/ton-labs-contracts/raw/master/solidity/safemultisig/SafeMultisigWallet.tvc" %}
+{% embed url="https://github.com/EverSurf/multisig2/raw/main/build/SetcodeMultisig.tvc" %}
 
 **.abi.json** - application binary interface, describing the functions of the contract
 
-SafeMultisigWallet.abi.json direct link:
+SetcodeMultisig.abi.json direct link:
 
-{% embed url="https://raw.githubusercontent.com/tonlabs/ton-labs-contracts/master/solidity/safemultisig/SafeMultisigWallet.abi.json" %}
+{% embed url="https://raw.githubusercontent.com/EverSurf/multisig2/main/build/SetcodeMultisig.abi.json" %}
 
 Execute the commands of the following steps from the directory with the contract files.
 
-#### 6. Create deposit account signer&#x20;
+#### 5. Create wallet account signer&#x20;
 
-To generate your deposit account signer enter the following command:
+To generate your wallet account signer enter the following command:
 
 ```shell
 everdev signer generate deposit_signer
 ```
 
-To deploy multisig deposit account you will need to specify the public key of the signer. To view it, use the following command:
+Or, if you already have a seed phrase, add it like this:
+
+```
+everdev signer add "your-seed-phrase-here"
+```
+
+To deploy multisig wallet account you will need to specify the public key of the signer. To view it, use the following command:
 
 ```sh
 everdev signer info deposit_signer
 ```
 
-The keys will be displayed in terminal:
+The keys will be displayed in terminal (if you imported the seed phrase, it will be displayed here as well):
 
 ```sh
 {
@@ -207,14 +241,14 @@ The keys will be displayed in terminal:
 
 ```
 
-Usually a single owner (with a single signer) per deposit account is optimal for any tasks that require automation. However, it is possible to set up accounts with multiple owners. In this case, each of the owners has to generate their own signer and provide their public keys to the deployer. Also, the signer used to deploy the account doesn't have to be among its owners.
+Usually a single owner (with a single signer) per wallet account is optimal for any tasks that require automation. However, it is possible to set up accounts with multiple owners. In this case, each of the owners has to generate their own signer and provide their public keys to the deployer. Also, the signer used to deploy the account doesn't have to be among its owners.
 
-#### 7. Deploy the deposit account contract to blockchain
+#### 6. Deploy the wallet account contract to blockchain
 
 Use the following command for a simple one-owner account:
 
 ```shell
-everdev contract deploy SafeMultisigWallet.abi.json constructor --signer deposit_signer --input owners:[<owner_public_key>],reqConfirms:1 --value 1000000000
+everdev contract deploy SetcodeMultisig.abi.json constructor --signer deposit_signer --input owners:[<owner_public_key>],reqConfirms:1,lifetime:3600 --value 1000000000
 ```
 
 Where&#x20;
@@ -223,11 +257,13 @@ Where&#x20;
 
 `owner_public_key` is usually [the public key](add\_to\_exchange.md#6.-create-deposit-account-signer) of `deposit_signer` in the form `0x...`.
 
+`lifetime` - time in seconds that a transaction in multi-owner accounts will persits and be available for signing by other owners. For a simple multi owner account may be set to any value, as it will be executed immediately anyway.
+
 Example:
 
 {% code overflow="wrap" %}
 ```sh
-everdev contract deploy SafeMultisigWallet.abi.json constructor --signer deposit_signer --input owners:[0x8f8779e7c1944b133a423df96d06ae770c996f19d63438dbf2f569a29529b248],reqConfirms:1 --value 1000000000
+everdev contract deploy SetcodeMultisig.abi.json constructor --signer deposit_signer --input owners:[0x8f8779e7c1944b133a423df96d06ae770c996f19d63438dbf2f569a29529b248],reqConfirms:1,lifetime:3600 --value 1000000000
 ```
 {% endcode %}
 
@@ -236,7 +272,7 @@ For more complex cases (multiple owners etc.) view Everdev contract tool [docs](
 Once the contract is deployed, its address will be displayed in terminal.
 
 ```sh
-everdev contract deploy SafeMultisigWallet.abi.json constructor --signer deposit_signer --input owners:[0x3da1909b7a4bd11fd9a1d79ca9713a9a8645880e0a7a12f9691c68e95d56fe75],reqConfirms:1 --value 10000000000
+everdev contract deploy SetcodeMultisig.abi.json constructor --signer deposit_signer --input owners:[0x3da1909b7a4bd11fd9a1d79ca9713a9a8645880e0a7a12f9691c68e95d56fe75],reqConfirms:1,lifetime:3600 --value 10000000000
 
 Configuration
 
@@ -249,6 +285,7 @@ Parameters of constructor:
 
   owners (uint256[]): ["0x3da1909b7a4bd11fd9a1d79ca9713a9a8645880e0a7a12f9691c68e95d56fe75"]
   reqConfirms (uint8): "1"
+  lifetime (uint32): "3600"
 
 Deploying...
 Contract is deployed at address: 0:95c35b94e98c1b5c7716a9129ed5bb0798c8c336465fd8d1eb0d385e3d969494
@@ -257,407 +294,303 @@ Contract is deployed at address: 0:95c35b94e98c1b5c7716a9129ed5bb0798c8c336465fd
 
 ### Using SDK&#x20;
 
-You may integrate above described process of deposit account deployment into your exchange backend. The functionality is supported in SDK.
+You may integrate above described process of wallet account deployment into your backend code. The functionality is supported in SDK.
 
-A sample is available in [this repository](https://github.com/tonlabs/sdk-samples/tree/master/demo/exchange) and an overview is given below.
+A sample is available in [this repository](https://github.com/tonlabs/sdk-samples/tree/master/demo/msig-wallet) and an overview is given below.
 
 {% hint style="info" %}
-[Bindings](https://github.com/tonlabs/sdk-samples/tree/master/demo/exchange) for a large number of languages have been developed for SDK.&#x20;
+[Bindings](https://docs.everos.dev/ever-sdk/#community-bindings) for a large number of languages have been developed for SDK.&#x20;
 {% endhint %}
 
-Note, that similar to the Everdev approach described above, you have to sponsor a deposit account before deploying contract code. The sample requires you to input the data for a preexisting multisig account on the developer network to server as a giver.
+Note, that similar to the Everdev approach described above, you have to sponsor a deposit account before deploying contract code. The sample assumes you use the devnet faucet of [Evercloud Dashboard](https://dashboard.evercloud.dev/), where you can request test tokens to the contract address generated by the sample. In a production environment you may set up a giver to sponsor your contract deployment operations. An example of such a set up can be found in this [sample](https://github.com/tonlabs/sdk-samples/tree/master/demo/hello-wallet).
 
-The recommended [SafeMultisig](https://github.com/tonlabs/ton-labs-contracts/tree/master/solidity/safemultisig) contract is used.
+The recommended [SetcodeMultisig](https://github.com/tonlabs/sdk-samples/blob/master/demo/msig-wallet/contract/SetcodeMultisig.sol) contract is used.
 
-```javascript
+```typescript
 
- async function main(client) {
-    // Сonfigures the specified multisig wallet as a wallet to sponsor deploy operation
-    const giver = await ensureGiver(client);
+ async function main(client: TonClient) {
+    // 
+    // 1. ------------------ Deploy multisig wallet --------------------------------
+    // 
+    // Generate a key pair for the wallet to be deployed
+    const keypair = await client.crypto.generate_random_sign_keys();
 
-    // Generate a key pair for a wallet that we will deploy
-    console.log("Generate new wallet keys");
-    const walletKeys = await client.crypto.generate_random_sign_keys();
+    // TODO: Save generated keypair!
+    console.log('Generated wallet keys:', JSON.stringify(keypair))
+    console.log('Do not forget to save the keys!')
 
-    // In this example we will deploy safeMultisig wallet.
-    // Read about it here https://github.com/tonlabs/ton-labs-contracts/tree/master/solidity/safemultisig
+    // To deploy a wallet we need its TVC and ABI files
+    const msigTVC: string =
+        readFileSync(path.resolve(__dirname, "../contract/SetcodeMultisig.tvc")).toString("base64")
+    const msigABI: string =
+        readFileSync(path.resolve(__dirname, "../contract/SetcodeMultisig.abi.json")).toString("utf8")
 
-    // The first step - initialize new account object with ABI,
-    // target network (client) and previously generated key pair (signer) and 
-    // calculate future wallet address so that we can sponsor it before deploy.
-    // Read more about deploy and other basic concepts here https://everos.dev/faq/blockchain-basic
-    const wallet = await getAccount(client, SafeMultisigContract, signerKeys(walletKeys));
+    // We need to know the future address of the wallet account,
+    // because its balance must be positive for the contract to be deployed
+    // Future address can be calculated by encoding the deploy message.
+    // https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod_abi#encode_message
 
-    // Save last master block seq_no before we send the first transaction.
-    // It will be used later as starting point for pagination request.
-    const lastSeqNo = await getLastMasterBlockSeqNo(client);
-
-    // Prepay contract before deploy.
-    console.log(`Sending deploy fee from giver wallet ${giver.address} to the new account at ${wallet.address}`);
-    await depositAccount(wallet.address, 500_000_000, client);
-
-    console.log(`Deploying new wallet at ${wallet.address}`);
-    // Now lets deploy safeMultisig wallet
-    // Here we specify 1 custodian and 1 reqConfirms
-    // but in real life there can be many custodians as well and more than 1 required confirmations
-    await deployAccount(wallet,  {
-        owners: [`0x${walletKeys.public}`], // constructor parameters of multisig
-        reqConfirms: 1,
-    });
-
-    // Lets make a deposit
-    console.log("Depositing 2 tokens...");
-    await depositAccount(wallet.address, 2_000_000_000, client);
-
-  
- /**
- * Initializes Giver Account that will be used to topup other accounts before deploy.
- *
- * SafeMultisig wallet is used. If you want to use another contract as Giver -
- * read more about how to add a contract to a project here
- * https://docs.everos.dev/ever-sdk/guides/work_with_contracts/add_contract_to_your_app
- */
-async function ensureGiver(client) {
-    if (_giver) {
-        return _giver;
+    const messageParams: ParamsOfEncodeMessage = {
+        abi: { type: 'Json', value: msigABI },
+        deploy_set: { tvc: msigTVC, initial_data: {} },
+        signer: { type: 'Keys', keys: keypair },
+        processing_try_index: 1
     }
-    const address = process.argv[2];
-    const secret = process.argv[3];
-    if (!address || !secret) {
-        console.log("USE: node index <giver-address> <giver-secret-key>");
-        console.log("Giver must be a multisig wallet");
+
+    const encoded: ResultOfEncodeMessage = await client.abi.encode_message(messageParams)
+
+    const msigAddress = encoded.address
+
+    console.log(`You can topup your wallet from dashboard at https://dashboard.evercloud.dev`)
+    console.log(`Please send >= ${MINIMAL_BALANCE} tokens to ${msigAddress}`)
+    console.log(`awaiting...`)
+
+    // Blocking here, waiting for account balance changes.
+    // It is assumed that at this time you go to dashboard.evercloud.dev
+    // and replenish this account.
+    let balance: number
+    for (; ;) {
+        // The idiomatic way to send a request is to specify 
+        // query and variables as separate properties.
+        const getBalanceQuery = `
+                query getBalance($address: String!) {
+                    blockchain {
+                    account(address: $address) {
+                            info {
+                            balance
+                        }
+                    }
+                }
+            }
+            `
+        const resultOfQuery: ResultOfQuery = await client.net.query({
+            query: getBalanceQuery,
+            variables: { address: msigAddress }
+        })
+
+        const nanotokens = parseInt(resultOfQuery.result.data.blockchain.account.info?.balance, 16)
+        if (nanotokens > MINIMAL_BALANCE * 1e9) {
+            balance = nanotokens / 1e9
+            break
+        }
+        // TODO: rate limiting
+        await sleep(1000)
+    }
+    console.log(`Account balance is: ${balance.toString(10)} tokens`)
+
+    console.log(`Deploying wallet contract to address: ${msigAddress} and waiting for transaction...`)
+
+    // This function returns type `ResultOfProcessMessage`, see: 
+    // https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod_processing#process_message
+    let result: ResultOfProcessMessage = await client.processing.process_message({
+        message_encode_params: {
+            ...messageParams,  // use the same params as for `encode_message`,
+            call_set: {        // plus add `call_set`
+                function_name: 'constructor',
+                input: {
+                    owners: [`0x${keypair.public}`],
+                    reqConfirms: 0,
+                    lifetime: 0
+                }
+            },
+        },
+        send_events: false,
+    })
+    console.log('Contract deployed. Transaction hash', result.transaction?.id)
+    assert.equal(result.transaction?.status, 3)
+    assert.equal(result.transaction?.status_name, "finalized")
+
+    //
+```
+
+
+
+## Monitoring  transactions
+
+Lets assume we need to reliably know when customers receive or transfer funds from their wallets. Samples of transaction [pagination](https://github.com/tonlabs/sdk-samples/tree/master/demo/paginate-transactions) and [subscription](https://github.com/tonlabs/sdk-samples/tree/master/demo/subscribe-transactions) are available in the samples repository. An overview of the relevant parts is given below.
+
+In these samples JS SDK is used. [Bindings](https://docs.everos.dev/ever-sdk/#community-bindings) for a large number of languages have been developed for SDK.&#x20;
+
+### Pagination
+
+The [pagination](https://github.com/tonlabs/sdk-samples/tree/master/demo/paginate-transactions) sample queries and displays transactions in workchain 0 (workchain where simple transfers happen, -1 workchain is masterchain where you can find service transactions and validator transactions) from the beginning. We can get all the transaction and filter by account addresses on the backend side.
+
+```typescript
+   async function main(client: TonClient) {
+    // In this example, we want the query to return 2 items per page.
+    const itemsPerPage = 25
+
+    // Pagination connection pattern requires a cursor, which will be set latter
+    let cursor: string = undefined
+
+    // The idiomatic way to send a request is to specify 
+    // query and variables as separate properties.
+    const transactionsQuery = `
+        query listTransactions($cursor: String, $count: Int) {
+            blockchain {
+                transactions(
+                    workchain: 0
+                    first: $count
+                    after: $cursor
+                 ) {
+                    edges {
+                        node { 
+                            id
+                            balance_delta
+                            account_addr
+                            # other transaction fields
+                     }
+                    }
+                    pageInfo { hasNextPage endCursor }
+                }
+            }
+        }`
+
+    for (; ;) {
+        const queryResult: ResultOfQuery = await client.net.query({
+            query: transactionsQuery,
+            variables: {
+                count: itemsPerPage,
+                cursor
+            }
+        });
+        const transactions = queryResult.result.data.blockchain.transactions;
+
+        for (const edge of transactions.edges) {
+            console.log("Transaction id:", edge.node.id);
+        }
+        if (transactions.pageInfo.hasNextPage === false) {
+            break;
+        }
+        // To read next page we initialize the cursor:
+        cursor = transactions.pageInfo.endCursor;
+        // TODO: rate limiting
+        await sleep(1000);
+    }
+
+}
+console.log("Getting all transactions in workchain 0 from the beginning/")
+console.log("Most likely this process will never end, so press CTRL+C to interrupt it")
+main(client)
+    .then(() => {
+        process.exit(0)
+    })
+    .catch(error => {
+        console.error(error);
+        process.exit(1);
+    })
+
+
+
+// This helper function is used for limiting request rate
+function sleep(ms: number) { return new Promise(r => setTimeout(r, ms)) }
+```
+
+
+
+### Subscription
+
+[Subscription](https://github.com/tonlabs/sdk-samples/tree/master/demo/subscribe-transactions) sample subscribes to new transactions of the listed accounts and lists them as they appear.
+
+```typescript
+async function main() {
+    try {
+        const client = new TonClient({ network: { endpoints: [endpoint] } })
+
+        const queryText = `
+            subscription my($list: [String!]!){
+                transactions(
+                    filter: {account_addr: { in: $list }}
+                ) {
+                    id
+                    account_addr
+                    balance_delta
+                }
+            }`
+
+        // use `client.net.unsubscribe({ handle })` to close subscription
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { handle } = await client.net.subscribe(
+            {
+                subscription: queryText,
+                variables: { list: addressList }
+            },
+            responseHandler,
+        );
+        console.log("Subscribed to transactions of accounts:", JSON.stringify(addressList))
+        console.log("Press CTRL+C to interrupt it")
+
+    } catch (error) {
+        if (error.code === 504) {
+            console.error('Network is inaccessible.');
+        } else {
+            console.error(error);
+        }
         process.exit(1);
     }
-    _giver = await getAccount(
-        client,
-        SafeMultisigContract,
-        signerKeys({
-            public: (await client.crypto.nacl_sign_keypair_from_secret_key({ secret }))
-                .secret.substr(64),
-            secret,
-        }),
-    );
-    _giver.address = address;
-    return _giver;
-}
-    
-async function getAccount(client, contract, signer) {
-    const abi = abiContract(contract.abi);
-
-    // Let's create deploy message to calculate future contract address
-    // We do not use `call_set` parameter here because it does not affect address calculation
-    const address = (await client.abi.encode_message({
-        abi,
-        signer: signer,
-        deploy_set: {
-            tvc: contract.tvc,
-        },
-    })).address;
-    return {
-        client,
-        address,
-        abi,
-        tvc: contract.tvc,
-        signer,
-    };
 }
 
-async function getLastMasterBlockSeqNo(client) {
-    return (await client.net.query({
-        query: `
-            query{
-              blockchain{
-                blocks(workchain:-1, last:1 ){
-                  edges{
-                    node{
-                      seq_no
-                    }
-                  }
-                }
-              }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function responseHandler(params: any, responseType: number) {
+    // Tip: Always wrap the logic inside responseHandler in a try-catch block
+    // or you will be surprised by non-informative errors due to the context
+    // in which the handler is executed
+    try {
+        if (responseType === 100 /* GraphQL data received */) {
+            if (params?.result) {
+                console.log(params.result);
             }
-        `
-    })).result.data.blockchain.blocks.edges[0].node.seq_no
-}
 
-/**
- * Topup an account for deploy operation.
- *
- * We need an account which can be used to deposit other accounts.
- * We call it "giver".
- *
- * This sample uses already deployed multisig wallet with positive balance as a giver.
- *
- * In production you can use any other contract that can transfer funds, as a giver.
- */
-async function depositAccount(address, amount, client) {
-    return await walletSend(await ensureGiver(client), address, amount);
-}
-
-/**
- * Sends some tokens from msig wallet to specified address.
- */
-async function walletSend(wallet, address, amount) {
-    return await runAndWaitForRecipientTransactions(wallet, "sendTransaction", {
-        dest: address,
-        value: amount,
-        bounce: false,
-        flags: 1,
-        payload: "",
-    });
-}
-
-async function runAndWaitForRecipientTransactions(account, functionName, input) {
-    const runResult = await account.client.processing.process_message({
-        message_encode_params: {
-            address: account.address,
-            abi: account.abi,
-            signer: account.signer,
-            call_set: {
-                function_name: functionName,
-                input,
-            },
-        },
-        send_events: false,
-    });
-
-    const transactions = [];
-
-    // This step is only required if you want to know when the recipient actually receives their tokens.
-    // In Everscale blockchain, transfer consists of 2 transactions (because the blockchain is asynchronous):
-    //  1. Sender sends tokens - this transaction is returned by `Run` method
-    //  2. Recipient receives tokens - this transaction can be caught with `query_transaction_tree method`
-    // Read more about transactions and messages here
-    // https://everos.dev/faq/blockchain-basic
-    let countCallingApi = 0;
-    while(transactions.length === 0 && countCallingApi < 100) {
-        for (const messageId of runResult.transaction.out_msgs) {
-            const tree = await account.client.net.query_transaction_tree({
-                in_msg: messageId,
-            });
-            transactions.push(...tree.transactions);
-            if (countCallingApi++) {
-                await sleep(200); // don't spam API
-            }
+        } else {
+            // See full list of error codes here:
+            // https://docs.everos.dev/ever-sdk/reference/types-and-methods/mod_net#neterrorcode
+            console.error(params, responseType);
         }
+    } catch (err) {
+        console.log(err);
     }
-    return transactions;
-}
-
-
-async function deployAccount(
-    account,
-    constructorInput,
-) {
-    return await account.client.processing.process_message({
-        message_encode_params: {
-            abi: account.abi,
-            signer: account.signer,
-            deploy_set: {
-                tvc: account.tvc,
-            },
-            call_set: {
-                function_name: "constructor",
-                input: constructorInput,
-            },
-        },
-        send_events: false,
-    });
 }
 ```
 
+You may test out the demo application running this process on the developer network by cloning the [sdk-samples](https://github.com/tonlabs/sdk-samples) repository, creating a project in  [https://dashboard.evercloud.dev](https://dashboard.evercloud.dev), exporting the API endpoint as an environment variable:
 
-
-## Monitoring Deposit Account&#x20;
-
-An exchange needs to reliably know when customers deposit funds into its exchange accounts. This functionality has been integrated into SDK. A sample is available in [this repository](https://github.com/tonlabs/sdk-samples/tree/master/demo/exchange) and an overview of the relevant part is given below.
-
-In this sample JS SDK is used. [Bindings](https://github.com/tonlabs/sdk-samples/tree/master/demo/exchange) for a large number of languages have been developed for SDK.&#x20;
-
-The script iterates over all blocks since the specified time and looks for transfers according to the set up filters. Transfers may be filtered by one or all accounts.
-
-```javascript
-    ...
-   // To build a query with pagination, let's limit the count of transactions
-    // which will be obtained by one request
-    const countLimit = 10;
-
-    // And here we retrieve all the wallet's transactions since the specified block seq_no
-    // Due to blockchain multi-sharded nature its data needs some time to reach consistency
-    // for reliable pagination. This is why we use `for` here, waiting for the last transaction
-    // in the list
-    let size = 0;
-    console.log(`\nTransactions for ${wallet.address} account since block(seq_no):${lastSeqNo}`);
-    for await (let transactions of queryAccountTransactions(client, wallet.address, {seq_no: lastSeqNo, count: countLimit})) {
-        transactions.forEach(printTransfers);
-        size += transactions.length;
-        if (size >= 4) {
-            // Wait 4 transactions:
-            //   1. Sending deploy fee
-            //   2. Deploying new wallet
-            //   3. Depositing 2 tokens
-            //   4. Withdrawing 1 token
-            break;
-        }
-    }
-    
-    // Now let's iterate all blockchain transactions with value transfers.
-    // 
-    // Attention! If you try to get the latest master seq_no for `now` you may receive `null` because 
-    // the database is not yet consistent. So you can desrease timestamp by, say 30 seconds, or wait in a cycle until 
-    // your request returns positive value. 
-    // We will iterate data starting from master seq_no which was generated 10 minutes ago.
-
-    const afterSeqNo = await getLastMasterBlockSeqNoByTime(client, seconds(Date.now() - 10*60*1000));
-    console.log(`\nTransactions of all accounts`);
-    for await (let transactions of queryAllTransactions(client, {seq_no: afterSeqNo, count: countLimit})) {
-        // Trying get next trnsactions which contain any valuable transfers
-        if (!hasTransfersOnTransactions(transactions)) {
-            continue;
-        }
-
-        transactions.forEach(printTransfers);
-
-        try {
-            await keyPress();
-        } catch(_) {
-            // If pressed Ctrl+C exits from iteration
-            break;
-        }
-    }
-}
-
-async function getLastMasterBlockSeqNoByTime(client, utime) {
-return (await client.net.query({
-    query: `query MyQuery($utime: Int){
-        blockchain {
-            master_seq_no_range(time_end: $utime) { end }
-        }
-    }`,
-    variables: {utime},
-})).result.data.blockchain.master_seq_no_range.end
-}
-
-
-/**
- * Iterator to query account transactions by using cursor-based pagination.
- */
-async function *queryAccountTransactions(
-    client,
-    address,
-    options,
-) {
-    const variables = {
-        address,
-        cursor: null,
-        ...options,
-    }
-    for (;;) { // <-- !WARNING! Infinity loop, you need to implement condition to exit from iterator
-        const { result } = await client.net.query({query: queryAccount, variables});
-        const { transactions } = result.data.blockchain.account;
-
-        yield transactions.edges.map(_ => _.node);
-        variables.cursor = transactions.pageInfo.endCursor || variables.cursor;
-        await sleep(200); // don't spam API
-    }
-}
-
-/**
- * Iterator to query ALL blockchain transactions by using cursor-based pagination.
- */
-async function *queryAllTransactions(
-    client,
-    options,
-) {
-    const variables = {
-        cursor: null,
-        ...options,
-    }
-    for (;;) { // <-- !WARNING! Infinity loop, you need to implement condition to exit from iterator
-        consoleWrite(`Requesting transactions...`)
-        const { result } = await client.net.query({query: queryAll, variables});
-        const { transactions } = result.data.blockchain;
-        consoleClear()
-        yield transactions.edges.map(_ => _.node);
-        variables.cursor = transactions.pageInfo.endCursor || variables.cursor;
-        await sleep(200); // don't spam API
-    }
-}
-
-
-// This API has additional consistency checks to ensure consistent pagination, which can lead to additional delay
-const queryAccount = `query MyQuery($address: String!, $cursor: String, $count: Int, $seq_no: Int) {
-    blockchain {
-        account(address: $address){
-            transactions(
-                master_seq_no_range: {
-                    start: $seq_no
-                }
-                first: $count
-                after: $cursor
-            ){
-                edges{
-                    node{
-                        ${TRANSACTION_FIELDS}
-                    }
-                }
-                pageInfo{
-                    endCursor
-                }
-            }
-        }
-    }
-}`;
-
-// This API has additional consistency checks to ensure consistent pagination, which can lead to additional delay
-const queryAll = `query MyQuery($cursor: String, $count: Int, $seq_no: Int) {
-    blockchain {
-        transactions(
-            master_seq_no_range: {
-                start: $seq_no
-            }
-            first: $count
-            after: $cursor
-        ){
-            edges{
-                node{
-                    ${TRANSACTION_FIELDS}
-                }
-            }
-            pageInfo{
-                endCursor
-            }
-        }
-    }
-}`;
+```
+export ENDPOINT=https://devnet.evercloud.dev/<your_project_id>/graphql
 ```
 
-You may test out the demo application running this process on the developer network by cloning the [sdk-samples](https://github.com/tonlabs/sdk-samples) repository, and running the following commands in the /demo/exchange folder
+&#x20;and running the following command in the `/demo/subscribe-transactions` folder:
 
 ```shell
-npm i
-node index giverAddress giverPrivateKey
+npm run subscribe-tr
 ```
 
-Read more about giverAddress and giverPrivateKey parameters in the sample [readme](https://github.com/tonlabs/sdk-samples/tree/master/demo/exchange).&#x20;
+{% hint style="warning" %}
+Not all transactions that are successful are valid transfers and not all transactions that are aborted actually failed. Read below how to understand which transfers are successful transfers and which are not.
+{% endhint %}
 
-## Withdrawing from deposit accounts&#x20;
+<figure><img src="../.gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
 
-The specific function that is used to send the funds to the user depends on the contract chosen for the deposit account. Examples provided below are applicable for the [SafeMultisig](https://github.com/vtchemodanov/tondev/blob/patch-2/docs/deploy\_mulisig\_tondev.md) contract.
+## Withdrawing from wallet accounts&#x20;
 
-### Using command line tool
+The specific function that is used to withdraw the funds depends on the contract chosen for the wallet account. Examples provided below are applicable for the [SetcodeMultisig](https://github.com/EverSurf/multisig2) contract.
 
-Command line Everdev tool may be used to implement withdrawals from deposit account.
+### Using CLI tool
 
-The simplest way that bypasses any verification and places all risks entirely on the user is to send the full requested amount with a single transfer to the specified address. If the user made a mistake in the address, and has no control over it, these funds will be lost. If the account does not exist, and the user makes mistakes deploying it after the funds are transferred, they may end up being lost as well.
+Command line `Everdev` tool may be used to automate withdrawals from wallet account in your scripts.
 
-To perform a simple transfer to any account, whether it already exists or not, use the following everdev command:
+{% hint style="danger" %}
+If the user made a mistake in the destination address, and has no control over it, these funds will be lost forever. If the account does not exist, and the user makes mistakes deploying it after the funds are transferred, they may end up being lost as well.&#x20;
+{% endhint %}
+
+So, to perform a simple transfer from a single-owner deposit account to any specified account, we should make sure that it is already deployed, by setting `bounce` flag to true. If the account does not exist, funds will return back.
 
 {% code overflow="wrap" %}
 ```shell
-everdev contract run SafeMultisigWallet.abi.json submitTransaction --signer deposit_signer --input dest:recipient_address,value:500000000,bounce:false,allBalce:false,payload:""
+everdev contract run SetcodeMultisig.abi.json sendTransaction --address <deposit_account_address> --signer deposit_signer --input dest:recipient_address,value:50000000000,bounce:true,flags:3,payload:""
 ```
 {% endcode %}
+
+`<deposit_account_address>` - address of the deposit account. Example: 0:7bf2b2ec80371601f854bff9ed0a1171714d922c8bfc86d39e67a7e3a41b2176
 
 `deposit_signer` - name of the deposit account owner signer
 
@@ -665,26 +598,26 @@ everdev contract run SafeMultisigWallet.abi.json submitTransaction --signer depo
 
 `value`: - amount of tokens to transfer in nanotokens (Example: value:10000000000 sets up a transfer of 10 tokens).
 
-`bounce` - use false to transfer funds to any account regardless of whether it exists.
+`bounce` - use true to transfer funds only to deployed accounts.
+
+`flags` - use 3 for a simple transfer.
 
 `payload` - use "" for simple transfer.
 
-`allBalance` - used to transfer all funds in the wallet. Use false for a simple transfer.
-
 {% hint style="info" %}
-**Note**: Due to a bug setting `allBalance` to `true` currently causes errors. Single-custodian multisig wallets may use `sendTransaction` method with flag `130` and value `0` instead
+**Note**: To transfer all funds from the account use `sendTransaction` method with flag `130` and value `0.`
 {% endhint %}
 
 {% code overflow="wrap" %}
 ```shell
-everdev contract run SafeMultisigWallet.abi.json sendTransaction --signer deposit_signer --input dest:recipient_address,value:0,bounce:false,flags:130,payload:""
+everdev contract run SetcodeMultisig.abi.json --address <wallet_account_address> sendTransaction --signer deposit_signer --input dest:recipient_address,value:0,bounce:true,flags:130,payload:""
 ```
 {% endcode %}
 
 Example of regular withdrawal transaction on a single-owner multisig:
 
 ```shell
-everdev contract run SafeMultisigWallet.abi.json submitTransaction --signer deposit_signer --input dest:665a62042aff317ba3f32e36b712b0f4a9d35277dd76dc38c9762cc6421681cf,value:500000000000,bounce:false,allBalance:false,payload:""
+everdev contract run SetcodeMultisig.abi.json sendTransaction --signer deposit_signer --input dest:665a62042aff317ba3f32e36b712b0f4a9d35277dd76dc38c9762cc6421681cf,value:500000000000,bounce:false,flags:3,payload:""
 
 Configuration
 
@@ -693,13 +626,14 @@ Configuration
 
 Address:   0:95c35b94e98c1b5c7716a9129ed5bb0798c8c336465fd8d1eb0d385e3d969494
 
-Parameters of submitTransaction:
+Parameters of sendTransaction:
 
   dest (address): "665a62042aff317ba3f32e36b712b0f4a9d35277dd76dc38c9762cc6421681cf"
   value (uint128): "500000000000"
   bounce (bool): "false"
-  allBalance (bool): "false"
+  flags (uint8): "3"
   payload (cell): ""
+
 
 Running...
 
@@ -787,27 +721,51 @@ Execution has finished with result:
 
 Basic checks of the address format will be performed by the Everdev utility automatically, only addresses of a valid Everscale format will be accepted.
 
+#### (Optional) Multi-owner accounts and Confirm transaction&#x20;
+
 Note, that if your deposit account has multiple custodians, the transaction has to be confirmed by the required number of signatures to be executed. This transaction ID should be communicated to other custodians, who should use it to confirm the transaction.&#x20;
 
-#### (Optional) Confirm transaction&#x20;
+To withdraw tokens from a multi-owner account use the following command:
+
+{% code overflow="wrap" %}
+```bash
+everdev contract run SetcodeMultisig.abi.json submitTransaction --address <deposit_account_address> --signer giver_sign --input '{ "dest": "recipient_address", "value":10000000000, "bounce": false, "allBalance": false, "payload": "", "stateInit": null }'
+```
+{% endcode %}
+
+`<deposit_account_address>` - address of the deposit account. Example: 0:7bf2b2ec80371601f854bff9ed0a1171714d922c8bfc86d39e67a7e3a41b2176
+
+`deposit_signer` - name of the deposit account owner signer
+
+`value`: - amount of tokens to transfer in nanotokens (Example: value:10000000000 sets up a transfer of 10 tokens).
+
+`bounce` - use false to transfer funds to an already deployed account
+
+`allBalance` - used to transfer all funds in the wallet. Use false for a simple transfer.
+
+`payload` - use "" for simple transfer.
+
+`stateInit` - use `null` for a simple transfer.
+
+This will generate a transaction and display its `transId` that will have to be confirmed by other custodians.
 
 To confirm a transaction, use the following command:
 
 {% code overflow="wrap" %}
 ```shell
-everdev contract run SafeMultisigWallet.abi.json confirmTransaction --signer deposit_signer2 --input transactionId:6954030467099431873
+everdev contract run SetcodeMultisig.abi.json confirmTransaction --address <deposit_account_address> --signer deposit_signer2 --input transactionId:6954030467099431873
 ```
 {% endcode %}
+
+`<deposit_account_address>` - address of the deposit account. Example: 0:7bf2b2ec80371601f854bff9ed0a1171714d922c8bfc86d39e67a7e3a41b2176
 
 `deposit_signer2` - signer of another multisig custodian (not the one who initiated the transaction).
 
 `transactionId` – the ID of the transaction can be acquired from the custodian who created it.
 
-See [this guide](https://docs.everos.dev/everdev/guides/work-with-contracts#calling-the-contract-on-chain-and-off-chain) for details on working with multiple custodians.
-
 #### Mitigating risks of token loss due to user error
 
-The are two main cases regarding transfers to user accounts: a user may already have an active account to which they want to withdraw funds, or they may want to withdraw funds to a completely new account, that doesn't exist at the time withdraw is requested.
+The are two main cases regarding transfers to user accounts: a user may already have an active account to which they want to withdraw funds (set bounce to true), or they may want to withdraw funds to a completely new account, that doesn't exist at the time withdraw is requested (set bounce to false).
 
 The status of the account provided by the user may be checked with the following Everdev command:
 
@@ -858,157 +816,86 @@ In the first to cases, the exchange might first transfer a small portion of the 
 
 If the account is already active, a small portion of the requested amount may be transferred to the user, and the user may be asked what amount they received (note: a small amount of the transfer, usually less than 0.05 EVER, will be spent on fees, so it's best to ask for the whole number of tokens transferred). If the amounts match, the rest of the requested funds may be transferred as well.
 
-#### PIN code verification&#x20;
-
-Additionally, for users that use the [Surf](https://ever.surf/) app to store their tokens, PIN code verification is possible.
-
-For now this method requires using the [TONOS-CLI](https://docs.everos.dev/everdev/command-line-interface/tonos-cli) command line tool.&#x20;
-
-To install it, use the following command:
-
-```sh
-everdev tonos-cli install
-```
-
-If you use Evercloud, configure [access](add\_to\_exchange.md#using-evercloud):
-
-```sh
-tonos-cli config --project_id <evercloud_project_id> --access_key <evercloud_secret>
-```
-
-TONOS-CLI may be used to send a transaction with an encrypted PIN code, which the user will be able to see in Surf:
-
-```shell
-tonos-cli multisig send --addr <deposit_account_address> --dest <recipient_address> --purpose <"PIN_code"> --sign <path_to_keys_or_seed_phrase> --value *number*js
-```
-
-`<deposit_account_address>` - address of the deposit account address that tokens are sent from.
-
-`<recipient_address>` - address of the account tokens are sent to.
-
-`<"PIN_code">` - accompanying message containing the PIN code. Only the recipient will be able to decrypt and read it. should be enclosed in double quotes.
-
-`<path_to_keys_or_seed_phrase>` - path to sender wallet key file of the corresponding seed phrase in quotes.
-
-\-`-value`` `_`number`_ - value to be transferred (**in tokens**).
-
-Example:
-
-```shell
-$ tonos-cli multisig send --addr 0:255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3 --dest 0:a4629d617df931d8ad86ed24f4cac3d321788ba082574144f5820f2894493fbc --purpose "339" --sign key.json --value 6
-Config: /home/user/tonos-cli.conf.json
-Connecting to your-endpoint-here
-Generating external inbound message...
-
-MessageId: 62b1420ac98e586f29bf79bc2917a0981bb3f15c4757e8dca65370c19146e327
-Expire at: Thu, 13 May 2021 13:26:06 +0300
-Processing... 
-Succeeded.
-Result: {
-  "transId": "0"
-}.
-```
-
 ### Using SDK&#x20;
 
-You may integrate withdrawals from deposit account into your backend using SDK as well. A sample is available in [this repository](https://github.com/tonlabs/sdk-samples/tree/master/demo/exchange) and an overview of the relevant part is given below.
+You may integrate withdrawals from wallet account into your backend using SDK as well. A sample is available in [this repository](https://github.com/tonlabs/sdk-samples/tree/master/demo/msig-wallet) and an overview of the relevant part is given below.
 
-In this sample JS SDK is used.  [Bindings](https://github.com/tonlabs/sdk-samples/tree/master/demo/exchange) for a large number of languages have been developed for SDK.&#x20;
+In this sample JS SDK is used.  [Bindings](https://docs.everos.dev/ever-sdk/#community-bindings) for a large number of languages have been developed for SDK.&#x20;
 
 This example shows how to generate a withdrawal transaction from a Multisig wallet, using its `sendTransaction` method. Note, that if Multisig has multiple custodians, the transaction will have to be confirmed with the `confirmTransaction` method.
 
-You may choose from which account (sender or recipient), the forward fees will be charged.
-
-In this example tokens are withdrawn from the deposit account to the giver, that initially sponsored it. In a proper implementation, the account given by user should be used instead.
+In this example tokens are withdrawn from the deposit account to the account specified in `dest`. In a proper implementation, the account given by user should be used instead.
 
 ```javascript
-/**
- * Withdraws some tokens from Multisig wallet to a specified address.
- *
- * In case of 1 custodian `submitTransaction` method performs full withdraw operation.
- *
- * In case of several custodians, `submitTransaction` creates a transaction inside the wallet
- * for other custodians to confirm.
- * Other custodians need to invoke  `confirmTransaction` method for confirmation.
- * Once enough custodians confirm the transaction it will be withdrawn.
- * Read more how to work with multisig here
- * https://github.com/tonlabs/ton-labs-contracts/tree/master/solidity/safemultisig
- */
-async function walletWithdraw(wallet, address, amount) {
-    const transactions = await runAndWaitForRecipientTransactions(wallet, "submitTransaction", {
-        dest: address,
-        value: amount,
-        bounce: false,
-        allBalance: false,
-        payload: "",
-    });
-    if (transactions.length > 0) {
-        console.log(`Recipient received transfer. The recipient's transaction is: ${transactions[0].id}`);
-    }
-    return transactions
-}
+    // We send 0.5 tokens. Value is written in nanotokens
+    const amount = 0.5e9
+    const dest = "-1:7777777777777777777777777777777777777777777777777777777777777777"
+
+    console.log('Sending 0.5 token to', dest)
+
+    result = await client.processing.process_message({
+        message_encode_params: {
+            address: msigAddress,
+            ...messageParams, // use the same params as for `encode_message`,
+            call_set: {       // plus add `call_set`
+                function_name: 'sendTransaction',
+                input: {
+                    dest: dest,
+                    value: amount,
+                    bounce: true,
+                    flags: 64,
+                    payload: ''
+                }
+            },
+        },
+        send_events: false, // do not send intermidate events
+    })
+    console.log('Transfer completed. Transaction hash', result.transaction?.id)
+    assert.equal(result.transaction?.status, 3)
+    assert.equal(result.transaction?.status_name, "finalized")
+
 ```
 
-#### User account verification with SDK&#x20;
+#### Mitigating risks of token loss due to user error
 
-Same as described above, users of the [Surf](https://ever.surf/) app can be offered additional verification with a PIN code.
+Similarly to the everdev approach, you can add the account status check prior to sending tokens.
 
-Below is a snippet of the [SDK sample](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/transfer-with-comment) demonstrating how to generate a transaction with an encrypted comment. A PIN code can be transmitted to the user in this comment attached to a small amount of tokens, and only after the user provides the PIN code, thus proving they have access to their account, may the rest of the withdrawal amount be transferred.
+The are two main cases regarding transfers to user accounts: a user may already have an active account to which they want to withdraw funds, or they may want to withdraw funds to a completely new account, that doesn't exist at the time withdraw is requested.
 
-```javascript
-// Prepare body with comment
-        // For that we need to prepare internal message with transferAbi and then extract body from it
-        const body = (await client.abi.encode_message_body({
-            abi: abiContract(transferAbi),
-            call_set: {
-                function_name: "transfer",
-                input: {
-                    comment: Buffer.from("My comment").toString("hex"),
-                },
-            },
-            is_internal: true,
-            signer: signerNone(),
-        })).body;
+Here is an example of checking account status in SDK:
 
-        const multisig = new Account(MultisigContract, {
-            signer: signerKeys(keyPair),
-            client,
-        });
+```typescript
+    let balance: number
+    let accType: number
+    for (; ;) {
+        // The idiomatic way to send a request is to specify 
+        // query and variables as separate properties.
+        const getInfoQuery = `
+                query getBalance($address: String!) {
+                    blockchain {
+                    account(address: $address) {
+                            info {
+                            balance
+                            acc_type
+                        }
+                    }
+                }
+            }
+            `
+        const resultOfQuery: ResultOfQuery = await client.net.query({
+            query: getInfoQuery,
+            variables: { address: msigAddress }
+        })
+        
 
-        // Run 'submitTransaction' method of multisig wallet
-        // Create run message
-
-        console.log("Call `submitTransaction` function");
-        const transactionInfo = (await multisig.run("submitTransaction", {
-            dest: recipient,
-            value: 100_000_000,
-            bounce: false,
-            allBalance: false,
-            payload: body,
-        }));
-        console.log(transactionInfo);
-        console.log("Transaction info:");
-
-        console.log("Id:");
-        console.log(transactionInfo.transaction.id);
-        console.log("messages:");
-        console.log(transactionInfo.out_messages);
-        const messages = transactionInfo.out_messages;
-
-        const decodedMessage1 = (await tonClient.abi.decode_message({
-            abi: abiContract(transferAbi),
-            message: messages[0],
-        }));
-
-        // Decode comment from hex to string
-        decodedMessage1.value.comment = Buffer.from(decodedMessage1.value.comment, "hex").toString("utf8");
-
-        console.log("Decoded message 1:", decodedMessage1.value);
-
-        const decodedMessage2 = (await tonClient.abi.decode_message({
-            abi: abiContract(multisigContractPackage.abi),
-            message: messages[1],
-        }));
-
-        console.log("Decoded message 2:", decodedMessage2);
+        const nanotokens = parseInt(resultOfQuery.result.data.blockchain.account.info?.balance, 16)
+        accType = resultOfQuery.result.data.blockchain.account.info?.acc_type;
+        if (nanotokens > MINIMAL_BALANCE * 1e9) {
+            balance = nanotokens / 1e9
+            break
+        }
+        // TODO: rate limiting
+        await sleep(1000)
+    }
+    console.log(`Account balance is: ${balance.toString(10)} tokens. Account type is ${accType}`)
 ```

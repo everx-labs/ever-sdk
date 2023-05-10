@@ -15,7 +15,7 @@ The steps you need to complete to estimate fees of deploy and run:
 1. Encode a message you will locally execute with [encode\_message](../../reference/types-and-methods/mod\_abi.md#encode\_message)
 2. Download account boc the same way you did in [Run ABI Get method](run\_abi\_get\_method.md)
 3. Run the message on the downloaded state with [run\_executor](../../reference/types-and-methods/mod\_tvm.md#run\_executor) function
-4. Retrieve `result.fees` object. You need **`result.fees.account_fees` ** for total account fees value.
+4. Retrieve `result.fees` object. You need **`result.fees.account_fees`** for total account fees value.
 
 ## Fees object detailed explanation
 
