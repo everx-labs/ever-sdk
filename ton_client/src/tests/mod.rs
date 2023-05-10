@@ -16,6 +16,7 @@ use crate::abi::{
     encode_message, Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::client::*;
+use crate::net::{ParamsOfQuery, ResultOfQuery};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
@@ -117,6 +118,7 @@ pub const SUBSCRIBE: &str = "Subscription";
 // pub const PIGGY_BANK: &str = "Piggy";
 // pub const WALLET: &str = "LimitWallet";
 // pub const SIMPLE_WALLET: &str = "Wallet";
+pub const GIVER_V3: &str = "GiverV3";
 pub const GIVER_V2: &str = "GiverV2";
 pub const HELLO: &str = "Hello";
 pub const EVENTS_OLD: &str = "EventsOld";
@@ -286,6 +288,7 @@ impl TestClient {
 
     pub fn giver_abi() -> Abi {
         match env::giver_type().as_str() {
+            "v3" => Self::abi(GIVER_V3, Some(2)),
             "v2" => Self::abi(GIVER_V2, Some(2)),
             "v1" => Self::abi("Giver", Some(1)),
             _ => panic!("Unknown giver type")
@@ -294,6 +297,7 @@ impl TestClient {
 
     pub fn giver_tvc() -> Option<String> {
         match env::giver_type().as_str() {
+            "v3" => Self::tvc(GIVER_V3, Some(2)),
             "v2" => Self::tvc(GIVER_V2, Some(2)),
             "v1" => Self::tvc("Giver", Some(1)),
             _ => panic!("Unknown giver type")
@@ -697,6 +701,29 @@ impl TestClient {
     }
 
     pub(crate) async fn get_tokens_from_giver_async(&self, account: &str, value: Option<u64>) -> ResultOfProcessMessage {
+        let giver_exists: ResultOfQuery = self
+            .request_async(
+                "net.query",
+                ParamsOfQuery {
+                    query: r#"query($addr: String!) {
+                        blockchain {
+                            account(address: $addr) {
+                                info {
+                                    acc_type
+                                }
+                            }
+                        }
+                    }"#.to_string(),
+                    variables: Some(json!({"addr": self.giver_address().await})),
+                },
+            )
+            .await
+            .unwrap_or_default();
+
+        if giver_exists.result["data"]["blockchain"]["account"]["info"]["acc_type"].as_i64().unwrap_or_default() != 1 {
+            panic!("The giver contract should be deployed and active");
+        }
+
         let (function, input) = match env::giver_type().as_str() {
             "v1" => {
                 (
@@ -707,7 +734,7 @@ impl TestClient {
                     })
                 )
             },
-            "v2" => {
+            "v2" | "v3" => {
                 (
                     "sendTransaction",
                     json!({
@@ -731,6 +758,10 @@ impl TestClient {
             )
             .await
             .unwrap();
+
+        if run_result.transaction["out_msgs"][0].is_null() {
+            panic!("The giver's topup call should result in at least 1 internal outbound message");
+        }
 
         // wait for tokens reception
         let _: ResultOfQueryTransactionTree = self

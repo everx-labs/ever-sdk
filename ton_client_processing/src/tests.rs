@@ -84,6 +84,8 @@ async fn test_fetch_wait_all() {
         .await
         .unwrap();
 
+    sleep(Duration::from_millis(1100)).await;
+
     // Wait for fetching all queued messages on a spawned thread
     let fetched = Arc::new(RwLock::new(Vec::<MessageMonitoringResult>::new()));
     let results_from_spawned = fetched.clone();
@@ -140,6 +142,7 @@ async fn test_mon_info() {
     mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
         .await
         .unwrap();
+    sleep(Duration::from_millis(1100)).await;
     let info = mon.get_queue_info("1").unwrap();
     assert_eq!(info.resolved, 0);
     assert_eq!(info.unresolved, 2);
@@ -148,6 +151,78 @@ async fn test_mon_info() {
     let info = mon.get_queue_info("1").unwrap();
     assert_eq!(info.resolved, 1);
     assert_eq!(info.unresolved, 1);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_buffering() {
+    let api = sdk_services();
+    let mon = MessageMonitor::new(api.clone());
+
+    mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
+        .await
+        .unwrap();
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    assert_eq!(
+        api.active_subscription_count(),
+        0,
+        "first subscription should not be started before 1 second"
+    );
+
+    tokio::time::sleep(Duration::from_millis(1000)).await;
+    assert_eq!(
+        api.active_subscription_count(),
+        1,
+        "first subscription should be started after 1 second"
+    );
+
+    mon.monitor_messages("1", vec![msg(3, 3), msg(4, 4)])
+        .await
+        .unwrap();
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    assert_eq!(
+        api.active_subscription_count(),
+        1,
+        "second subscription should not be started before 1 second"
+    );
+
+    tokio::time::sleep(Duration::from_millis(1000)).await;
+    assert_eq!(
+        api.active_subscription_count(),
+        2,
+        "second subscription should be started after 1 second"
+    );
+
+    api.add_recent_ext_in_messages(vec![msg_res(1, MessageMonitoringStatus::Finalized)]);
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(
+        api.active_subscription_count(),
+        2,
+        "both subscriptions should be active"
+    );
+
+    api.add_recent_ext_in_messages(vec![msg_res(2, MessageMonitoringStatus::Finalized)]);
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(
+        api.active_subscription_count(),
+        1,
+        "first subscription should be closed after all has resolved"
+    );
+
+    api.add_recent_ext_in_messages(vec![msg_res(3, MessageMonitoringStatus::Finalized)]);
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(
+        api.active_subscription_count(),
+        1,
+        "second subscription should be active"
+    );
+
+    api.add_recent_ext_in_messages(vec![msg_res(4, MessageMonitoringStatus::Finalized)]);
+    tokio::time::sleep(Duration::from_millis(200)).await;
+    assert_eq!(
+        api.active_subscription_count(),
+        0,
+        "all subscriptions should be closed after all has resolved"
+    );
 }
 
 fn hash(n: usize) -> String {

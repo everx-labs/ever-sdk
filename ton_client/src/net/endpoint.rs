@@ -225,10 +225,6 @@ impl Endpoint {
         self.server_latency.load(Ordering::Relaxed)
     }
 
-    pub fn time_delta(&self) -> i64 {
-        self.server_time_delta.load(Ordering::Relaxed)
-    }
-
     pub fn next_latency_detection_time(&self) -> u64 {
         self.next_latency_detection_time.load(Ordering::Relaxed)
     }

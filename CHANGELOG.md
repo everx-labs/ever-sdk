@@ -10,6 +10,12 @@ All notable changes to this project will be documented in this file.
   `max_reconnect_timeout` is used instead
 - Message monitoring errors received by subscription are returned from
   `processing.fetch_next_monitor_results` function
+- Message monitor buffers new messages for delayed start of the subscription. New subscription
+  starts when 1 second has passed since the last addition or when 5 seconds has passed since last sending
+- Message monitor uses more than one subscription.
+- Version of `ton_types` upped to 2.0.0
+- Fixed code for changed dependencies api
+- Removed logic related to client-server clock sync
 - `boc.encode_tvc` and `boc.decode_tvc` are renamed to `boc.encode_state_init` 
   and `boc.decode_state_init`.
 - `boc.decode_tvc` decodes TVC BOC according to the TVC spec.
@@ -19,7 +25,6 @@ All notable changes to this project will be documented in this file.
 - `DeploySet.code` allows to construct state init from provided serialized code.
 - `DeploySet`'s fields `tvc`, `state_init` and `code` are mutually exclusive (so you should
   provide value for one of these fields). 
-  
 
 ## [1.42.1] – 2023-03-23
 

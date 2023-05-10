@@ -834,7 +834,7 @@ pub async fn encode_message_body(
         }
         .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?,
     };
-    let body: Vec<u8> = ton_types::serialize_toc(
+    let body: Vec<u8> = ton_types::boc::write_boc(
         &body
             .clone()
             .into_cell()

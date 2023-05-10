@@ -38,7 +38,7 @@ pub(crate) fn add_sign_to_message_body(
         .map_err(|err| Error::attach_signature_failed(err))?;
     let body = ton_abi::add_sign_to_function_call(abi.to_string(), signature, public_key, unsigned)
         .map_err(|err| Error::attach_signature_failed(err))?;
-    Ok(ton_types::serialize_toc(
+    Ok(ton_types::boc::write_boc(
         &body
             .into_cell()
             .map_err(|err| Error::attach_signature_failed(err))?,

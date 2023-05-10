@@ -3,6 +3,7 @@ use serde_json::Value;
 use ton_types::Cell;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, ApiType)]
+#[serde(tag = "type", content = "value")]
 pub enum MonitoredMessage {
     /// BOC of the message.
     Boc { boc: String },
