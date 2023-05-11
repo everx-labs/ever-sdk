@@ -66,11 +66,13 @@ Check `configure.sh` and set at least these environment variables:
 * NETWORK\_TYPE
 * EVERNODE\_FQDN
 * LETSENCRYPT\_EMAIL
-* HTPASSWD. Set this variable if you need access to the ArangoDB web interface.\
-  For example: HTPASSWD='admin:$apr1$zpnuu5ho$Swc8jhnhlHV.qqgoaLGdO1'. Single quoutes needed to escape "$" symbols.\
-  You can generate HTPASSWD running `htpasswd -nb admin 12345`
 
-**2.2.2 Run configuration script**
+**2.2.2 Generate credentials to access the ArangoDB web interface**
+
+Generate credentials (usernames and password) for basic authentication and update `.htpasswd` file.\
+You can generate it by running `htpasswd -nb <name> <password>`
+
+**2.2.3 Run configuration script**
 
 ```
 $ ./configure.sh
