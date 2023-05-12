@@ -102,7 +102,8 @@ pub struct AbiConfig {
     pub workchain: i32,
 
     /// Message lifetime for contracts which ABI includes "expire" header.
-    /// The default value is 40 sec.
+    ///
+    /// Must be specified in milliseconds. Default is 40000 (40 sec).
     #[serde(
         default = "default_message_expiration_timeout",
         deserialize_with = "deserialize_message_expiration_timeout"
@@ -110,7 +111,8 @@ pub struct AbiConfig {
     pub message_expiration_timeout: u32,
 
     /// Factor that increases the expiration timeout for each retry
-    /// The default value is 1.5
+    ///
+    /// Default is 1.5
     #[serde(
         default = "default_message_expiration_timeout_grow_factor",
         deserialize_with = "deserialize_message_expiration_timeout_grow_factor"
