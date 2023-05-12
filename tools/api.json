@@ -681,8 +681,8 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Message lifetime for contracts which ABI includes \"expire\" header. The default value is 40 sec.",
-              "description": null
+              "summary": "Message lifetime for contracts which ABI includes \"expire\" header.",
+              "description": "Must be specified in milliseconds. Default is 40000 (40 sec)."
             },
             {
               "name": "message_expiration_timeout_grow_factor",
@@ -692,8 +692,8 @@
                 "number_type": "Float",
                 "number_size": 32
               },
-              "summary": "Factor that increases the expiration timeout for each retry The default value is 1.5",
-              "description": null
+              "summary": "Factor that increases the expiration timeout for each retry",
+              "description": "Default is 1.5"
             }
           ],
           "summary": null,
@@ -5644,8 +5644,8 @@
                 "number_type": "UInt",
                 "number_size": 32
               },
-              "summary": "Message expiration time in seconds. If not specified - calculated automatically from message_expiration_timeout(), try_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header).",
-              "description": null
+              "summary": "Message expiration timestamp (UNIX time) in seconds.",
+              "description": "If not specified - calculated automatically from message_expiration_timeout(),\ntry_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header)."
             },
             {
               "name": "time",

@@ -951,7 +951,8 @@ type FunctionHeader = {
     pubkey?: string
 }
 ```
-- `expire`?: _number_ – Message expiration time in seconds. If not specified - calculated automatically from message_expiration_timeout(), try_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header).
+- `expire`?: _number_ – Message expiration timestamp (UNIX time) in seconds.
+<br>If not specified - calculated automatically from message_expiration_timeout(),<br>try_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header).
 - `time`?: _bigint_ – Message creation time in milliseconds.
 <br>If not specified, `now` is used (if ABI includes `time` header).
 - `pubkey`?: _string_ – Public key is used by the contract to check the signature.
