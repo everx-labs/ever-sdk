@@ -25,7 +25,7 @@ use crate::{
 use std::future::Future;
 
 use crate::boc::tvc::resolve_state_init_cell;
-use crate::boc::tvc_serialization::TVC;
+use ever_struct::scheme::TVC;
 use serde_json::Value;
 use std::io::Cursor;
 use ton_abi::Contract;
@@ -950,8 +950,7 @@ const ACCOUNT_ABI: &str = r#"{
 #[test]
 fn test_decode_account_data() {
     let abi = Abi::Json(ACCOUNT_ABI.to_owned());
-    let state =
-        deserialize_object_from_base64::<StateInit>(ACCOUNT_STATE, "state").unwrap();
+    let state = deserialize_object_from_base64::<StateInit>(ACCOUNT_STATE, "state").unwrap();
     let data = serialize_cell_to_base64(&state.object.data.unwrap(), "data").unwrap();
 
     let client = TestClient::new();

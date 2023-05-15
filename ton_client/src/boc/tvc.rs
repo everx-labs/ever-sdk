@@ -18,9 +18,9 @@ use crate::boc::internal::{
     deserialize_cell_from_boc, deserialize_object_from_boc, serialize_cell_to_base64,
     serialize_object_to_cell,
 };
-use crate::boc::tvc_serialization::TVC;
 use crate::error::ClientResult;
 use crate::ClientContext;
+use ever_struct::scheme::TVC;
 use ton_block::StateInit;
 use ton_types::Cell;
 
