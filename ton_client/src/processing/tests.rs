@@ -2,8 +2,8 @@ use crate::abi::{
     CallSet, DecodedMessageBody, DeploySet, FunctionHeader, MessageBodyType, ParamsOfEncodeMessage,
     Signer,
 };
-use crate::tests::GIVER_V2;
-use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor, ResultOfRunExecutor};
+use crate::boc::internal::deserialize_object_from_cell;
+use crate::boc::tvc::resolve_state_init_cell;
 use crate::json_interface::modules::ProcessingModule;
 use crate::net::{ParamsOfQuery, ResultOfQuery};
 use crate::processing::types::DecodedOutput;
@@ -11,10 +11,14 @@ use crate::processing::{
     ErrorCode, ParamsOfProcessMessage, ParamsOfSendMessage, ParamsOfWaitForTransaction,
     ProcessingEvent, ProcessingResponseType,
 };
+use crate::tests::GIVER_V2;
 use crate::tests::{TestClient, EVENTS_OLD, HELLO};
 use crate::tvm::ErrorCode as TvmErrorCode;
+use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor, ResultOfRunExecutor};
 use crate::utils::conversion::abi_uint;
 use api_info::ApiModule;
+use ever_struct::scheme::TVC;
+use ton_block::{Serializable, StateInit};
 
 fn processing_event_name(e: Option<&ProcessingEvent>) -> &str {
     if let Some(e) = e {
@@ -29,7 +33,9 @@ fn processing_event_name(e: Option<&ProcessingEvent>) -> &str {
             ProcessingEvent::WillSend { .. } => "WillSend",
             ProcessingEvent::RempSentToValidators { .. } => "RempSentToValidators",
             ProcessingEvent::RempIncludedIntoBlock { .. } => "RempIncludedIntoBlock",
-            ProcessingEvent::RempIncludedIntoAcceptedBlock { .. } => "RempIncludedIntoAcceptedBlock",
+            ProcessingEvent::RempIncludedIntoAcceptedBlock { .. } => {
+                "RempIncludedIntoAcceptedBlock"
+            }
             ProcessingEvent::RempOther { .. } => "RempOther",
             ProcessingEvent::RempError { .. } => "RempError",
         }
@@ -89,7 +95,9 @@ async fn remp_enabled(client: &TestClient) -> bool {
         .await
         .unwrap_or_default();
 
-    info.result["data"]["info"]["rempEnabled"].as_bool().unwrap_or_default()
+    info.result["data"]["info"]["rempEnabled"]
+        .as_bool()
+        .unwrap_or_default()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 5)]
@@ -104,7 +112,11 @@ async fn test_wait_message() {
     let events_copy = events.clone();
     let callback = move |result: ProcessingEvent, response_type: ProcessingResponseType| {
         assert_eq!(response_type, ProcessingResponseType::ProcessingEvent);
-        println!("{} {:#}", chrono::prelude::Utc::now().timestamp_millis(), json!(result));
+        println!(
+            "{} {:#}",
+            chrono::prelude::Utc::now().timestamp_millis(),
+            json!(result)
+        );
         let events_copy = events_copy.clone();
         async move {
             events_copy.lock().await.push(result);
@@ -577,7 +589,7 @@ async fn test_fees() {
                 "dest": address.to_string(),
                 "value": 100_000_000u64,
                 "bounce": false
-            })
+            }),
         ),
         signer: Signer::Keys { keys },
         ..Default::default()
@@ -588,22 +600,22 @@ async fn test_fees() {
         .unwrap()
         .into();
 
-    let message = client
-        .encode_message(params.clone())
+    let message = client.encode_message(params.clone()).await.unwrap();
+
+    let local_result: ResultOfRunExecutor = client
+        .request_async(
+            "tvm.run_executor",
+            ParamsOfRunExecutor {
+                account: AccountForExecutor::Account {
+                    boc: account,
+                    unlimited_balance: None,
+                },
+                message: message.message,
+                ..Default::default()
+            },
+        )
         .await
         .unwrap();
-
-    let local_result: ResultOfRunExecutor = client.request_async(
-        "tvm.run_executor",
-        ParamsOfRunExecutor {
-            account: AccountForExecutor::Account {
-                boc: account,
-                unlimited_balance: None
-            },
-            message: message.message,
-            ..Default::default()
-        }
-    ).await.unwrap();
 
     let run_result = client
         .net_process_message(
@@ -612,23 +624,143 @@ async fn test_fees() {
                 send_events: false,
             },
             TestClient::default_callback,
-        ).await.unwrap();
+        )
+        .await
+        .unwrap();
 
     assert_eq!(local_result.fees.gas_fee, run_result.fees.gas_fee);
-    assert_eq!(local_result.fees.out_msgs_fwd_fee, run_result.fees.out_msgs_fwd_fee);
-    assert_eq!(local_result.fees.in_msg_fwd_fee, run_result.fees.in_msg_fwd_fee);
+    assert_eq!(
+        local_result.fees.out_msgs_fwd_fee,
+        run_result.fees.out_msgs_fwd_fee
+    );
+    assert_eq!(
+        local_result.fees.in_msg_fwd_fee,
+        run_result.fees.in_msg_fwd_fee
+    );
     assert_eq!(local_result.fees.total_output, run_result.fees.total_output);
     assert_eq!(local_result.fees.total_output, 100_000_000u64);
     assert_eq!(
         local_result.fees.total_account_fees - local_result.fees.storage_fee,
-        run_result.fees.total_account_fees - run_result.fees.storage_fee);
+        run_result.fees.total_account_fees - run_result.fees.storage_fee
+    );
     assert!(run_result.fees.storage_fee >= local_result.fees.storage_fee);
 
     assert!(local_result.fees.gas_fee > 0);
     assert!(local_result.fees.out_msgs_fwd_fee > 0);
     assert!(local_result.fees.in_msg_fwd_fee > 0);
     assert!(local_result.fees.total_account_fees > 0);
-    assert_eq!(local_result.fees.total_account_fees, local_result.fees.account_fees);
-    assert_eq!(local_result.fees.ext_in_msg_fee, local_result.fees.in_msg_fwd_fee);
-    assert_eq!(local_result.fees.total_fwd_fees, local_result.fees.out_msgs_fwd_fee);
+    assert_eq!(
+        local_result.fees.total_account_fees,
+        local_result.fees.account_fees
+    );
+    assert_eq!(
+        local_result.fees.ext_in_msg_fee,
+        local_result.fees.in_msg_fwd_fee
+    );
+    assert_eq!(
+        local_result.fees.total_fwd_fees,
+        local_result.fees.out_msgs_fwd_fee
+    );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_deploy_from_tvc_v1() {
+    TestClient::init_log();
+    let client = TestClient::new();
+    let (events_abi, events_state_init) = TestClient::package(EVENTS_OLD, Some(2));
+    let state_init_cell =
+        resolve_state_init_cell(&client.context(), &events_state_init.clone().unwrap())
+            .await
+            .unwrap();
+    let state_init =
+        deserialize_object_from_cell::<StateInit>(state_init_cell.clone(), "state init").unwrap();
+    let tvc = base64::encode(
+        &TVC::new(
+            Some(state_init.code.clone().unwrap()),
+            Some("Some Contract".to_string()),
+        )
+        .write_to_bytes()
+        .unwrap(),
+    );
+
+    let keys = client.generate_sign_keys();
+    let abi = events_abi.clone();
+
+    let encode_params = ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        deploy_set: DeploySet::some_with_tvc(Some(tvc)),
+        call_set: Some(CallSet {
+            function_name: "constructor".into(),
+            header: Some(FunctionHeader {
+                expire: None,
+                time: None,
+                pubkey: Some(keys.public.clone()),
+            }),
+            input: None,
+        }),
+        signer: Signer::Keys { keys: keys.clone() },
+        ..Default::default()
+    };
+
+    let encoded = client.encode_message(encode_params.clone()).await.unwrap();
+
+    client
+        .get_tokens_from_giver_async(&encoded.address, None)
+        .await;
+
+    let _ = client
+        .net_process_message(
+            ParamsOfProcessMessage {
+                message_encode_params: encode_params,
+                send_events: false,
+            },
+            |_: ProcessingEvent, _: ProcessingResponseType| async {},
+        )
+        .await
+        .unwrap();
+
+    let output = client
+        .net_process_message(
+            ParamsOfProcessMessage {
+                message_encode_params: ParamsOfEncodeMessage {
+                    abi: abi.clone(),
+                    address: Some(encoded.address.clone()),
+                    call_set: CallSet::some_with_function_and_input(
+                        "returnValue",
+                        json!({
+                            "id": "0x1"
+                        }),
+                    ),
+                    signer: Signer::Keys { keys: keys.clone() },
+                    ..Default::default()
+                },
+                send_events: false,
+            },
+            move |_: ProcessingEvent, _: ProcessingResponseType| async {},
+        )
+        .await
+        .unwrap();
+    assert_eq!(output.out_messages.len(), 2);
+    assert_eq!(
+        output.decoded,
+        Some(DecodedOutput {
+            out_messages: vec![
+                Some(DecodedMessageBody {
+                    body_type: MessageBodyType::Event,
+                    name: "EventThrown".into(),
+                    value: Some(json!({"id": abi_uint(1, 256)})),
+                    header: None,
+                }),
+                Some(DecodedMessageBody {
+                    body_type: MessageBodyType::Output,
+                    name: "returnValue".into(),
+                    value: Some(json!({"value0": abi_uint(1, 256)})),
+                    header: None,
+                })
+            ],
+            output: Some(json!({
+                "value0": abi_uint(1, 256)
+            })),
+        })
+    );
 }
