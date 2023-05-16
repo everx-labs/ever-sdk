@@ -976,13 +976,17 @@ type CallSet = {
 ## DeploySet
 ```ts
 type DeploySet = {
-    tvc: string,
+    tvc?: string,
+    code?: string,
+    state_init?: string,
     workchain_id?: number,
     initial_data?: any,
     initial_pubkey?: string
 }
 ```
-- `tvc`: _string_ – Content of TVC file encoded in `base64`.
+- `tvc`?: _string_ – Content of TVC file encoded in `base64`. For compatibility reason this field can contain an encoded  `StateInit`.
+- `code`?: _string_ – Contract code BOC encoded with base64.
+- `state_init`?: _string_ – State init BOC encoded with base64.
 - `workchain_id`?: _number_ – Target workchain for destination address.
 <br>Default is `0`.
 - `initial_data`?: _any_ – List of initial values for contract's public variables.
