@@ -137,11 +137,15 @@ impl<Sdk: MessageMonitorSdkServices + Send + Sync> MonitorState<Sdk> {
 
     fn get_queue_info(&self, queue: &str) -> crate::error::Result<MonitoringQueueInfo> {
         let queues = self.queues.read().unwrap();
-        let (unresolved, resolved) = if let Some(queue) = queues.get(queue) {
+        let (mut unresolved, resolved) = if let Some(queue) = queues.get(queue) {
             (queue.unresolved.len() as u32, queue.resolved.len() as u32)
         } else {
             (0, 0)
         };
+        let buffering = self.buffering.lock().unwrap();
+        if let Some(queue) = buffering.messages.get(queue) {
+            unresolved += queue.len() as u32;
+        }
         Ok(MonitoringQueueInfo {
             unresolved,
             resolved,

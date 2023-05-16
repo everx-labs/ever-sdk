@@ -18,6 +18,9 @@ async fn test_fetch() {
     mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
         .await
         .unwrap();
+    let info = mon.get_queue_info("1").unwrap();
+    assert_eq!(info.resolved, 0);
+    assert_eq!(info.unresolved, 2);
     let results = mon
         .fetch_next_monitor_results("1", MonitorFetchWaitMode::NoWait)
         .await
