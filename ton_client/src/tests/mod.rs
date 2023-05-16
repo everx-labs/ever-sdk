@@ -121,7 +121,9 @@ pub const SUBSCRIBE: &str = "Subscription";
 pub const GIVER_V3: &str = "GiverV3";
 pub const GIVER_V2: &str = "GiverV2";
 pub const HELLO: &str = "Hello";
+pub const EVENTS_OLD: &str = "EventsOld";
 pub const EVENTS: &str = "Events";
+pub const T24_INIT_DATA: &str = "t24_initdata";
 pub const TEST_DEBOT: &str = "testDebot";
 pub const TEST_DEBOT_TARGET: &str = "testDebotTarget";
 pub const EXCEPTION: &str = "Exception";
@@ -293,7 +295,7 @@ impl TestClient {
         }
     }
 
-    pub fn giver_tvc() -> String {
+    pub fn giver_tvc() -> Option<String> {
         match env::giver_type().as_str() {
             "v3" => Self::tvc(GIVER_V3, Some(2)),
             "v2" => Self::tvc(GIVER_V2, Some(2)),
@@ -400,10 +402,10 @@ impl TestClient {
         ))
     }
 
-    pub fn tvc(name: &str, abi_version: Option<u8>) -> String {
-        base64::encode(
+    pub fn tvc(name: &str, abi_version: Option<u8>) -> Option<String> {
+        Some(base64::encode(
             &std::fs::read(format!("{}{}.tvc", Self::contracts_path(abi_version), name)).unwrap(),
-        )
+        ))
     }
 
     pub fn icon(name: &str, abi_version: Option<u8>) -> String {
@@ -413,7 +415,7 @@ impl TestClient {
         format!("data:image/png;base64,{}", image_base64)
     }
 
-    pub fn package(name: &str, abi_version: Option<u8>) -> (Abi, String) {
+    pub fn package(name: &str, abi_version: Option<u8>) -> (Abi, Option<String>) {
         (Self::abi(name, abi_version), Self::tvc(name, abi_version))
     }
 

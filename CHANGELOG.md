@@ -16,6 +16,15 @@ All notable changes to this project will be documented in this file.
 - Version of `ton_types` upped to 2.0.0
 - Fixed code for changed dependencies api
 - Removed logic related to client-server clock sync
+- `boc.encode_tvc` and `boc.decode_tvc` are renamed to `boc.encode_state_init` 
+  and `boc.decode_state_init`.
+- `boc.decode_tvc` decodes TVC BOC according to the TVC spec.
+- `DeploySet.tvc` supports new TVC file format (according to new TVC spec).
+  Old tvc files (with serialized state init) are also supported.
+- `DeploySet.state_init` allows to specify serialized state init.
+- `DeploySet.code` allows to construct state init from provided serialized code.
+- `DeploySet`'s fields `tvc`, `state_init` and `code` are mutually exclusive (so you should
+  provide value for one of these fields). 
 
 ## [1.42.1] – 2023-03-23
 

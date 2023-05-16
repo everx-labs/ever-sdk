@@ -113,17 +113,12 @@ impl ContractImage {
     }
 
     pub fn get_public_key(&self) -> Result<Option<PublicKey>> {
-        let data = self.state_init.data
-            .clone()
-            .ok_or_else(
-                || SdkError::InvalidData {
-                    msg: "State init has no data".to_owned()
-                }
-            )?;
+        let Some(data) = self.state_init.data.clone() else {
+            return Ok(None);
+        };
         Ok(AbiContract::get_pubkey(&SliceData::load_cell(data)?)?
             .map(|pub_key| PublicKey::from_bytes(&pub_key))
-            .transpose()?
-        )
+            .transpose()?)
     }
 
     pub fn set_public_key(&mut self, pub_key: &PublicKey) -> Result<()> {
@@ -216,7 +211,13 @@ impl Contract {
         internal: bool,
         allow_partial: bool,
     ) -> Result<String> {
-        ton_abi::json_abi::decode_function_response(abi, function, response, internal, allow_partial)
+        ton_abi::json_abi::decode_function_response(
+            abi,
+            function,
+            response,
+            internal,
+            allow_partial,
+        )
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
@@ -297,7 +298,10 @@ impl Contract {
             Some(address.to_string()),
         )?;
 
-        let msg = Self::create_ext_in_message(address.clone(), SliceData::load_cell(msg_body.into_cell()?)?)?;
+        let msg = Self::create_ext_in_message(
+            address.clone(),
+            SliceData::load_cell(msg_body.into_cell()?)?,
+        )?;
         let (body, id) = Self::serialize_message(&msg)?;
         Ok(SdkMessage {
             id,
@@ -347,7 +351,14 @@ impl Contract {
         value: CurrencyCollection,
         msg_body: Option<SliceData>,
     ) -> Result<SdkMessage> {
-        let msg = Self::create_int_message(ihr_disabled, bounce, dst_address.clone(), src_address, value, msg_body)?;
+        let msg = Self::create_int_message(
+            ihr_disabled,
+            bounce,
+            dst_address.clone(),
+            src_address,
+            value,
+            msg_body,
+        )?;
         let (body, id) = Self::serialize_message(&msg)?;
         Ok(SdkMessage {
             id,
@@ -373,7 +384,8 @@ impl Contract {
             Some(address.to_string()),
         )?;
 
-        let msg = Self::create_ext_in_message(address, SliceData::load_cell(msg_body.into_cell()?)?)?;
+        let msg =
+            Self::create_ext_in_message(address, SliceData::load_cell(msg_body.into_cell()?)?)?;
 
         Self::serialize_message(&msg).map(|(msg_data, _id)| MessageToSign {
             message: msg_data,
@@ -409,7 +421,7 @@ impl Contract {
             Some(address) => address.clone(),
             None => fail!(SdkError::InternalError {
                 msg: "No address in created deploy message".to_owned()
-            })
+            }),
         };
         let (body, id) = Self::serialize_message(&msg)?;
 
@@ -505,10 +517,17 @@ impl Contract {
         )?;
 
         let cell = SliceData::load_cell(msg_body.into_cell()?)?;
-        let msg = Self::create_int_deploy_message(src, Some(cell), image, workchain_id, ihr_disabled, bounce, value)?;
+        let msg = Self::create_int_deploy_message(
+            src,
+            Some(cell),
+            image,
+            workchain_id,
+            ihr_disabled,
+            bounce,
+            value,
+        )?;
 
-        Self::serialize_message(&msg)
-            .map(|(msg_data, _id)| msg_data)
+        Self::serialize_message(&msg).map(|(msg_data, _id)| msg_data)
     }
 
     // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or
@@ -535,7 +554,7 @@ impl Contract {
             Some(address) => address.clone(),
             None => fail!(SdkError::InternalError {
                 msg: "No address in signed message".to_owned()
-            })
+            }),
         };
         let (body, id) = Self::serialize_message(&message)?;
 
@@ -569,9 +588,9 @@ impl Contract {
 
         let address = match message.dst_ref() {
             Some(address) => address.clone(),
-            None => fail!(SdkError::InternalError{
+            None => fail!(SdkError::InternalError {
                 msg: "No address in signed message".to_owned()
-            })
+            }),
         };
         let (body, id) = Self::serialize_message(&message)?;
 
@@ -676,7 +695,7 @@ impl Contract {
             Some(address) => Ok(address.clone()),
             None => fail!(SdkError::InvalidData {
                 msg: "Wrong message type (extOut)".to_owned()
-            })
+            }),
         }
     }
 

@@ -16,9 +16,10 @@ use crate::abi::{
     CallSet, DeploySet, FunctionHeader, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::api_info::ApiModule;
+use crate::boc::tvc::{ParamsOfDecodeTvc, ResultOfDecodeTvc};
 use crate::crypto::KeyPair;
 use crate::json_interface::modules::BocModule;
-use crate::tests::{TestClient, EVENTS};
+use crate::tests::{TestClient, EVENTS_OLD};
 use internal::serialize_cell_to_base64;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
@@ -118,7 +119,9 @@ async fn test_encode_boc() {
         .append_builder(&burner_address)
         .unwrap();
     let inner_cell = inner_builder.into_cell().unwrap();
-    builder.checked_append_reference(inner_cell.clone()).unwrap();
+    builder
+        .checked_append_reference(inner_cell.clone())
+        .unwrap();
 
     let cell = builder.into_cell().unwrap();
     let boc = serialize_cell_to_base64(&cell, "cell").unwrap();
@@ -192,8 +195,8 @@ async fn test_pinned_cache() {
         super::cache::cache_unpin_api(),
     );
 
-    let boc1 = TestClient::tvc(crate::tests::HELLO, None);
-    let boc2 = TestClient::tvc(crate::tests::EVENTS, None);
+    let boc1 = TestClient::tvc(crate::tests::HELLO, None).unwrap();
+    let boc2 = TestClient::tvc(EVENTS_OLD, None).unwrap();
 
     let pin1 = "pin1".to_owned();
     let pin2 = "pin2".to_owned();
@@ -341,8 +344,8 @@ async fn test_pinned_cache() {
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_unpinned_cache() {
-    let boc1 = TestClient::tvc(crate::tests::TEST_DEBOT, None);
-    let boc2 = TestClient::tvc(crate::tests::SUBSCRIBE, None);
+    let boc1 = TestClient::tvc(crate::tests::TEST_DEBOT, None).unwrap();
+    let boc2 = TestClient::tvc(crate::tests::SUBSCRIBE, None).unwrap();
 
     let boc_max_size = std::cmp::max(
         base64::decode(&boc1).unwrap().len(),
@@ -404,9 +407,9 @@ async fn test_unpinned_cache() {
 fn get_boc_hash() {
     let client = TestClient::new();
 
-    let result: super::ResultOfGetBocHash = client.request(
+    let result: ResultOfGetBocHash = client.request(
         "boc.get_boc_hash",
-        super::ParamsOfGetBocHash {
+        ParamsOfGetBocHash {
             boc: String::from("te6ccgEBAQEAWAAAq2n+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAE/zMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzMzSsG8DgAAAAAjuOu9NAL7BxYpA")
         }
     ).unwrap();
@@ -421,10 +424,10 @@ fn get_boc_hash() {
 fn get_boc_depth() {
     let client = TestClient::new();
 
-    let result: super::ResultOfGetBocDepth = client
+    let result: ResultOfGetBocDepth = client
         .request(
             "boc.get_boc_depth",
-            super::ParamsOfGetBocDepth {
+            ParamsOfGetBocDepth {
                 boc: base64::encode(include_bytes!("test_data/account.boc")),
             },
         )
@@ -437,9 +440,9 @@ fn get_boc_depth() {
 fn get_code_from_tvc() {
     let client = TestClient::new();
 
-    let result: super::ResultOfGetCodeFromTvc = client.request(
+    let result: ResultOfGetCodeFromTvc = client.request(
         "boc.get_code_from_tvc",
-        super::ParamsOfGetCodeFromTvc {
+        ParamsOfGetCodeFromTvc {
             tvc: String::from("te6ccgECHAEABDkAAgE0BgEBAcACAgPPIAUDAQHeBAAD0CAAQdgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABAIm/wD0pCAiwAGS9KDhiu1TWDD0oQkHAQr0pCD0oQgAAAIBIAwKAej/fyHTAAGOJoECANcYIPkBAXDtRND0BYBA9A7yitcL/wHtRyJvde1XAwH5EPKo3u1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi0z8B7UdvEyG5IAsAYJ8wIPgjgQPoqIIIG3dAoLneme1HIW9TIO1XMJSANPLw4jDTHwH4I7zyudMfAfFAAQIBIBgNAgEgEQ4BCbqLVfP4DwH67UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi3u1HbxaS8jOX7Udxb1btV+IA+ADR+CO1H+1HIG8RMAHIyx/J0G9R7VftR28SyPQA7UdvE88LP+1HbxYQABzPCwDtR28RzxbJ7VRwagIBahUSAQm0ABrWwBMB/O1Hb2FujjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t7tR29lIG6SMHDecO1HbxKAQPQO8orXC/+68uBk+AD6QNEgyMn7BIED6HCBAIDIcc8LASLPCgBxz0D4KBQAjs8WJM8WI/oCcc9AcPoCcPoCgEDPQPgjzwsfcs9AIMki+wBfBTDtR28SyPQA7UdvE88LP+1HbxbPCwDtR28RzxbJ7VRwatswAQm0ZfaLwBYB+O1Hb2FujjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t7R7UdvEdcLH8iCEFDL7ReCEIAAAACxzwsfIc8LH8hzzwsB+CjPFnLPQPglzws/gCHPQCDPNSLPMbwXAHiWcc9AIc8XlXHPQSHN4iDJcfsAWyHA/44e7UdvEsj0AO1HbxPPCz/tR28WzwsA7UdvEc8Wye1U3nFq2zACASAbGQEJu3MS5FgaAPjtR29hbo477UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+Le+ADR+CO1H+1HIG8RMAHIyx/J0G9R7VftR28SyPQA7UdvE88LP+1HbxbPCwDtR28RzxbJ7VRwatswAMrdcCHXSSDBII4rIMAAjhwj0HPXIdcLACDAAZbbMF8H2zCW2zBfB9sw4wTZltswXwbbMOME2eAi0x80IHS7II4VMCCCEP////+6IJkwIIIQ/////rrf35bbMF8H2zDgIyHxQAFfBw==")
         }
     ).unwrap();
@@ -448,6 +451,20 @@ fn get_code_from_tvc() {
         result.code,
         "te6ccgECFgEAA/8AAib/APSkICLAAZL0oOGK7VNYMPShAwEBCvSkIPShAgAAAgEgBgQB6P9/IdMAAY4mgQIA1xgg+QEBcO1E0PQFgED0DvKK1wv/Ae1HIm917VcDAfkQ8qje7UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+LTPwHtR28TIbkgBQBgnzAg+COBA+iogggbd0Cgud6Z7Uchb1Mg7VcwlIA08vDiMNMfAfgjvPK50x8B8UABAgEgEgcCASALCAEJuotV8/gJAfrtR29hbo477UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+Le7UdvFpLyM5ftR3FvVu1X4gD4ANH4I7Uf7UcgbxEwAcjLH8nQb1HtV+1HbxLI9ADtR28Tzws/7UdvFgoAHM8LAO1HbxHPFsntVHBqAgFqDwwBCbQAGtbADQH87UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi3u1Hb2UgbpIwcN5w7UdvEoBA9A7yitcL/7ry4GT4APpA0SDIyfsEgQPocIEAgMhxzwsBIs8KAHHPQPgoDgCOzxYkzxYj+gJxz0Bw+gJw+gKAQM9A+CPPCx9yz0AgySL7AF8FMO1HbxLI9ADtR28Tzws/7UdvFs8LAO1HbxHPFsntVHBq2zABCbRl9ovAEAH47UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi3tHtR28R1wsfyIIQUMvtF4IQgAAAALHPCx8hzwsfyHPPCwH4KM8Wcs9A+CXPCz+AIc9AIM81Is8xvBEAeJZxz0AhzxeVcc9BIc3iIMlx+wBbIcD/jh7tR28SyPQA7UdvE88LP+1HbxbPCwDtR28RzxbJ7VTecWrbMAIBIBUTAQm7cxLkWBQA+O1Hb2FujjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t74ANH4I7Uf7UcgbxEwAcjLH8nQb1HtV+1HbxLI9ADtR28Tzws/7UdvFs8LAO1HbxHPFsntVHBq2zAAyt1wIddJIMEgjisgwACOHCPQc9ch1wsAIMABltswXwfbMJbbMF8H2zDjBNmW2zBfBtsw4wTZ4CLTHzQgdLsgjhUwIIIQ/////7ogmTAgghD////+ut/fltswXwfbMOAjIfFAAV8H"
     );
+
+    let tvc_boc = "te6ccgEBBQEAMgACCQFn9wzgAwEBAtACACZTb21lIFNtYXJ0IENvbnRyYWN0ART/APSkE/S88sgLBAAC0w==";
+    let code_boc = "te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT";
+
+    let result: ResultOfGetCodeFromTvc = client
+        .request(
+            "boc.get_code_from_tvc",
+            ParamsOfGetCodeFromTvc {
+                tvc: tvc_boc.to_string(),
+            },
+        )
+        .unwrap();
+
+    assert_eq!(result.code, code_boc);
 }
 
 #[test]
@@ -733,22 +750,22 @@ fn test_code_salt() {
     assert_eq!(result.salt, None);
 }
 
-fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeTvc) {
-    let result: ResultOfDecodeTvc = client
+fn check_encode_state_init(client: &TestClient, tvc: String, decoded: ResultOfDecodeStateInit) {
+    let result: ResultOfDecodeStateInit = client
         .request(
-            "boc.decode_tvc",
-            ParamsOfDecodeTvc {
-                tvc: tvc.clone(),
+            "boc.decode_state_init",
+            ParamsOfDecodeStateInit {
+                state_init: tvc.clone(),
                 boc_cache: None,
             },
         )
         .unwrap();
     assert_eq!(result, decoded);
 
-    let result: ResultOfEncodeTvc = client
+    let result: ResultOfEncodeStateInit = client
         .request(
-            "boc.encode_tvc",
-            ParamsOfEncodeTvc {
+            "boc.encode_state_init",
+            ParamsOfEncodeStateInit {
                 code: result.code,
                 data: result.data,
                 library: result.library,
@@ -759,15 +776,15 @@ fn check_encode_tvc(client: &TestClient, tvc: String, decoded: ResultOfDecodeTvc
             },
         )
         .unwrap();
-    assert_eq!(result.tvc, tvc);
+    assert_eq!(result.state_init, tvc);
 }
 
 #[test]
-fn test_tvc_encode() {
+fn test_state_init_encode() {
     let client = TestClient::new();
 
-    let tvc = TestClient::tvc("t24_initdata", Some(2));
-    let decoded = ResultOfDecodeTvc {
+    let state_init = TestClient::tvc("t24_initdata", Some(2));
+    let decoded = ResultOfDecodeStateInit {
         code: Some(String::from("te6ccgECEAEAAYkABCSK7VMg4wMgwP/jAiDA/uMC8gsNAgEPAoTtRNDXScMB+GYh2zzTAAGfgQIA1xgg+QFY+EL5EPKo3tM/AfhDIbnytCD4I4ED6KiCCBt3QKC58rT4Y9MfAds88jwFAwNK7UTQ10nDAfhmItDXCwOpOADcIccA4wIh1w0f8rwh4wMB2zzyPAwMAwIoIIIQBoFGw7rjAiCCEGi1Xz+64wIIBAIiMPhCbuMA+Ebyc9H4ANs88gAFCQIW7UTQ10nCAYqOgOILBgFccO1E0PQFcSGAQPQOk9cLB5Fw4vhqciGAQPQPjoDf+GuAQPQO8r3XC//4YnD4YwcBAogPA3Aw+Eby4Ez4Qm7jANHbPCKOICTQ0wH6QDAxyM+HIM6AYs9AXgHPkhoFGw7LB8zJcPsAkVvi4wDyAAsKCQAq+Ev4SvhD+ELIy//LP8+DywfMye1UAAj4SvhLACztRNDT/9M/0wAx0wfU0fhr+Gr4Y/hiAAr4RvLgTAIK9KQg9KEPDgAUc29sIDAuNTEuMAAA")),
         code_depth: Some(7),
         code_hash: Some(String::from("0ad23f96d7b1c1ce78dae573ac8cdf71523dc30f36316b5aaa5eb3cc540df0e0")),
@@ -781,10 +798,10 @@ fn test_tvc_encode() {
         compiler_version: Some("sol 0.51.0".to_owned()),
     };
 
-    check_encode_tvc(&client, tvc, decoded);
+    check_encode_state_init(&client, state_init.unwrap(), decoded);
 
-    let tvc = base64::encode(include_bytes!("test_data/state_init_lib.boc"));
-    let decoded = ResultOfDecodeTvc {
+    let state_init = base64::encode(include_bytes!("test_data/state_init_lib.boc"));
+    let decoded = ResultOfDecodeStateInit {
         code: Some(String::from("te6ccgEBBAEAhwABFP8A9KQT9LzyyAsBAgEgAwIA36X//3aiaGmP6f/o5CxSZ4WPkOeF/+T2qmRnxET/s2X/wQgC+vCAfQFANeegZLh9gEB354V/wQgD39JAfQFANeegZLhkZ82JA6Mrm6RBCAOt5or9AUA156BF6kMrY2N5YQO7e5NjIQxni2S4fYB9gEAAAtI=")),
         code_depth: Some(2),
         code_hash: Some(String::from("45910e27fe37d8dcf1fac777ebb3bda38ae1ea8389f81bfb1bc0079f3f67ef5b")),
@@ -798,20 +815,20 @@ fn test_tvc_encode() {
         compiler_version: None,
     };
 
-    check_encode_tvc(&client, tvc, decoded);
+    check_encode_state_init(&client, state_init, decoded);
 }
 
 #[test]
 fn test_get_compiler_version() {
     let client = TestClient::new();
 
-    let tvc = TestClient::tvc("t24_initdata", Some(2));
+    let state_init = TestClient::tvc("t24_initdata", Some(2)).unwrap();
 
     let code = client
-        .request::<_, ResultOfDecodeTvc>(
-            "boc.decode_tvc",
-            ParamsOfDecodeTvc {
-                tvc,
+        .request::<_, ResultOfDecodeStateInit>(
+            "boc.decode_state_init",
+            ParamsOfDecodeStateInit {
+                state_init,
                 boc_cache: None,
             },
         )
@@ -833,7 +850,7 @@ fn test_get_compiler_version() {
 fn encode_external_in_message() {
     TestClient::init_log();
     let client = TestClient::new_with_config(serde_json::json!({}));
-    let (events_abi, events_tvc) = TestClient::package(EVENTS, Some(2));
+    let (events_abi, events_tvc) = TestClient::package(EVENTS_OLD, Some(2));
     let keys = KeyPair {
         public: "4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499".into(),
         secret: "cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7".into(),
@@ -878,18 +895,24 @@ fn encode_external_in_message() {
         )
         .unwrap()
         .parsed;
-    let init = client.request::<ParamsOfEncodeTvc, ResultOfEncodeTvc>("boc.encode_tvc", ParamsOfEncodeTvc {
-        code: abi_parsed["code"].as_str().map(|x|x.to_string()),
-        data: abi_parsed["data"].as_str().map(|x|x.to_string()),
-        library: abi_parsed["library"].as_str().map(|x|x.to_string()),
-        ..Default::default()
-    }).unwrap().tvc;
+    let init = client
+        .request::<ParamsOfEncodeStateInit, ResultOfEncodeStateInit>(
+            "boc.encode_state_init",
+            ParamsOfEncodeStateInit {
+                code: abi_parsed["code"].as_str().map(|x| x.to_string()),
+                data: abi_parsed["data"].as_str().map(|x| x.to_string()),
+                library: abi_parsed["library"].as_str().map(|x| x.to_string()),
+                ..Default::default()
+            },
+        )
+        .unwrap()
+        .state_init;
     let boc_encoded: ResultOfEncodeExternalInMessage = client
         .request(
             "boc.encode_external_in_message",
             ParamsOfEncodeExternalInMessage {
                 dst: abi_encoded.address.clone(),
-                body: abi_parsed["body"].as_str().map(|x|x.to_string()),
+                body: abi_parsed["body"].as_str().map(|x| x.to_string()),
                 init: Some(init),
                 ..Default::default()
             },
@@ -897,4 +920,50 @@ fn encode_external_in_message() {
         .unwrap();
 
     assert_eq!(boc_encoded.message, abi_encoded.message);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_decode_tvc() {
+    let client = TestClient::new();
+    let tvc_boc = "te6ccgEBBQEAMgACCQFn9wzgAwEBAtACACZTb21lIFNtYXJ0IENvbnRyYWN0ART/APSkE/S88sgLBAAC0w==";
+    let code_boc = "te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT";
+    let description = "Some Smart Contract";
+
+    let expected = ResultOfDecodeTvc {
+        tvc: Tvc::V1(TvcV1 {
+            code: Some(code_boc.to_string()),
+            description: Some(description.to_string()),
+        }),
+    };
+
+    let decoded = decode_tvc(
+        client.context().clone(),
+        ParamsOfDecodeTvc {
+            tvc: tvc_boc.to_string(),
+        },
+    )
+    .await
+    .unwrap();
+    assert_eq!(expected, decoded);
+
+    let expected = json!({
+        "tvc": {
+            "type": "V1",
+            "value": {
+                "code": code_boc,
+                "description": description
+            },
+        },
+    });
+
+    let decoded = client
+        .request_async::<Value, Value>(
+            "boc.decode_tvc",
+            json!({
+                "tvc": tvc_boc,
+            }),
+        )
+        .await
+        .unwrap();
+    assert_eq!(expected, decoded);
 }
