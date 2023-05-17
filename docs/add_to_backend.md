@@ -13,7 +13,7 @@ This document describes the various ways to accomplish the most important tasks 
 There are a few different ways to accomplish the necessary tasks:
 
 * Blockchain access may be set up either through the [Evercloud](https://docs.evercloud.dev/products/evercloud/get-started) or through your own supernode - the [DApp server](https://docs.evercloud.dev/products/dapp-server-ds).
-* Deposit account management can be accomplished either through the [everdev](https://docs.everos.dev/everdev/) command line tool or integrate into your backend with  EVER-SDK client libraries. Both of these approaches are compatible with either of the blockchain access setups.
+* User account management can be accomplished either through the [everdev](https://docs.everos.dev/everdev/) command line tool or integrate into your backend with  EVER-SDK client libraries. Both of these approaches are compatible with either of the blockchain access setups.
 
 ## Setting up Blockchain Access
 
@@ -116,7 +116,7 @@ If the `timediff` parameter is less than 10 seconds, synchronization with master
 
 ## Setting up Wallet Account
 
-Currently we can recommend the [SetcodeMultisig](https://github.com/EverSurf/multisig2) contract for use in deposit accounts. It is well tested and secure, supports multiple custodians, and can be set up to require several independent signatures for any transfers.&#x20;
+Currently we can recommend the [SetcodeMultisig](https://github.com/EverSurf/multisig2) contract for use in user accounts. It is well tested and secure, supports multiple custodians, and can be set up to require several independent signatures for any transfers.&#x20;
 
 ### Using CLI tool&#x20;
 
@@ -214,7 +214,7 @@ Execute the commands of the following steps from the directory with the contract
 To generate your wallet account signer enter the following command:
 
 ```shell
-everdev signer generate deposit_signer
+everdev signer generate wallet_signer
 ```
 
 Or, if you already have a seed phrase, add it like this:
@@ -226,14 +226,14 @@ everdev signer add "your-seed-phrase-here"
 To deploy multisig wallet account you will need to specify the public key of the signer. To view it, use the following command:
 
 ```sh
-everdev signer info deposit_signer
+everdev signer info wallet_signer
 ```
 
 The keys will be displayed in terminal (if you imported the seed phrase, it will be displayed here as well):
 
 ```sh
 {
-    "name": "deposit_signer",
+    "name": "wallet_signer",
     "description": "",
     "keys": {
         "public": "8f8779e7c1944b133a423df96d06ae770c996f19d63438dbf2f569a29529b248",
@@ -250,14 +250,14 @@ Usually a single owner (with a single signer) per wallet account is optimal for 
 Use the following command for a simple one-owner account:
 
 ```shell
-everdev contract deploy SetcodeMultisig.abi.json constructor --signer deposit_signer --input owners:[<owner_public_key>],reqConfirms:1,lifetime:3600 --value 1000000000
+everdev contract deploy SetcodeMultisig.abi.json constructor --signer wallet_signer --input owners:[<owner_public_key>],reqConfirms:1,lifetime:3600 --value 1000000000
 ```
 
 Where&#x20;
 
 `value` parameter is the amount of nanotokens to be spent on deployment (can be omitted, in which case 10 tokens from giver will be spent)
 
-`owner_public_key` is usually [the public key](add\_to\_backend.md#6.-create-deposit-account-signer) of `deposit_signer` in the form `0x...`.
+`owner_public_key` is usually [the public key](add\_to\_backend.md#6.-create-deposit-account-signer) of `wallet_signer` in the form `0x...`.
 
 `lifetime` - time in seconds that a transaction in multi-owner accounts will persits and be available for signing by other owners. For a simple multi owner account may be set to any value, as it will be executed immediately anyway.
 
@@ -265,21 +265,21 @@ Example:
 
 {% code overflow="wrap" %}
 ```sh
-everdev contract deploy SetcodeMultisig.abi.json constructor --signer deposit_signer --input owners:[0x8f8779e7c1944b133a423df96d06ae770c996f19d63438dbf2f569a29529b248],reqConfirms:1,lifetime:3600 --value 1000000000
+everdev contract deploy SetcodeMultisig.abi.json constructor --signer wallet_signer --input owners:[0x8f8779e7c1944b133a423df96d06ae770c996f19d63438dbf2f569a29529b248],reqConfirms:1,lifetime:3600 --value 1000000000
 ```
 {% endcode %}
 
-For more complex cases (multiple owners etc.) view Everdev contract tool [docs](https://docs.everos.dev/everdev/command-line-interface/contract-management) and [guides](https://docs.everos.dev/everdev/guides/work-with-contracts).
+For more complex cases (multiple owners etc.) view Everdev contract tool [docs](https://docs.everos.dev/everdev/command-line-interface/contract-management).
 
 Once the contract is deployed, its address will be displayed in terminal.
 
 ```sh
-everdev contract deploy SetcodeMultisig.abi.json constructor --signer deposit_signer --input owners:[0x3da1909b7a4bd11fd9a1d79ca9713a9a8645880e0a7a12f9691c68e95d56fe75],reqConfirms:1,lifetime:3600 --value 10000000000
+everdev contract deploy SetcodeMultisig.abi.json constructor --signer wallet_signer --input owners:[0x3da1909b7a4bd11fd9a1d79ca9713a9a8645880e0a7a12f9691c68e95d56fe75],reqConfirms:1,lifetime:3600 --value 10000000000
 
 Configuration
 
   Network: dev (devnet.evercloud.dev)
-  Signer:  deposit_signer (public 8f8779e7c1944b133a423df96d06ae770c996f19d63438dbf2f569a29529b248)
+  Signer:  wallet_signer (public 8f8779e7c1944b133a423df96d06ae770c996f19d63438dbf2f569a29529b248)
 
 Address:   0:95c35b94e98c1b5c7716a9129ed5bb0798c8c336465fd8d1eb0d385e3d969494 (calculated from TVC and signer public)
 
@@ -304,7 +304,7 @@ A sample is available in [this repository](https://github.com/tonlabs/sdk-sample
 [Bindings](https://docs.everos.dev/ever-sdk/#community-bindings) for a large number of languages have been developed for SDK.&#x20;
 {% endhint %}
 
-Note, that similar to the Everdev approach described above, you have to sponsor a deposit account before deploying contract code. The sample assumes you use the devnet faucet of [Evercloud Dashboard](https://dashboard.evercloud.dev/), where you can request test tokens to the contract address generated by the sample. In a production environment you may set up a giver to sponsor your contract deployment operations. An example of such a set up can be found in this [sample](https://github.com/tonlabs/sdk-samples/tree/master/demo/hello-wallet).
+Note, that similar to the Everdev approach described above, you have to sponsor a user account before deploying contract code. The sample assumes you use the devnet faucet of [Evercloud Dashboard](https://dashboard.evercloud.dev/), where you can request test tokens to the contract address generated by the sample. In a production environment you may set up a giver to sponsor your contract deployment operations. An example of such a set up can be found in this [sample](https://github.com/tonlabs/sdk-samples/tree/master/demo/hello-wallet).
 
 The recommended [SetcodeMultisig](https://github.com/tonlabs/sdk-samples/blob/master/demo/msig-wallet/contract/SetcodeMultisig.sol) contract is used.
 
@@ -391,8 +391,8 @@ The recommended [SetcodeMultisig](https://github.com/tonlabs/sdk-samples/blob/ma
                 function_name: 'constructor',
                 input: {
                     owners: [`0x${keypair.public}`],
-                    reqConfirms: 0,
-                    lifetime: 0
+                    reqConfirms: 1,
+                    lifetime: 3600
                 }
             },
         },
@@ -567,10 +567,8 @@ npm run subscribe-tr
 ```
 
 {% hint style="warning" %}
-Not all transactions that are successful are valid transfers and not all transactions that are aborted actually failed. Read below how to understand which transfers are successful transfers and which are not.
+Not all transactions that are successful are valid transfers and not all transactions that are aborted actually failed. Read [here](https://docs.everscale.network/arch/transactions#how-to-determine-a-successful-transaction) how to understand which transfers are successful transfers and which are not.
 {% endhint %}
-
-<figure><img src=".gitbook/assets/image.png" alt=""><figcaption></figcaption></figure>
 
 ## Withdrawing from wallet accounts&#x20;
 
@@ -584,17 +582,17 @@ Command line `Everdev` tool may be used to automate withdrawals from wallet acco
 If the user made a mistake in the destination address, and has no control over it, these funds will be lost forever. If the account does not exist, and the user makes mistakes deploying it after the funds are transferred, they may end up being lost as well.&#x20;
 {% endhint %}
 
-So, to perform a simple transfer from a single-owner deposit account to any specified account, we should make sure that it is already deployed, by setting `bounce` flag to true. If the account does not exist, funds will return back.
+So, to perform a simple transfer from a single-owner user account to any specified account, we should make sure that it is already deployed, by setting `bounce` flag to true. If the account does not exist, funds will return back.
 
 {% code overflow="wrap" %}
 ```shell
-everdev contract run SetcodeMultisig.abi.json sendTransaction --address <deposit_account_address> --signer deposit_signer --input dest:recipient_address,value:50000000000,bounce:true,flags:3,payload:""
+everdev contract run SetcodeMultisig.abi.json sendTransaction --address <wallet_account_address> --signer wallet_signer --input dest:recipient_address,value:50000000000,bounce:true,flags:3,payload:""
 ```
 {% endcode %}
 
-`<deposit_account_address>` - address of the deposit account. Example: 0:7bf2b2ec80371601f854bff9ed0a1171714d922c8bfc86d39e67a7e3a41b2176
+`<wallet_account_address>` - address of the user account. Example: 0:7bf2b2ec80371601f854bff9ed0a1171714d922c8bfc86d39e67a7e3a41b2176
 
-`deposit_signer` - name of the deposit account owner signer
+`wallet_signer` - name of the user account owner signer
 
 `recipient_address` - raw address of the recipient smart contract. Example: 255a3ad9dfa8aa4f3481856aafc7d79f47d50205190bd56147138740e9b177f3
 
@@ -612,19 +610,19 @@ everdev contract run SetcodeMultisig.abi.json sendTransaction --address <deposit
 
 {% code overflow="wrap" %}
 ```shell
-everdev contract run SetcodeMultisig.abi.json --address <wallet_account_address> sendTransaction --signer deposit_signer --input dest:recipient_address,value:0,bounce:true,flags:130,payload:""
+everdev contract run SetcodeMultisig.abi.json --address <wallet_account_address> sendTransaction --signer wallet_signer --input dest:recipient_address,value:0,bounce:true,flags:130,payload:""
 ```
 {% endcode %}
 
 Example of regular withdrawal transaction on a single-owner multisig:
 
 ```shell
-everdev contract run SetcodeMultisig.abi.json sendTransaction --signer deposit_signer --input dest:665a62042aff317ba3f32e36b712b0f4a9d35277dd76dc38c9762cc6421681cf,value:500000000000,bounce:false,flags:3,payload:""
+everdev contract run SetcodeMultisig.abi.json sendTransaction --signer wallet_signer --input dest:665a62042aff317ba3f32e36b712b0f4a9d35277dd76dc38c9762cc6421681cf,value:500000000000,bounce:false,flags:3,payload:""
 
 Configuration
 
   Network: dev (devnet.evercloud.dev)
-  Signer:  deposit_sign (public 3da1909b7a4bd11fd9a1d79ca9713a9a8645880e0a7a12f9691c68e95d56fe75)
+  Signer:  wallet_signer (public 3da1909b7a4bd11fd9a1d79ca9713a9a8645880e0a7a12f9691c68e95d56fe75)
 
 Address:   0:95c35b94e98c1b5c7716a9129ed5bb0798c8c336465fd8d1eb0d385e3d969494
 
@@ -725,19 +723,19 @@ Basic checks of the address format will be performed by the Everdev utility auto
 
 #### (Optional) Multi-owner accounts and Confirm transaction&#x20;
 
-Note, that if your deposit account has multiple custodians, the transaction has to be confirmed by the required number of signatures to be executed. This transaction ID should be communicated to other custodians, who should use it to confirm the transaction.&#x20;
+Note, that if your user account has multiple custodians, the transaction has to be confirmed by the required number of signatures to be executed. This transaction ID should be communicated to other custodians, who should use it to confirm the transaction.&#x20;
 
 To withdraw tokens from a multi-owner account use the following command:
 
 {% code overflow="wrap" %}
 ```bash
-everdev contract run SetcodeMultisig.abi.json submitTransaction --address <deposit_account_address> --signer giver_sign --input '{ "dest": "recipient_address", "value":10000000000, "bounce": false, "allBalance": false, "payload": "", "stateInit": null }'
+everdev contract run SetcodeMultisig.abi.json submitTransaction --address <wallet_account_address> --signer wallet_signer --input '{ "dest": "recipient_address", "value":10000000000, "bounce": false, "allBalance": false, "payload": "", "stateInit": null }'
 ```
 {% endcode %}
 
-`<deposit_account_address>` - address of the deposit account. Example: 0:7bf2b2ec80371601f854bff9ed0a1171714d922c8bfc86d39e67a7e3a41b2176
+`<wallet_account_address>` - address of the user account. Example: 0:7bf2b2ec80371601f854bff9ed0a1171714d922c8bfc86d39e67a7e3a41b2176
 
-`deposit_signer` - name of the deposit account owner signer
+`wallet_signer` - name of the user account owner signer
 
 `value`: - amount of tokens to transfer in nanotokens (Example: value:10000000000 sets up a transfer of 10 tokens).
 
@@ -755,13 +753,13 @@ To confirm a transaction, use the following command:
 
 {% code overflow="wrap" %}
 ```shell
-everdev contract run SetcodeMultisig.abi.json confirmTransaction --address <deposit_account_address> --signer deposit_signer2 --input transactionId:6954030467099431873
+everdev contract run SetcodeMultisig.abi.json confirmTransaction --address <wallet_account_address> --signer wallet_signer2 --input transactionId:6954030467099431873
 ```
 {% endcode %}
 
-`<deposit_account_address>` - address of the deposit account. Example: 0:7bf2b2ec80371601f854bff9ed0a1171714d922c8bfc86d39e67a7e3a41b2176
+`<wallet_account_address>` - address of the user account. Example: 0:7bf2b2ec80371601f854bff9ed0a1171714d922c8bfc86d39e67a7e3a41b2176
 
-`deposit_signer2` - signer of another multisig custodian (not the one who initiated the transaction).
+`wallet_signer2` - signer of another multisig custodian (not the one who initiated the transaction).
 
 `transactionId` – the ID of the transaction can be acquired from the custodian who created it.
 
@@ -814,7 +812,7 @@ The possible results of this command are the following:
 
 `Active` - account already exists, and its code is deployed.
 
-In the first to cases, the exchange might first transfer a small portion of the requested amount (\~1 EVER) and request that the user deploys their contract. Upon the user's confirmation that the account is deployed, its status may be rechecked, and if it became active, the remaining amount of requested funds may be safely transferred.
+In the first to cases, the service might first transfer a small portion of the requested amount (\~1 EVER) and request that the user deploys their contract. Upon the user's confirmation that the account is deployed, its status may be rechecked, and if it became active, the remaining amount of requested funds may be safely transferred.
 
 If the account is already active, a small portion of the requested amount may be transferred to the user, and the user may be asked what amount they received (note: a small amount of the transfer, usually less than 0.05 EVER, will be spent on fees, so it's best to ask for the whole number of tokens transferred). If the amounts match, the rest of the requested funds may be transferred as well.
 
@@ -826,7 +824,7 @@ In this sample JS SDK is used.  [Bindings](https://docs.everos.dev/ever-sdk/#com
 
 This example shows how to generate a withdrawal transaction from a Multisig wallet, using its `sendTransaction` method. Note, that if Multisig has multiple custodians, the transaction will have to be confirmed with the `confirmTransaction` method.
 
-In this example tokens are withdrawn from the deposit account to the account specified in `dest`. In a proper implementation, the account given by user should be used instead.
+In this example tokens are withdrawn from the user account to the account specified in `dest`. In a proper implementation, the account given by user should be used instead.
 
 ```javascript
     // We send 0.5 tokens. Value is written in nanotokens
