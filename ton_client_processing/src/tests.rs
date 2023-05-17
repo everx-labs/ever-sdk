@@ -44,6 +44,22 @@ async fn test_fetch() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_cancel_monitor() {
+    let api = sdk_services();
+    let mon = MessageMonitor::new(api.clone());
+    mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
+        .await
+        .unwrap();
+    let info = mon.get_queue_info("1").unwrap();
+    assert_eq!(info.resolved, 0);
+    assert_eq!(info.unresolved, 2);
+    mon.cancel_monitor("1").unwrap();
+    let info = mon.get_queue_info("1").unwrap();
+    assert_eq!(info.resolved, 0);
+    assert_eq!(info.unresolved, 0);
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_fetch_at_least_one() {
     let api = sdk_services();
     let mon = MessageMonitor::new(api.clone());

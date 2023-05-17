@@ -155,6 +155,8 @@ impl<Sdk: MessageMonitorSdkServices + Send + Sync> MonitorState<Sdk> {
     fn cancel_monitor(&self, queue: &str) -> crate::error::Result<()> {
         let mut queues = self.queues.write().unwrap();
         queues.remove(queue);
+        let mut buffering = self.buffering.lock().unwrap();
+        buffering.messages.remove(queue);
         Ok(())
     }
 
