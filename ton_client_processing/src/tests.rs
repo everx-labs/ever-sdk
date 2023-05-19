@@ -18,6 +18,9 @@ async fn test_fetch() {
     mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
         .await
         .unwrap();
+    let info = mon.get_queue_info("1").unwrap();
+    assert_eq!(info.resolved, 0);
+    assert_eq!(info.unresolved, 2);
     let results = mon
         .fetch_next_monitor_results("1", MonitorFetchWaitMode::NoWait)
         .await
@@ -38,6 +41,22 @@ async fn test_fetch() {
             msg_res(2, MessageMonitoringStatus::Finalized)
         ]
     );
+}
+
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn test_cancel_monitor() {
+    let api = sdk_services();
+    let mon = MessageMonitor::new(api.clone());
+    mon.monitor_messages("1", vec![msg(1, 1), msg(2, 2)])
+        .await
+        .unwrap();
+    let info = mon.get_queue_info("1").unwrap();
+    assert_eq!(info.resolved, 0);
+    assert_eq!(info.unresolved, 2);
+    mon.cancel_monitor("1").unwrap();
+    let info = mon.get_queue_info("1").unwrap();
+    assert_eq!(info.resolved, 0);
+    assert_eq!(info.unresolved, 0);
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

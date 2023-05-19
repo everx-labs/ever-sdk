@@ -1,9 +1,9 @@
 use crate::message_monitor::message::{MessageMonitoringParams, MessageMonitoringResult};
-use crate::message_monitor::queue::MonitoringQueue;
+use crate::message_monitor::monitor_queues::{BufferedMessages, MonitorQueues, ADDING_TIMEOUT_MS};
+use crate::message_monitor::queue::BufferedMessage;
 use crate::sdk_services::MessageMonitorSdkServices;
 use crate::NetSubscription;
 use std::collections::{HashMap, HashSet};
-use std::mem;
 use std::sync::{Arc, Mutex, RwLock};
 
 /// The main message monitor object.
@@ -16,24 +16,16 @@ pub struct MessageMonitor<Sdk: MessageMonitorSdkServices + Send + Sync + 'static
 struct MonitorState<Sdk: MessageMonitorSdkServices + Send + Sync + 'static> {
     /// External SDK services used by message monitor
     sdk: Sdk,
+
     /// Active queues
-    buffering: Mutex<Buffering>,
-    queues: RwLock<HashMap<String, MonitoringQueue>>,
+    queues: RwLock<MonitorQueues>,
+
     notify_resolved: Arc<tokio::sync::watch::Sender<crate::error::Result<()>>>,
     listen_resolved: tokio::sync::watch::Receiver<crate::error::Result<()>>,
     active_subscriptions: Mutex<HashMap<usize, HashSet<String>>>,
 }
 
-struct Buffering {
-    messages: HashMap<String, Vec<MessageMonitoringParams>>,
-    last_adding_time_ms: u64,
-    last_fetching_time_ms: u64,
-}
-
-const ADDING_TIMEOUT_MS: u64 = 1000;
-const FETCHING_TIMEOUT_MS: u64 = 5000;
-
-#[derive(Deserialize, Serialize, ApiType)]
+#[derive(Deserialize, Serialize, ApiType, Default)]
 pub struct MonitoringQueueInfo {
     /// Count of the unresolved messages.
     pub unresolved: u32,
@@ -54,7 +46,6 @@ pub enum MonitorFetchWaitMode {
     NoWait,
 }
 
-// pub
 impl<SdkServices: MessageMonitorSdkServices + Send + Sync> MessageMonitor<SdkServices> {
     pub fn new(sdk: SdkServices) -> Self {
         Self {
@@ -94,15 +85,10 @@ impl<Sdk: MessageMonitorSdkServices + Send + Sync> MonitorState<Sdk> {
         let (sender, receiver) = tokio::sync::watch::channel(Ok(()));
         Self {
             sdk,
-            queues: RwLock::new(HashMap::new()),
+            queues: RwLock::new(MonitorQueues::new()),
             active_subscriptions: Mutex::new(HashMap::new()),
             notify_resolved: Arc::new(sender),
             listen_resolved: receiver,
-            buffering: Mutex::new(Buffering {
-                messages: HashMap::new(),
-                last_adding_time_ms: 0,
-                last_fetching_time_ms: 0,
-            }),
         }
     }
 
@@ -111,8 +97,23 @@ impl<Sdk: MessageMonitorSdkServices + Send + Sync> MonitorState<Sdk> {
         queue: &str,
         messages: Vec<MessageMonitoringParams>,
     ) -> crate::error::Result<()> {
-        let should_start_buffering_timer = self.add_to_buffering(queue, messages);
+        if messages.is_empty() {
+            return Ok(());
+        }
+        let mut buffered = Vec::new();
+        for message in messages {
+            buffered.push(BufferedMessage {
+                hash: message.message.hash(&self.sdk)?,
+                message,
+            });
+        }
+
+        let mut queues = self.queues.write().unwrap();
+        let should_start_buffering_timer = !queues.has_buffered();
+        let now_ms = self.sdk.now_ms();
+        queues.add_buffered(now_ms, queue, buffered);
         if should_start_buffering_timer {
+            queues.last_fetching_time_ms = now_ms;
             self.clone().start_buffering_timer();
         }
         Ok(())
@@ -136,41 +137,12 @@ impl<Sdk: MessageMonitorSdkServices + Send + Sync> MonitorState<Sdk> {
     }
 
     fn get_queue_info(&self, queue: &str) -> crate::error::Result<MonitoringQueueInfo> {
-        let queues = self.queues.read().unwrap();
-        let (unresolved, resolved) = if let Some(queue) = queues.get(queue) {
-            (queue.unresolved.len() as u32, queue.resolved.len() as u32)
-        } else {
-            (0, 0)
-        };
-        Ok(MonitoringQueueInfo {
-            unresolved,
-            resolved,
-        })
+        Ok(self.queues.read().unwrap().get_info(queue))
     }
 
     fn cancel_monitor(&self, queue: &str) -> crate::error::Result<()> {
-        let mut queues = self.queues.write().unwrap();
-        queues.remove(queue);
+        self.queues.write().unwrap().remove(queue);
         Ok(())
-    }
-
-    fn add_to_buffering(&self, queue: &str, messages: Vec<MessageMonitoringParams>) -> bool {
-        if messages.is_empty() {
-            return false;
-        }
-        let mut buffering = self.buffering.lock().unwrap();
-        let should_start_buffering_timer = buffering.messages.is_empty();
-        let buffer = if let Some(buffer) = buffering.messages.get_mut(queue) {
-            buffer
-        } else {
-            buffering.messages.insert(queue.to_string(), Vec::new());
-            buffering.messages.get_mut(queue).unwrap()
-        };
-        for message in messages {
-            buffer.push(message);
-        }
-        buffering.last_adding_time_ms = self.sdk.now_ms();
-        should_start_buffering_timer
     }
 
     fn start_buffering_timer(self: Arc<Self>) {
@@ -178,63 +150,23 @@ impl<Sdk: MessageMonitorSdkServices + Send + Sync> MonitorState<Sdk> {
             loop {
                 let _ = self.sdk.sleep(ADDING_TIMEOUT_MS).await;
                 let now_ms = self.sdk.now_ms();
-                let messages = {
-                    let mut buffering = self.buffering.lock().unwrap();
-                    let is_adding_timout =
-                        now_ms > buffering.last_adding_time_ms + ADDING_TIMEOUT_MS;
-                    let is_fetching_timout =
-                        now_ms > buffering.last_fetching_time_ms + FETCHING_TIMEOUT_MS;
-                    if (is_adding_timout || is_fetching_timout) && !buffering.messages.is_empty() {
-                        buffering.last_fetching_time_ms = now_ms;
-                        Some(mem::replace(&mut buffering.messages, HashMap::new()))
-                    } else {
-                        None
+                let buffered = self.queues.read().unwrap().get_buffered(now_ms);
+                if let Some(buffered) = buffered {
+                    let hashes = buffered.hashes.clone();
+                    if self.clone().subscribe(buffered).await.is_ok() {
+                        let mut queues = self.queues.write().unwrap();
+                        queues.start_resolving(now_ms, hashes);
+                        if !queues.has_buffered() {
+                            break;
+                        }
                     }
-                };
-                if let Some(messages) = messages {
-                    let _ = self.start_monitoring(messages).await;
-                    break;
                 }
             }
         });
     }
 
-    async fn start_monitoring(
-        self: &Arc<Self>,
-        messages: HashMap<String, Vec<MessageMonitoringParams>>,
-    ) -> crate::error::Result<()> {
-        let (messages, hashes) = {
-            let mut queues = self.queues.write().unwrap();
-            let mut message_hashes = HashSet::new();
-            let mut message_params = Vec::new();
-            for (queue, messages) in messages {
-                let queue = if let Some(queue) = queues.get_mut(&queue) {
-                    queue
-                } else {
-                    queues.insert(queue.clone(), MonitoringQueue::new());
-                    queues.get_mut(&queue).unwrap()
-                };
-                for message in messages {
-                    let hash = message.message.hash(&self.sdk)?;
-                    if !message_hashes.contains(&hash) {
-                        queue.add_unresolved(hash.clone(), message.user_data.clone());
-                        message_hashes.insert(hash.clone());
-                        message_params.push(message);
-                    }
-                }
-            }
-            (message_params, message_hashes)
-        };
-        self.clone().subscribe(messages, hashes).await?;
-        Ok(())
-    }
-
-    async fn subscribe(
-        self: Arc<Self>,
-        messages: Vec<MessageMonitoringParams>,
-        hashes: HashSet<String>,
-    ) -> crate::error::Result<()> {
-        if messages.is_empty() {
+    async fn subscribe(self: Arc<Self>, buffered: BufferedMessages) -> crate::error::Result<()> {
+        if buffered.messages.is_empty() {
             return Ok(());
         }
         let self1 = self.clone();
@@ -258,12 +190,12 @@ impl<Sdk: MessageMonitorSdkServices + Send + Sync> MonitorState<Sdk> {
         };
         let subscription = self
             .sdk
-            .subscribe_for_recent_ext_in_message_statuses(messages, callback)
+            .subscribe_for_recent_ext_in_message_statuses(buffered.messages, callback)
             .await?;
         self.active_subscriptions
             .lock()
             .unwrap()
-            .insert(subscription.0, hashes);
+            .insert(subscription.0, buffered.hashes);
         Ok(())
     }
 
@@ -272,7 +204,7 @@ impl<Sdk: MessageMonitorSdkServices + Send + Sync> MonitorState<Sdk> {
         results: &Vec<MessageMonitoringResult>,
     ) -> Vec<NetSubscription> {
         let mut queues = self.queues.write().unwrap();
-        for queue in queues.values_mut() {
+        for queue in queues.queues.values_mut() {
             queue.resolve(&results);
         }
 
@@ -311,9 +243,10 @@ impl<Sdk: MessageMonitorSdkServices + Send + Sync> MonitorState<Sdk> {
         wait_mode: MonitorFetchWaitMode,
     ) -> Option<Vec<MessageMonitoringResult>> {
         let mut queues = self.queues.write().unwrap();
-        let (fetched, queue_should_be_removed) = if let Some(queue) = queues.get_mut(queue) {
+        let (fetched, queue_should_be_removed) = if let Some(queue) = queues.queues.get_mut(queue) {
             let next = queue.fetch_next(wait_mode);
-            let should_be_removed = queue.resolved.is_empty() && queue.unresolved.is_empty();
+            let should_be_removed =
+                queue.results.is_empty() && queue.resolving.is_empty() && queue.buffered.is_empty();
             (next, should_be_removed)
         } else if let MonitorFetchWaitMode::NoWait = wait_mode {
             (Some(vec![]), false)
