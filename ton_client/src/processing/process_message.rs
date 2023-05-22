@@ -31,8 +31,7 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
         let mut encode_params = params.message_encode_params.clone();
         encode_params.processing_try_index = Some(try_index);
         let message = crate::abi::encode_message(context.clone(), encode_params)
-            .await?
-            .message;
+            .await?;
 
         // Send
         let ResultOfSendMessage {
@@ -41,7 +40,7 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
         } = send_message(
             context.clone(),
             ParamsOfSendMessage {
-                message: message.clone(),
+                message: message.message.clone(),
                 abi: Some(abi.clone()),
                 send_events: params.send_events,
             },
@@ -54,7 +53,7 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
         let wait_for = wait_for_transaction(
             context.clone(),
             ParamsOfWaitForTransaction {
-                message: message.clone(),
+                message: message.message.clone(),
                 send_events: params.send_events,
                 abi: Some(abi.clone()),
                 shard_block_id: shard_block_id.clone(),
@@ -81,6 +80,14 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
                 if !can_retry {
                     // Waiting error is unrecoverable, return it
                     return Err(err);
+                }
+                if params.send_events {
+                    callback(ProcessingEvent::MessageExpired { 
+                        message_id: message.message_id,
+                        message_dst: message.address,
+                        message: message.message,
+                        error: err
+                    }).await;
                 }
                 // Waiting is failed but we can retry
             }

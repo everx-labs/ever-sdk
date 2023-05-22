@@ -24,7 +24,8 @@ All notable changes to this project will be documented in this file.
 - `DeploySet.state_init` allows to specify serialized state init.
 - `DeploySet.code` allows to construct state init from provided serialized code.
 - `DeploySet`'s fields `tvc`, `state_init` and `code` are mutually exclusive (so you should
-  provide value for one of these fields). 
+  provide value for one of these fields).
+- `ProcessingEvent::MessageExpired` is sent to callback in case of retry in `processing.process_message`
 
 ## [1.42.1] – 2023-03-23
 
