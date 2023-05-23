@@ -138,7 +138,7 @@ console.log(`Touch fees: ${JSON.stringify(touch_processing_result.fees,null,2)}`
 
 ## Calculate account fees
 
-Retrieve `result.fees` object of `process_message` or `wait_for_transaction`. You need **`result.fees.account_fees` ** for total account fees value.
+Retrieve `result.fees` object of `process_message` or `wait_for_transaction`. You need **`result.fees.account_fees`** for total account fees value.
 
 ### Fees object detailed explanation
 

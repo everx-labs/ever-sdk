@@ -2,7 +2,7 @@
 
 * [Ever SDK](../README.md)
 * [Quick start (JavaScript)](quick\_start.md)
-* [Add EVER to your Exchange](guides/add\_to\_exchange.md)
+* [Add EVER to your backend](add\_to\_backend.md)
 
 ## Reference
 
