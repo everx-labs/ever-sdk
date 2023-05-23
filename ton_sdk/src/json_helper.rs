@@ -15,7 +15,6 @@ use crate::MessageType;
 use serde::de::Error;
 use std::fmt;
 use std::str::FromStr;
-use std::io::Cursor;
 use ton_block::{
     AccStatusChange, AccountStatus, ComputeSkipReason, MsgAddressInt, TransactionProcessingStatus,
 };
@@ -108,7 +107,7 @@ pub mod opt_cell {
         S: serde::Serializer,
     {
         if let Some(cell) = value {
-            let str_value = base64::encode(&ton_types::serialize_toc(&cell).map_err(|err| {
+            let str_value = base64::encode(&ton_types::boc::write_boc(&cell).map_err(|err| {
                 serde::ser::Error::custom(format!("Cannot serialize BOC: {}", err))
             })?);
             serializer.serialize_some(&str_value)
@@ -125,7 +124,7 @@ where
     let bytes = base64::decode(&b64)
         .map_err(|err| D::Error::custom(format!("error decode base64: {}", err)))?;
 
-    ton_types::cells_serialization::deserialize_tree_of_cells(&mut Cursor::new(&bytes))
+    ton_types::boc::read_single_root_boc(&bytes)
         .map_err(|err| D::Error::custom(format!("BOC read error: {}", err)))
 }
 

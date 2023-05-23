@@ -19,13 +19,12 @@ use chrono::prelude::Utc;
 use ed25519_dalek::{Keypair, PublicKey};
 use serde_json::Value;
 use std::convert::Into;
-use std::io::{Read, Seek, Cursor};
+use std::io::{Read, Seek};
 use ton_abi::json_abi::DecodedMessage;
 use ton_block::{AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash,
     Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit,
     InternalMessageHeader, CurrencyCollection};
-use ton_types::cells_serialization::deserialize_tree_of_cells;
-use ton_types::{error, fail, AccountId, Result, SliceData};
+use ton_types::{error, fail, AccountId, Result, SliceData, BocReader};
 
 pub struct Contract {}
 
@@ -51,7 +50,6 @@ pub struct ContractImage {
     id: AccountId,
 }
 
-#[allow(dead_code)]
 impl ContractImage {
     // Creating contract image from code data and library bags of cells
     pub fn from_code_data_and_library<T>(
@@ -64,14 +62,14 @@ impl ContractImage {
     {
         let mut state_init = StateInit::default();
 
-        state_init.set_code(deserialize_tree_of_cells(code)?);
+        state_init.set_code(BocReader::new().read(code)?.withdraw_single_root()?);
 
         if let Some(data) = data {
-            state_init.set_data(deserialize_tree_of_cells(data)?);
+            state_init.set_data(BocReader::new().read(data)?.withdraw_single_root()?);
         }
 
         if let Some(library) = library {
-            state_init.set_library(deserialize_tree_of_cells(library)?);
+            state_init.set_library(BocReader::new().read(library)?.withdraw_single_root()?);
         }
 
         let id = AccountId::from(state_init.hash()?);
@@ -90,7 +88,7 @@ impl ContractImage {
     where
         T: Read + Seek,
     {
-        let cell = deserialize_tree_of_cells(state_init_bag)?;
+        let cell = BocReader::new().read(state_init_bag)?.withdraw_single_root()?;
         let state_init: StateInit = StateInit::construct_from_cell(cell)?;
         let id = state_init.hash()?.into();
 
@@ -115,17 +113,12 @@ impl ContractImage {
     }
 
     pub fn get_public_key(&self) -> Result<Option<PublicKey>> {
-        let data = self.state_init.data
-            .clone()
-            .ok_or_else(
-                || SdkError::InvalidData {
-                    msg: "State init has no data".to_owned()
-                }
-            )?;
+        let Some(data) = self.state_init.data.clone() else {
+            return Ok(None);
+        };
         Ok(AbiContract::get_pubkey(&SliceData::load_cell(data)?)?
             .map(|pub_key| PublicKey::from_bytes(&pub_key))
-            .transpose()?
-        )
+            .transpose()?)
     }
 
     pub fn set_public_key(&mut self, pub_key: &PublicKey) -> Result<()> {
@@ -144,7 +137,7 @@ impl ContractImage {
 
     pub fn get_serialized_code(&self) -> Result<Vec<u8>> {
         match &self.state_init.code {
-            Some(cell) => ton_types::serialize_toc(cell),
+            Some(cell) => ton_types::boc::write_boc(cell),
             None => bail!(SdkError::InvalidData {
                 msg: "State init has no code".to_owned()
             }),
@@ -153,7 +146,7 @@ impl ContractImage {
 
     pub fn get_serialized_data(&self) -> Result<Vec<u8>> {
         match &self.state_init.data {
-            Some(cell) => ton_types::serialize_toc(cell),
+            Some(cell) => ton_types::boc::write_boc(cell),
             None => bail!(SdkError::InvalidData {
                 msg: "State init has no data".to_owned()
             }),
@@ -161,7 +154,7 @@ impl ContractImage {
     }
 
     pub fn serialize(&self) -> Result<Vec<u8>> {
-        ton_types::serialize_toc(&self.state_init.serialize()?)
+        ton_types::boc::write_boc(&self.state_init.serialize()?)
     }
 
     // Returns future contract's state_init struct
@@ -218,7 +211,13 @@ impl Contract {
         internal: bool,
         allow_partial: bool,
     ) -> Result<String> {
-        ton_abi::json_abi::decode_function_response(abi, function, response, internal, allow_partial)
+        ton_abi::json_abi::decode_function_response(
+            abi,
+            function,
+            response,
+            internal,
+            allow_partial,
+        )
     }
 
     /// Decodes output parameters returned by contract function call from serialized message body
@@ -299,7 +298,10 @@ impl Contract {
             Some(address.to_string()),
         )?;
 
-        let msg = Self::create_ext_in_message(address.clone(), SliceData::load_cell(msg_body.into_cell()?)?)?;
+        let msg = Self::create_ext_in_message(
+            address.clone(),
+            SliceData::load_cell(msg_body.into_cell()?)?,
+        )?;
         let (body, id) = Self::serialize_message(&msg)?;
         Ok(SdkMessage {
             id,
@@ -349,7 +351,14 @@ impl Contract {
         value: CurrencyCollection,
         msg_body: Option<SliceData>,
     ) -> Result<SdkMessage> {
-        let msg = Self::create_int_message(ihr_disabled, bounce, dst_address.clone(), src_address, value, msg_body)?;
+        let msg = Self::create_int_message(
+            ihr_disabled,
+            bounce,
+            dst_address.clone(),
+            src_address,
+            value,
+            msg_body,
+        )?;
         let (body, id) = Self::serialize_message(&msg)?;
         Ok(SdkMessage {
             id,
@@ -375,7 +384,8 @@ impl Contract {
             Some(address.to_string()),
         )?;
 
-        let msg = Self::create_ext_in_message(address, SliceData::load_cell(msg_body.into_cell()?)?)?;
+        let msg =
+            Self::create_ext_in_message(address, SliceData::load_cell(msg_body.into_cell()?)?)?;
 
         Self::serialize_message(&msg).map(|(msg_data, _id)| MessageToSign {
             message: msg_data,
@@ -411,7 +421,7 @@ impl Contract {
             Some(address) => address.clone(),
             None => fail!(SdkError::InternalError {
                 msg: "No address in created deploy message".to_owned()
-            })
+            }),
         };
         let (body, id) = Self::serialize_message(&msg)?;
 
@@ -507,10 +517,17 @@ impl Contract {
         )?;
 
         let cell = SliceData::load_cell(msg_body.into_cell()?)?;
-        let msg = Self::create_int_deploy_message(src, Some(cell), image, workchain_id, ihr_disabled, bounce, value)?;
+        let msg = Self::create_int_deploy_message(
+            src,
+            Some(cell),
+            image,
+            workchain_id,
+            ihr_disabled,
+            bounce,
+            value,
+        )?;
 
-        Self::serialize_message(&msg)
-            .map(|(msg_data, _id)| msg_data)
+        Self::serialize_message(&msg).map(|(msg_data, _id)| msg_data)
     }
 
     // Add sign to message, returned by `get_deploy_message_bytes_for_signing` or
@@ -537,7 +554,7 @@ impl Contract {
             Some(address) => address.clone(),
             None => fail!(SdkError::InternalError {
                 msg: "No address in signed message".to_owned()
-            })
+            }),
         };
         let (body, id) = Self::serialize_message(&message)?;
 
@@ -571,9 +588,9 @@ impl Contract {
 
         let address = match message.dst_ref() {
             Some(address) => address.clone(),
-            None => fail!(SdkError::InternalError{
+            None => fail!(SdkError::InternalError {
                 msg: "No address in signed message".to_owned()
-            })
+            }),
         };
         let (body, id) = Self::serialize_message(&message)?;
 
@@ -663,14 +680,14 @@ impl Contract {
     pub fn serialize_message(msg: &TvmMessage) -> Result<(Vec<u8>, MessageId)> {
         let cells = msg.write_to_new_cell()?.into_cell()?;
         Ok((
-            ton_types::serialize_toc(&cells)?,
+            ton_types::boc::write_boc(&cells)?,
             (&cells.repr_hash().as_slice()[..]).into(),
         ))
     }
 
     /// Deserializes tree of cells from byte array into `SliceData`
     pub fn deserialize_tree_to_slice(data: &[u8]) -> Result<SliceData> {
-        SliceData::load_cell(deserialize_tree_of_cells(&mut Cursor::new(data))?)
+        SliceData::load_cell(ton_types::boc::read_single_root_boc(&data)?)
     }
 
     pub fn get_dst_from_msg(msg: &[u8]) -> Result<MsgAddressInt> {
@@ -678,7 +695,7 @@ impl Contract {
             Some(address) => Ok(address.clone()),
             None => fail!(SdkError::InvalidData {
                 msg: "Wrong message type (extOut)".to_owned()
-            })
+            }),
         }
     }
 

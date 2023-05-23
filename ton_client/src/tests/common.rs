@@ -1,8 +1,4 @@
-use crate::{
-    abi::ParamsOfEncodeMessage,
-    net::{ParamsOfQueryCollection, ResultOfQueryCollection},
-    processing::{ParamsOfSendMessage, ResultOfSendMessage},
-};
+use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
 
 use super::*;
 
@@ -64,7 +60,8 @@ fn test_parallel_requests() {
 fn test_deferred_init() {
     let client = TestClient::new_with_config(json!({
         "network": {
-            "endpoints": ["123"]
+            "endpoints": ["123"],
+            "max_reconnect_timeout": 0,
         }
     }));
 
@@ -84,55 +81,4 @@ fn test_deferred_init() {
     //println!("{:#?}", result);
 
     assert_eq!(result.code, crate::net::ErrorCode::QueryFailed as u32);
-}
-
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn test_clock_sync() {
-    let client = TestClient::new_with_config(json!({
-        "network": {
-            "endpoints": TestClient::endpoints(),
-            "out_of_sync_threshold": 0,
-        }
-    }));
-
-    // queries should not fail even when not synchronized
-    let _: ResultOfQueryCollection = client
-        .request_async(
-            "net.query_collection",
-            ParamsOfQueryCollection {
-                collection: "accounts".to_owned(),
-                result: "id".to_owned(),
-                limit: Some(1),
-                filter: None,
-                order: None,
-            },
-        )
-        .await
-        .unwrap();
-
-    let msg = client
-        .encode_message(ParamsOfEncodeMessage {
-            abi: TestClient::abi(HELLO, None),
-            address: Some(client.giver_address().await),
-            call_set: CallSet::some_with_function("touch"),
-            ..Default::default()
-        })
-        .await
-        .unwrap();
-
-    let result = client
-        .request_async::<_, ResultOfSendMessage>(
-            "processing.send_message",
-            ParamsOfSendMessage {
-                abi: None,
-                message: msg.message,
-                send_events: false,
-            },
-        )
-        .await
-        .unwrap_err();
-
-    assert!(result
-        .message
-        .ends_with("Synchronize your device time with internet time"));
 }

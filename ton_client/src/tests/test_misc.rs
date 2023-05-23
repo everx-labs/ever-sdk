@@ -466,20 +466,6 @@ fn test_address_parsing() {
 
 
 #[test]
-fn test_out_of_sync() {
-    let client = TestClient::new_with_config(Value::Null);
-
-    let error = client.request_json("setup",
-        json!({
-            "baseUrl": TestClient::get_network_address(),
-            "outOfSyncThreshold": -1
-        })).unwrap_err();
-
-    assert_eq!(error.code, 1013);
-}
-
-
-#[test]
 fn test_parallel_requests() {
     let client1 = TestClient::new();
     let client2 = TestClient::new();

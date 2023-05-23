@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.43.0] – 2023-05-23
+
+### New
+
+- `network.network_retries_count` config parameter is finally deprecated and not used in SDK.
+  `max_reconnect_timeout` is used instead
+- Message monitoring errors received by subscription are returned from
+  `processing.fetch_next_monitor_results` function
+- Message monitor buffers new messages for delayed start of the subscription. New subscription
+  starts when 1 second has passed since the last addition or when 5 seconds has passed since last sending
+- Message monitor uses more than one subscription.
+- Version of `ton_types` upped to 2.0.0
+- Fixed code for changed dependencies api
+- Removed logic related to client-server clock sync
+- `boc.encode_tvc` and `boc.decode_tvc` are renamed to `boc.encode_state_init` 
+  and `boc.decode_state_init`.
+- `boc.decode_tvc` decodes TVC BOC according to the TVC spec.
+- `DeploySet.tvc` supports new TVC file format (according to new TVC spec).
+  Old tvc files (with serialized state init) are also supported.
+- `DeploySet.state_init` allows to specify serialized state init.
+- `DeploySet.code` allows to construct state init from provided serialized code.
+- `DeploySet`'s fields `tvc`, `state_init` and `code` are mutually exclusive (so you should
+  provide value for one of these fields).
+- `ProcessingEvent::MessageExpired` is sent to callback in case of retry in `processing.process_message`
+
 ## [1.42.1] – 2023-03-23
 
 ### Fixed

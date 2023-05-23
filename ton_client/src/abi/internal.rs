@@ -1,12 +1,12 @@
-use crate::ClientContext;
-use crate::boc::internal::deserialize_cell_from_boc;
-use crate::abi::{Error, Signer, DeploySet};
+use crate::abi::{DeploySet, Error, Signer};
 use crate::crypto::internal::decode_public_key;
 use crate::encoding::hex_decode;
 use crate::error::ClientResult;
-use std::sync::Arc;
+use crate::ClientContext;
 use serde_json::Value;
+use std::sync::Arc;
 use ton_sdk::ContractImage;
+use ton_types::Cell;
 
 /// Combines `hex` encoded `signature` with `base64` encoded `unsigned_message`.
 /// Returns signed message encoded with `base64`.
@@ -38,7 +38,7 @@ pub(crate) fn add_sign_to_message_body(
         .map_err(|err| Error::attach_signature_failed(err))?;
     let body = ton_abi::add_sign_to_function_call(abi.to_string(), signature, public_key, unsigned)
         .map_err(|err| Error::attach_signature_failed(err))?;
-    Ok(ton_types::serialize_toc(
+    Ok(ton_types::boc::write_boc(
         &body
             .into_cell()
             .map_err(|err| Error::attach_signature_failed(err))?,
@@ -55,12 +55,16 @@ pub(crate) async fn try_to_sign_message(
 ) -> ClientResult<(Vec<u8>, Option<Vec<u8>>)> {
     if let Some(unsigned) = &data_to_sign {
         if let Some(signature) = signer.sign(context.clone(), unsigned).await? {
-            let pubkey = signer.resolve_public_key(context)
+            let pubkey = signer
+                .resolve_public_key(context)
                 .await?
                 .map(|string| hex_decode(&string))
                 .transpose()?;
             let message = add_sign_to_message(
-                abi, &signature, pubkey.as_ref().map(|vec| vec.as_slice()), &message
+                abi,
+                &signature,
+                pubkey.as_ref().map(|vec| vec.as_slice()),
+                &message,
             )?;
             return Ok((message, None));
         }
@@ -68,18 +72,13 @@ pub(crate) async fn try_to_sign_message(
     Ok((message, data_to_sign))
 }
 
-pub(crate) async fn create_tvc_image(
-    context: &ClientContext,
+pub(crate) fn create_tvc_image(
     abi: &str,
     init_params: Option<&Value>,
-    tvc: &String,
+    state_init: Cell,
 ) -> ClientResult<ContractImage> {
-    let (_, tvc_cell) = deserialize_cell_from_boc(context, tvc, "")
-        .await
-        .map_err(|err| Error::invalid_tvc_image(err))?;
-    
-    let mut image = ContractImage::from_cell(tvc_cell)
-        .map_err(|err| Error::invalid_tvc_image(err))?;
+    let mut image =
+        ContractImage::from_cell(state_init).map_err(|err| Error::invalid_tvc_image(err))?;
 
     if let Some(params) = init_params {
         image.update_data(&params.to_string(), abi).map_err(|err| {
@@ -109,11 +108,12 @@ pub(crate) fn resolve_pubkey(
         return Ok(deploy_set.initial_pubkey.clone());
     }
 
-    if let Some(pubkey) = image.get_public_key()
+    if let Some(pubkey) = image
+        .get_public_key()
         .map_err(|err| Error::invalid_tvc_image(err))?
     {
         if !is_empty_pubkey(&pubkey) {
-            return Ok(Some(hex::encode(pubkey.as_ref())))
+            return Ok(Some(hex::encode(pubkey.as_ref())));
         }
     };
 
@@ -127,11 +127,13 @@ pub(crate) fn update_pubkey(
 ) -> ClientResult<Option<String>> {
     let resolved = resolve_pubkey(deploy_set, image, signer_pubkey)?;
     if let Some(ref public) = resolved {
-        image.set_public_key(&decode_public_key(public)?)
+        image
+            .set_public_key(&decode_public_key(public)?)
             .map_err(|err| Error::invalid_tvc_image(err))?;
         Ok(resolved)
     } else {
-        Ok(image.get_public_key()
+        Ok(image
+            .get_public_key()
             .map_err(|err| Error::invalid_tvc_image(err))?
             .map(|public| hex::encode(&public)))
     }
