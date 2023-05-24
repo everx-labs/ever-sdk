@@ -1,7 +1,3 @@
----
-description: About ever-sdk client libraries
----
-
 # Ever SDK
 
 Client libraries in 13 programming languages for DApp development in TVM blockchains (Everscale, TON, Venom Blockchain, etc).&#x20;
