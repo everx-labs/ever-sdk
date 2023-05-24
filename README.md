@@ -18,22 +18,20 @@ Libraries works over [GraphQL API](https://docs.everos.dev/ever-platform/referen
 
 [![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ever\_sdk)
 
-## Content Table
+- [Ever SDK](#ever-sdk)
+  - [Use-cases](#use-cases)
+  - [Supported languages](#supported-languages)
+    - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
+    - [Community SDKs](#community-sdks)
+  - [Quick Start](#quick-start)
+  - [What is Core Client Library](#what-is-core-client-library)
+  - [If you did not find the language you need](#if-you-did-not-find-the-language-you-need)
+  - [How to avoid Soft Breaking Problems](#how-to-avoid-soft-breaking-problems)
+  - [Build client library](#build-client-library)
+  - [Build artifacts](#build-artifacts)
+  - [Run tests](#run-tests)
+  - [Download precompiled binaries](#download-precompiled-binaries)
 
-* [Ever SDK](./#ever-sdk)
-  * [Content Table](./#content-table)
-  * [Use-cases](./#use-cases)
-  * [Quick Start](./#quick-start)
-  * [What is Core Client Library](./#what-is-core-client-library)
-  * [SDKs in other languages (bindings over Ever-SDK)](./#sdks-in-other-languages-bindings-over-ever-sdk)
-    * [Official Javascript(Typescript) SDK](./#official-javascripttypescript-sdk)
-    * [Community bindings](./#community-bindings)
-  * [How to use library](./#how-to-use-library)
-  * [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
-  * [Build client library](./#build-client-library)
-  * [Build artifacts](./#build-artifacts)
-  * [Run tests](./#run-tests)
-  * [Download precompiled binaries](./#download-precompiled-binaries)
 
 ## Use-cases
 
@@ -54,7 +52,7 @@ With Ever-SDK you can implement logic of any complexity on TVM compatible blockc
 
 ## Supported languages
 
-### Official Javascript(Typescript) Client Libraries
+### Official Javascript(Typescript) SDK
 
 Repository: [JavaScript SDK](https://github.com/tonlabs/ever-sdk-js)
 
@@ -113,15 +111,8 @@ Also this approach provided an opportunity to easily create bindings for any pro
 
 Client Library exposes all the functionality through a few of exported functions. All interaction with library is performed using JSON-RPC like protocol.
 
-## How to use library
+## If you did not find the language you need
 
-The simplest way is to use library in then Rust applications because of the native Rust library interface. The Rust interface is clear and well documented.
-
-But what if you are required to use library in languages others than Rust?
-
-You have some options:
-
-* use bindings already written by EverX and community. Above you can find a list of known bindings.
 * use library module `json_interface` which provides access to library functions through JSON-RPC interface. This interface exports several extern "C" functions. So you can build a dynamic or static link library and link it to your application as any other external libraries. The JSON Interface is fully "C" compliant. You can find description in section [JSON Interface](docs/for-binding-developers/json\_interface.md).
 * write your own binding to chosen language and share it with community.
 
