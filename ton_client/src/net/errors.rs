@@ -105,19 +105,6 @@ impl Error {
         )
     }
 
-    pub fn clock_out_of_sync(delta_ms: i64, threshold: u32) -> ClientError {
-        let mut error = error(
-            ErrorCode::ClockOutOfSync,
-            "The time on the device is out of sync with the time on the server. Synchronize your device time with internet time".to_owned(),
-        );
-
-        error.data = serde_json::json!({
-            "delta_ms": delta_ms,
-            "threshold_ms": threshold,
-        });
-        error
-    }
-
     pub fn wait_for_timeout() -> ClientError {
         error(
             ErrorCode::WaitForTimeout,

@@ -235,7 +235,8 @@ enum TvmErrorCode {
     InvalidInputStack = 411,
     InvalidAccountBoc = 412,
     InvalidMessageType = 413,
-    ContractExecutionError = 414
+    ContractExecutionError = 414,
+    AccountIsSuspended = 415
 }
 ```
 One of the following value:
@@ -254,6 +255,7 @@ One of the following value:
 - `InvalidAccountBoc = 412`
 - `InvalidMessageType = 413`
 - `ContractExecutionError = 414`
+- `AccountIsSuspended = 415`
 
 
 ## ExecutionOptions

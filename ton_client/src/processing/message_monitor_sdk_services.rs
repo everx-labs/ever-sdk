@@ -4,6 +4,7 @@ use crate::net::{NetworkContext, ResultOfSubscription};
 use async_trait::async_trait;
 use serde_json::Value;
 use std::future::Future;
+use std::sync::atomic::{AtomicU64, Ordering};
 use std::sync::Arc;
 use ton_client_processing::{
     MessageMonitorSdkServices, MessageMonitoringParams, MessageMonitoringResult,
@@ -68,9 +69,9 @@ impl From<ton_client_processing::Error> for ClientError {
 }
 
 fn deserialize_subscription_data(
-    value: ClientResult<ResultOfSubscription>,
+    value: ResultOfSubscription,
 ) -> ton_client_processing::Result<Vec<MessageMonitoringResult>> {
-    let result = value?.result;
+    let result = value.result;
     if result.is_null() {
         return Ok(vec![]);
     }
@@ -96,6 +97,8 @@ impl MessageMonitorSdkServices for SdkServices {
         // We have to wrap callback into Arc because it will move out of closure scope
         let callback = Arc::new(callback);
         let (query, vars) = Self::subscription(messages);
+        let retry_start = Arc::new(AtomicU64::new(0));
+        let net_state = self.net.get_server_link()?.state();
         let subscription = self
             .net
             .subscribe(
@@ -104,8 +107,33 @@ impl MessageMonitorSdkServices for SdkServices {
                 move |evt: ClientResult<ResultOfSubscription>| {
                     // We have to clone callback because it will move out of closure scope
                     let callback = callback.clone();
+                    let net_state = net_state.clone();
+                    let retry_start = retry_start.clone();
                     async move {
-                        callback(deserialize_subscription_data(evt)).await;
+                        match evt {
+                            Ok(evt) => {
+                                retry_start.store(0, Ordering::Relaxed);
+                                callback(deserialize_subscription_data(evt)).await;
+                            }
+                            Err(err) => {
+                                let mut start = retry_start.load(Ordering::Relaxed);
+                                if start == 0 {
+                                    start = net_state.env().now_ms();
+                                    retry_start.store(start, Ordering::Relaxed);
+                                }
+                                if err.code == crate::net::ErrorCode::NetworkModuleSuspended as u32
+                                    || err.code
+                                        == crate::net::ErrorCode::NetworkModuleResumed as u32
+                                {
+                                    return;
+                                }
+                                if !crate::client::Error::is_network_error(&err)
+                                    || !net_state.can_retry_network_error(start)
+                                {
+                                    callback(Err(err.into()));
+                                }
+                            }
+                        }
                     }
                 },
             )
@@ -118,6 +146,19 @@ impl MessageMonitorSdkServices for SdkServices {
         subscription: NetSubscription,
     ) -> ton_client_processing::Result<()> {
         Ok(self.net.unsubscribe(subscription.0 as u32).await?)
+    }
+
+    fn spawn(&self, future: impl Future<Output = ()> + Send + 'static) {
+        self.net.env.spawn(future);
+    }
+
+    async fn sleep(&self, ms: u64) -> ton_client_processing::Result<()> {
+        self.net.env.set_timer(ms).await?;
+        Ok(())
+    }
+
+    fn now_ms(&self) -> u64 {
+        self.net.env.now_ms()
     }
 
     fn cell_from_boc(&self, boc: &str, name: &str) -> ton_client_processing::Result<Cell> {

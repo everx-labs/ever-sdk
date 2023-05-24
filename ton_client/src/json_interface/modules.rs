@@ -399,7 +399,12 @@ pub(crate) struct BocModule;
 fn register_boc(handlers: &mut RuntimeHandlers) {
     let mut module = ModuleReg::new::<BocModule>(handlers);
     module.register_type::<crate::boc::BocCacheType>();
+    module.register_type::<BuilderOp>();
+    module.register_type::<crate::boc::Tvc>();
+    module.register_type::<crate::boc::TvcV1>();
+
     module.register_error_code::<crate::boc::ErrorCode>();
+    module.register_async_fn(crate::boc::decode_tvc, crate::boc::tvc::decode_tvc_api);
     module.register_async_fn(
         crate::boc::parse_message,
         crate::boc::parse::parse_message_api,
@@ -431,30 +436,35 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
     );
     module.register_async_fn(
         crate::boc::get_code_from_tvc,
-        crate::boc::tvc::get_code_from_tvc_api,
+        crate::boc::state_init::get_code_from_tvc_api,
     );
     module.register_async_fn(crate::boc::cache_get, crate::boc::cache::cache_get_api);
     module.register_async_fn(crate::boc::cache_set, crate::boc::cache::cache_set_api);
     module.register_async_fn(crate::boc::cache_unpin, crate::boc::cache::cache_unpin_api);
-    module.register_type::<BuilderOp>();
     module.register_async_fn(crate::boc::encode_boc, crate::boc::encode::encode_boc_api);
     module.register_async_fn(
         crate::boc::get_code_salt,
-        crate::boc::tvc::get_code_salt_api,
+        crate::boc::state_init::get_code_salt_api,
     );
     module.register_async_fn(
         crate::boc::set_code_salt,
-        crate::boc::tvc::set_code_salt_api,
+        crate::boc::state_init::set_code_salt_api,
     );
-    module.register_async_fn(crate::boc::decode_tvc, crate::boc::tvc::decode_tvc_api);
-    module.register_async_fn(crate::boc::encode_tvc, crate::boc::tvc::encode_tvc_api);
+    module.register_async_fn(
+        crate::boc::decode_state_init,
+        crate::boc::state_init::decode_state_init_api,
+    );
+    module.register_async_fn(
+        crate::boc::encode_state_init,
+        crate::boc::state_init::encode_state_init_api,
+    );
     module.register_async_fn(
         crate::boc::encode_external_in_message,
         crate::boc::encode_external_in_message::encode_external_in_message_api,
     );
     module.register_async_fn(
         crate::boc::get_compiler_version,
-        crate::boc::tvc::get_compiler_version_api,
+        crate::boc::state_init::get_compiler_version_api,
     );
     module.register();
 }
@@ -543,7 +553,7 @@ fn register_net(handlers: &mut RuntimeHandlers) {
     );
     module.register_async_fn_no_args(
         crate::net::get_signature_id,
-        crate::net::network_params::get_signature_id_api
+        crate::net::network_params::get_signature_id_api,
     );
     module.register();
 }

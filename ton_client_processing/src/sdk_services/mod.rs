@@ -20,5 +20,10 @@ pub trait MessageMonitorSdkServices {
 
     async fn unsubscribe(&self, subscription: NetSubscription) -> error::Result<()>;
 
+    fn spawn(&self, future: impl Future<Output = ()> + Send + 'static);
+
+    async fn sleep(&self, ms: u64) -> error::Result<()>;
+    fn now_ms(&self) -> u64;
+
     fn cell_from_boc(&self, boc: &str, name: &str) -> error::Result<Cell>;
 }

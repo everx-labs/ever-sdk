@@ -27,7 +27,7 @@ use super::{AppRequestResult, Error, ParamsOfAppRequest};
 use crate::abi::AbiConfig;
 use crate::boc::{cache::Bocs, BocConfig};
 use crate::client::storage::KeyValueStorage;
-use crate::client::{BindingConfig, update_binding_config};
+use crate::client::{update_binding_config, BindingConfig};
 use crate::crypto::boxes::crypto_box::{CryptoBox, DerivedKeys};
 use crate::crypto::boxes::{encryption_box::EncryptionBox, signing_box::SigningBox};
 use crate::crypto::CryptoConfig;
@@ -100,21 +100,12 @@ impl ClientContext {
         update_binding_config(&config.binding);
         let env = Arc::new(ClientEnv::new()?);
 
-        let server_link = if config.network.server_address.is_some()
-            || config.network.endpoints.is_some()
-        {
-            if config.network.out_of_sync_threshold > config.abi.message_expiration_timeout / 2 {
-                return Err(Error::invalid_config(format!(
-                    r#"`out_of_sync_threshold` can not be more then `message_expiration_timeout / 2`.
-`out_of_sync_threshold` = {}, `message_expiration_timeout` = {}
-Note that default values are used if parameters are omitted in config"#,
-                    config.network.out_of_sync_threshold, config.abi.message_expiration_timeout
-                )));
-            }
-            Some(ServerLink::new(config.network.clone(), env.clone())?)
-        } else {
-            None
-        };
+        let server_link =
+            if config.network.server_address.is_some() || config.network.endpoints.is_some() {
+                Some(ServerLink::new(config.network.clone(), env.clone())?)
+            } else {
+                None
+            };
 
         let bocs = Arc::new(Bocs::new(config.boc.cache_max_size));
         let net = Arc::new(NetworkContext {

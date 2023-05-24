@@ -981,7 +981,7 @@ async fn test_run_executor_fees() {
         )
         .await
         .unwrap();
-    
+
     let address = deploy_message.address.clone();
 
     let deployed: ResultOfRunExecutor = client
@@ -1132,7 +1132,7 @@ async fn test_gosh() {
         )
         .await
         .unwrap();
-    
+
     let address = deploy_message.address.clone();
 
     let deployed: ResultOfRunExecutor = client

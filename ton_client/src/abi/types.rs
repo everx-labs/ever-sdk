@@ -123,17 +123,20 @@ impl TryInto<ton_abi::Param> for AbiParam {
 /// If a contract's ABI does not include some headers, then they are not filled.
 #[derive(Serialize, Deserialize, ApiType, PartialEq, Debug, Clone, Default)]
 pub struct FunctionHeader {
-    /// Message expiration time in seconds.
+    /// Message expiration timestamp (UNIX time) in seconds.
+    ///
     /// If not specified - calculated automatically from message_expiration_timeout(),
     /// try_index and message_expiration_timeout_grow_factor() (if ABI includes `expire` header).
     pub expire: Option<u32>,
 
-    /// Message creation time in milliseconds. If not specified, `now` is used
-    /// (if ABI includes `time` header).
+    /// Message creation time in milliseconds.
+    ///
+    /// If not specified, `now` is used (if ABI includes `time` header).
     pub time: Option<u64>,
 
-    /// Public key is used by the contract to check the signature. Encoded in `hex`.
-    /// If not specified, method fails with exception (if ABI includes `pubkey` header)..
+    /// Public key is used by the contract to check the signature.
+    ///
+    /// Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header)..
     pub pubkey: Option<String>,
 }
 

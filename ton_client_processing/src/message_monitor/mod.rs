@@ -1,6 +1,7 @@
 mod message;
 mod monitor;
 mod queue;
+mod monitor_queues;
 
 #[cfg(test)]
 pub(crate) use message::CellFromBoc;

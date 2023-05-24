@@ -1051,7 +1051,6 @@ async fn querying_endpoint_selection() {
         ClientContext::new(ClientConfig {
             network: NetworkConfig {
                 endpoints: Some(vec!["a".into(), "b".into()]),
-                network_retries_count: 3,
                 max_latency: 1000,
                 ..Default::default()
             },
@@ -1104,7 +1103,7 @@ async fn querying_endpoint_selection() {
         ClientContext::new(ClientConfig {
             network: NetworkConfig {
                 endpoints: Some(vec!["a".into()]),
-                network_retries_count: 2,
+                max_reconnect_timeout: 300,
                 max_latency: 1000,
                 ..Default::default()
             },
@@ -1114,6 +1113,7 @@ async fn querying_endpoint_selection() {
     );
     NetworkMock::build()
         .url("a")
+        .delay(100)
         .repeat(3)
         .network_err()
         .reset_client(&client)
@@ -1143,7 +1143,6 @@ async fn latency_detection_with_queries() {
         ClientContext::new(ClientConfig {
             network: NetworkConfig {
                 endpoints: Some(vec!["a".into(), "b".into()]),
-                network_retries_count: 3,
                 max_latency: 600,
                 latency_detection_interval: 100,
                 ..Default::default()
@@ -1204,7 +1203,6 @@ async fn latency_detection_with_websockets() {
         ClientContext::new(ClientConfig {
             network: NetworkConfig {
                 endpoints: Some(vec!["a".into(), "b".into()]),
-                network_retries_count: 3,
                 max_latency: 600,
                 latency_detection_interval: 100,
                 ..Default::default()
@@ -1629,13 +1627,12 @@ async fn return_network_error_on_subscribe() {
     let client = TestClient::new_with_config(json!({
         "network": {
             "endpoints": ["a"],
-            "network_retries_count": 4,
+            "max_reconnect_timeout": 0,
         }
     }));
 
     NetworkMock::build()
         .url("a")
-        .repeat(5)
         .network_err()
         .reset_client(&client.context())
         .await;

@@ -14,15 +14,14 @@
 use crate::boc::{BocCacheType, Error};
 use crate::error::ClientResult;
 use crate::ClientContext;
-use std::io::Cursor;
 #[allow(unused_imports)]
 use std::str::FromStr;
 use ton_block::{Deserializable, Serializable};
-use ton_types::{deserialize_tree_of_cells, UInt256};
+use ton_types::{UInt256};
 
 pub(crate) fn get_boc_hash(boc: &[u8]) -> ClientResult<String> {
     let cells =
-        deserialize_tree_of_cells(&mut Cursor::new(boc)).map_err(|err| Error::invalid_boc(err))?;
+        ton_types::boc::read_single_root_boc(&boc).map_err(|err| Error::invalid_boc(err))?;
     let id: Vec<u8> = cells.repr_hash().as_slice()[..].into();
     Ok(hex::encode(&id))
 }
@@ -34,7 +33,7 @@ pub fn deserialize_cell_from_base64(
     let bytes = base64::decode(&b64)
         .map_err(|err| Error::invalid_boc(format!("error decode {} BOC base64: {}", name, err)))?;
 
-    let cell = deserialize_tree_of_cells(&mut Cursor::new(&bytes)).map_err(|err| {
+    let cell = ton_types::boc::read_single_root_boc(&bytes).map_err(|err| {
         Error::invalid_boc(format!("{} BOC deserialization error: {}", name, err))
     })?;
 
@@ -110,7 +109,7 @@ pub fn serialize_object_to_cell<S: Serializable>(
 }
 
 pub fn serialize_cell_to_bytes(cell: &ton_types::Cell, name: &str) -> ClientResult<Vec<u8>> {
-    ton_types::cells_serialization::serialize_toc(&cell)
+    ton_types::boc::write_boc(&cell)
         .map_err(|err| Error::serialization_error(err, name))
 }
 
@@ -146,7 +145,7 @@ pub fn deserialize_object_from_boc_bin<S: Deserializable>(
     boc: &[u8],
 ) -> ClientResult<(S, UInt256)> {
     let cell =
-        deserialize_tree_of_cells(&mut Cursor::new(boc)).map_err(|err| Error::invalid_boc(err))?;
+        ton_types::boc::read_single_root_boc(&boc).map_err(|err| Error::invalid_boc(err))?;
     let root_hash = cell.repr_hash();
     let object = S::construct_from_cell(cell).map_err(|err| Error::invalid_boc(err))?;
 

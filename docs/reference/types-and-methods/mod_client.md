@@ -301,7 +301,7 @@ type NetworkConfig = {
 ```
 - `server_address`?: _string_ – **This field is deprecated, but left for backward-compatibility.** Evernode endpoint.
 - `endpoints`?: _string[]_ – List of Evernode endpoints.
-<br>Any correct URL format can be specified, including IP addresses. This parameter is prevailing over `server_address`.<br>Check the full list of [supported network endpoints](https://docs.everos.dev/ever-sdk/reference/ever-os-api/networks).
+<br>Any correct URL format can be specified, including IP addresses. This parameter is prevailing over `server_address`.<br>Check the full list of [supported network endpoints](https://docs.evercloud.dev/products/evercloud/networks-endpoints).
 - `network_retries_count`?: _number_ – Deprecated.
 <br>You must use `network.max_reconnect_timeout` that allows to specify maximum network resolving timeout.
 - `max_reconnect_timeout`?: _number_ – Maximum time for sequential reconnections.
@@ -313,8 +313,7 @@ type NetworkConfig = {
 <br>Must be specified in milliseconds. Default is 40000 (40 sec).
 - `wait_for_timeout`?: _number_ – Maximum timeout that is used for query response.
 <br>Must be specified in milliseconds. Default is 40000 (40 sec).
-- `out_of_sync_threshold`?: _number_ – Maximum time difference between server and client.
-<br>If client's device time is out of sync and difference is more than the threshold then error will occur. Also an error will occur if the specified threshold is more than<br>`message_processing_timeout/2`.<br><br>Must be specified in milliseconds. Default is 15000 (15 sec).
+- `out_of_sync_threshold`?: _number_ – **DEPRECATED**: This parameter was deprecated.
 - `sending_endpoint_count`?: _number_ – Maximum number of randomly chosen endpoints the library uses to broadcast a message.
 <br>Default is 1.
 - `latency_detection_interval`?: _number_ – Frequency of sync latency detection.
@@ -384,8 +383,10 @@ type AbiConfig = {
 }
 ```
 - `workchain`?: _number_ – Workchain id that is used by default in DeploySet
-- `message_expiration_timeout`?: _number_ – Message lifetime for contracts which ABI includes "expire" header. The default value is 40 sec.
-- `message_expiration_timeout_grow_factor`?: _number_ – Factor that increases the expiration timeout for each retry The default value is 1.5
+- `message_expiration_timeout`?: _number_ – Message lifetime for contracts which ABI includes "expire" header.
+<br>Must be specified in milliseconds. Default is 40000 (40 sec).
+- `message_expiration_timeout_grow_factor`?: _number_ – Factor that increases the expiration timeout for each retry
+<br>Default is 1.5
 
 
 ## BocConfig
