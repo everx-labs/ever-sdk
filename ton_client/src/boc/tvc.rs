@@ -48,7 +48,9 @@ pub struct TvcV1 {
     pub description: Option<String>,
 }
 
-/// Decodes tvc into code, data, libraries and special options.
+/// Decodes tvc according to the tvc spec. 
+/// Read more about tvc structure here https://github.com/tonlabs/ever-struct/blob/main/src/scheme/mod.rs#L30
+
 #[api_function]
 pub async fn decode_tvc(
     context: std::sync::Arc<ClientContext>,

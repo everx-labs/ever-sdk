@@ -305,7 +305,7 @@ pub struct ResultOfEncodeStateInit {
     pub state_init: String,
 }
 
-/// Encodes tvc from code, data, libraries ans special options (see input params)
+/// Encodes initial contract state from code, data, libraries ans special options (see input params)
 #[api_function]
 pub async fn encode_state_init(
     context: std::sync::Arc<ClientContext>,
@@ -388,7 +388,7 @@ pub struct ResultOfDecodeStateInit {
     pub compiler_version: Option<String>,
 }
 
-/// Decodes tvc into code, data, libraries and special options.
+/// Decodes contract's initial state into code, data, libraries and special options.
 #[api_function]
 pub async fn decode_state_init(
     context: std::sync::Arc<ClientContext>,
