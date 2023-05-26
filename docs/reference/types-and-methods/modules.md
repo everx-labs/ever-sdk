@@ -163,6 +163,8 @@ Where:
 
 ## [boc](mod\_boc.md) – BOC manipulation module.
 
+[decode_tvc](mod\_boc.md#decode_tvc) – Decodes tvc according to the tvc spec. Read more about tvc structure here https://github.com/tonlabs/ever-struct/blob/main/src/scheme/mod.rs#L30
+
 [parse_message](mod\_boc.md#parse_message) – Parses message boc into a JSON
 
 [parse_transaction](mod\_boc.md#parse_transaction) – Parses transaction boc into a JSON
@@ -193,9 +195,9 @@ Where:
 
 [set_code_salt](mod\_boc.md#set_code_salt) – Sets new salt to contract code.
 
-[decode_tvc](mod\_boc.md#decode_tvc) – Decodes tvc into code, data, libraries and special options.
+[decode_state_init](mod\_boc.md#decode_state_init) – Decodes contract's initial state into code, data, libraries and special options.
 
-[encode_tvc](mod\_boc.md#encode_tvc) – Encodes tvc from code, data, libraries ans special options (see input params)
+[encode_state_init](mod\_boc.md#encode_state_init) – Encodes initial contract state from code, data, libraries ans special options (see input params)
 
 [encode_external_in_message](mod\_boc.md#encode_external_in_message) – Encodes a message
 

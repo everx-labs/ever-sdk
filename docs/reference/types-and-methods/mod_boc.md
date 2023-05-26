@@ -4,6 +4,8 @@ BOC manipulation module.
 
 
 ## Functions
+[decode_tvc](mod\_boc.md#decode_tvc) – Decodes tvc according to the tvc spec. Read more about tvc structure here https://github.com/tonlabs/ever-struct/blob/main/src/scheme/mod.rs#L30
+
 [parse_message](mod\_boc.md#parse_message) – Parses message boc into a JSON
 
 [parse_transaction](mod\_boc.md#parse_transaction) – Parses transaction boc into a JSON
@@ -34,9 +36,9 @@ BOC manipulation module.
 
 [set_code_salt](mod\_boc.md#set_code_salt) – Sets new salt to contract code.
 
-[decode_tvc](mod\_boc.md#decode_tvc) – Decodes tvc into code, data, libraries and special options.
+[decode_state_init](mod\_boc.md#decode_state_init) – Decodes contract's initial state into code, data, libraries and special options.
 
-[encode_tvc](mod\_boc.md#encode_tvc) – Encodes tvc from code, data, libraries ans special options (see input params)
+[encode_state_init](mod\_boc.md#encode_state_init) – Encodes initial contract state from code, data, libraries ans special options (see input params)
 
 [encode_external_in_message](mod\_boc.md#encode_external_in_message) – Encodes a message
 
@@ -49,7 +51,29 @@ BOC manipulation module.
 
 [BocCacheType](mod\_boc.md#boccachetype)
 
+[BuilderOpIntegerVariant](mod\_boc.md#builderopintegervariant) – Append integer to cell data.
+
+[BuilderOpBitStringVariant](mod\_boc.md#builderopbitstringvariant) – Append bit string to cell data.
+
+[BuilderOpCellVariant](mod\_boc.md#builderopcellvariant) – Append ref to nested cells.
+
+[BuilderOpCellBocVariant](mod\_boc.md#builderopcellbocvariant) – Append ref to nested cell.
+
+[BuilderOpAddressVariant](mod\_boc.md#builderopaddressvariant) – Address.
+
+[BuilderOp](mod\_boc.md#builderop) – Cell builder operation.
+
+[TvcV1Variant](mod\_boc.md#tvcv1variant)
+
+[Tvc](mod\_boc.md#tvc)
+
+[TvcV1](mod\_boc.md#tvcv1)
+
 [BocErrorCode](mod\_boc.md#bocerrorcode)
+
+[ParamsOfDecodeTvc](mod\_boc.md#paramsofdecodetvc)
+
+[ResultOfDecodeTvc](mod\_boc.md#resultofdecodetvc)
 
 [ParamsOfParse](mod\_boc.md#paramsofparse)
 
@@ -83,18 +107,6 @@ BOC manipulation module.
 
 [ParamsOfBocCacheUnpin](mod\_boc.md#paramsofboccacheunpin)
 
-[BuilderOpIntegerVariant](mod\_boc.md#builderopintegervariant) – Append integer to cell data.
-
-[BuilderOpBitStringVariant](mod\_boc.md#builderopbitstringvariant) – Append bit string to cell data.
-
-[BuilderOpCellVariant](mod\_boc.md#builderopcellvariant) – Append ref to nested cells.
-
-[BuilderOpCellBocVariant](mod\_boc.md#builderopcellbocvariant) – Append ref to nested cell.
-
-[BuilderOpAddressVariant](mod\_boc.md#builderopaddressvariant) – Address.
-
-[BuilderOp](mod\_boc.md#builderop) – Cell builder operation.
-
 [ParamsOfEncodeBoc](mod\_boc.md#paramsofencodeboc)
 
 [ResultOfEncodeBoc](mod\_boc.md#resultofencodeboc)
@@ -107,13 +119,13 @@ BOC manipulation module.
 
 [ResultOfSetCodeSalt](mod\_boc.md#resultofsetcodesalt)
 
-[ParamsOfDecodeTvc](mod\_boc.md#paramsofdecodetvc)
+[ParamsOfDecodeStateInit](mod\_boc.md#paramsofdecodestateinit)
 
-[ResultOfDecodeTvc](mod\_boc.md#resultofdecodetvc)
+[ResultOfDecodeStateInit](mod\_boc.md#resultofdecodestateinit)
 
-[ParamsOfEncodeTvc](mod\_boc.md#paramsofencodetvc)
+[ParamsOfEncodeStateInit](mod\_boc.md#paramsofencodestateinit)
 
-[ResultOfEncodeTvc](mod\_boc.md#resultofencodetvc)
+[ResultOfEncodeStateInit](mod\_boc.md#resultofencodestateinit)
 
 [ParamsOfEncodeExternalInMessage](mod\_boc.md#paramsofencodeexternalinmessage)
 
@@ -125,6 +137,32 @@ BOC manipulation module.
 
 
 # Functions
+## decode_tvc
+
+Decodes tvc according to the tvc spec. Read more about tvc structure here https://github.com/tonlabs/ever-struct/blob/main/src/scheme/mod.rs#L30
+
+```ts
+type ParamsOfDecodeTvc = {
+    tvc: string
+}
+
+type ResultOfDecodeTvc = {
+    tvc: Tvc
+}
+
+function decode_tvc(
+    params: ParamsOfDecodeTvc,
+): Promise<ResultOfDecodeTvc>;
+```
+### Parameters
+- `tvc`: _string_ – Contract TVC BOC encoded as base64 or BOC handle
+
+
+### Result
+
+- `tvc`: _[Tvc](mod\_boc.md#tvc)_ – Decoded TVC
+
+
 ## parse_message
 
 Parses message boc into a JSON
@@ -538,17 +576,17 @@ function set_code_salt(
 <br>BOC encoded as base64 or BOC handle
 
 
-## decode_tvc
+## decode_state_init
 
-Decodes tvc into code, data, libraries and special options.
+Decodes contract's initial state into code, data, libraries and special options.
 
 ```ts
-type ParamsOfDecodeTvc = {
-    tvc: string,
+type ParamsOfDecodeStateInit = {
+    state_init: string,
     boc_cache?: BocCacheType
 }
 
-type ResultOfDecodeTvc = {
+type ResultOfDecodeStateInit = {
     code?: string,
     code_hash?: string,
     code_depth?: number,
@@ -562,12 +600,12 @@ type ResultOfDecodeTvc = {
     compiler_version?: string
 }
 
-function decode_tvc(
-    params: ParamsOfDecodeTvc,
-): Promise<ResultOfDecodeTvc>;
+function decode_state_init(
+    params: ParamsOfDecodeStateInit,
+): Promise<ResultOfDecodeStateInit>;
 ```
 ### Parameters
-- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle
+- `state_init`: _string_ – Contract StateInit image BOC encoded as base64 or BOC handle
 - `boc_cache`?: _[BocCacheType](mod\_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
@@ -588,12 +626,12 @@ function decode_tvc(
 - `compiler_version`?: _string_ – Compiler version, for example 'sol 0.49.0'
 
 
-## encode_tvc
+## encode_state_init
 
-Encodes tvc from code, data, libraries ans special options (see input params)
+Encodes initial contract state from code, data, libraries ans special options (see input params)
 
 ```ts
-type ParamsOfEncodeTvc = {
+type ParamsOfEncodeStateInit = {
     code?: string,
     data?: string,
     library?: string,
@@ -603,13 +641,13 @@ type ParamsOfEncodeTvc = {
     boc_cache?: BocCacheType
 }
 
-type ResultOfEncodeTvc = {
-    tvc: string
+type ResultOfEncodeStateInit = {
+    state_init: string
 }
 
-function encode_tvc(
-    params: ParamsOfEncodeTvc,
-): Promise<ResultOfEncodeTvc>;
+function encode_state_init(
+    params: ParamsOfEncodeStateInit,
+): Promise<ResultOfEncodeStateInit>;
 ```
 ### Parameters
 - `code`?: _string_ – Contract code BOC encoded as base64 or BOC handle
@@ -625,7 +663,7 @@ function encode_tvc(
 
 ### Result
 
-- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
+- `state_init`: _string_ – Contract StateInit image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
 
 
 ## encode_external_in_message
@@ -756,6 +794,166 @@ function bocCacheTypePinned(pin: string): BocCacheType;
 function bocCacheTypeUnpinned(): BocCacheType;
 ```
 
+## BuilderOpIntegerVariant
+Append integer to cell data.
+
+```ts
+type BuilderOpIntegerVariant = {
+    size: number,
+    value: any
+}
+```
+- `size`: _number_ – Bit size of the value.
+- `value`: _any_ – Value: - `Number` containing integer number.
+<br>e.g. `123`, `-123`. - Decimal string. e.g. `"123"`, `"-123"`.<br>- `0x` prefixed hexadecimal string.<br>  e.g `0x123`, `0X123`, `-0x123`.
+
+
+## BuilderOpBitStringVariant
+Append bit string to cell data.
+
+```ts
+type BuilderOpBitStringVariant = {
+    value: string
+}
+```
+- `value`: _string_ – Bit string content using bitstring notation. See `TON VM specification` 1.0.
+<br>Contains hexadecimal string representation:<br>- Can end with `_` tag.<br>- Can be prefixed with `x` or `X`.<br>- Can be prefixed with `x{` or `X{` and ended with `}`.<br><br>Contains binary string represented as a sequence<br>of `0` and `1` prefixed with `n` or `N`.<br><br>Examples:<br>`1AB`, `x1ab`, `X1AB`, `x{1abc}`, `X{1ABC}`<br>`2D9_`, `x2D9_`, `X2D9_`, `x{2D9_}`, `X{2D9_}`<br>`n00101101100`, `N00101101100`
+
+
+## BuilderOpCellVariant
+Append ref to nested cells.
+
+```ts
+type BuilderOpCellVariant = {
+    builder: BuilderOp[]
+}
+```
+- `builder`: _[BuilderOp](mod\_boc.md#builderop)[]_ – Nested cell builder.
+
+
+## BuilderOpCellBocVariant
+Append ref to nested cell.
+
+```ts
+type BuilderOpCellBocVariant = {
+    boc: string
+}
+```
+- `boc`: _string_ – Nested cell BOC encoded with `base64` or BOC cache key.
+
+
+## BuilderOpAddressVariant
+Address.
+
+```ts
+type BuilderOpAddressVariant = {
+    address: string
+}
+```
+- `address`: _string_ – Address in a common `workchain:account` or base64 format.
+
+
+## BuilderOp
+Cell builder operation.
+
+```ts
+type BuilderOp = ({
+    type: 'Integer'
+} & BuilderOpIntegerVariant) | ({
+    type: 'BitString'
+} & BuilderOpBitStringVariant) | ({
+    type: 'Cell'
+} & BuilderOpCellVariant) | ({
+    type: 'CellBoc'
+} & BuilderOpCellBocVariant) | ({
+    type: 'Address'
+} & BuilderOpAddressVariant)
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'Integer'_
+
+Append integer to cell data.
+
+- `size`: _number_ – Bit size of the value.
+- `value`: _any_ – Value: - `Number` containing integer number.
+<br>e.g. `123`, `-123`. - Decimal string. e.g. `"123"`, `"-123"`.<br>- `0x` prefixed hexadecimal string.<br>  e.g `0x123`, `0X123`, `-0x123`.
+
+When _type_ is _'BitString'_
+
+Append bit string to cell data.
+
+- `value`: _string_ – Bit string content using bitstring notation. See `TON VM specification` 1.0.
+<br>Contains hexadecimal string representation:<br>- Can end with `_` tag.<br>- Can be prefixed with `x` or `X`.<br>- Can be prefixed with `x{` or `X{` and ended with `}`.<br><br>Contains binary string represented as a sequence<br>of `0` and `1` prefixed with `n` or `N`.<br><br>Examples:<br>`1AB`, `x1ab`, `X1AB`, `x{1abc}`, `X{1ABC}`<br>`2D9_`, `x2D9_`, `X2D9_`, `x{2D9_}`, `X{2D9_}`<br>`n00101101100`, `N00101101100`
+
+When _type_ is _'Cell'_
+
+Append ref to nested cells.
+
+- `builder`: _[BuilderOp](mod\_boc.md#builderop)[]_ – Nested cell builder.
+
+When _type_ is _'CellBoc'_
+
+Append ref to nested cell.
+
+- `boc`: _string_ – Nested cell BOC encoded with `base64` or BOC cache key.
+
+When _type_ is _'Address'_
+
+Address.
+
+- `address`: _string_ – Address in a common `workchain:account` or base64 format.
+
+
+Variant constructors:
+
+```ts
+function builderOpInteger(size: number, value: any): BuilderOp;
+function builderOpBitString(value: string): BuilderOp;
+function builderOpCell(builder: BuilderOp[]): BuilderOp;
+function builderOpCellBoc(boc: string): BuilderOp;
+function builderOpAddress(address: string): BuilderOp;
+```
+
+## TvcV1Variant
+```ts
+type TvcV1Variant = {
+    value: TvcV1
+}
+```
+- `value`: _[TvcV1](mod\_boc.md#tvcv1)_
+
+
+## Tvc
+```ts
+type Tvc = ({
+    type: 'V1'
+} & TvcV1Variant)
+```
+Depends on value of the  `type` field.
+
+When _type_ is _'V1'_
+
+- `value`: _[TvcV1](mod\_boc.md#tvcv1)_
+
+
+Variant constructors:
+
+```ts
+function tvcV1(value: TvcV1): Tvc;
+```
+
+## TvcV1
+```ts
+type TvcV1 = {
+    code?: string,
+    description?: string
+}
+```
+- `code`?: _string_
+- `description`?: _string_
+
+
 ## BocErrorCode
 ```ts
 enum BocErrorCode {
@@ -777,6 +975,24 @@ One of the following value:
 - `InsufficientCacheSize = 205`
 - `BocRefNotFound = 206`
 - `InvalidBocRef = 207`
+
+
+## ParamsOfDecodeTvc
+```ts
+type ParamsOfDecodeTvc = {
+    tvc: string
+}
+```
+- `tvc`: _string_ – Contract TVC BOC encoded as base64 or BOC handle
+
+
+## ResultOfDecodeTvc
+```ts
+type ResultOfDecodeTvc = {
+    tvc: Tvc
+}
+```
+- `tvc`: _[Tvc](mod\_boc.md#tvc)_ – Decoded TVC
 
 
 ## ParamsOfParse
@@ -932,127 +1148,6 @@ type ParamsOfBocCacheUnpin = {
 <br>If it is provided then only referenced BOC is unpinned
 
 
-## BuilderOpIntegerVariant
-Append integer to cell data.
-
-```ts
-type BuilderOpIntegerVariant = {
-    size: number,
-    value: any
-}
-```
-- `size`: _number_ – Bit size of the value.
-- `value`: _any_ – Value: - `Number` containing integer number.
-<br>e.g. `123`, `-123`. - Decimal string. e.g. `"123"`, `"-123"`.<br>- `0x` prefixed hexadecimal string.<br>  e.g `0x123`, `0X123`, `-0x123`.
-
-
-## BuilderOpBitStringVariant
-Append bit string to cell data.
-
-```ts
-type BuilderOpBitStringVariant = {
-    value: string
-}
-```
-- `value`: _string_ – Bit string content using bitstring notation. See `TON VM specification` 1.0.
-<br>Contains hexadecimal string representation:<br>- Can end with `_` tag.<br>- Can be prefixed with `x` or `X`.<br>- Can be prefixed with `x{` or `X{` and ended with `}`.<br><br>Contains binary string represented as a sequence<br>of `0` and `1` prefixed with `n` or `N`.<br><br>Examples:<br>`1AB`, `x1ab`, `X1AB`, `x{1abc}`, `X{1ABC}`<br>`2D9_`, `x2D9_`, `X2D9_`, `x{2D9_}`, `X{2D9_}`<br>`n00101101100`, `N00101101100`
-
-
-## BuilderOpCellVariant
-Append ref to nested cells.
-
-```ts
-type BuilderOpCellVariant = {
-    builder: BuilderOp[]
-}
-```
-- `builder`: _[BuilderOp](mod\_boc.md#builderop)[]_ – Nested cell builder.
-
-
-## BuilderOpCellBocVariant
-Append ref to nested cell.
-
-```ts
-type BuilderOpCellBocVariant = {
-    boc: string
-}
-```
-- `boc`: _string_ – Nested cell BOC encoded with `base64` or BOC cache key.
-
-
-## BuilderOpAddressVariant
-Address.
-
-```ts
-type BuilderOpAddressVariant = {
-    address: string
-}
-```
-- `address`: _string_ – Address in a common `workchain:account` or base64 format.
-
-
-## BuilderOp
-Cell builder operation.
-
-```ts
-type BuilderOp = ({
-    type: 'Integer'
-} & BuilderOpIntegerVariant) | ({
-    type: 'BitString'
-} & BuilderOpBitStringVariant) | ({
-    type: 'Cell'
-} & BuilderOpCellVariant) | ({
-    type: 'CellBoc'
-} & BuilderOpCellBocVariant) | ({
-    type: 'Address'
-} & BuilderOpAddressVariant)
-```
-Depends on value of the  `type` field.
-
-When _type_ is _'Integer'_
-
-Append integer to cell data.
-
-- `size`: _number_ – Bit size of the value.
-- `value`: _any_ – Value: - `Number` containing integer number.
-<br>e.g. `123`, `-123`. - Decimal string. e.g. `"123"`, `"-123"`.<br>- `0x` prefixed hexadecimal string.<br>  e.g `0x123`, `0X123`, `-0x123`.
-
-When _type_ is _'BitString'_
-
-Append bit string to cell data.
-
-- `value`: _string_ – Bit string content using bitstring notation. See `TON VM specification` 1.0.
-<br>Contains hexadecimal string representation:<br>- Can end with `_` tag.<br>- Can be prefixed with `x` or `X`.<br>- Can be prefixed with `x{` or `X{` and ended with `}`.<br><br>Contains binary string represented as a sequence<br>of `0` and `1` prefixed with `n` or `N`.<br><br>Examples:<br>`1AB`, `x1ab`, `X1AB`, `x{1abc}`, `X{1ABC}`<br>`2D9_`, `x2D9_`, `X2D9_`, `x{2D9_}`, `X{2D9_}`<br>`n00101101100`, `N00101101100`
-
-When _type_ is _'Cell'_
-
-Append ref to nested cells.
-
-- `builder`: _[BuilderOp](mod\_boc.md#builderop)[]_ – Nested cell builder.
-
-When _type_ is _'CellBoc'_
-
-Append ref to nested cell.
-
-- `boc`: _string_ – Nested cell BOC encoded with `base64` or BOC cache key.
-
-When _type_ is _'Address'_
-
-Address.
-
-- `address`: _string_ – Address in a common `workchain:account` or base64 format.
-
-
-Variant constructors:
-
-```ts
-function builderOpInteger(size: number, value: any): BuilderOp;
-function builderOpBitString(value: string): BuilderOp;
-function builderOpCell(builder: BuilderOp[]): BuilderOp;
-function builderOpCellBoc(boc: string): BuilderOp;
-function builderOpAddress(address: string): BuilderOp;
-```
-
 ## ParamsOfEncodeBoc
 ```ts
 type ParamsOfEncodeBoc = {
@@ -1118,20 +1213,20 @@ type ResultOfSetCodeSalt = {
 <br>BOC encoded as base64 or BOC handle
 
 
-## ParamsOfDecodeTvc
+## ParamsOfDecodeStateInit
 ```ts
-type ParamsOfDecodeTvc = {
-    tvc: string,
+type ParamsOfDecodeStateInit = {
+    state_init: string,
     boc_cache?: BocCacheType
 }
 ```
-- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle
+- `state_init`: _string_ – Contract StateInit image BOC encoded as base64 or BOC handle
 - `boc_cache`?: _[BocCacheType](mod\_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
-## ResultOfDecodeTvc
+## ResultOfDecodeStateInit
 ```ts
-type ResultOfDecodeTvc = {
+type ResultOfDecodeStateInit = {
     code?: string,
     code_hash?: string,
     code_depth?: number,
@@ -1160,9 +1255,9 @@ type ResultOfDecodeTvc = {
 - `compiler_version`?: _string_ – Compiler version, for example 'sol 0.49.0'
 
 
-## ParamsOfEncodeTvc
+## ParamsOfEncodeStateInit
 ```ts
-type ParamsOfEncodeTvc = {
+type ParamsOfEncodeStateInit = {
     code?: string,
     data?: string,
     library?: string,
@@ -1183,13 +1278,13 @@ type ParamsOfEncodeTvc = {
 - `boc_cache`?: _[BocCacheType](mod\_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
 
 
-## ResultOfEncodeTvc
+## ResultOfEncodeStateInit
 ```ts
-type ResultOfEncodeTvc = {
-    tvc: string
+type ResultOfEncodeStateInit = {
+    state_init: string
 }
 ```
-- `tvc`: _string_ – Contract TVC image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
+- `state_init`: _string_ – Contract StateInit image BOC encoded as base64 or BOC handle of boc_cache parameter was specified
 
 
 ## ParamsOfEncodeExternalInMessage

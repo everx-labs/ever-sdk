@@ -8927,7 +8927,7 @@
       "functions": [
         {
           "name": "decode_tvc",
-          "summary": "Decodes tvc into code, data, libraries and special options.",
+          "summary": "Decodes tvc according to the tvc spec. Read more about tvc structure here https://github.com/tonlabs/ever-struct/blob/main/src/scheme/mod.rs#L30",
           "description": null,
           "params": [
             {
@@ -9534,7 +9534,7 @@
         },
         {
           "name": "decode_state_init",
-          "summary": "Decodes tvc into code, data, libraries and special options.",
+          "summary": "Decodes contract's initial state into code, data, libraries and special options.",
           "description": null,
           "params": [
             {
@@ -9572,7 +9572,7 @@
         },
         {
           "name": "encode_state_init",
-          "summary": "Encodes tvc from code, data, libraries ans special options (see input params)",
+          "summary": "Encodes initial contract state from code, data, libraries ans special options (see input params)",
           "description": null,
           "params": [
             {
