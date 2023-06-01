@@ -107,7 +107,7 @@ checksum = "9c7d0618f0e0b7e8ff11427422b64564d5fb0be1940354bfe2e0529b18a9d9b8"
 
 [[package]]
 name = "api_derive"
-version = "1.43.0"
+version = "1.43.1"
 dependencies = [
  "api_info",
  "proc-macro2",
@@ -118,7 +118,7 @@ dependencies = [
 
 [[package]]
 name = "api_info"
-version = "1.43.0"
+version = "1.43.1"
 dependencies = [
  "serde",
  "serde_derive",
@@ -127,7 +127,7 @@ dependencies = [
 
 [[package]]
 name = "api_test"
-version = "1.43.0"
+version = "1.43.1"
 dependencies = [
  "api_derive",
  "api_info",
@@ -2585,7 +2585,7 @@ dependencies = [
 
 [[package]]
 name = "ton_client"
-version = "1.43.0"
+version = "1.43.1"
 dependencies = [
  "aes",
  "api_derive",
@@ -2684,7 +2684,7 @@ dependencies = [
 
 [[package]]
 name = "ton_sdk"
-version = "1.43.0"
+version = "1.43.1"
 dependencies = [
  "api_derive",
  "api_info",
@@ -2792,7 +2792,7 @@ dependencies = [
 
 [[package]]
 name = "toncli"
-version = "1.43.0"
+version = "1.43.1"
 dependencies = [
  "api_info",
  "assert_cmd",
