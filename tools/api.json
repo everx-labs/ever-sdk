@@ -1,5 +1,5 @@
 {
-  "version": "1.43.0",
+  "version": "1.43.1",
   "modules": [
     {
       "name": "client",
@@ -10479,16 +10479,8 @@
               "type": "Struct",
               "struct_fields": [
                 {
-                  "name": "value",
-                  "type": "Struct",
-                  "struct_fields": [
-                    {
-                      "name": "boc",
-                      "type": "String",
-                      "summary": null,
-                      "description": null
-                    }
-                  ],
+                  "name": "boc",
+                  "type": "String",
                   "summary": null,
                   "description": null
                 }
@@ -10501,23 +10493,15 @@
               "type": "Struct",
               "struct_fields": [
                 {
-                  "name": "value",
-                  "type": "Struct",
-                  "struct_fields": [
-                    {
-                      "name": "hash",
-                      "type": "String",
-                      "summary": "Hash of the message.",
-                      "description": null
-                    },
-                    {
-                      "name": "address",
-                      "type": "String",
-                      "summary": "Destination address of the message.",
-                      "description": null
-                    }
-                  ],
-                  "summary": null,
+                  "name": "hash",
+                  "type": "String",
+                  "summary": "Hash of the message.",
+                  "description": null
+                },
+                {
+                  "name": "address",
+                  "type": "String",
+                  "summary": "Destination address of the message.",
                   "description": null
                 }
               ],

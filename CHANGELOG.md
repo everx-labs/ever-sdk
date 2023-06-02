@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.43.1] – 2023-06-01
+
+### Fixed
+
+- `MonitoredMessage` API representation simplified.
+
 ## [1.43.0] – 2023-05-23
 
 ### New

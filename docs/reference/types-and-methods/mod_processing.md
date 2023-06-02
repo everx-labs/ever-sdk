@@ -1022,12 +1022,10 @@ BOC of the message.
 
 ```ts
 type MonitoredMessageBocVariant = {
-    value: {
-        boc: string
-    }
+    boc: string
 }
 ```
-- `value`: _struct_
+- `boc`: _string_
 
 
 ## MonitoredMessageHashAddressVariant
@@ -1035,13 +1033,12 @@ Message's hash and destination address.
 
 ```ts
 type MonitoredMessageHashAddressVariant = {
-    value: {
-        hash: string,
-        address: string
-    }
+    hash: string,
+    address: string
 }
 ```
-- `value`: _struct_
+- `hash`: _string_ – Hash of the message.
+- `address`: _string_ – Destination address of the message.
 
 
 ## MonitoredMessage
@@ -1058,25 +1055,21 @@ When _type_ is _'Boc'_
 
 BOC of the message.
 
-- `value`: _struct_
+- `boc`: _string_
 
 When _type_ is _'HashAddress'_
 
 Message's hash and destination address.
 
-- `value`: _struct_
+- `hash`: _string_ – Hash of the message.
+- `address`: _string_ – Destination address of the message.
 
 
 Variant constructors:
 
 ```ts
-function monitoredMessageBoc(value: {
-    boc: string
-}): MonitoredMessage;
-function monitoredMessageHashAddress(value: {
-    hash: string,
-    address: string
-}): MonitoredMessage;
+function monitoredMessageBoc(boc: string): MonitoredMessage;
+function monitoredMessageHashAddress(hash: string, address: string): MonitoredMessage;
 ```
 
 ## MessageMonitoringStatus
