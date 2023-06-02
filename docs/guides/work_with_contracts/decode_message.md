@@ -45,7 +45,7 @@ case MessageBodyType.Event:
 
 **Core**
 
-[https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/listen-and-decode](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/listen-and-decode)
+[https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/subscribe-and-decode/index.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/subscribe-and-decode/index.js)
 
 **AppKit**
 
