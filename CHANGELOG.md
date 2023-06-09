@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+
+## [1.43.2] – 2023-06-01
+
+### Fixed
+
+- Non existing accounts are treated as missing since q-server return `non existed` if account is missing
+
 ## [1.43.1] – 2023-06-01
 
 ### Fixed

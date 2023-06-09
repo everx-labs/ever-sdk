@@ -91,7 +91,7 @@ async fn get_local_error(
     let account = fetch_account(context.clone(), address, "boc last_paid acc_type").await?;
 
     if account["acc_type"].as_i64() == Some(ACCOUNT_NONEXIST as i64) {
-        return Ok("Account is deleted".to_owned());
+        return Err(crate::tvm::Error::account_missing(address));
     }
 
     let account: Account = serde_json::from_value(account)
