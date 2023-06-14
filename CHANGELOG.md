@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 
 - Non existing accounts are treated as missing since q-server return `non existed` if account is missing
+- Next block awaiting timeout calculation on message with long expiration time
 
 ## [1.43.1] – 2023-06-01
 
