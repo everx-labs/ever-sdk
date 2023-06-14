@@ -15,7 +15,7 @@ fn test_parallel_requests() {
             .request_json(
                 "net.wait_for_collection",
                 json!({
-                    "collection": "accounts".to_owned(),
+                    "collection": "messages".to_owned(),
                     "filter": json!({
                         "id": { "eq": "123" }
                     }),

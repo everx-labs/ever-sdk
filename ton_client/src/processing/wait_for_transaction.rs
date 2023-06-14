@@ -314,7 +314,9 @@ async fn wait_by_block_walking<F: futures::Future<Output = ()> + Send>(
     loop {
         let now = context.env.now_ms();
         let fetch_block_timeout =
-            (std::cmp::max(max_block_time, now) - now).try_into().unwrap_or(u32::MAX) + processing_timeout;
+            (std::cmp::max(max_block_time, now) - now + processing_timeout as u64)
+                .try_into()
+                .unwrap_or(u32::MAX);
         log::debug!("fetch_block_timeout {}", fetch_block_timeout);
 
         let block = fetching::fetch_next_shard_block(
