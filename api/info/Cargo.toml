@@ -2,7 +2,7 @@
 authors = [ 'TON Labs LTD <support@tonlabs.io>' ]
 edition = '2018'
 name = 'api_info'
-version = '1.43.2'
+version = '1.43.3'
 
 [dependencies]
 serde = '1.0.115'

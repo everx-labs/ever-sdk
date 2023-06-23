@@ -2,8 +2,11 @@ use crate::client::ResultOfGetApiReference;
 use crate::crypto::default_mnemonic_word_count;
 use crate::json_interface::modules::ClientModule;
 use crate::tests::TestClient;
-use crate::ClientConfig;
+use crate::{ClientConfig, ClientContext};
 use api_info::ApiModule;
+use std::time::Duration;
+use tokio::time::sleep;
+use crate::net::NetworkConfig;
 
 #[test]
 fn test_config_fields() {
@@ -71,10 +74,25 @@ fn test_invalid_params_error_secret_stripped() {
             r#"{{"address":"0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
             "public":"{}",
             "secret":"{}"}}"#,
-            public,
-            secret
+            public, secret
         ),
-        "error"
+        "error",
     );
     assert!(!error.message.contains(secret));
+}
+
+#[tokio::test]
+async fn test_memory_leak() {
+    let mut context = Some(ClientContext::new(ClientConfig {
+        network: NetworkConfig {
+            endpoints: Some(vec!["http://localhost".to_string()]),
+            ..Default::default()
+        },
+        ..Default::default()
+    }).unwrap());
+    println!("context will be dropped");
+    context = None;
+    println!("context dropped. waiting for 1 second...");
+    sleep(Duration::from_millis(1000)).await;
+    println!("after 1 second since context dropped");
 }

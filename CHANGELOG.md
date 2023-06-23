@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.43.3] – 2023-06-09
+
+### Fixed
+
+- Memory leak in a spawned loop of the web socket link.
+
 ## [1.43.2] – 2023-06-09
 
 ### Fixed
