@@ -2,8 +2,9 @@ use crate::client::ResultOfGetApiReference;
 use crate::crypto::default_mnemonic_word_count;
 use crate::json_interface::modules::ClientModule;
 use crate::tests::TestClient;
-use crate::ClientConfig;
+use crate::{ClientConfig, create_context, destroy_context};
 use api_info::ApiModule;
+use serde_json::Value;
 
 #[test]
 fn test_config_fields() {
@@ -71,10 +72,31 @@ fn test_invalid_params_error_secret_stripped() {
             r#"{{"address":"0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef",
             "public":"{}",
             "secret":"{}"}}"#,
-            public,
-            secret
+            public, secret
         ),
-        "error"
+        "error",
     );
     assert!(!error.message.contains(secret));
+}
+
+#[test]
+fn test_memory_leak() {
+    for _ in 0..100 {
+        let ctx = create_context(
+            r#"
+            {
+                "network": { "endpoints": ["http://localhost"] },
+                "queries_protocol": "WS"
+            }"#.to_string());
+        let context = serde_json::from_str::<Value>(&ctx).unwrap()["result"].as_i64().unwrap() as u32;
+        {
+            // let context = Runtime::required_context(context).unwrap();
+            // query_collection(context, ParamsOfQueryCollection {
+            //     collection: "blocks".to_string(),
+            //     result: "id".to_string(),
+            //     ..Default::default()
+            // }).await.unwrap();
+        }
+        destroy_context(context);
+    }
 }
