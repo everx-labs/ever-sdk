@@ -84,13 +84,14 @@ fn test_invalid_params_error_secret_stripped() {
 
 #[tokio::test]
 async fn test_memory_leak() {
-    for _ in 0..1 {
-        let ctx = create_context(
-            r#"
-            {
-                "network": { "endpoints": ["http://localhost"] },
-                "queries_protocol": "WS"
-            }"#.to_string());
+    for _ in 0..100 {
+        let config = json!({
+            "network": {
+                "endpoints": TestClient::endpoints(),
+                "queries_protocol": "WS",
+            }
+        });
+        let ctx = create_context(config.to_string());
         let context = serde_json::from_str::<Value>(&ctx).unwrap()["result"].as_i64().unwrap() as u32;
         {
             let context = Runtime::required_context(context).unwrap();
