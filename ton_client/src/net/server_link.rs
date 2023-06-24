@@ -367,7 +367,7 @@ impl NetworkState {
 pub(crate) struct ServerLink {
     config: NetworkConfig,
     pub(crate) client_env: Arc<ClientEnv>,
-    websocket_link: WebsocketLink,
+    websocket_link: Arc<WebsocketLink>,
     state: Arc<NetworkState>,
 }
 
@@ -417,7 +417,7 @@ impl ServerLink {
             config: config.clone(),
             client_env: client_env.clone(),
             state: state.clone(),
-            websocket_link: WebsocketLink::new(client_env, state, config),
+            websocket_link: Arc::new(WebsocketLink::new(client_env, state, config)),
         })
     }
 

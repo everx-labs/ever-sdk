@@ -204,7 +204,7 @@ async fn decode_and_fix_ext_msg(
     }
     new_body
         .append_u32(func_id)
-        .and_then(|b| b.append_builder(&BuilderData::from_slice(&in_body_slice)))
+        .and_then(|b| b.append_builder(&in_body_slice.as_builder()))
         .map_err(msg_err)?;
 
     let mut signed_body = BuilderData::new();
@@ -497,7 +497,7 @@ fn build_answer_msg(
             return None;
         }
         new_body
-            .append_builder(&BuilderData::from_slice(&body_slice))
+            .append_builder(&body_slice.as_builder())
             .ok()?;
     }
 

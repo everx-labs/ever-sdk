@@ -40,6 +40,8 @@ enum HandlerAction {
     Resume,
 
     CheckKeepAlivePassed,
+
+    Terminate,
 }
 
 impl HandlerAction {
@@ -52,8 +54,8 @@ impl HandlerAction {
 
 //================================================================================== WebsocketLink
 
-#[derive(Clone)]
 pub(crate) struct WebsocketLink {
+    client_env: Arc<ClientEnv>,
     handler_action_sender: Sender<HandlerAction>,
 }
 
@@ -64,6 +66,7 @@ impl WebsocketLink {
         config: NetworkConfig,
     ) -> Self {
         Self {
+            client_env: client_env.clone(),
             handler_action_sender: LinkHandler::run(client_env, state, config),
         }
     }
@@ -96,6 +99,15 @@ impl WebsocketLink {
     }
 }
 
+impl Drop for WebsocketLink {
+    fn drop(&mut self) {
+        let mut sender = self.handler_action_sender.clone();
+        self.client_env.spawn(async move {
+            HandlerAction::Terminate.send(&mut sender).await;
+        });
+    }
+}
+
 #[derive(Clone)]
 struct RunningOperation {
     operation: GraphQLQuery,
@@ -122,6 +134,7 @@ enum Phase {
     Connected,
     Suspended,
     Reconnecting,
+    Terminated,
 }
 
 pub(crate) struct LinkHandler {
@@ -259,6 +272,7 @@ impl LinkHandler {
             HandlerAction::Suspend => Phase::Suspended,
             HandlerAction::Resume => Phase::Connecting,
             HandlerAction::CheckKeepAlivePassed => phase,
+            HandlerAction::Terminate => Phase::Terminated,
         }
     }
 
@@ -337,6 +351,9 @@ impl LinkHandler {
                     self.start_keep_alive_timer(timeout);
                 }
             },
+            HandlerAction::Terminate => {
+                next_phase = Phase::Terminated;
+            }
         }
         next_phase
     }
