@@ -54,7 +54,6 @@ impl HandlerAction {
 
 //================================================================================== WebsocketLink
 
-#[derive(Clone)]
 pub(crate) struct WebsocketLink {
     client_env: Arc<ClientEnv>,
     handler_action_sender: Sender<HandlerAction>,
