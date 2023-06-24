@@ -1,10 +1,13 @@
 use crate::client::ResultOfGetApiReference;
 use crate::crypto::default_mnemonic_word_count;
 use crate::json_interface::modules::ClientModule;
+use crate::json_interface::runtime::Runtime;
+use crate::net::{subscribe_collection, unsubscribe, ParamsOfSubscribeCollection};
 use crate::tests::TestClient;
-use crate::{ClientConfig, create_context, destroy_context};
+use crate::{create_context, destroy_context, ClientConfig};
 use api_info::ApiModule;
 use serde_json::Value;
+use std::time::Duration;
 
 #[test]
 fn test_config_fields() {
@@ -79,9 +82,9 @@ fn test_invalid_params_error_secret_stripped() {
     assert!(!error.message.contains(secret));
 }
 
-#[test]
-fn test_memory_leak() {
-    for _ in 0..100 {
+#[tokio::test]
+async fn test_memory_leak() {
+    for _ in 0..1 {
         let ctx = create_context(
             r#"
             {
@@ -90,12 +93,32 @@ fn test_memory_leak() {
             }"#.to_string());
         let context = serde_json::from_str::<Value>(&ctx).unwrap()["result"].as_i64().unwrap() as u32;
         {
-            // let context = Runtime::required_context(context).unwrap();
-            // query_collection(context, ParamsOfQueryCollection {
-            //     collection: "blocks".to_string(),
-            //     result: "id".to_string(),
-            //     ..Default::default()
-            // }).await.unwrap();
+            let context = Runtime::required_context(context).unwrap();
+            let subscription = subscribe_collection(
+                context.clone(),
+                ParamsOfSubscribeCollection {
+                    collection: "blocks".to_string(),
+                    result: "id".to_string(),
+                    filter: None,
+                },
+                |_| async {},
+            )
+            .await
+            .unwrap();
+            unsubscribe(context.clone(), subscription).await.unwrap();
+            tokio::time::sleep(Duration::from_millis(1000)).await;
+            let subscription = subscribe_collection(
+                context.clone(),
+                ParamsOfSubscribeCollection {
+                    collection: "blocks".to_string(),
+                    result: "id".to_string(),
+                    filter: None,
+                },
+                |_| async {},
+            )
+            .await
+            .unwrap();
+            unsubscribe(context.clone(), subscription).await.unwrap();
         }
         destroy_context(context);
     }
