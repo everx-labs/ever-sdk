@@ -58,18 +58,16 @@ pub(crate) fn parse_debot_info(value: Option<JsonValue>) -> Result<DInfo, String
     Ok(info)
 }
 
-pub(crate) async fn fetch_target_abi_version(
+pub(crate) fn fetch_target_abi_version(
     ton: TonClient,
     account_boc: String,
 ) -> ClientResult<String> {
-    let json_value = parse_account(ton.clone(), ParamsOfParse { boc: account_boc })
-        .await?
-        .parsed;
+    let json_value = parse_account(ton.clone(), ParamsOfParse { boc: account_boc })?.parsed;
     let code = json_value["code"]
         .as_str()
         .ok_or(Error::debot_has_no_code())?
         .to_owned();
-    let result = get_compiler_version(ton.clone(), ParamsOfGetCompilerVersion { code }).await;
+    let result = get_compiler_version(ton.clone(), ParamsOfGetCompilerVersion { code });
 
     // If If DeBot's code does not contain version or SDK failed to read version,
     // then set empty string.

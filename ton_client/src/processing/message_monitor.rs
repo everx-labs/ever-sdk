@@ -45,14 +45,12 @@ pub struct ParamsOfMonitorMessages {
 /// with specified unresolved messages.
 ///
 #[api_function]
-pub async fn monitor_messages(
+pub fn monitor_messages(
     context: Arc<ClientContext>,
     params: ParamsOfMonitorMessages,
 ) -> ClientResult<()> {
     let monitor = context.message_monitor.clone();
-    monitor
-        .monitor_messages(&params.queue, params.messages)
-        .await?;
+    monitor.monitor_messages(&params.queue, params.messages)?;
     Ok(())
 }
 
@@ -97,7 +95,7 @@ pub struct ParamsOfGetMonitorInfo {
 
 /// Returns summary information about current state of the specified monitoring queue.
 #[api_function]
-pub async fn get_monitor_info(
+pub fn get_monitor_info(
     context: Arc<ClientContext>,
     params: ParamsOfGetMonitorInfo,
 ) -> ClientResult<MonitoringQueueInfo> {
@@ -113,7 +111,7 @@ pub struct ParamsOfCancelMonitor {
 /// Cancels all background activity and releases all allocated system resources
 /// for the specified monitoring queue.
 #[api_function]
-pub async fn cancel_monitor(
+pub fn cancel_monitor(
     context: Arc<ClientContext>,
     params: ParamsOfCancelMonitor,
 ) -> ClientResult<()> {

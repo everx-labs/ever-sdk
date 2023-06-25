@@ -328,7 +328,7 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::encode_message_body,
         crate::abi::encode_message::encode_message_body_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::attach_signature_to_message_body,
         crate::abi::encode_message::attach_signature_to_message_body_api,
     );
@@ -340,15 +340,15 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::encode_internal_message,
         crate::abi::encode_message::encode_internal_message_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::attach_signature,
         crate::abi::encode_message::attach_signature_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::decode_message,
         crate::abi::decode_message::decode_message_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::decode_message_body,
         crate::abi::decode_message::decode_message_body_api,
     );
@@ -356,27 +356,27 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::encode_account,
         crate::abi::encode_account::encode_account_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::decode_account_data,
         crate::abi::decode_data::decode_account_data_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::update_initial_data,
         crate::abi::init_data::update_initial_data_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::encode_initial_data,
         crate::abi::init_data::encode_initial_data_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::decode_initial_data,
         crate::abi::init_data::decode_initial_data_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::decode_boc,
         crate::abi::decode_boc::decode_boc_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::encode_boc,
         crate::abi::encode_boc::encode_boc_api,
     );
@@ -404,65 +404,65 @@ fn register_boc(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::boc::TvcV1>();
 
     module.register_error_code::<crate::boc::ErrorCode>();
-    module.register_async_fn(crate::boc::decode_tvc, crate::boc::tvc::decode_tvc_api);
-    module.register_async_fn(
+    module.register_sync_fn(crate::boc::decode_tvc, crate::boc::tvc::decode_tvc_api);
+    module.register_sync_fn(
         crate::boc::parse_message,
         crate::boc::parse::parse_message_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::parse_transaction,
         crate::boc::parse::parse_transaction_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::parse_account,
         crate::boc::parse::parse_account_api,
     );
-    module.register_async_fn(crate::boc::parse_block, crate::boc::parse::parse_block_api);
-    module.register_async_fn(
+    module.register_sync_fn(crate::boc::parse_block, crate::boc::parse::parse_block_api);
+    module.register_sync_fn(
         crate::boc::parse_shardstate,
         crate::boc::parse::parse_shardstate_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::get_blockchain_config,
         crate::boc::blockchain_config::get_blockchain_config_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::get_boc_hash,
         crate::boc::common::get_boc_hash_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::get_boc_depth,
         crate::boc::common::get_boc_depth_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::get_code_from_tvc,
         crate::boc::state_init::get_code_from_tvc_api,
     );
-    module.register_async_fn(crate::boc::cache_get, crate::boc::cache::cache_get_api);
-    module.register_async_fn(crate::boc::cache_set, crate::boc::cache::cache_set_api);
-    module.register_async_fn(crate::boc::cache_unpin, crate::boc::cache::cache_unpin_api);
-    module.register_async_fn(crate::boc::encode_boc, crate::boc::encode::encode_boc_api);
-    module.register_async_fn(
+    module.register_sync_fn(crate::boc::cache_get, crate::boc::cache::cache_get_api);
+    module.register_sync_fn(crate::boc::cache_set, crate::boc::cache::cache_set_api);
+    module.register_sync_fn(crate::boc::cache_unpin, crate::boc::cache::cache_unpin_api);
+    module.register_sync_fn(crate::boc::encode_boc, crate::boc::encode::encode_boc_api);
+    module.register_sync_fn(
         crate::boc::get_code_salt,
         crate::boc::state_init::get_code_salt_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::set_code_salt,
         crate::boc::state_init::set_code_salt_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::decode_state_init,
         crate::boc::state_init::decode_state_init_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::encode_state_init,
         crate::boc::state_init::encode_state_init_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::encode_external_in_message,
         crate::boc::encode_external_in_message::encode_external_in_message_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::boc::get_compiler_version,
         crate::boc::state_init::get_compiler_version_api,
     );
@@ -583,11 +583,11 @@ fn register_processing(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::processing::MessageMonitoringStatus>();
     module.register_type::<crate::processing::MessageSendingParams>();
 
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::processing::monitor_messages,
         crate::processing::monitor_messages_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::processing::get_monitor_info,
         crate::processing::get_monitor_info_api,
     );
@@ -595,7 +595,7 @@ fn register_processing(handlers: &mut RuntimeHandlers) {
         crate::processing::fetch_next_monitor_results,
         crate::processing::fetch_next_monitor_results_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::processing::cancel_monitor,
         crate::processing::cancel_monitor_api,
     );

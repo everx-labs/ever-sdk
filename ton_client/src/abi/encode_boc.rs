@@ -30,7 +30,7 @@ pub struct ResultOfAbiEncodeBoc {
 
 /// Encodes given parameters in JSON into a BOC using param types from ABI.
 #[api_function]
-pub async fn encode_boc(
+pub fn encode_boc(
     context: Arc<ClientContext>,
     params: ParamsOfAbiEncodeBoc,
 ) -> ClientResult<ResultOfAbiEncodeBoc> {
@@ -49,6 +49,6 @@ pub async fn encode_boc(
         .map_err(|err| Error::invalid_abi(err))?;
 
     Ok(ResultOfAbiEncodeBoc {
-        boc: serialize_cell_to_boc(&context, cell, "ABI params", params.boc_cache).await?,
+        boc: serialize_cell_to_boc(&context, cell, "ABI params", params.boc_cache)?,
     })
 }

@@ -69,7 +69,7 @@ async fn test_encode_boc() {
     }
 
     let client = TestClient::new();
-    let encode_boc = client.wrap_async(
+    let encode_boc = client.wrap(
         encode_boc,
         BocModule::api(),
         super::encode::encode_boc_api(),
@@ -154,7 +154,6 @@ async fn test_encode_boc() {
             ],
             boc_cache: None,
         })
-        .await
         .unwrap();
     assert_eq!(boc, response.boc);
 
@@ -179,7 +178,6 @@ async fn test_encode_boc() {
             ],
             boc_cache: None,
         })
-        .await
         .unwrap();
     assert_eq!(boc, response.boc);
 }
@@ -187,9 +185,9 @@ async fn test_encode_boc() {
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_pinned_cache() {
     let client = TestClient::new();
-    let cache_set = client.wrap_async(cache_set, BocModule::api(), super::cache::cache_set_api());
-    let cache_get = client.wrap_async(cache_get, BocModule::api(), super::cache::cache_get_api());
-    let cache_unpin = client.wrap_async(
+    let cache_set = client.wrap(cache_set, BocModule::api(), super::cache::cache_set_api());
+    let cache_get = client.wrap(cache_get, BocModule::api(), super::cache::cache_get_api());
+    let cache_unpin = client.wrap(
         cache_unpin,
         BocModule::api(),
         super::cache::cache_unpin_api(),
@@ -206,7 +204,6 @@ async fn test_pinned_cache() {
             boc: boc1.clone(),
             cache_type: BocCacheType::Pinned { pin: pin1.clone() },
         })
-        .await
         .unwrap()
         .boc_ref;
 
@@ -217,7 +214,6 @@ async fn test_pinned_cache() {
         .call(ParamsOfBocCacheGet {
             boc_ref: ref1.clone(),
         })
-        .await
         .unwrap();
     assert_eq!(boc.boc, Some(boc1.clone()));
 
@@ -226,7 +222,6 @@ async fn test_pinned_cache() {
             boc: boc2.clone(),
             cache_type: BocCacheType::Pinned { pin: pin1.clone() },
         })
-        .await
         .unwrap()
         .boc_ref;
     assert_ne!(ref2, ref1);
@@ -236,7 +231,6 @@ async fn test_pinned_cache() {
             boc: boc1.clone(),
             cache_type: BocCacheType::Pinned { pin: pin2.clone() },
         })
-        .await
         .unwrap()
         .boc_ref;
     assert_eq!(ref3, ref1);
@@ -248,14 +242,12 @@ async fn test_pinned_cache() {
             boc_ref: None,
             pin: pin1.clone(),
         })
-        .await
         .unwrap();
 
     let boc = cache_get
         .call(ParamsOfBocCacheGet {
             boc_ref: ref1.clone(),
         })
-        .await
         .unwrap();
     assert_eq!(boc.boc, Some(boc1.clone()));
 
@@ -263,7 +255,6 @@ async fn test_pinned_cache() {
         .call(ParamsOfBocCacheGet {
             boc_ref: ref2.clone(),
         })
-        .await
         .unwrap();
     assert_eq!(boc.boc, None);
 
@@ -272,7 +263,6 @@ async fn test_pinned_cache() {
             boc: boc2,
             cache_type: BocCacheType::Pinned { pin: pin2.clone() },
         })
-        .await
         .unwrap()
         .boc_ref;
 
@@ -282,14 +272,12 @@ async fn test_pinned_cache() {
             boc_ref: Some(ref4.clone()),
             pin: pin2.clone(),
         })
-        .await
         .unwrap();
 
     let boc = cache_get
         .call(ParamsOfBocCacheGet {
             boc_ref: ref1.clone(),
         })
-        .await
         .unwrap();
     assert_eq!(boc.boc, Some(boc1.clone()));
 
@@ -297,7 +285,6 @@ async fn test_pinned_cache() {
         .call(ParamsOfBocCacheGet {
             boc_ref: ref4.clone(),
         })
-        .await
         .unwrap();
     assert_eq!(boc.boc, None);
 
@@ -308,7 +295,6 @@ async fn test_pinned_cache() {
             boc: ref1.clone(),
             cache_type: BocCacheType::Pinned { pin: pin2.clone() },
         })
-        .await
         .unwrap();
 
     cache_unpin
@@ -316,13 +302,11 @@ async fn test_pinned_cache() {
             boc_ref: None,
             pin: pin2.clone(),
         })
-        .await
         .unwrap();
     let boc = cache_get
         .call(ParamsOfBocCacheGet {
             boc_ref: ref1.clone(),
         })
-        .await
         .unwrap();
     assert_eq!(boc.boc, Some(boc1));
 
@@ -331,13 +315,11 @@ async fn test_pinned_cache() {
             boc_ref: None,
             pin: pin2.clone(),
         })
-        .await
         .unwrap();
     let boc = cache_get
         .call(ParamsOfBocCacheGet {
             boc_ref: ref1.clone(),
         })
-        .await
         .unwrap();
     assert_eq!(boc.boc, None);
 }
@@ -356,15 +338,14 @@ async fn test_unpinned_cache() {
             "cache_max_size": boc_max_size / 1024 + 1
         }
     }));
-    let cache_set = client.wrap_async(cache_set, BocModule::api(), super::cache::cache_set_api());
-    let cache_get = client.wrap_async(cache_get, BocModule::api(), super::cache::cache_get_api());
+    let cache_set = client.wrap(cache_set, BocModule::api(), super::cache::cache_set_api());
+    let cache_get = client.wrap(cache_get, BocModule::api(), super::cache::cache_get_api());
 
     let ref1 = cache_set
         .call(ParamsOfBocCacheSet {
             boc: boc1.clone(),
             cache_type: BocCacheType::Unpinned,
         })
-        .await
         .unwrap()
         .boc_ref;
 
@@ -372,7 +353,6 @@ async fn test_unpinned_cache() {
         .call(ParamsOfBocCacheGet {
             boc_ref: ref1.clone(),
         })
-        .await
         .unwrap();
     assert_eq!(boc.boc, Some(boc1.clone()));
 
@@ -382,7 +362,6 @@ async fn test_unpinned_cache() {
             boc: boc2.clone(),
             cache_type: BocCacheType::Unpinned,
         })
-        .await
         .unwrap()
         .boc_ref;
 
@@ -390,7 +369,6 @@ async fn test_unpinned_cache() {
         .call(ParamsOfBocCacheGet {
             boc_ref: ref1.clone(),
         })
-        .await
         .unwrap();
     assert_eq!(boc.boc, None);
 
@@ -398,7 +376,6 @@ async fn test_unpinned_cache() {
         .call(ParamsOfBocCacheGet {
             boc_ref: ref2.clone(),
         })
-        .await
         .unwrap();
     assert_eq!(boc.boc, Some(boc2.clone()));
 }
@@ -942,7 +919,6 @@ async fn test_decode_tvc() {
             tvc: tvc_boc.to_string(),
         },
     )
-    .await
     .unwrap();
     assert_eq!(expected, decoded);
 

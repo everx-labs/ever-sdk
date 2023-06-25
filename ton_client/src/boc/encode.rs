@@ -8,10 +8,10 @@ use ton_types::{BuilderData, Cell, IBitstring};
 use super::{internal::serialize_cell_to_boc, Error};
 use crate::boc::internal::deserialize_cell_from_boc;
 use crate::boc::BocCacheType;
+use crate::encoding::account_decode;
 use num_bigint::{BigInt, BigUint, Sign};
 use num_traits::Num;
 use std::ops::ShlAssign;
-use crate::encoding::account_decode;
 
 /// Cell builder operation.
 #[derive(Serialize, Deserialize, Clone, ApiType)]
@@ -61,7 +61,7 @@ pub enum BuilderOp {
     Address {
         /// Address in a common `workchain:account` or base64 format.
         address: String,
-    }
+    },
 }
 
 impl Default for BuilderOp {
@@ -90,17 +90,17 @@ pub struct ResultOfEncodeBoc {
 
 /// Encodes bag of cells (BOC) with builder operations.
 /// This method provides the same functionality as Solidity TvmBuilder.
-/// Resulting BOC of this method can be passed into 
+/// Resulting BOC of this method can be passed into
 /// Solidity and C++ contracts as TvmCell type.
 #[api_function]
-pub async fn encode_boc(
+pub fn encode_boc(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeBoc,
 ) -> ClientResult<ResultOfEncodeBoc> {
     let mut stack = Vec::<Builder>::new();
     let mut builder = Builder::new(&params.builder);
     loop {
-        match builder.build(&context).await? {
+        match builder.build(&context)? {
             BuildResult::Nested { nested, prev } => {
                 stack.push(prev);
                 builder = nested;
@@ -108,13 +108,18 @@ pub async fn encode_boc(
             BuildResult::Complete(cell) => {
                 if let Some(prev) = stack.pop() {
                     builder = prev;
-                    builder.result.checked_append_reference(cell).map_err(
-                        |err| Error::serialization_error(err, "encoded cell"),
-                    )?;
+                    builder
+                        .result
+                        .checked_append_reference(cell)
+                        .map_err(|err| Error::serialization_error(err, "encoded cell"))?;
                 } else {
                     return Ok(ResultOfEncodeBoc {
-                        boc: serialize_cell_to_boc(&context, cell, "encoded cell", params.boc_cache)
-                            .await?,
+                        boc: serialize_cell_to_boc(
+                            &context,
+                            cell,
+                            "encoded cell",
+                            params.boc_cache,
+                        )?,
                     });
                 }
             }
@@ -145,7 +150,7 @@ impl<'a> Builder<'a> {
 
     /// Append data using operation iterator until the end or the nested cell operation.
     /// Returns resulting cell or nested Builder.
-    async fn build(
+    fn build(
         mut self,
         context: &std::sync::Arc<ClientContext>,
     ) -> ClientResult<BuildResult<'a>> {
@@ -158,13 +163,11 @@ impl<'a> Builder<'a> {
                     append_bitstring(&mut self.result, &value)?;
                 }
                 BuilderOp::CellBoc { boc } => {
-                    self.result.checked_append_reference(
-                        deserialize_cell_from_boc(context, boc, "CellBoc")
-                            .await?
-                            .1,
-                    ).map_err(
-                        |err| Error::serialization_error(err, "encode_boc"),
-                    )?;
+                    self.result
+                        .checked_append_reference(
+                            deserialize_cell_from_boc(context, boc, "CellBoc")?.1,
+                        )
+                        .map_err(|err| Error::serialization_error(err, "encode_boc"))?;
                 }
                 BuilderOp::Cell { ref builder } => {
                     return Ok(BuildResult::Nested {

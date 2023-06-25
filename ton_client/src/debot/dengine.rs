@@ -135,7 +135,6 @@ impl DEngine {
 
     async fn fetch_info(ton: TonClient, addr: String, state: String) -> Result<DInfo, String> {
         let dabi_version = fetch_target_abi_version(ton.clone(), state.clone())
-            .await
             .map_err(|e| e.to_string())?;
         let abi = load_abi(DEBOT_ABI).unwrap();
         let result = Self::run(
@@ -609,7 +608,6 @@ impl DEngine {
                 ..Default::default()
             },
         )
-        .await
         .map_err(|e| format!("failed to decode msg body: {}", e))?;
 
         debug!("calling {} at address {}", res.name, dest);

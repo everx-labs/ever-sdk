@@ -14,21 +14,23 @@
 
 use super::stack::serialize_item;
 use super::types::{ExecutionOptions, ResolvedExecutionOptions};
-use crate::{abi::Abi, boc::BocCacheType};
 use crate::boc::internal::{
     deserialize_cell_from_boc, deserialize_object_from_boc, deserialize_object_from_cell,
     serialize_cell_to_boc, serialize_object_to_base64, serialize_object_to_boc,
-    serialize_object_to_cell
+    serialize_object_to_cell,
 };
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::processing::{parsing::decode_output, DecodedOutput};
 use crate::tvm::{check_transaction::calc_transaction_fees, Error};
+use crate::{abi::Abi, boc::BocCacheType};
 use serde_json::Value;
 use std::convert::TryFrom;
 use std::sync::{atomic::AtomicU64, Arc};
-use ton_block::{Account, Message, Serializable, MsgAddressInt, CurrencyCollection, Transaction};
-use ton_executor::{ExecutorError, ExecuteParams, OrdinaryTransactionExecutor, TransactionExecutor};
+use ton_block::{Account, CurrencyCollection, Message, MsgAddressInt, Serializable, Transaction};
+use ton_executor::{
+    ExecuteParams, ExecutorError, OrdinaryTransactionExecutor, TransactionExecutor,
+};
 use ton_sdk::TransactionFees;
 use ton_types::{Cell, UInt256};
 
@@ -60,7 +62,7 @@ impl Default for AccountForExecutor {
 const UNLIMITED_BALANCE: u64 = u64::MAX;
 
 impl AccountForExecutor {
-    pub async fn get_account(
+    pub fn get_account(
         &self,
         context: &Arc<ClientContext>,
         address: MsgAddressInt,
@@ -82,12 +84,14 @@ impl AccountForExecutor {
             } => {
                 if unlimited_balance.unwrap_or_default() {
                     let mut account: Account =
-                        deserialize_object_from_boc(context, &boc, "account").await?.object;
+                        deserialize_object_from_boc(context, &boc, "account")?.object;
                     let original_balance = account
                         .balance()
-                        .ok_or_else(|| Error::invalid_account_boc(
-                            "can not set unlimited balance for non existed account",
-                        ))?
+                        .ok_or_else(|| {
+                            Error::invalid_account_boc(
+                                "can not set unlimited balance for non existed account",
+                            )
+                        })?
                         .clone();
                     let mut balance = original_balance.clone();
                     balance.grams = UNLIMITED_BALANCE.into();
@@ -95,7 +99,7 @@ impl AccountForExecutor {
                     let account = serialize_object_to_cell(&account, "account")?;
                     Ok((account, Some(original_balance)))
                 } else {
-                    let (_, account) = deserialize_cell_from_boc(context, &boc, "account").await?;
+                    let (_, account) = deserialize_cell_from_boc(context, &boc, "account")?;
                     Ok((account, None))
                 }
             }
@@ -147,7 +151,7 @@ pub struct ParamsOfRunTvm {
     /// Cache type to put the result. The BOC itself returned if no cache type provided
     pub boc_cache: Option<BocCacheType>,
     /// Return updated account flag. Empty string is returned if the flag is `false`
-    pub return_updated_account: Option<bool>
+    pub return_updated_account: Option<bool>,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug, PartialEq, Clone)]
@@ -187,7 +191,7 @@ pub struct ResultOfRunTvm {
     pub account: String,
 }
 
-async fn parse_transaction(
+fn parse_transaction(
     context: &Arc<ClientContext>,
     transaction: &Transaction,
 ) -> ClientResult<Value> {
@@ -196,8 +200,7 @@ async fn parse_transaction(
         crate::boc::ParamsOfParse {
             boc: serialize_object_to_base64(transaction, "transaction")?,
         },
-    )
-    .await?
+    )?
     .parsed)
 }
 
@@ -240,11 +243,7 @@ pub async fn run_executor(
     context: Arc<ClientContext>,
     params: ParamsOfRunExecutor,
 ) -> ClientResult<ResultOfRunExecutor> {
-    run_executor_internal(
-        context,
-        params,
-        true,
-    ).await
+    run_executor_internal(context, params, true).await
 }
 
 pub async fn run_executor_internal(
@@ -252,10 +251,15 @@ pub async fn run_executor_internal(
     params: ParamsOfRunExecutor,
     show_tips_on_error: bool,
 ) -> ClientResult<ResultOfRunExecutor> {
-    let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
-    let msg_address = message.dst_ref().ok_or_else(|| Error::invalid_message_type())?.clone();
-    let (account, _) = params.account.get_account(&context, msg_address.clone()).await?;
-    let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
+    let message =
+        deserialize_object_from_boc::<Message>(&context, &params.message, "message")?.object;
+    let msg_address = message
+        .dst_ref()
+        .ok_or_else(|| Error::invalid_message_type())?
+        .clone();
+    let (account, _) = params.account.get_account(&context, msg_address.clone())?;
+    let options =
+        ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
     let account_copy = account.clone();
     let contract_info = move || async move {
@@ -267,14 +271,14 @@ pub async fn run_executor_internal(
         }
     };
 
-    let (transaction, modified_account) =
-        call_executor(
-            account.clone(),
-            message,
-            options,
-            contract_info.clone(),
-            show_tips_on_error,
-        ).await?;
+    let (transaction, modified_account) = call_executor(
+        account.clone(),
+        message,
+        options,
+        contract_info.clone(),
+        show_tips_on_error,
+    )
+    .await?;
 
     let sdk_transaction = ton_sdk::Transaction::try_from(&transaction)
         .map_err(|err| Error::can_not_read_transaction(err))?;
@@ -299,26 +303,25 @@ pub async fn run_executor_internal(
 
     // TODO decode Message object without converting to string
     let decoded = if let Some(abi) = params.abi.as_ref() {
-        Some(decode_output(&context, abi, out_messages.clone()).await?)
+        Some(decode_output(&context, abi, out_messages.clone())?)
     } else {
         None
     };
 
     let account = if params.return_updated_account.unwrap_or_default() {
-        serialize_cell_to_boc(&context, modified_account, "account", params.boc_cache).await?
+        serialize_cell_to_boc(&context, modified_account, "account", params.boc_cache)?
     } else {
         String::new()
     };
 
     Ok(ResultOfRunExecutor {
         out_messages,
-        transaction: parse_transaction(&context, &transaction).await?,
+        transaction: parse_transaction(&context, &transaction)?,
         account,
         decoded,
         fees,
     })
 }
-
 
 /// Executes get-methods of ABI-compatible contracts
 ///
@@ -339,29 +342,36 @@ pub async fn run_tvm(
     context: Arc<ClientContext>,
     params: ParamsOfRunTvm,
 ) -> ClientResult<ResultOfRunTvm> {
-    let mut account = deserialize_object_from_boc::<Account>(&context, &params.account, "account").await?;
-    let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message").await?.object;
-    let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
+    let mut account = deserialize_object_from_boc::<Account>(&context, &params.account, "account")?;
+    let message =
+        deserialize_object_from_boc::<Message>(&context, &params.message, "message")?.object;
+    let options =
+        ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
     if account.object.is_none() {
-        return Err(Error::invalid_account_boc("Account is None"))
+        return Err(Error::invalid_account_boc("Account is None"));
     }
 
     let messages = super::call_tvm::call_tvm_msg(&mut account.object, options, &message)?;
 
     let mut out_messages = vec![];
     for message in messages {
-        out_messages.push(serialize_object_to_boc(&context, &message, "message", params.boc_cache.clone()).await?);
+        out_messages.push(serialize_object_to_boc(
+            &context,
+            &message,
+            "message",
+            params.boc_cache.clone(),
+        )?);
     }
 
     // TODO decode Message object without converting to string
     let decoded = if let Some(abi) = params.abi.as_ref() {
-        Some(decode_output(&context, abi, out_messages.clone()).await?)
+        Some(decode_output(&context, abi, out_messages.clone())?)
     } else {
         None
     };
 
     let account = if params.return_updated_account.unwrap_or_default() {
-        serialize_object_to_boc(&context, &account.object, "account", params.boc_cache).await?
+        serialize_object_to_boc(&context, &account.object, "account", params.boc_cache)?
     } else {
         String::new()
     };
@@ -384,8 +394,7 @@ where
     F: futures::Future<Output = ClientResult<(MsgAddressInt, u64)>>,
 {
     let executor = OrdinaryTransactionExecutor::new(
-        Arc::try_unwrap(options.blockchain_config)
-            .unwrap_or_else(|arc| arc.as_ref().clone())
+        Arc::try_unwrap(options.blockchain_config).unwrap_or_else(|arc| arc.as_ref().clone()),
     );
     let params = ExecuteParams {
         block_unixtime: options.block_time,
@@ -396,39 +405,40 @@ where
         signature_id: options.signature_id,
         ..ExecuteParams::default()
     };
-    let transaction = match executor.execute_with_libs_and_params(Some(&msg), &mut account_root, params) {
-        Ok(transaction) => transaction,
-        Err(err) => {
-            let err_message = err.to_string();
-            let err = match contract_info().await {
-                Ok((address, balance)) => match &err.downcast_ref::<ExecutorError>() {
-                    Some(ExecutorError::NoAcceptError(code, exit_arg)) => {
-                        let exit_arg = exit_arg
-                            .as_ref()
-                            .map(|item| serialize_item(item))
-                            .transpose()?;
-                        Error::tvm_execution_failed(
-                            err_message,
-                            *code,
-                            exit_arg,
-                            &address,
-                            None,
-                            show_tips_on_error,
-                        )
-                    }
-                    Some(ExecutorError::NoFundsToImportMsg) => {
-                        Error::low_balance(&address, balance)
-                    }
-                    Some(ExecutorError::ExtMsgComputeSkipped(reason)) => {
-                        Error::tvm_execution_skipped(reason, &address, balance)
-                    }
-                    _ => Error::unknown_execution_error(err),
-                },
-                Err(err) => err,
-            };
-            return Err(err);
-        }
-    };
+    let transaction =
+        match executor.execute_with_libs_and_params(Some(&msg), &mut account_root, params) {
+            Ok(transaction) => transaction,
+            Err(err) => {
+                let err_message = err.to_string();
+                let err = match contract_info().await {
+                    Ok((address, balance)) => match &err.downcast_ref::<ExecutorError>() {
+                        Some(ExecutorError::NoAcceptError(code, exit_arg)) => {
+                            let exit_arg = exit_arg
+                                .as_ref()
+                                .map(|item| serialize_item(item))
+                                .transpose()?;
+                            Error::tvm_execution_failed(
+                                err_message,
+                                *code,
+                                exit_arg,
+                                &address,
+                                None,
+                                show_tips_on_error,
+                            )
+                        }
+                        Some(ExecutorError::NoFundsToImportMsg) => {
+                            Error::low_balance(&address, balance)
+                        }
+                        Some(ExecutorError::ExtMsgComputeSkipped(reason)) => {
+                            Error::tvm_execution_skipped(reason, &address, balance)
+                        }
+                        _ => Error::unknown_execution_error(err),
+                    },
+                    Err(err) => err,
+                };
+                return Err(err);
+            }
+        };
 
     Ok((transaction, account_root))
 }

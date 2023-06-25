@@ -311,7 +311,6 @@ pub(super) async fn get_account(
             boc: get_arg(&accounts.swap_remove(0), "boc")?,
         },
     )
-    .await
     .map_err(|e| format!("failed to parse account from boc: {}", e))?
     .parsed;
 

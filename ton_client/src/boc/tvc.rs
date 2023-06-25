@@ -48,17 +48,15 @@ pub struct TvcV1 {
     pub description: Option<String>,
 }
 
-/// Decodes tvc according to the tvc spec. 
+/// Decodes tvc according to the tvc spec.
 /// Read more about tvc structure here https://github.com/tonlabs/ever-struct/blob/main/src/scheme/mod.rs#L30
 
 #[api_function]
-pub async fn decode_tvc(
+pub fn decode_tvc(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfDecodeTvc,
 ) -> ClientResult<ResultOfDecodeTvc> {
-    let tvc = deserialize_object_from_boc::<TVC>(&context, &params.tvc, "TVC")
-        .await?
-        .object;
+    let tvc = deserialize_object_from_boc::<TVC>(&context, &params.tvc, "TVC")?.object;
     let tvc = Tvc::V1(TvcV1 {
         code: tvc
             .code
@@ -75,21 +73,17 @@ pub(crate) fn state_init_with_code(code: Cell) -> ClientResult<Cell> {
     serialize_object_to_cell(&state_init, "state init")
 }
 
-pub(crate) async fn resolve_state_init_cell(
+pub(crate) fn resolve_state_init_cell(
     context: &ClientContext,
     tvc_or_state_init: &str,
 ) -> ClientResult<Cell> {
-    if let Ok(tvc) = deserialize_object_from_boc::<TVC>(context, tvc_or_state_init, "TVC").await {
+    if let Ok(tvc) = deserialize_object_from_boc::<TVC>(context, tvc_or_state_init, "TVC") {
         if let Some(code) = tvc.object.code {
             state_init_with_code(code)
         } else {
             Err(crate::boc::Error::invalid_boc("TVC or StateInit"))?
         }
     } else {
-        Ok(
-            deserialize_cell_from_boc(context, tvc_or_state_init, "state init")
-                .await?
-                .1,
-        )
+        Ok(deserialize_cell_from_boc(context, tvc_or_state_init, "state init")?.1)
     }
 }

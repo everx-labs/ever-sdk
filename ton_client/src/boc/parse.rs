@@ -43,11 +43,11 @@ pub struct ResultOfParse {
 ///
 /// JSON structure is compatible with GraphQL API message object
 #[api_function]
-pub async fn parse_message(
+pub fn parse_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ClientResult<ResultOfParse> {
-    let object = deserialize_object_from_boc::<ton_block::Message>(&context, &params.boc, "message").await?;
+    let object = deserialize_object_from_boc::<ton_block::Message>(&context, &params.boc, "message")?;
 
     let set = ton_block_json::MessageSerializationSet {
         block_id: None,
@@ -77,12 +77,12 @@ pub async fn parse_message(
 ///
 /// JSON structure is compatible with GraphQL API transaction object
 #[api_function]
-pub async fn parse_transaction(
+pub fn parse_transaction(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ClientResult<ResultOfParse> {
     let object =
-        deserialize_object_from_boc::<ton_block::Transaction>(&context, &params.boc, "transaction").await?;
+        deserialize_object_from_boc::<ton_block::Transaction>(&context, &params.boc, "transaction")?;
 
     let set = ton_block_json::TransactionSerializationSetEx {
         block_id: None,
@@ -110,11 +110,11 @@ pub async fn parse_transaction(
 ///
 /// JSON structure is compatible with GraphQL API account object
 #[api_function]
-pub async fn parse_account(
+pub fn parse_account(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ClientResult<ResultOfParse> {
-    let object = deserialize_object_from_boc::<ton_block::Account>(&context, &params.boc, "account").await?;
+    let object = deserialize_object_from_boc::<ton_block::Account>(&context, &params.boc, "account")?;
 
     let set = ton_block_json::AccountSerializationSet {
         boc: object.boc.bytes("account")?,
@@ -139,11 +139,11 @@ pub async fn parse_account(
 ///
 /// JSON structure is compatible with GraphQL API block object
 #[api_function]
-pub async fn parse_block(
+pub fn parse_block(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ClientResult<ResultOfParse> {
-    let object = deserialize_object_from_boc::<ton_block::Block>(&context, &params.boc, "block").await?;
+    let object = deserialize_object_from_boc::<ton_block::Block>(&context, &params.boc, "block")?;
 
     let set = ton_block_json::BlockSerializationSet {
         boc: object.boc.bytes("block")?,
@@ -169,12 +169,12 @@ pub async fn parse_block(
 ///
 /// JSON structure is compatible with GraphQL API shardstate object
 #[api_function]
-pub async fn parse_shardstate(
+pub fn parse_shardstate(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfParseShardstate,
 ) -> ClientResult<ResultOfParse> {
     let object =
-        deserialize_object_from_boc::<ton_block::ShardStateUnsplit>(&context, &params.boc, "shardstate").await?;
+        deserialize_object_from_boc::<ton_block::ShardStateUnsplit>(&context, &params.boc, "shardstate")?;
 
     let set = ton_block_json::ShardStateSerializationSet {
         boc: object.boc.bytes("shardstate")?,
