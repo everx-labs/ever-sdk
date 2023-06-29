@@ -36,6 +36,10 @@ interface IClient {
         functionParams?: any,
         responseHandler?: ResponseHandler
     ): Promise<any>;
+    requestSync(
+        functionName: string,
+        functionParams?: any,
+    ): any;
     resolve_app_request(app_request_id: number | null, result: any): Promise<void>;
     reject_app_request(app_request_id: number | null, error: any): Promise<void>;
 }
@@ -158,15 +162,20 @@ export class ${Code.upperFirst(module.name)}Module {
 `;
 
         for (const func of module.functions) {
-            ts += jsDocStart(func, INDENT);
             const info = this.getFunctionInfo(func);
-            if (info.params) {
-                ts += jsDoc("", INDENT);
-                ts += jsDoc(`@param {${getRefName(info.params)}} ${info.params.name}`, INDENT);
+            const funcDoc = () => {
+                ts += jsDocStart(func, INDENT);
+                if (info.params) {
+                    ts += jsDoc("", INDENT);
+                    ts += jsDoc(`@param {${getRefName(info.params)}} ${info.params.name}`, INDENT);
+                }
+                ts += jsDoc(`@returns ${getRefName(func.result)}`, INDENT);
+                ts += jsDocEnd(INDENT);
             }
-            ts += jsDoc(`@returns ${getRefName(func.result)}`, INDENT);
-            ts += jsDocEnd(INDENT);
+            funcDoc()
             ts += this.functionImpl(func);
+            funcDoc()
+            ts += this.syncFunctionImpl(func);
         }
 
         ts += "}\n\n";
@@ -289,6 +298,14 @@ export class ${Code.upperFirst(module.name)}Module {
         return decls;
     }
 
+    syncParamsDecls(paramsInfo: ApiFunctionInfo): string[] {
+        const decls: string[] = [];
+        if (paramsInfo.params) {
+            decls.push(`${paramsInfo.params.name}: ${this.type(paramsInfo.params, "")}`);
+        }
+        return decls;
+    }
+
     functionInterface(func: ApiFunction): string {
         const paramsInfo = this.getFunctionInfo(func);
         const paramsDecls = this.paramsDecls(paramsInfo);
@@ -375,6 +392,20 @@ async function dispatch${obj.name}(obj: ${obj.name}, params: ParamsOf${obj.name}
         return `
     ${func.name}(${paramsDecl}): Promise<${this.type(func.result, "")}> {
         return this.client.request(${calls.join(", ")});
+    }\n`;
+    }
+
+    syncFunctionImpl(func: ApiFunction): string {
+        const paramsInfo = this.getFunctionInfo(func);
+        const paramsDecl = this.syncParamsDecls(paramsInfo).map(p => `${p}`).join(", ");
+        const calls = [`'${func.module.name}.${func.name}'`];
+        if (paramsInfo.params) {
+            calls.push(`${paramsInfo.params.name}`);
+        }
+        const returnStatement = func.result.type !== ApiTypeIs.None ? "return " : "";
+        return `
+    ${func.name}_sync(${paramsDecl}): ${this.type(func.result, "")} {
+        ${returnStatement}this.client.requestSync(${calls.join(", ")});
     }\n`;
     }
 

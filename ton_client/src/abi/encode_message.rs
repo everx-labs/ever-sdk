@@ -618,7 +618,7 @@ pub struct ResultOfEncodeInternalMessage {
 /// 2. Public key, specified in TVM file.
 
 #[api_function]
-pub async fn encode_internal_message(
+pub fn encode_internal_message(
     context: Arc<ClientContext>,
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {

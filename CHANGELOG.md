@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 
 ## [1.43.3] – 2023-06-24
 
+### New
+
+- Ability to call async functions via `tc_request_sync`.
+- In rust API, the following functions become sync (slight breaking):
+  `abi::encode_internal_message`, `abi::attach_signature_to_message_body`, `abi::attach_signature`,
+  `abi::decode_message`, `abi::decode_message_body`, `abi::decode_account_data`, 
+  `abi::update_initial_data`, `abi::encode_initial_data`, `abi::decode_initial_data`,
+  `abi::decode_boc`, `abi::encode_boc`, `boc::decode_tvc`, `boc::parse_message`, `boc::parse_transaction`,
+  `boc::parse_account`, `boc::parse_block`, `boc::parse_shardstate`, `boc::get_blockchain_config`,
+  `boc::get_boc_hash`, `boc::get_code_from_tvc`, `boc::cache_get`, `boc::cache_set`, `boc::cache_unpin`,
+  `boc::encode_boc`, `boc::get_code_salt`, `boc::set_code_salt`, `boc::decode_state_init`, `boc::encode_state_init`,
+  `boc::encode_external_in_message`, `boc::get_compiler_version`, `processing::monitor_messages`,
+  `processing::get_monitor_info`, `processing::cancel_monitor`
+- Code generator for `modules.ts` produces `_sync` wrapper for all API functions.
+
+## [1.43.3] – 2023-06-24
+
 ### Fixed
 
 - Memory leak in a spawned loop of the web socket link.

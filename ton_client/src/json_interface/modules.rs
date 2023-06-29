@@ -336,7 +336,7 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::encode_message,
         crate::abi::encode_message::encode_message_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::encode_internal_message,
         crate::abi::encode_message::encode_internal_message_api,
     );

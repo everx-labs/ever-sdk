@@ -260,6 +260,35 @@ async fn query() {
     assert_eq!(version.split(".").count(), 3);
 }
 
+#[test]
+fn query_sync() {
+    let client = TestClient::new();
+
+    let info: ResultOfQuery = client
+        .request(
+            "net.query",
+            ParamsOfQuery {
+                query: "query{info{version}}".to_owned(),
+                variables: None,
+            },
+        )
+        .unwrap();
+
+    let version = info.result["data"]["info"]["version"].as_str().unwrap();
+    assert_eq!(version.split(".").count(), 3);
+
+    let result: ClientResult<ResultOfQuery> = client
+        .request(
+            "net.query",
+            ParamsOfQuery {
+                query: "query{info111{version}}".to_owned(),
+                variables: None,
+            },
+        );
+
+    assert!(result.is_err());
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn block_signatures() {
     let client = TestClient::new();
