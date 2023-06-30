@@ -82,11 +82,6 @@ fn test_invalid_params_error_secret_stripped() {
     assert!(!error.message.contains(secret));
 }
 
-#[test]
-fn test_sync_calls() {
-
-}
-
 #[tokio::test]
 async fn test_memory_leak() {
     for _ in 0..1 {
