@@ -83,8 +83,7 @@ pub async fn send_messages(
     if let Some(queue) = params.monitor_queue {
         context
             .message_monitor
-            .monitor_messages(&queue, messages.clone())
-            .await?;
+            .monitor_messages(&queue, messages.clone())?;
     }
     Ok(ResultOfSendMessages { messages })
 }

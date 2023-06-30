@@ -466,15 +466,15 @@ fn test_is_empty_pubkey() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn test_resolve_pubkey() -> Result<()> {
+#[test]
+fn test_resolve_pubkey() -> Result<()> {
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let tvc = base64::encode(include_bytes!("../tests/contracts/abi_v2/Hello.tvc"));
     let mut deploy_set = DeploySet {
         tvc: Some(tvc.clone()),
         ..Default::default()
     };
-    let mut image = create_tvc_image("", None, resolve_state_init_cell(&context, &tvc).await?)?;
+    let mut image = create_tvc_image("", None, resolve_state_init_cell(&context, &tvc)?)?;
     assert!(resolve_pubkey(&deploy_set, &image, &None)?.is_none());
 
     let external_pub_key =
@@ -591,7 +591,7 @@ async fn test_encode_message_pubkey_internal(
     let mut image = create_tvc_image(
         &abi.json_string()?,
         None,
-        resolve_state_init_cell(&context, tvc.as_ref().unwrap()).await?,
+        resolve_state_init_cell(&context, tvc.as_ref().unwrap())?,
     )?;
     if let Some(tvc_pubkey) = tvc_pubkey {
         image.set_public_key(tvc_pubkey)?;
@@ -648,7 +648,7 @@ async fn test_encode_internal_message() -> Result<()> {
     let image = create_tvc_image(
         &abi.json_string()?,
         None,
-        resolve_state_init_cell(&context, tvc.as_ref().unwrap()).await?,
+        resolve_state_init_cell(&context, tvc.as_ref().unwrap())?,
     )?;
     let address =
         String::from("0:1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef");
@@ -1345,7 +1345,7 @@ async fn test_deploy_code_variants_with_fn<
         secret: "cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7".into(),
     };
     let state_init_cell =
-        resolve_state_init_cell(&client.context(), &unknown_tvc.clone().unwrap()).await?;
+        resolve_state_init_cell(&client.context(), &unknown_tvc.clone().unwrap())?;
     let state_init =
         deserialize_object_from_cell::<StateInit>(state_init_cell.clone(), "state init")?;
 
@@ -1448,7 +1448,6 @@ async fn encode_internal_deploy(
             boc: encoded.message,
         },
     )
-    .await
     .unwrap()
     .parsed
 }
@@ -1486,7 +1485,6 @@ async fn encode_deploy(
             boc: encoded.message,
         },
     )
-    .await
     .unwrap()
     .parsed
 }

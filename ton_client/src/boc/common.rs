@@ -29,11 +29,11 @@ pub struct ResultOfGetBocHash {
 
 /// Calculates BOC root hash
 #[api_function]
-pub async fn get_boc_hash(
+pub fn get_boc_hash(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetBocHash,
 ) -> ClientResult<ResultOfGetBocHash> {
-    let (_, cell) = deserialize_cell_from_boc(&context, &params.boc, "").await?;
+    let (_, cell) = deserialize_cell_from_boc(&context, &params.boc, "")?;
     let hash = cell.repr_hash().as_hex_string();
     Ok(ResultOfGetBocHash { hash })
 }
@@ -52,12 +52,12 @@ pub struct ResultOfGetBocDepth {
 
 /// Calculates BOC depth
 #[api_function]
-pub async fn get_boc_depth(
+pub fn get_boc_depth(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetBocDepth,
 ) -> ClientResult<ResultOfGetBocDepth> {
-    let (_, cell) = deserialize_cell_from_boc(&context, &params.boc, "").await?;
-    Ok(ResultOfGetBocDepth { 
+    let (_, cell) = deserialize_cell_from_boc(&context, &params.boc, "")?;
+    Ok(ResultOfGetBocDepth {
         depth: cell.repr_depth() as u32
     })
 }

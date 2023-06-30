@@ -58,7 +58,7 @@ pub struct ParamsOfQueryTransactionTree {
 
     /// Maximum transaction count to wait. If transaction tree contains more transaction then this
     /// parameter then only first `transaction_max_count` transaction are awaited and returned.
-    /// 
+    ///
     /// Default value is 50. If `transaction_max_count` is set to 0 then no limitation on
     /// transaction count is used and all transaction are returned.
     pub transaction_max_count: Option<u32>,
@@ -99,7 +99,7 @@ pub struct MessageNode {
 }
 
 impl MessageNode {
-    async fn from(
+    fn from(
         value: &Value,
         client: &Arc<ClientContext>,
         abi_registry: &Option<Vec<Abi>>,
@@ -115,11 +115,11 @@ impl MessageNode {
             dst: get_string(value, "dst"),
             value: get_string(value, "value"),
             bounce: value["bounce"].as_bool().unwrap_or(false),
-            decoded_body: Self::try_decode_body(value, client, abi_registry).await,
+            decoded_body: Self::try_decode_body(value, client, abi_registry),
         })
     }
 
-    async fn try_decode_body(
+    fn try_decode_body(
         message: &Value,
         client: &Arc<ClientContext>,
         abi_registry: &Option<Vec<Abi>>,
@@ -137,9 +137,7 @@ impl MessageNode {
                                 is_internal,
                                 ..Default::default()
                             },
-                        )
-                        .await
-                        {
+                        ) {
                             return Some(result);
                         }
                     }
@@ -316,16 +314,17 @@ pub async fn query_transaction_tree(
     let mut message_nodes = Vec::new();
     let mut query_queue: Vec<(Option<String>, String)> = vec![(None, params.in_msg.clone())];
     let timeout = params.timeout.unwrap_or(DEFAULT_WAITING_TIMEOUT);
-    let transaction_max_count = params.transaction_max_count.unwrap_or(DEFAULT_TRANSACTION_MAX_COUNT) as usize;
-    while !query_queue.is_empty() &&
-        (transaction_max_count == 0 || transaction_nodes.len() < transaction_max_count)
+    let transaction_max_count = params
+        .transaction_max_count
+        .unwrap_or(DEFAULT_TRANSACTION_MAX_COUNT) as usize;
+    while !query_queue.is_empty()
+        && (transaction_max_count == 0 || transaction_nodes.len() < transaction_max_count)
     {
         let (messages, src_transactions) =
             query_next_portion(server_link, timeout, &mut query_queue).await?;
         for message in messages {
             let message_node =
-                MessageNode::from(&message, &context, &params.abi_registry, &src_transactions)
-                    .await?;
+                MessageNode::from(&message, &context, &params.abi_registry, &src_transactions)?;
             let transaction = &message["dst_transaction"];
             if transaction.is_object() {
                 let transaction_node = TransactionNode::from(&transaction, &message_node)?;

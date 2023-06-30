@@ -100,19 +100,19 @@ pub struct ParamsOfDecodeMessage {
     /// Function name or function id if is known in advance
     pub function_name: Option<String>,
 
-    // For external (inbound and outbound) messages data_layout parameter is ignored. 
-    // For internal: by default SDK tries to decode as output and then if decode is not successfull - tries as input. 
-    // If explicitly specified then tries only the specified layout. 
+    // For external (inbound and outbound) messages data_layout parameter is ignored.
+    // For internal: by default SDK tries to decode as output and then if decode is not successfull - tries as input.
+    // If explicitly specified then tries only the specified layout.
     pub data_layout: Option<DataLayout>,
 }
 
 /// Decodes message body using provided message BOC and ABI.
 #[api_function]
-pub async fn decode_message(
+pub fn decode_message(
     context: Arc<ClientContext>,
     params: ParamsOfDecodeMessage,
 ) -> ClientResult<DecodedMessageBody> {
-    let (abi, message) = prepare_decode(&context, &params).await?;
+    let (abi, message) = prepare_decode(&context, &params)?;
     if let Some(body) = message.body() {
         let data_layout = match message.header() {
             ton_block::CommonMsgInfo::ExtInMsgInfo(_) => Some(DataLayout::Input),
@@ -151,29 +151,28 @@ pub struct ParamsOfDecodeMessageBody {
     pub function_name: Option<String>,
 
     // By default SDK tries to decode as output and then if decode is not successfull - tries as input.
-	// If explicitly specified then tries only the specified layout. 
+	// If explicitly specified then tries only the specified layout.
     pub data_layout: Option<DataLayout>,
 }
 
 /// Decodes message body using provided body BOC and ABI.
 #[api_function]
-pub async fn decode_message_body(
+pub fn decode_message_body(
     context: Arc<ClientContext>,
     params: ParamsOfDecodeMessageBody,
 ) -> ClientResult<DecodedMessageBody> {
     let abi = params.abi.abi()?;
-    let (_, body) = deserialize_cell_from_boc(&context, &params.body, "message body").await?;
+    let (_, body) = deserialize_cell_from_boc(&context, &params.body, "message body")?;
     let body = slice_from_cell(body)?;
     decode_body(abi, body, params.is_internal, params.allow_partial, params.function_name, params.data_layout)
 }
 
-async fn prepare_decode(
+fn prepare_decode(
     context: &ClientContext,
     params: &ParamsOfDecodeMessage,
 ) -> ClientResult<(AbiContract, ton_block::Message)> {
     let abi = params.abi.abi()?;
     let message = deserialize_object_from_boc(context, &params.message, "message")
-        .await
         .map_err(|x| Error::invalid_message_for_decode(x))?;
     Ok((abi, message.object))
 }
@@ -300,7 +299,7 @@ fn decode_with_function(
                 function_name,
                 tokens: decoded,
             };
-            DecodedMessageBody::new(MessageBodyType::Event, decoded, None)            
+            DecodedMessageBody::new(MessageBodyType::Event, decoded, None)
         }
     }
 }
@@ -358,7 +357,7 @@ pub async fn get_signature_data(
     params: ParamsOfGetSignatureData,
 ) -> ClientResult<ResultOfGetSignatureData> {
     let abi = params.abi.abi()?;
-    let message: ton_block::Message = deserialize_object_from_boc(&context, &params.message, "message").await?.object;
+    let message: ton_block::Message = deserialize_object_from_boc(&context, &params.message, "message")?.object;
     if let Some(body) = message.body() {
         let address = message.dst()
             .ok_or_else(|| Error::invalid_message_for_decode(
@@ -367,8 +366,8 @@ pub async fn get_signature_data(
         let (signature, hash) = abi.get_signature_data(body, Some(address))
             .map_err(|err| Error::invalid_message_for_decode(err))?;
         let unsigned = extend_data_to_sign(&context, params.signature_id, Some(hash)).await?;
-        Ok(ResultOfGetSignatureData { 
-            signature: hex::encode(&signature), 
+        Ok(ResultOfGetSignatureData {
+            signature: hex::encode(&signature),
             unsigned: base64::encode(&unsigned.unwrap()),
         })
     } else {

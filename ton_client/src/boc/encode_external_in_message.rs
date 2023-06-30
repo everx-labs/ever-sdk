@@ -40,7 +40,7 @@ pub struct ResultOfEncodeExternalInMessage {
 /// Allows to encode any external inbound message.
 ///
 #[api_function]
-pub async fn encode_external_in_message(
+pub fn encode_external_in_message(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeExternalInMessage,
 ) -> ClientResult<ResultOfEncodeExternalInMessage> {
@@ -63,20 +63,18 @@ pub async fn encode_external_in_message(
     let mut msg = ton_block::Message::with_ext_in_header(header);
     if let Some(init) = params.init {
         msg.set_state_init(
-            deserialize_object_from_boc::<StateInit>(&context, &init, "state init")
-                .await?
-                .object,
+            deserialize_object_from_boc::<StateInit>(&context, &init, "state init")?.object,
         );
     }
     if let Some(body) = params.body {
-        let (_, cell) = deserialize_cell_from_boc(&context, &body, "message body").await?;
+        let (_, cell) = deserialize_cell_from_boc(&context, &body, "message body")?;
         msg.set_body(slice_from_cell(cell)?);
     }
 
     let hash = msg
         .hash()
         .map_err(|err| crate::client::errors::Error::internal_error(err))?;
-    let boc = serialize_object_to_boc(&context, &msg, "message", params.boc_cache).await?;
+    let boc = serialize_object_to_boc(&context, &msg, "message", params.boc_cache)?;
     Ok(ResultOfEncodeExternalInMessage {
         message: boc,
         message_id: hex::encode(hash),

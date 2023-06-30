@@ -48,8 +48,8 @@ pub(crate) struct ResolvedExecutionOptions {
     pub behavior_modifiers: BehaviorModifiers,
 }
 
-pub(crate) async fn blockchain_config_from_boc(context: &ClientContext, b64: &str) -> ClientResult<BlockchainConfig> {
-    let config_params = deserialize_object_from_boc(context, b64, "blockchain config").await?;
+pub(crate) fn blockchain_config_from_boc(context: &ClientContext, b64: &str) -> ClientResult<BlockchainConfig> {
+    let config_params = deserialize_object_from_boc(context, b64, "blockchain config")?;
     BlockchainConfig::with_config(config_params.object)
         .map_err(|err| Error::can_not_read_blockchain_config(err))
 }
@@ -95,14 +95,14 @@ pub(crate) async fn resolve_network_params(
     match (provided_config, provided_global_id.or(context.config.network.signature_id)) {
         (Some(config), Some(global_id)) => {
             Ok(NetworkParams {
-                blockchain_config: Arc::new(blockchain_config_from_boc(context, &config).await?),
+                blockchain_config: Arc::new(blockchain_config_from_boc(context, &config)?),
                 global_id,
             })
         },
         (Some(config), None) => {
             let default = get_default_params(context).await?;
             Ok(NetworkParams {
-                blockchain_config: Arc::new(blockchain_config_from_boc(context, &config).await?),
+                blockchain_config: Arc::new(blockchain_config_from_boc(context, &config)?),
                 global_id: default.global_id,
             })
         },

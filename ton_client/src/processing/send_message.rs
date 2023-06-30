@@ -74,14 +74,14 @@ struct SendingMessage {
 }
 
 impl SendingMessage {
-    async fn new(
+    fn new(
         context: &Arc<ClientContext>,
         serialized: &str,
         abi: Option<&Abi>,
     ) -> ClientResult<Self> {
         // Check message
         let deserialized =
-            deserialize_object_from_boc::<Message>(&context, serialized, "message").await?;
+            deserialize_object_from_boc::<Message>(&context, serialized, "message")?;
         let id = deserialized.cell.repr_hash().as_hex_string();
         let dst = deserialized
             .object
@@ -89,7 +89,7 @@ impl SendingMessage {
             .ok_or(Error::message_has_not_destination_address())?;
 
         let message_expiration_time =
-            get_message_expiration_time(context.clone(), abi, &serialized).await?;
+            get_message_expiration_time(context.clone(), abi, &serialized)?;
         if let Some(message_expiration_time) = message_expiration_time {
             if message_expiration_time <= context.env.now_ms() {
                 return Err(Error::message_already_expired());
@@ -222,7 +222,7 @@ pub async fn send_message<F: futures::Future<Output = ()> + Send>(
     params: ParamsOfSendMessage,
     callback: impl Fn(ProcessingEvent) -> F + Send + Sync + Clone,
 ) -> ClientResult<ResultOfSendMessage> {
-    let message = SendingMessage::new(&context, &params.message, params.abi.as_ref()).await?;
+    let message = SendingMessage::new(&context, &params.message, params.abi.as_ref())?;
 
     let callback = if params.send_events {
         Some(callback)

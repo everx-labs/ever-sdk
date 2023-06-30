@@ -80,7 +80,6 @@ impl MsgInterface {
             .map_err(|e| format!("{}", e))?
             .handle;
         let parsed_msg = parse_message(self.ton.clone(), ParamsOfParse { boc: message.clone() })
-            .await
             .map_err(|e| format!("{}", e))?
             .parsed;
         let dest = parsed_msg["dst"].as_str().ok_or(format!("failed to parse dst address"))?.to_owned();
@@ -108,7 +107,6 @@ impl MsgInterface {
                 ..Default::default()
             },
         )
-        .await
         .map_err(|e| format!("failed to decode message: {}", e))?;
         let abi_str = self.debot_abi.json_string().unwrap();
         let contract = Contract::load(abi_str.as_bytes()).map_err(|e| format!("{}", e))?;
@@ -122,7 +120,6 @@ impl MsgInterface {
     async fn send_async(&self, args: &Value) -> InterfaceResult {
         let message = get_arg(args, "message")?;
         let parsed_msg = parse_message(self.ton.clone(), ParamsOfParse { boc: message.clone() })
-            .await
             .map_err(|e| format!("{}", e))?
             .parsed;
         let dest = parsed_msg["dst"].as_str().ok_or(format!("failed to parse dst address"))?.to_owned();
@@ -150,7 +147,6 @@ impl MsgInterface {
                 ..Default::default()
             },
         )
-        .await
         .map_err(|e| format!("failed to decode message: {}", e))?;
         let abi_str = self.debot_abi.json_string().unwrap();
         let contract = Contract::load(abi_str.as_bytes()).map_err(|e| format!("{}", e))?;

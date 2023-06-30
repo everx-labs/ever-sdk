@@ -322,11 +322,11 @@ pub struct ResultOfBocCacheSet {
 
 /// Save BOC into cache or increase pin counter for existing pinned BOC
 #[api_function]
-pub async fn cache_set(
+pub fn cache_set(
     context: Arc<ClientContext>,
     params: ParamsOfBocCacheSet,
 ) -> ClientResult<ResultOfBocCacheSet> {
-    let (bytes, cell) = deserialize_cell_from_boc(&context, &params.boc, "BOC").await?;
+    let (bytes, cell) = deserialize_cell_from_boc(&context, &params.boc, "BOC")?;
     let size = match bytes {
         DeserializedBoc::Bytes(bytes) => Some(bytes.len()),
         _ => None,
@@ -353,7 +353,7 @@ pub struct ResultOfBocCacheGet {
 
 /// Get BOC from cache
 #[api_function]
-pub async fn cache_get(
+pub fn cache_get(
     context: Arc<ClientContext>,
     params: ParamsOfBocCacheGet,
 ) -> ClientResult<ResultOfBocCacheGet> {
@@ -380,7 +380,7 @@ pub struct ParamsOfBocCacheUnpin {
 /// Decrease pin reference counter for BOCs with specified pin defined in the `cache_set`.
 /// BOCs which have only 1 pin and its reference counter become 0 will be removed from cache
 #[api_function]
-pub async fn cache_unpin(
+pub fn cache_unpin(
     context: Arc<ClientContext>,
     params: ParamsOfBocCacheUnpin,
 ) -> ClientResult<()> {

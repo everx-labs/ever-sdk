@@ -20,14 +20,14 @@ use crate::boc::internal::deserialize_cell_from_boc;
 use ton_sdk::AbiContract;
 use ton_abi::token::Detokenizer;
 
-async fn decode_msg(
+fn decode_msg(
     client: TonClient,
     msg_body: String,
     abi: Abi,
 ) -> ClientResult<(String, Value)> {
     let abi = abi.json_string()?;
     let abi = AbiContract::load(abi.as_bytes()).map_err(|e| Error::invalid_json(e))?;
-    let (_, body) = deserialize_cell_from_boc(&client, &msg_body, "message body").await?;
+    let (_, body) = deserialize_cell_from_boc(&client, &msg_body, "message body")?;
     let body = slice_from_cell(body)?;
     let input = abi.decode_input(body, true, false)
         .map_err(|e| Error::invalid_message_for_decode(e))?;
@@ -93,7 +93,6 @@ pub trait DebotInterfaceExecutor {
         abi_version: &str,
     ) -> InterfaceResult {
         let parsed = parse_message(client.clone(), ParamsOfParse { boc: msg.clone() })
-            .await
             .map_err(|e| format!("{}", e))?;
 
         let body = parsed.parsed["body"]
@@ -105,7 +104,6 @@ pub trait DebotInterfaceExecutor {
             Some(object) => {
                 let abi = object.get_target_abi(abi_version);
                 let (func, args) = decode_msg(client.clone(), body, abi.clone())
-                    .await
                     .map_err(|e| e.to_string())?;
                 let (answer_id, mut ret_args) = object.call(&func, &args)
                     .await

@@ -31,18 +31,18 @@ pub struct ResultOfGetBlockchainConfig {
 
 /// Extract blockchain configuration from key block and also from zerostate.
 #[api_function]
-pub async fn get_blockchain_config(
+pub fn get_blockchain_config(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetBlockchainConfig,
 ) -> ClientResult<ResultOfGetBlockchainConfig> {
-    let config = if let Ok(block) = 
-        deserialize_object_from_boc::<ton_block::Block>(&context, &params.block_boc, "block").await
+    let config = if let Ok(block) =
+        deserialize_object_from_boc::<ton_block::Block>(&context, &params.block_boc, "block")
     {
         extract_config_from_block(&block.object)?
     } else {
         let zerostate = deserialize_object_from_boc::<ton_block::ShardStateUnsplit>(
             &context, &params.block_boc, "zerostate"
-        ).await?;
+        )?;
         extract_config_from_zerostate(&zerostate.object)?
     };
 

@@ -60,7 +60,7 @@ pub async fn run_get(
     params: ParamsOfRunGet,
 ) -> ClientResult<ResultOfRunGet> {
     let mut account: ton_block::Account =
-        deserialize_object_from_boc(&context, &params.account, "account").await?.object;
+        deserialize_object_from_boc(&context, &params.account, "account")?.object;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 
     if account.is_none() {
