@@ -27,8 +27,8 @@ use std::str::FromStr;
 use ton_block::{MsgAddrStd, MsgAddressInt, Serializable};
 use ton_types::{AccountId, BuilderData, IBitstring};
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn test_encode_boc() {
+#[test]
+fn test_encode_boc() {
     fn write_b(value: u8) -> BuilderOp {
         BuilderOp::Integer {
             size: 1,
@@ -182,8 +182,8 @@ async fn test_encode_boc() {
     assert_eq!(boc, response.boc);
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn test_pinned_cache() {
+#[test]
+fn test_pinned_cache() {
     let client = TestClient::new();
     let cache_set = client.wrap(cache_set, BocModule::api(), super::cache::cache_set_api());
     let cache_get = client.wrap(cache_get, BocModule::api(), super::cache::cache_get_api());
@@ -324,8 +324,8 @@ async fn test_pinned_cache() {
     assert_eq!(boc.boc, None);
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn test_unpinned_cache() {
+#[test]
+fn test_unpinned_cache() {
     let boc1 = TestClient::tvc(crate::tests::TEST_DEBOT, None).unwrap();
     let boc2 = TestClient::tvc(crate::tests::SUBSCRIBE, None).unwrap();
 
@@ -899,8 +899,8 @@ fn encode_external_in_message() {
     assert_eq!(boc_encoded.message, abi_encoded.message);
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn test_decode_tvc() {
+#[test]
+fn test_decode_tvc() {
     let client = TestClient::new();
     let tvc_boc = "te6ccgEBBQEAMgACCQFn9wzgAwEBAtACACZTb21lIFNtYXJ0IENvbnRyYWN0ART/APSkE/S88sgLBAAC0w==";
     let code_boc = "te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT";
@@ -933,13 +933,12 @@ async fn test_decode_tvc() {
     });
 
     let decoded = client
-        .request_async::<Value, Value>(
+        .request::<Value, Value>(
             "boc.decode_tvc",
             json!({
                 "tvc": tvc_boc,
             }),
         )
-        .await
         .unwrap();
     assert_eq!(expected, decoded);
 }

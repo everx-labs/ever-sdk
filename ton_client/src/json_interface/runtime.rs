@@ -15,11 +15,10 @@
 use super::modules::register_modules;
 use super::request::Request;
 use crate::client::{ClientConfig, ClientContext, Error};
-use crate::error::{ClientError, ClientResult};
-use crate::{ContextHandle, ResponseType};
+use crate::error::ClientResult;
+use crate::ContextHandle;
 use api_info::{Module, API};
 use std::collections::HashMap;
-use std::sync::mpsc::Sender;
 use std::sync::{Arc, Mutex, MutexGuard};
 
 pub(crate) trait SyncHandler {
@@ -89,72 +88,6 @@ lazy_static! {
 
 pub struct Runtime;
 
-// Used as a `request_ptr` in case when async handler invoker via `dispatch_sync`
-struct AsyncAsSyncHandler {
-    // Used to send async result to the waiting sync handler.
-    result_sender: Sender<ClientResult<String>>,
-    // Indicates that async result (success or error) is already sent to the sync handler
-    // and async handler should ignore all following responses.
-    result_sent: bool,
-}
-
-impl AsyncAsSyncHandler {
-    fn dispatch(
-        context: Arc<ClientContext>,
-        function_name: String,
-        params_json: String,
-    ) -> ClientResult<String> {
-        let (result_sender, result_receiver) = std::sync::mpsc::channel::<ClientResult<String>>();
-        // Create state, unbox it into raw pointer and send to the `dispatch_sync`
-        let handler = Box::into_raw(Box::new(Self {
-            result_sender,
-            result_sent: false,
-        }));
-        Runtime::dispatch_async(
-            context,
-            function_name,
-            params_json,
-            Request::new_with_ptr(handler as *const (), Self::response_handler),
-        );
-        let result = result_receiver
-            .recv()
-            .unwrap_or_else(|err| Err(Error::can_not_receive_request_result(err)));
-        result
-    }
-
-    fn handle_response(&mut self, params_json: String, response_type: u32) {
-        if self.result_sent {
-            return;
-        }
-        let result = if response_type == ResponseType::Success as u32 {
-            Ok(params_json)
-        } else if response_type == ResponseType::Error as u32 {
-            Err(serde_json::from_str::<ClientError>(&params_json)
-                .unwrap_or_else(|err| Error::callback_params_cant_be_converted_to_json(err)))
-        } else {
-            return;
-        };
-        let _ = self.result_sender.send(result);
-        self.result_sent = true;
-    }
-
-    fn response_handler(
-        request_ptr: *const (),
-        params_json: String,
-        response_type: u32,
-        finished: bool,
-    ) {
-        let handler = request_ptr as *mut Self;
-        if let Some(handler) = unsafe { handler.as_mut() } {
-            handler.handle_response(params_json, response_type);
-        }
-        if finished {
-            // Box handler from raw pointer and drop it
-            let _ = unsafe { Box::from_raw(handler) };
-        }
-    }
-}
-
 impl Runtime {
     fn handlers() -> &'static RuntimeHandlers {
         &HANDLERS
@@ -171,7 +104,7 @@ impl Runtime {
     ) -> ClientResult<String> {
         match Self::handlers().sync_handlers.get(&function_name) {
             Some(handler) => handler.handle(context, params_json.as_str()),
-            None => AsyncAsSyncHandler::dispatch(context, function_name, params_json),
+            None => Err(Error::unknown_function(&function_name)),
         }
     }
 

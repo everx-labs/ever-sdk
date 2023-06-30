@@ -466,8 +466,8 @@ fn test_is_empty_pubkey() -> Result<()> {
     Ok(())
 }
 
-#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
-async fn test_resolve_pubkey() -> Result<()> {
+#[test]
+fn test_resolve_pubkey() -> Result<()> {
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let tvc = base64::encode(include_bytes!("../tests/contracts/abi_v2/Hello.tvc"));
     let mut deploy_set = DeploySet {
