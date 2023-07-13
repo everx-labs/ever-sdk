@@ -35,11 +35,11 @@ pub struct ResultOfDecodeAccountData {
 ///
 /// Note: this feature requires ABI 2.1 or higher.
 #[api_function]
-pub async fn decode_account_data(
+pub fn decode_account_data(
     context: Arc<ClientContext>,
     params: ParamsOfDecodeAccountData,
 ) -> ClientResult<ResultOfDecodeAccountData> {
-    let (_, data) = deserialize_cell_from_boc(&context, &params.data, "contract data").await?;
+    let (_, data) = deserialize_cell_from_boc(&context, &params.data, "contract data")?;
     let abi = params.abi.abi()?;
 
     let tokens = abi.decode_storage_fields(slice_from_cell(data)?, params.allow_partial)

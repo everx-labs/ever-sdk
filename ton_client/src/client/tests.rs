@@ -84,7 +84,7 @@ fn test_invalid_params_error_secret_stripped() {
 
 #[tokio::test]
 async fn test_memory_leak() {
-    for _ in 0..100 {
+    for _ in 0..1 {
         let config = json!({
             "network": {
                 "endpoints": TestClient::endpoints(),

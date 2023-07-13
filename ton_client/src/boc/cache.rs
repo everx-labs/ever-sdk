@@ -101,13 +101,13 @@ pub struct PinnedBoc {
     cell: Cell,
 }
 
-pub struct CachedBoc {
+pub struct InnerCachedBoc {
     size: usize,
     cell: Cell,
 }
 
 pub struct CachedBocs {
-    bocs: LruCache<UInt256, CachedBoc>,
+    bocs: LruCache<UInt256, InnerCachedBoc>,
     cache_size: usize,
 }
 
@@ -200,7 +200,7 @@ impl Bocs {
                 .ok_or(Error::insufficient_cache_size(self.max_cache_size, size))?;
             lock.cache_size -= entry.size;
         }
-        lock.bocs.put(hash.clone(), CachedBoc { cell, size });
+        lock.bocs.put(hash.clone(), InnerCachedBoc { cell, size });
         lock.cache_size += size;
 
         Ok(())
@@ -322,11 +322,11 @@ pub struct ResultOfBocCacheSet {
 
 /// Save BOC into cache or increase pin counter for existing pinned BOC
 #[api_function]
-pub async fn cache_set(
+pub fn cache_set(
     context: Arc<ClientContext>,
     params: ParamsOfBocCacheSet,
 ) -> ClientResult<ResultOfBocCacheSet> {
-    let (bytes, cell) = deserialize_cell_from_boc(&context, &params.boc, "BOC").await?;
+    let (bytes, cell) = deserialize_cell_from_boc(&context, &params.boc, "BOC")?;
     let size = match bytes {
         DeserializedBoc::Bytes(bytes) => Some(bytes.len()),
         _ => None,
@@ -353,7 +353,7 @@ pub struct ResultOfBocCacheGet {
 
 /// Get BOC from cache
 #[api_function]
-pub async fn cache_get(
+pub fn cache_get(
     context: Arc<ClientContext>,
     params: ParamsOfBocCacheGet,
 ) -> ClientResult<ResultOfBocCacheGet> {
@@ -380,7 +380,7 @@ pub struct ParamsOfBocCacheUnpin {
 /// Decrease pin reference counter for BOCs with specified pin defined in the `cache_set`.
 /// BOCs which have only 1 pin and its reference counter become 0 will be removed from cache
 #[api_function]
-pub async fn cache_unpin(
+pub fn cache_unpin(
     context: Arc<ClientContext>,
     params: ParamsOfBocCacheUnpin,
 ) -> ClientResult<()> {
@@ -390,4 +390,44 @@ pub async fn cache_unpin(
         .transpose()?;
     context.bocs.unpin(&params.pin, hash);
     Ok(())
+}
+
+#[derive(Debug)]
+pub struct CachedBoc {
+    context: Arc<ClientContext>,
+    boc_ref: String,
+    pin: String,
+}
+
+impl CachedBoc {
+    pub fn new(context: Arc<ClientContext>, boc: String, pin: String) -> ClientResult<Self> {
+        let boc_ref = cache_set(
+            context.clone(),
+            ParamsOfBocCacheSet { 
+                boc,
+                cache_type: BocCacheType::Pinned { pin: pin.clone() },
+        })?.boc_ref;
+        
+        Ok(Self { context, boc_ref, pin })
+    }
+
+    pub fn boc_ref(&self) -> String {
+        self.boc_ref.clone()
+    }
+
+    pub fn try_clone(&self) -> ClientResult<Self> {
+        CachedBoc::new(self.context.clone(), self.boc_ref.clone(), self.pin.clone())
+    }
+}
+
+impl Drop for CachedBoc {
+    fn drop(&mut self) {
+        let _ = cache_unpin(
+            self.context.clone(),
+            ParamsOfBocCacheUnpin { 
+                pin: std::mem::take(&mut self.pin),
+                boc_ref: Some(std::mem::take(&mut self.boc_ref))
+            }
+        );
+    }
 }

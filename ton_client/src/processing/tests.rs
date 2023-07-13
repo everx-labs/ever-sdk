@@ -669,9 +669,7 @@ async fn test_deploy_from_tvc_v1() {
     let client = TestClient::new();
     let (events_abi, events_state_init) = TestClient::package(EVENTS_OLD, Some(2));
     let state_init_cell =
-        resolve_state_init_cell(&client.context(), &events_state_init.clone().unwrap())
-            .await
-            .unwrap();
+        resolve_state_init_cell(&client.context(), &events_state_init.clone().unwrap()).unwrap();
     let state_init =
         deserialize_object_from_cell::<StateInit>(state_init_cell.clone(), "state init").unwrap();
     let tvc = base64::encode(

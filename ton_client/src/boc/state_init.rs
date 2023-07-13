@@ -14,6 +14,7 @@
 use ton_block::{Number5, StateInit, StateInitLib, TickTock};
 use ton_types::{BuilderData, Cell};
 
+use super::BocCacheType;
 use crate::boc::internal::{
     deserialize_cell_from_boc, deserialize_object_from_boc, deserialize_object_from_cell,
     serialize_cell_to_boc, serialize_object_to_boc,
@@ -23,8 +24,6 @@ use crate::boc::Error;
 use crate::client::ClientContext;
 use crate::encoding::slice_from_cell;
 use crate::error::ClientResult;
-
-use super::BocCacheType;
 
 const OLD_CPP_SELECTOR_DATA: &[u8] = &[
     0xff, 0x00, 0x20, 0xc1, 0x01, 0xf4, 0xa4, 0x20, 0x58, 0x92, 0xf4, 0xa0, 0xe0, 0x5f, 0x02, 0x8a,
@@ -54,11 +53,11 @@ pub struct ResultOfGetCodeFromTvc {
 
 /// Extracts code from TVC contract image
 #[api_function]
-pub async fn get_code_from_tvc(
+pub fn get_code_from_tvc(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetCodeFromTvc,
 ) -> ClientResult<ResultOfGetCodeFromTvc> {
-    let state_init_cell = resolve_state_init_cell(&context, &params.tvc).await?;
+    let state_init_cell = resolve_state_init_cell(&context, &params.tvc)?;
     let object = deserialize_object_from_cell::<StateInit>(state_init_cell, "TVC")?;
 
     let code = object
@@ -129,16 +128,21 @@ pub struct ResultOfGetCodeSalt {
 
 /// Returns the contract code's salt if it is present.
 #[api_function]
-pub async fn get_code_salt(
+pub fn get_code_salt(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetCodeSalt,
 ) -> ClientResult<ResultOfGetCodeSalt> {
-    let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code").await?;
+    let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code")?;
 
     let (salt, _) = get_salt_and_ver(code)?;
 
     let salt = if let Some(salt) = salt {
-        Some(serialize_cell_to_boc(&context, salt, "code salt", params.boc_cache).await?)
+        Some(serialize_cell_to_boc(
+            &context,
+            salt,
+            "code salt",
+            params.boc_cache,
+        )?)
     } else {
         None
     };
@@ -220,12 +224,12 @@ pub struct ResultOfSetCodeSalt {
 
 /// Sets new salt to contract code. Returns the new contract code with salt.
 #[api_function]
-pub async fn set_code_salt(
+pub fn set_code_salt(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfSetCodeSalt,
 ) -> ClientResult<ResultOfSetCodeSalt> {
-    let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code").await?;
-    let (_, salt) = deserialize_cell_from_boc(&context, &params.salt, "salt").await?;
+    let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code")?;
+    let (_, salt) = deserialize_cell_from_boc(&context, &params.salt, "salt")?;
 
     let code = match code.data() {
         OLD_CPP_SELECTOR_DATA => set_old_selector_salt(code, salt),
@@ -238,7 +242,7 @@ pub async fn set_code_salt(
     }?;
 
     Ok(ResultOfSetCodeSalt {
-        code: serialize_cell_to_boc(&context, code, "contract code", params.boc_cache).await?,
+        code: serialize_cell_to_boc(&context, code, "contract code", params.boc_cache)?,
     })
 }
 
@@ -269,11 +273,11 @@ pub fn get_compiler_version_from_cell(code: Cell) -> ClientResult<Option<String>
 
 /// Returns the compiler version used to compile the code.
 #[api_function]
-pub async fn get_compiler_version(
+pub fn get_compiler_version(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfGetCompilerVersion,
 ) -> ClientResult<ResultOfGetCompilerVersion> {
-    let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code").await?;
+    let (_, code) = deserialize_cell_from_boc(&context, &params.code, "contract code")?;
     let version = get_compiler_version_from_cell(code)?;
 
     Ok(ResultOfGetCompilerVersion { version })
@@ -307,25 +311,21 @@ pub struct ResultOfEncodeStateInit {
 
 /// Encodes initial contract state from code, data, libraries ans special options (see input params)
 #[api_function]
-pub async fn encode_state_init(
+pub fn encode_state_init(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfEncodeStateInit,
 ) -> ClientResult<ResultOfEncodeStateInit> {
     let get_cell = |name, boc| {
         let context = context.clone();
-        async move {
-            if let Some(boc) = boc {
-                deserialize_cell_from_boc(&context, boc, name)
-                    .await
-                    .map(|val| Some(val.1))
-            } else {
-                Ok(None)
-            }
+        if let Some(boc) = boc {
+            deserialize_cell_from_boc(&context, boc, name).map(|val| Some(val.1))
+        } else {
+            Ok(None)
         }
     };
-    let code = get_cell("code", params.code.as_deref()).await?;
-    let data = get_cell("data", params.data.as_deref()).await?;
-    let library = StateInitLib::with_hashmap(get_cell("library", params.library.as_deref()).await?);
+    let code = get_cell("code", params.code.as_deref())?;
+    let data = get_cell("data", params.data.as_deref())?;
+    let library = StateInitLib::with_hashmap(get_cell("library", params.library.as_deref())?);
 
     let special = if params.tick.is_some() || params.tock.is_some() {
         Some(TickTock {
@@ -349,7 +349,7 @@ pub async fn encode_state_init(
     };
 
     Ok(ResultOfEncodeStateInit {
-        state_init: serialize_object_to_boc(&context, &state, "TVC", params.boc_cache).await?,
+        state_init: serialize_object_to_boc(&context, &state, "TVC", params.boc_cache)?,
     })
 }
 
@@ -390,23 +390,18 @@ pub struct ResultOfDecodeStateInit {
 
 /// Decodes contract's initial state into code, data, libraries and special options.
 #[api_function]
-pub async fn decode_state_init(
+pub fn decode_state_init(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfDecodeStateInit,
 ) -> ClientResult<ResultOfDecodeStateInit> {
-    let state_init =
-        deserialize_object_from_boc::<StateInit>(&context, &params.state_init, "TVC").await?;
+    let state_init = deserialize_object_from_boc::<StateInit>(&context, &params.state_init, "TVC")?;
 
     let serialize = |name, cell, boc_cache| {
         let context = context.clone();
-        async move {
-            if let Some(cell) = cell {
-                serialize_cell_to_boc(&context, cell, name, boc_cache)
-                    .await
-                    .map(Some)
-            } else {
-                Ok(None)
-            }
+        if let Some(cell) = cell {
+            serialize_cell_to_boc(&context, cell, name, boc_cache).map(Some)
+        } else {
+            Ok(None)
         }
     };
     let code_depth = state_init
@@ -426,7 +421,7 @@ pub async fn decode_state_init(
         .map(|cell| get_compiler_version_from_cell(cell).ok())
         .flatten()
         .flatten();
-    let code = serialize("code", state_init.object.code, params.boc_cache.clone()).await?;
+    let code = serialize("code", state_init.object.code, params.boc_cache.clone())?;
 
     let data_depth = state_init
         .object
@@ -438,14 +433,13 @@ pub async fn decode_state_init(
         .data
         .as_ref()
         .map(|cell| cell.repr_hash().as_hex_string());
-    let data = serialize("data", state_init.object.data, params.boc_cache.clone()).await?;
+    let data = serialize("data", state_init.object.data, params.boc_cache.clone())?;
 
     let library = serialize(
         "library",
         state_init.object.library.root().cloned(),
         params.boc_cache.clone(),
-    )
-    .await?;
+    )?;
 
     Ok(ResultOfDecodeStateInit {
         code,

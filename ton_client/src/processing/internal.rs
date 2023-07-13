@@ -49,7 +49,7 @@ pub fn find_transactions(
     Ok(ids)
 }
 
-pub(crate) async fn get_message_expiration_time(
+pub(crate) fn get_message_expiration_time(
     context: Arc<ClientContext>,
     abi: Option<&Abi>,
     message: &str,
@@ -63,7 +63,6 @@ pub(crate) async fn get_message_expiration_time(
                 ..Default::default()
             },
         )
-        .await
         .map(|x| x.header)
         .unwrap_or_default(),
         None => None,

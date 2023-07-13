@@ -60,19 +60,17 @@ impl DeploySet {
         })
     }
 
-    pub async fn get_state_init(&self, context: &ClientContext) -> ClientResult<Cell> {
+    pub fn get_state_init(&self, context: &ClientContext) -> ClientResult<Cell> {
         let error = |err| Err(Error::encode_deploy_message_failed(err));
         match (&self.tvc, &self.code, &self.state_init) {
             (Some(tvc_or_state_init), None, None) => {
-                resolve_state_init_cell(context, tvc_or_state_init).await
+                resolve_state_init_cell(context, tvc_or_state_init)
             }
             (None, Some(code), None) => {
-                state_init_with_code(deserialize_cell_from_boc(context, code, "code").await?.1)
+                state_init_with_code(deserialize_cell_from_boc(context, code, "code")?.1)
             }
             (None, None, Some(state_init)) => {
-                Ok(deserialize_cell_from_boc(context, state_init, "state init")
-                    .await?
-                    .1)
+                Ok(deserialize_cell_from_boc(context, state_init, "state init")?.1)
             }
             (None, None, None) => error(
                 "at least one of the `tvc`, `code` or `state_init` value should be specified.",
@@ -508,7 +506,7 @@ pub async fn encode_message(
         let mut image = create_tvc_image(
             &abi,
             deploy_set.initial_data.as_ref(),
-            deploy_set.get_state_init(&context).await?,
+            deploy_set.get_state_init(&context)?,
         )?;
 
         required_public_key(update_pubkey(&deploy_set, &mut image, &public)?)?;
@@ -620,7 +618,7 @@ pub struct ResultOfEncodeInternalMessage {
 /// 2. Public key, specified in TVM file.
 
 #[api_function]
-pub async fn encode_internal_message(
+pub fn encode_internal_message(
     context: Arc<ClientContext>,
     params: ParamsOfEncodeInternalMessage,
 ) -> ClientResult<ResultOfEncodeInternalMessage> {
@@ -652,7 +650,7 @@ pub async fn encode_internal_message(
         let mut image = create_tvc_image(
             &abi,
             deploy_set.initial_data.as_ref(),
-            deploy_set.get_state_init(&context).await?,
+            deploy_set.get_state_init(&context)?,
         )?;
 
         let public = update_pubkey(&deploy_set, &mut image, &None)?;
@@ -892,11 +890,11 @@ pub struct ResultOfAttachSignature {
 /// Combines `hex`-encoded `signature` with `base64`-encoded `unsigned_message`.
 /// Returns signed message encoded in `base64`.
 #[api_function]
-pub async fn attach_signature(
+pub fn attach_signature(
     context: Arc<ClientContext>,
     params: ParamsOfAttachSignature,
 ) -> ClientResult<ResultOfAttachSignature> {
-    let (boc, _) = deserialize_cell_from_boc(&context, &params.message, "message").await?;
+    let (boc, _) = deserialize_cell_from_boc(&context, &params.message, "message")?;
     let signed = add_sign_to_message(
         &params.abi.json_string()?,
         &hex_decode(&params.signature)?,
@@ -933,11 +931,11 @@ pub struct ResultOfAttachSignatureToMessageBody {
 
 ///
 #[api_function]
-pub async fn attach_signature_to_message_body(
+pub fn attach_signature_to_message_body(
     context: Arc<ClientContext>,
     params: ParamsOfAttachSignatureToMessageBody,
 ) -> ClientResult<ResultOfAttachSignatureToMessageBody> {
-    let (boc, _) = deserialize_cell_from_boc(&context, &params.message, "message body").await?;
+    let (boc, _) = deserialize_cell_from_boc(&context, &params.message, "message body")?;
     let signed = add_sign_to_message_body(
         &params.abi.json_string()?,
         &hex_decode(&params.signature)?,

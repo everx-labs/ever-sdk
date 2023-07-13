@@ -125,16 +125,16 @@ pub fn serialize_object_to_base64<S: Serializable>(
     Ok(serialize_cell_to_base64(&cell, name)?)
 }
 
-pub async fn deserialize_cell_from_boc(
+pub fn deserialize_cell_from_boc(
     context: &ClientContext, boc: &str, name: &str
 ) -> ClientResult<(DeserializedBoc, ton_types::Cell)> {
     context.bocs.deserialize_cell(boc, name)
 }
 
-pub async fn deserialize_object_from_boc<S: Deserializable>(
+pub fn deserialize_object_from_boc<S: Deserializable>(
     context: &ClientContext, boc: &str, name: &str,
 ) -> ClientResult<DeserializedObject<S>> {
-    let (boc, cell) = deserialize_cell_from_boc(context, boc, name).await?;
+    let (boc, cell) = deserialize_cell_from_boc(context, boc, name)?;
 
     let object = deserialize_object_from_cell(cell.clone(), name)?;
 
@@ -152,7 +152,7 @@ pub fn deserialize_object_from_boc_bin<S: Deserializable>(
     Ok((object, root_hash))
 }
 
-pub async fn serialize_cell_to_boc(
+pub fn serialize_cell_to_boc(
     context: &ClientContext, cell: ton_types::Cell, name: &str, boc_cache: Option<BocCacheType>,
 ) -> ClientResult<String> {
     if let Some(cache_type) = boc_cache {
@@ -165,9 +165,9 @@ pub async fn serialize_cell_to_boc(
     }
 }
 
-pub async fn serialize_object_to_boc<S: Serializable>(
+pub fn serialize_object_to_boc<S: Serializable>(
     context: &ClientContext, object: &S,name: &str, boc_cache: Option<BocCacheType>,
 ) -> ClientResult<String> {
     let cell = serialize_object_to_cell(object, name)?;
-    serialize_cell_to_boc(context, cell, name, boc_cache).await
+    serialize_cell_to_boc(context, cell, name, boc_cache)
 }

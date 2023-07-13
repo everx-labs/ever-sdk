@@ -1,3 +1,4 @@
+use super::remp::{RempStatus, RempStatusData};
 use crate::abi::Abi;
 use crate::boc::internal::deserialize_object_from_boc;
 use crate::client::ClientContext;
@@ -6,13 +7,11 @@ use crate::net::{EndpointStat, ResultOfSubscription};
 use crate::processing::internal::{get_message_expiration_time, resolve_error};
 use crate::processing::{fetching, internal, Error};
 use crate::processing::{ProcessingEvent, ResultOfProcessMessage};
+use futures::{FutureExt, StreamExt};
 use std::convert::TryInto;
 use std::sync::Arc;
-use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
 use ton_block::{Message, MsgAddressInt};
-
-use super::remp::{RempStatus, RempStatusData};
 
 //--------------------------------------------------------------------------- wait_for_transaction
 
@@ -71,15 +70,15 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
     let fallback_fut = async {
         notify.notified().await;
         wait_by_block_walking(context.clone(), &params, callback.clone()).await
-    }.fuse();
+    }
+    .fuse();
     futures::pin_mut!(fallback_fut);
 
     // Prepare to wait
-    let message =
-        deserialize_object_from_boc::<Message>(&context, &params.message, "message")
-            .await?;
+    let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message")?;
     let message_id = message.cell.repr_hash().as_hex_string();
-    let message_dst = message.object
+    let message_dst = message
+        .object
         .dst()
         .ok_or(Error::message_has_not_destination_address())?;
 
@@ -89,25 +88,30 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
     let subscription_callback = move |event: ClientResult<ResultOfSubscription>| {
         let sender = sender.clone();
         async move {
-            let _ = sender.send(event.map(|mut result| result.result["rempReceipts"].take())).await;
+            let _ = sender
+                .send(event.map(|mut result| result.result["rempReceipts"].take()))
+                .await;
         }
     };
 
     let subscription_result = crate::net::subscribe(
         context.clone(),
         crate::net::subscriptions::ParamsOfSubscribe {
-            subscription: format!(r#"
+            subscription: format!(
+                r#"
                 subscription {{
                     rempReceipts(messageId: "{}") {{
                         messageId kind timestamp json
                     }}
                 }}
                 "#,
-                message_id),
+                message_id
+            ),
             variables: None,
         },
-        subscription_callback
-    ).await;
+        subscription_callback,
+    )
+    .await;
 
     let subscription = match subscription_result {
         Ok(result) => Some(result),
@@ -117,7 +121,8 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
                     error,
                     message_id: message_id.clone(),
                     message_dst: message_dst.to_string(),
-                }).await;
+                })
+                .await;
             }
             notify.notify_one();
             None
@@ -176,10 +181,7 @@ async fn wait_by_remp<F: futures::Future<Output = ()> + Send>(
 
         if let Some(result) = result {
             if let Some(subscription) = subscription {
-                let _ = crate::net::unsubscribe(
-                    context.clone(),
-                    subscription
-                ).await;
+                let _ = crate::net::unsubscribe(context.clone(), subscription).await;
             }
 
             return result;
@@ -196,18 +198,26 @@ async fn process_remp_message<F: futures::Future<Output = ()> + Send>(
     remp_message: ClientResult<serde_json::Value>,
 ) -> ClientResult<Option<ClientResult<ResultOfProcessMessage>>> {
     let remp_message = remp_message?;
-    let status: RempStatus = serde_json::from_value(remp_message)
-        .map_err(|err| Error::invalid_remp_status(format!("can not parse REMP status message: {}", err)))?;
+    let status: RempStatus = serde_json::from_value(remp_message).map_err(|err| {
+        Error::invalid_remp_status(format!("can not parse REMP status message: {}", err))
+    })?;
 
     match status {
-        RempStatus::RejectedByFullnode(data) => {
-            Ok(Some(process_rejected_status(context.clone(), params, &message_dst, data).await))
-        },
-        RempStatus::Finalized(data) => {
-            Ok(Some(Ok(process_finalized_status(context.clone(), params, message_id, &message_dst, data).await?)))
-        },
+        RempStatus::RejectedByFullnode(data) => Ok(Some(
+            process_rejected_status(context.clone(), params, &message_dst, data).await,
+        )),
+        RempStatus::Finalized(data) => Ok(Some(Ok(process_finalized_status(
+            context.clone(),
+            params,
+            message_id,
+            &message_dst,
+            data,
+        )
+        .await?))),
         _ => {
-            if params.send_events { callback(status.into_event(message_dst.to_string())).await; }
+            if params.send_events {
+                callback(status.into_event(message_dst.to_string())).await;
+            }
             Ok(None)
         }
     }
@@ -220,8 +230,8 @@ async fn process_rejected_status(
     data: RempStatusData,
 ) -> ClientResult<ResultOfProcessMessage> {
     let message_expiration_time =
-        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message).await?
-        .unwrap_or_else(|| context.env.now_ms());
+        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?
+            .unwrap_or_else(|| context.env.now_ms());
 
     let error = data.json["error"].as_str().unwrap_or("unknown error");
 
@@ -248,8 +258,8 @@ async fn process_finalized_status(
     data: RempStatusData,
 ) -> ClientResult<ResultOfProcessMessage> {
     let message_expiration_time =
-        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message).await?
-        .unwrap_or_else(|| context.env.now_ms());
+        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?
+            .unwrap_or_else(|| context.env.now_ms());
 
     let block_id = data.json["block_id"]
         .as_str()
@@ -258,19 +268,19 @@ async fn process_finalized_status(
     // Transaction has been found.
     // Let's fetch other stuff.
     let result = fetching::fetch_transaction_result(
-            &context,
-            block_id,
-            message_id,
-            &params.message,
-            None,
-            &params.abi,
-            message_dst.clone(),
-            (message_expiration_time / 1000) as u32,
-            (context.env.now_ms() / 1000) as u32,
-        )
-        .await
-        .add_network_url_from_context(&context)
-        .await;
+        &context,
+        block_id,
+        message_id,
+        &params.message,
+        None,
+        &params.abi,
+        message_dst.clone(),
+        (message_expiration_time / 1000) as u32,
+        (context.env.now_ms() / 1000) as u32,
+    )
+    .await
+    .add_network_url_from_context(&context)
+    .await;
     if result.is_ok() {
         if let Some(endpoints) = &params.sending_endpoints {
             context
@@ -290,17 +300,16 @@ async fn wait_by_block_walking<F: futures::Future<Output = ()> + Send>(
     let net = context.get_server_link()?;
 
     // Prepare to wait
-    let message =
-        deserialize_object_from_boc::<Message>(&context, &params.message, "message")
-            .await?;
+    let message = deserialize_object_from_boc::<Message>(&context, &params.message, "message")?;
 
     let message_id = message.cell.repr_hash().as_hex_string();
     let address = message
         .object
-        .dst_ref().cloned()
+        .dst_ref()
+        .cloned()
         .ok_or(Error::message_has_not_destination_address())?;
     let message_expiration_time =
-        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message).await?;
+        get_message_expiration_time(context.clone(), params.abi.as_ref(), &params.message)?;
     let processing_timeout = net.config().message_processing_timeout;
     let max_block_time =
         message_expiration_time.unwrap_or(context.env.now_ms() + processing_timeout as u64);
@@ -313,10 +322,8 @@ async fn wait_by_block_walking<F: futures::Future<Output = ()> + Send>(
     // Block walking loop
     loop {
         let now = context.env.now_ms();
-        let fetch_block_timeout =
-            (std::cmp::max(max_block_time, now) - now + processing_timeout as u64)
-                .try_into()
-                .unwrap_or(u32::MAX);
+        let timeout = std::cmp::max(max_block_time, now) - now + processing_timeout as u64;
+        let fetch_block_timeout = timeout.try_into().unwrap_or(u32::MAX);
         log::debug!("fetch_block_timeout {}", fetch_block_timeout);
 
         let block = fetching::fetch_next_shard_block(

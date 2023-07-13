@@ -31,8 +31,8 @@ pub use blockchain_config::{
     get_blockchain_config, ParamsOfGetBlockchainConfig, ResultOfGetBlockchainConfig,
 };
 pub use cache::{
-    cache_get, cache_set, cache_unpin, BocCacheType, ParamsOfBocCacheGet, ParamsOfBocCacheSet,
-    ParamsOfBocCacheUnpin, ResultOfBocCacheGet, ResultOfBocCacheSet,
+    cache_get, cache_set, cache_unpin, BocCacheType, CachedBoc, ParamsOfBocCacheGet,
+    ParamsOfBocCacheSet, ParamsOfBocCacheUnpin, ResultOfBocCacheGet, ResultOfBocCacheSet,
 };
 pub use common::{
     get_boc_depth, get_boc_hash, ParamsOfGetBocDepth, ParamsOfGetBocHash, ResultOfGetBocDepth,

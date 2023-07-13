@@ -53,12 +53,12 @@ impl<SdkServices: MessageMonitorSdkServices + Send + Sync> MessageMonitor<SdkSer
         }
     }
 
-    pub async fn monitor_messages(
+    pub fn monitor_messages(
         &self,
         queue: &str,
         messages: Vec<MessageMonitoringParams>,
     ) -> crate::error::Result<()> {
-        self.state.monitor_messages(queue, messages).await
+        self.state.monitor_messages(queue, messages)
     }
 
     pub async fn fetch_next_monitor_results(
@@ -92,7 +92,7 @@ impl<Sdk: MessageMonitorSdkServices + Send + Sync> MonitorState<Sdk> {
         }
     }
 
-    async fn monitor_messages(
+    fn monitor_messages(
         self: &Arc<Self>,
         queue: &str,
         messages: Vec<MessageMonitoringParams>,

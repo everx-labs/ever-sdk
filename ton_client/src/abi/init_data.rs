@@ -36,16 +36,16 @@ pub struct ResultOfUpdateInitialData {
 /// This operation is applicable only for initial account data (before deploy).
 /// If the contract is already deployed, its data doesn't contain this data section any more.
 #[api_function]
-pub async fn update_initial_data(
+pub fn update_initial_data(
     context: Arc<ClientContext>,
     params: ParamsOfUpdateInitialData,
 ) -> ClientResult<ResultOfUpdateInitialData> {
-    let (_, mut data) = deserialize_cell_from_boc(&context, &params.data, "contract data").await?;
+    let (_, mut data) = deserialize_cell_from_boc(&context, &params.data, "contract data")?;
 
     data = update_initial_data_internal(&params.initial_data, &params.abi, &params.initial_pubkey, data)?;
 
     Ok(ResultOfUpdateInitialData {
-        data: serialize_cell_to_boc(&context, data, "contract data", params.boc_cache).await?
+        data: serialize_cell_to_boc(&context, data, "contract data", params.boc_cache)?
     })
 }
 
@@ -110,7 +110,7 @@ pub struct ResultOfEncodeInitialData {
 ///
 /// This function is analogue of `tvm.buildDataInit` function in Solidity.
 #[api_function]
-pub async fn encode_initial_data(
+pub fn encode_initial_data(
     context: Arc<ClientContext>,
     params: ParamsOfEncodeInitialData,
 ) -> ClientResult<ResultOfEncodeInitialData> {
@@ -122,7 +122,7 @@ pub async fn encode_initial_data(
     )?;
 
     Ok(ResultOfEncodeInitialData {
-        data: serialize_cell_to_boc(&context, data, "contract data", params.boc_cache).await?
+        data: serialize_cell_to_boc(&context, data, "contract data", params.boc_cache)?
     })
 }
 
@@ -152,11 +152,11 @@ pub struct ResultOfDecodeInitialData {
 /// This operation is applicable only for initial account data (before deploy).
 /// If the contract is already deployed, its data doesn't contain this data section any more.
 #[api_function]
-pub async fn decode_initial_data(
+pub fn decode_initial_data(
     context: Arc<ClientContext>,
     params: ParamsOfDecodeInitialData,
 ) -> ClientResult<ResultOfDecodeInitialData> {
-    let (_, data) = deserialize_cell_from_boc(&context, &params.data, "contract data").await?;
+    let (_, data) = deserialize_cell_from_boc(&context, &params.data, "contract data")?;
     let data = slice_from_cell(data)?;
 
     let initial_pubkey = ton_abi::Contract::get_pubkey(&data)

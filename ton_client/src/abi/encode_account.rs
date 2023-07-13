@@ -84,25 +84,25 @@ async fn state_init_from_message(
     let (message, _) = message.encode(context).await?;
     let message = deserialize_object_from_boc::<ton_block::Message>(
         context, &message, "message"
-    ).await?.object;
+    )?.object;
     message
         .state_init()
         .map(|x| x.clone())
         .ok_or(Error::invalid_message_for_decode("missing `state_init`"))
 }
 
-async fn state_init_from_bocs(
+fn state_init_from_bocs(
     context: &ClientContext,
     code: &String,
     data: &String,
     library: &Option<String>,
 ) -> ClientResult<StateInit> {
     Ok(StateInit {
-        code: Some(deserialize_cell_from_boc(context, code, "account code").await?.1),
-        data: Some(deserialize_cell_from_boc(context, data, "account data").await?.1),
+        code: Some(deserialize_cell_from_boc(context, code, "account code")?.1),
+        data: Some(deserialize_cell_from_boc(context, data, "account data")?.1),
         library: if let Some(library) = library {
             StateInitLib::with_hashmap(
-                Some(deserialize_cell_from_boc(context, library, "library").await?.1)
+                Some(deserialize_cell_from_boc(context, library, "library")?.1)
             )
         } else {
             StateInitLib::default()
@@ -112,13 +112,13 @@ async fn state_init_from_bocs(
     })
 }
 
-async fn state_init_from_tvc(
+fn state_init_from_tvc(
     context: &ClientContext,
     tvc: &String,
     public_key: &Option<String>,
     init_params: &Option<StateInitParams>,
 ) -> ClientResult<StateInit> {
-    let (_, cell) = deserialize_cell_from_boc(context, tvc, "TVC image").await?;
+    let (_, cell) = deserialize_cell_from_boc(context, tvc, "TVC image")?;
     let public_key = public_key
         .as_ref()
         .map(|x| decode_public_key(x))
@@ -160,12 +160,12 @@ pub async fn encode_account(
             code,
             data,
             library,
-        } => state_init_from_bocs(&context, code, data, library).await,
+        } => state_init_from_bocs(&context, code, data, library),
         StateInitSource::Tvc {
             tvc,
             public_key,
             init_params,
-        } => state_init_from_tvc(&context, tvc, public_key, init_params).await,
+        } => state_init_from_tvc(&context, tvc, public_key, init_params),
     }?;
     let id = state_init.hash().map_err(|err| Error::invalid_tvc_image(err))?;
     let address = MsgAddressInt::with_standart(None, 0, id.clone().into()).unwrap();
@@ -175,7 +175,7 @@ pub async fn encode_account(
         .map_err(|err| Error::invalid_tvc_image(err))?;
     account.set_last_tr_time(params.last_trans_lt.unwrap_or(0));
     Ok(ResultOfEncodeAccount {
-        account: serialize_object_to_boc(&context, &account, "account", params.boc_cache).await?,
+        account: serialize_object_to_boc(&context, &account, "account", params.boc_cache)?,
         id: id.as_hex_string(),
     })
 }

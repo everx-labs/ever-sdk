@@ -19,16 +19,16 @@ use std::sync::Arc;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ParamsOfCalcStorageFee {
-	// Account BOC or BOC cache reference
-	pub account: String,
-	// Time period in seconds
-	pub period: u32,
+    // Account BOC or BOC cache reference
+    pub account: String,
+    // Time period in seconds
+    pub period: u32,
 }
 
 #[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ResultOfCalcStorageFee {
-	// Storage fee over a period of time in nanotokens
-	pub fee: String
+    // Storage fee over a period of time in nanotokens
+    pub fee: String,
 }
 
 /// Calculates storage fee for an account over a specified time period
@@ -37,28 +37,37 @@ pub async fn calc_storage_fee(
     context: Arc<ClientContext>,
     params: ParamsOfCalcStorageFee,
 ) -> ClientResult<ResultOfCalcStorageFee> {
-    let account = deserialize_object_from_boc::<ton_block::Account>(
-        &context, &params.account, "account"
-    )
-    .await?
-    .object;
+    let account =
+        deserialize_object_from_boc::<ton_block::Account>(&context, &params.account, "account")?
+            .object;
 
-    let storage = account.storage_info().ok_or(Error::invalid_account_boc("Account is None"))?;
-    let addr = account.get_addr().ok_or(Error::invalid_account_boc("Account is None"))?;
-    let config = crate::net::network_params::get_default_params(&context).await?.blockchain_config;
+    let storage = account
+        .storage_info()
+        .ok_or(Error::invalid_account_boc("Account is None"))?;
+    let addr = account
+        .get_addr()
+        .ok_or(Error::invalid_account_boc("Account is None"))?;
+    let config = crate::net::network_params::get_default_params(&context)
+        .await?
+        .blockchain_config;
 
     if storage.last_paid() == 0 {
-        return Err(Error::invalid_account_boc("Account `last_paid` field is not initialized"));
+        return Err(Error::invalid_account_boc(
+            "Account `last_paid` field is not initialized",
+        ));
     }
 
-    let fee = config.calc_storage_fee(
-        storage,
-        addr.is_masterchain(),
-        storage.last_paid() + params.period,
-    )
-    .map_err(|err| Error::invalid_account_boc(format!("can not calculate storage fee: {}", err)))?;
+    let fee = config
+        .calc_storage_fee(
+            storage,
+            addr.is_masterchain(),
+            storage.last_paid() + params.period,
+        )
+        .map_err(|err| {
+            Error::invalid_account_boc(format!("can not calculate storage fee: {}", err))
+        })?;
 
     Ok(ResultOfCalcStorageFee {
-        fee: format!("{}", fee.as_u128())
+        fee: format!("{}", fee.as_u128()),
     })
 }
