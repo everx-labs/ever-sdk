@@ -83,6 +83,12 @@ pub struct ClientContext {
     pub(crate) debots: LockfreeMap<u32, Mutex<DEngine>>,
 }
 
+impl std::fmt::Debug for ClientContext {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ClientContext").finish()
+    }
+}
+
 impl ClientContext {
     pub(crate) fn get_server_link(&self) -> ClientResult<&ServerLink> {
         self.net.get_server_link()

@@ -392,6 +392,7 @@ pub fn cache_unpin(
     Ok(())
 }
 
+#[derive(Debug)]
 pub struct CachedBoc {
     context: Arc<ClientContext>,
     boc_ref: String,
@@ -412,6 +413,10 @@ impl CachedBoc {
 
     pub fn boc_ref(&self) -> String {
         self.boc_ref.clone()
+    }
+
+    pub fn try_clone(&self) -> ClientResult<Self> {
+        CachedBoc::new(self.context.clone(), self.boc_ref.clone(), self.pin.clone())
     }
 }
 
