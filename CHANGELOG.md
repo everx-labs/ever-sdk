@@ -64,6 +64,10 @@ All notable changes to this project will be documented in this file.
   provide value for one of these fields).
 - `ProcessingEvent::MessageExpired` is sent to callback in case of retry in `processing.process_message`
 
+### Client breaking changes
+- `boc.encode_tvc` and `boc.decode_tvc` are renamed to `boc.encode_state_init` 
+  and `boc.decode_state_init`
+
 ## [1.42.1] – 2023-03-23
 
 ### Fixed
