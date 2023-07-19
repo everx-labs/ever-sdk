@@ -95,6 +95,10 @@ type ResultOfRunExecutor = {
 function run_executor(
     params: ParamsOfRunExecutor,
 ): Promise<ResultOfRunExecutor>;
+
+function run_executor_sync(
+    params: ParamsOfRunExecutor,
+): ResultOfRunExecutor;
 ```
 ### Parameters
 - `message`: _string_ – Input message BOC.
@@ -157,6 +161,10 @@ type ResultOfRunTvm = {
 function run_tvm(
     params: ParamsOfRunTvm,
 ): Promise<ResultOfRunTvm>;
+
+function run_tvm_sync(
+    params: ParamsOfRunTvm,
+): ResultOfRunTvm;
 ```
 ### Parameters
 - `message`: _string_ – Input message BOC.
@@ -203,6 +211,10 @@ type ResultOfRunGet = {
 function run_get(
     params: ParamsOfRunGet,
 ): Promise<ResultOfRunGet>;
+
+function run_get_sync(
+    params: ParamsOfRunGet,
+): ResultOfRunGet;
 ```
 ### Parameters
 - `account`: _string_ – Account BOC in `base64`

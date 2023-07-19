@@ -182,6 +182,10 @@ type ResultOfEncodeMessageBody = {
 function encode_message_body(
     params: ParamsOfEncodeMessageBody,
 ): Promise<ResultOfEncodeMessageBody>;
+
+function encode_message_body_sync(
+    params: ParamsOfEncodeMessageBody,
+): ResultOfEncodeMessageBody;
 ```
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
@@ -220,6 +224,10 @@ type ResultOfAttachSignatureToMessageBody = {
 function attach_signature_to_message_body(
     params: ParamsOfAttachSignatureToMessageBody,
 ): Promise<ResultOfAttachSignatureToMessageBody>;
+
+function attach_signature_to_message_body_sync(
+    params: ParamsOfAttachSignatureToMessageBody,
+): ResultOfAttachSignatureToMessageBody;
 ```
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
@@ -292,6 +300,10 @@ type ResultOfEncodeMessage = {
 function encode_message(
     params: ParamsOfEncodeMessage,
 ): Promise<ResultOfEncodeMessage>;
+
+function encode_message_sync(
+    params: ParamsOfEncodeMessage,
+): ResultOfEncodeMessage;
 ```
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
@@ -356,6 +368,10 @@ type ResultOfEncodeInternalMessage = {
 function encode_internal_message(
     params: ParamsOfEncodeInternalMessage,
 ): Promise<ResultOfEncodeInternalMessage>;
+
+function encode_internal_message_sync(
+    params: ParamsOfEncodeInternalMessage,
+): ResultOfEncodeInternalMessage;
 ```
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
@@ -401,6 +417,10 @@ type ResultOfAttachSignature = {
 function attach_signature(
     params: ParamsOfAttachSignature,
 ): Promise<ResultOfAttachSignature>;
+
+function attach_signature_sync(
+    params: ParamsOfAttachSignature,
+): ResultOfAttachSignature;
 ```
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
@@ -438,6 +458,10 @@ type DecodedMessageBody = {
 function decode_message(
     params: ParamsOfDecodeMessage,
 ): Promise<DecodedMessageBody>;
+
+function decode_message_sync(
+    params: ParamsOfDecodeMessage,
+): DecodedMessageBody;
 ```
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – contract ABI
@@ -479,6 +503,10 @@ type DecodedMessageBody = {
 function decode_message_body(
     params: ParamsOfDecodeMessageBody,
 ): Promise<DecodedMessageBody>;
+
+function decode_message_body_sync(
+    params: ParamsOfDecodeMessageBody,
+): DecodedMessageBody;
 ```
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
@@ -522,6 +550,10 @@ type ResultOfEncodeAccount = {
 function encode_account(
     params: ParamsOfEncodeAccount,
 ): Promise<ResultOfEncodeAccount>;
+
+function encode_account_sync(
+    params: ParamsOfEncodeAccount,
+): ResultOfEncodeAccount;
 ```
 ### Parameters
 - `state_init`: _[StateInitSource](mod\_abi.md#stateinitsource)_ – Source of the account state init.
@@ -558,6 +590,10 @@ type ResultOfDecodeAccountData = {
 function decode_account_data(
     params: ParamsOfDecodeAccountData,
 ): Promise<ResultOfDecodeAccountData>;
+
+function decode_account_data_sync(
+    params: ParamsOfDecodeAccountData,
+): ResultOfDecodeAccountData;
 ```
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
@@ -590,6 +626,10 @@ type ResultOfUpdateInitialData = {
 function update_initial_data(
     params: ParamsOfUpdateInitialData,
 ): Promise<ResultOfUpdateInitialData>;
+
+function update_initial_data_sync(
+    params: ParamsOfUpdateInitialData,
+): ResultOfUpdateInitialData;
 ```
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI
@@ -626,6 +666,10 @@ type ResultOfEncodeInitialData = {
 function encode_initial_data(
     params: ParamsOfEncodeInitialData,
 ): Promise<ResultOfEncodeInitialData>;
+
+function encode_initial_data_sync(
+    params: ParamsOfEncodeInitialData,
+): ResultOfEncodeInitialData;
 ```
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI
@@ -659,6 +703,10 @@ type ResultOfDecodeInitialData = {
 function decode_initial_data(
     params: ParamsOfDecodeInitialData,
 ): Promise<ResultOfDecodeInitialData>;
+
+function decode_initial_data_sync(
+    params: ParamsOfDecodeInitialData,
+): ResultOfDecodeInitialData;
 ```
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
@@ -708,6 +756,10 @@ type ResultOfDecodeBoc = {
 function decode_boc(
     params: ParamsOfDecodeBoc,
 ): Promise<ResultOfDecodeBoc>;
+
+function decode_boc_sync(
+    params: ParamsOfDecodeBoc,
+): ResultOfDecodeBoc;
 ```
 ### Parameters
 - `params`: _[AbiParam](mod\_abi.md#abiparam)[]_ – Parameters to decode from BOC
@@ -738,6 +790,10 @@ type ResultOfAbiEncodeBoc = {
 function encode_boc(
     params: ParamsOfAbiEncodeBoc,
 ): Promise<ResultOfAbiEncodeBoc>;
+
+function encode_boc_sync(
+    params: ParamsOfAbiEncodeBoc,
+): ResultOfAbiEncodeBoc;
 ```
 ### Parameters
 - `params`: _[AbiParam](mod\_abi.md#abiparam)[]_ – Parameters to encode into BOC
@@ -769,6 +825,10 @@ type ResultOfCalcFunctionId = {
 function calc_function_id(
     params: ParamsOfCalcFunctionId,
 ): Promise<ResultOfCalcFunctionId>;
+
+function calc_function_id_sync(
+    params: ParamsOfCalcFunctionId,
+): ResultOfCalcFunctionId;
 ```
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
@@ -800,6 +860,10 @@ type ResultOfGetSignatureData = {
 function get_signature_data(
     params: ParamsOfGetSignatureData,
 ): Promise<ResultOfGetSignatureData>;
+
+function get_signature_data_sync(
+    params: ParamsOfGetSignatureData,
+): ResultOfGetSignatureData;
 ```
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.

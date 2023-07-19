@@ -153,6 +153,10 @@ type ResultOfDecodeTvc = {
 function decode_tvc(
     params: ParamsOfDecodeTvc,
 ): Promise<ResultOfDecodeTvc>;
+
+function decode_tvc_sync(
+    params: ParamsOfDecodeTvc,
+): ResultOfDecodeTvc;
 ```
 ### Parameters
 - `tvc`: _string_ – Contract TVC BOC encoded as base64 or BOC handle
@@ -181,6 +185,10 @@ type ResultOfParse = {
 function parse_message(
     params: ParamsOfParse,
 ): Promise<ResultOfParse>;
+
+function parse_message_sync(
+    params: ParamsOfParse,
+): ResultOfParse;
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
@@ -209,6 +217,10 @@ type ResultOfParse = {
 function parse_transaction(
     params: ParamsOfParse,
 ): Promise<ResultOfParse>;
+
+function parse_transaction_sync(
+    params: ParamsOfParse,
+): ResultOfParse;
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
@@ -237,6 +249,10 @@ type ResultOfParse = {
 function parse_account(
     params: ParamsOfParse,
 ): Promise<ResultOfParse>;
+
+function parse_account_sync(
+    params: ParamsOfParse,
+): ResultOfParse;
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
@@ -265,6 +281,10 @@ type ResultOfParse = {
 function parse_block(
     params: ParamsOfParse,
 ): Promise<ResultOfParse>;
+
+function parse_block_sync(
+    params: ParamsOfParse,
+): ResultOfParse;
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
@@ -295,6 +315,10 @@ type ResultOfParse = {
 function parse_shardstate(
     params: ParamsOfParseShardstate,
 ): Promise<ResultOfParse>;
+
+function parse_shardstate_sync(
+    params: ParamsOfParseShardstate,
+): ResultOfParse;
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
@@ -323,6 +347,10 @@ type ResultOfGetBlockchainConfig = {
 function get_blockchain_config(
     params: ParamsOfGetBlockchainConfig,
 ): Promise<ResultOfGetBlockchainConfig>;
+
+function get_blockchain_config_sync(
+    params: ParamsOfGetBlockchainConfig,
+): ResultOfGetBlockchainConfig;
 ```
 ### Parameters
 - `block_boc`: _string_ – Key block BOC or zerostate BOC encoded as base64
@@ -349,6 +377,10 @@ type ResultOfGetBocHash = {
 function get_boc_hash(
     params: ParamsOfGetBocHash,
 ): Promise<ResultOfGetBocHash>;
+
+function get_boc_hash_sync(
+    params: ParamsOfGetBocHash,
+): ResultOfGetBocHash;
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64 or BOC handle
@@ -375,6 +407,10 @@ type ResultOfGetBocDepth = {
 function get_boc_depth(
     params: ParamsOfGetBocDepth,
 ): Promise<ResultOfGetBocDepth>;
+
+function get_boc_depth_sync(
+    params: ParamsOfGetBocDepth,
+): ResultOfGetBocDepth;
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64 or BOC handle
@@ -401,6 +437,10 @@ type ResultOfGetCodeFromTvc = {
 function get_code_from_tvc(
     params: ParamsOfGetCodeFromTvc,
 ): Promise<ResultOfGetCodeFromTvc>;
+
+function get_code_from_tvc_sync(
+    params: ParamsOfGetCodeFromTvc,
+): ResultOfGetCodeFromTvc;
 ```
 ### Parameters
 - `tvc`: _string_ – Contract TVC image or image BOC handle
@@ -427,6 +467,10 @@ type ResultOfBocCacheGet = {
 function cache_get(
     params: ParamsOfBocCacheGet,
 ): Promise<ResultOfBocCacheGet>;
+
+function cache_get_sync(
+    params: ParamsOfBocCacheGet,
+): ResultOfBocCacheGet;
 ```
 ### Parameters
 - `boc_ref`: _string_ – Reference to the cached BOC
@@ -454,6 +498,10 @@ type ResultOfBocCacheSet = {
 function cache_set(
     params: ParamsOfBocCacheSet,
 ): Promise<ResultOfBocCacheSet>;
+
+function cache_set_sync(
+    params: ParamsOfBocCacheSet,
+): ResultOfBocCacheSet;
 ```
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64 or BOC reference
@@ -478,6 +526,10 @@ type ParamsOfBocCacheUnpin = {
 function cache_unpin(
     params: ParamsOfBocCacheUnpin,
 ): Promise<void>;
+
+function cache_unpin_sync(
+    params: ParamsOfBocCacheUnpin,
+): void;
 ```
 ### Parameters
 - `pin`: _string_ – Pinned name
@@ -502,6 +554,10 @@ type ResultOfEncodeBoc = {
 function encode_boc(
     params: ParamsOfEncodeBoc,
 ): Promise<ResultOfEncodeBoc>;
+
+function encode_boc_sync(
+    params: ParamsOfEncodeBoc,
+): ResultOfEncodeBoc;
 ```
 ### Parameters
 - `builder`: _[BuilderOp](mod\_boc.md#builderop)[]_ – Cell builder operations.
@@ -530,6 +586,10 @@ type ResultOfGetCodeSalt = {
 function get_code_salt(
     params: ParamsOfGetCodeSalt,
 ): Promise<ResultOfGetCodeSalt>;
+
+function get_code_salt_sync(
+    params: ParamsOfGetCodeSalt,
+): ResultOfGetCodeSalt;
 ```
 ### Parameters
 - `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
@@ -562,6 +622,10 @@ type ResultOfSetCodeSalt = {
 function set_code_salt(
     params: ParamsOfSetCodeSalt,
 ): Promise<ResultOfSetCodeSalt>;
+
+function set_code_salt_sync(
+    params: ParamsOfSetCodeSalt,
+): ResultOfSetCodeSalt;
 ```
 ### Parameters
 - `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
@@ -603,6 +667,10 @@ type ResultOfDecodeStateInit = {
 function decode_state_init(
     params: ParamsOfDecodeStateInit,
 ): Promise<ResultOfDecodeStateInit>;
+
+function decode_state_init_sync(
+    params: ParamsOfDecodeStateInit,
+): ResultOfDecodeStateInit;
 ```
 ### Parameters
 - `state_init`: _string_ – Contract StateInit image BOC encoded as base64 or BOC handle
@@ -648,6 +716,10 @@ type ResultOfEncodeStateInit = {
 function encode_state_init(
     params: ParamsOfEncodeStateInit,
 ): Promise<ResultOfEncodeStateInit>;
+
+function encode_state_init_sync(
+    params: ParamsOfEncodeStateInit,
+): ResultOfEncodeStateInit;
 ```
 ### Parameters
 - `code`?: _string_ – Contract code BOC encoded as base64 or BOC handle
@@ -689,6 +761,10 @@ type ResultOfEncodeExternalInMessage = {
 function encode_external_in_message(
     params: ParamsOfEncodeExternalInMessage,
 ): Promise<ResultOfEncodeExternalInMessage>;
+
+function encode_external_in_message_sync(
+    params: ParamsOfEncodeExternalInMessage,
+): ResultOfEncodeExternalInMessage;
 ```
 ### Parameters
 - `src`?: _string_ – Source address.
@@ -721,6 +797,10 @@ type ResultOfGetCompilerVersion = {
 function get_compiler_version(
     params: ParamsOfGetCompilerVersion,
 ): Promise<ResultOfGetCompilerVersion>;
+
+function get_compiler_version_sync(
+    params: ParamsOfGetCompilerVersion,
+): ResultOfGetCompilerVersion;
 ```
 ### Parameters
 - `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle

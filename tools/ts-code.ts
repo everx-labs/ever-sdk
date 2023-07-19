@@ -315,6 +315,15 @@ export class ${Code.upperFirst(module.name)}Module {
         return `function ${func.name}(${paramsDecl}): Promise<${resultDecl}>;`;
     }
 
+    syncFunctionInterface(func: ApiFunction): string {
+        const paramsInfo = this.getFunctionInfo(func);
+        const paramsDecls = this.syncParamsDecls(paramsInfo);
+        const paramsDecl = paramsDecls.length > 0 ? `\n${paramsDecls.map(p => `    ${p},`)
+            .join("\n")}\n` : "";
+        const resultDecl = this.type(func.result, "");
+        return `function ${func.name}_sync(${paramsDecl}): ${resultDecl};`;
+    }
+
     appObjectInterface(obj: ApiModule): string {
         let ts = "";
         // for (const type of obj.types) {

@@ -65,6 +65,8 @@ type ResultOfGetApiReference = {
 }
 
 function get_api_reference(): Promise<ResultOfGetApiReference>;
+
+function get_api_reference_sync(): ResultOfGetApiReference;
 ```
 
 
@@ -83,6 +85,8 @@ type ResultOfVersion = {
 }
 
 function version(): Promise<ResultOfVersion>;
+
+function version_sync(): ResultOfVersion;
 ```
 
 
@@ -107,6 +111,8 @@ type ClientConfig = {
 }
 
 function config(): Promise<ClientConfig>;
+
+function config_sync(): ClientConfig;
 ```
 
 
@@ -132,6 +138,8 @@ type ResultOfBuildInfo = {
 }
 
 function build_info(): Promise<ResultOfBuildInfo>;
+
+function build_info_sync(): ResultOfBuildInfo;
 ```
 
 
@@ -154,6 +162,10 @@ type ParamsOfResolveAppRequest = {
 function resolve_app_request(
     params: ParamsOfResolveAppRequest,
 ): Promise<void>;
+
+function resolve_app_request_sync(
+    params: ParamsOfResolveAppRequest,
+): void;
 ```
 ### Parameters
 - `app_request_id`: _number_ – Request ID received from SDK

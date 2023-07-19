@@ -106,6 +106,10 @@ function init(
     params: ParamsOfInit,
     obj: AppDebotBrowser,
 ): Promise<RegisteredDebot>;
+
+function init_sync(
+    params: ParamsOfInit,
+): RegisteredDebot;
 ```
 ### Parameters
 - `address`: _string_ – Debot smart contract address
@@ -143,6 +147,10 @@ type ParamsOfStart = {
 function start(
     params: ParamsOfStart,
 ): Promise<void>;
+
+function start_sync(
+    params: ParamsOfStart,
+): void;
 ```
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod\_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
@@ -166,6 +174,10 @@ type ResultOfFetch = {
 function fetch(
     params: ParamsOfFetch,
 ): Promise<ResultOfFetch>;
+
+function fetch_sync(
+    params: ParamsOfFetch,
+): ResultOfFetch;
 ```
 ### Parameters
 - `address`: _string_ – Debot smart contract address.
@@ -195,6 +207,10 @@ type ParamsOfExecute = {
 function execute(
     params: ParamsOfExecute,
 ): Promise<void>;
+
+function execute_sync(
+    params: ParamsOfExecute,
+): void;
 ```
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod\_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
@@ -216,6 +232,10 @@ type ParamsOfSend = {
 function send(
     params: ParamsOfSend,
 ): Promise<void>;
+
+function send_sync(
+    params: ParamsOfSend,
+): void;
 ```
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod\_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
@@ -236,6 +256,10 @@ type ParamsOfRemove = {
 function remove(
     params: ParamsOfRemove,
 ): Promise<void>;
+
+function remove_sync(
+    params: ParamsOfRemove,
+): void;
 ```
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod\_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
@@ -830,6 +854,10 @@ type ParamsOfAppDebotBrowserLogVariant = ParamsOfAppDebotBrowserLogVariant
 function log(
     params: ParamsOfAppDebotBrowserLogVariant,
 ): Promise<>;
+
+function log_sync(
+    params: ParamsOfAppDebotBrowserLogVariant,
+): ;
 ```
 ### Parameters
 - `msg`: _string_ – A string that must be printed to user.
@@ -845,6 +873,10 @@ type ParamsOfAppDebotBrowserSwitchVariant = ParamsOfAppDebotBrowserSwitchVariant
 function switch(
     params: ParamsOfAppDebotBrowserSwitchVariant,
 ): Promise<>;
+
+function switch_sync(
+    params: ParamsOfAppDebotBrowserSwitchVariant,
+): ;
 ```
 ### Parameters
 - `context_id`: _number_ – Debot context ID to which debot is switched.
@@ -856,6 +888,8 @@ Notify browser that all context actions are shown.
 
 ```ts
 function switch_completed(): Promise<>;
+
+function switch_completed_sync(): ;
 ```
 
 
@@ -869,6 +903,10 @@ type ParamsOfAppDebotBrowserShowActionVariant = ParamsOfAppDebotBrowserShowActio
 function show_action(
     params: ParamsOfAppDebotBrowserShowActionVariant,
 ): Promise<>;
+
+function show_action_sync(
+    params: ParamsOfAppDebotBrowserShowActionVariant,
+): ;
 ```
 ### Parameters
 - `action`: _[DebotAction](mod\_debot.md#debotaction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
@@ -886,6 +924,10 @@ type ResultOfAppDebotBrowserInputVariant = ResultOfAppDebotBrowserInputVariant
 function input(
     params: ParamsOfAppDebotBrowserInputVariant,
 ): Promise<ResultOfAppDebotBrowserInputVariant>;
+
+function input_sync(
+    params: ParamsOfAppDebotBrowserInputVariant,
+): ResultOfAppDebotBrowserInputVariant;
 ```
 ### Parameters
 - `prompt`: _string_ – A prompt string that must be printed to user before input request.
@@ -906,6 +948,8 @@ Signing box returned is owned and disposed by debot engine
 type ResultOfAppDebotBrowserGetSigningBoxVariant = ResultOfAppDebotBrowserGetSigningBoxVariant
 
 function get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBoxVariant>;
+
+function get_signing_box_sync(): ResultOfAppDebotBrowserGetSigningBoxVariant;
 ```
 
 
@@ -925,6 +969,10 @@ type ParamsOfAppDebotBrowserInvokeDebotVariant = ParamsOfAppDebotBrowserInvokeDe
 function invoke_debot(
     params: ParamsOfAppDebotBrowserInvokeDebotVariant,
 ): Promise<void>;
+
+function invoke_debot_sync(
+    params: ParamsOfAppDebotBrowserInvokeDebotVariant,
+): void;
 ```
 ### Parameters
 - `debot_addr`: _string_ – Address of debot in blockchain.
@@ -941,6 +989,10 @@ type ParamsOfAppDebotBrowserSendVariant = ParamsOfAppDebotBrowserSendVariant
 function send(
     params: ParamsOfAppDebotBrowserSendVariant,
 ): Promise<>;
+
+function send_sync(
+    params: ParamsOfAppDebotBrowserSendVariant,
+): ;
 ```
 ### Parameters
 - `message`: _string_ – Internal message to DInterface address.
@@ -959,6 +1011,10 @@ type ResultOfAppDebotBrowserApproveVariant = ResultOfAppDebotBrowserApproveVaria
 function approve(
     params: ParamsOfAppDebotBrowserApproveVariant,
 ): Promise<ResultOfAppDebotBrowserApproveVariant>;
+
+function approve_sync(
+    params: ParamsOfAppDebotBrowserApproveVariant,
+): ResultOfAppDebotBrowserApproveVariant;
 ```
 ### Parameters
 - `activity`: _[DebotActivity](mod\_debot.md#debotactivity)_ – DeBot activity details.

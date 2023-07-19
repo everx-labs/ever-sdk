@@ -217,6 +217,8 @@ export class Docs extends Code {
             code += `${this.code.typeDef(result)}\n`;
         }
         code += this.code.functionInterface(func);
+        code += "\n\n"
+        code += this.code.syncFunctionInterface(func);
         md += `\`\`\`${this.code.language()}\n${code}\n\`\`\`\n`;
 
         if (appObject || params || funcInfo.hasResponseHandler) {

@@ -142,6 +142,10 @@ type ResultOfQuery = {
 function query(
     params: ParamsOfQuery,
 ): Promise<ResultOfQuery>;
+
+function query_sync(
+    params: ParamsOfQuery,
+): ResultOfQuery;
 ```
 ### Parameters
 - `query`: _string_ – GraphQL query text.
@@ -170,6 +174,10 @@ type ResultOfBatchQuery = {
 function batch_query(
     params: ParamsOfBatchQuery,
 ): Promise<ResultOfBatchQuery>;
+
+function batch_query_sync(
+    params: ParamsOfBatchQuery,
+): ResultOfBatchQuery;
 ```
 ### Parameters
 - `operations`: _[ParamsOfQueryOperation](mod\_net.md#paramsofqueryoperation)[]_ – List of query operations that must be performed per single fetch.
@@ -205,6 +213,10 @@ type ResultOfQueryCollection = {
 function query_collection(
     params: ParamsOfQueryCollection,
 ): Promise<ResultOfQueryCollection>;
+
+function query_collection_sync(
+    params: ParamsOfQueryCollection,
+): ResultOfQueryCollection;
 ```
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
@@ -240,6 +252,10 @@ type ResultOfAggregateCollection = {
 function aggregate_collection(
     params: ParamsOfAggregateCollection,
 ): Promise<ResultOfAggregateCollection>;
+
+function aggregate_collection_sync(
+    params: ParamsOfAggregateCollection,
+): ResultOfAggregateCollection;
 ```
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
@@ -279,6 +295,10 @@ type ResultOfWaitForCollection = {
 function wait_for_collection(
     params: ParamsOfWaitForCollection,
 ): Promise<ResultOfWaitForCollection>;
+
+function wait_for_collection_sync(
+    params: ParamsOfWaitForCollection,
+): ResultOfWaitForCollection;
 ```
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
@@ -306,6 +326,10 @@ type ResultOfSubscribeCollection = {
 function unsubscribe(
     params: ResultOfSubscribeCollection,
 ): Promise<void>;
+
+function unsubscribe_sync(
+    params: ResultOfSubscribeCollection,
+): void;
 ```
 ### Parameters
 - `handle`: _number_ – Subscription handle.
@@ -372,6 +396,10 @@ function subscribe_collection(
     params: ParamsOfSubscribeCollection,
     responseHandler?: ResponseHandler,
 ): Promise<ResultOfSubscribeCollection>;
+
+function subscribe_collection_sync(
+    params: ParamsOfSubscribeCollection,
+): ResultOfSubscribeCollection;
 ```
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
@@ -438,6 +466,10 @@ function subscribe(
     params: ParamsOfSubscribe,
     responseHandler?: ResponseHandler,
 ): Promise<ResultOfSubscribeCollection>;
+
+function subscribe_sync(
+    params: ParamsOfSubscribe,
+): ResultOfSubscribeCollection;
 ```
 ### Parameters
 - `subscription`: _string_ – GraphQL subscription text.
@@ -457,6 +489,8 @@ Suspends network module to stop any network activity
 
 ```ts
 function suspend(): Promise<void>;
+
+function suspend_sync(): void;
 ```
 
 
@@ -466,6 +500,8 @@ Resumes network module to enable network activity
 
 ```ts
 function resume(): Promise<void>;
+
+function resume_sync(): void;
 ```
 
 
@@ -485,6 +521,10 @@ type ResultOfFindLastShardBlock = {
 function find_last_shard_block(
     params: ParamsOfFindLastShardBlock,
 ): Promise<ResultOfFindLastShardBlock>;
+
+function find_last_shard_block_sync(
+    params: ParamsOfFindLastShardBlock,
+): ResultOfFindLastShardBlock;
 ```
 ### Parameters
 - `address`: _string_ – Account address
@@ -505,6 +545,8 @@ type EndpointsSet = {
 }
 
 function fetch_endpoints(): Promise<EndpointsSet>;
+
+function fetch_endpoints_sync(): EndpointsSet;
 ```
 
 
@@ -525,6 +567,10 @@ type EndpointsSet = {
 function set_endpoints(
     params: EndpointsSet,
 ): Promise<void>;
+
+function set_endpoints_sync(
+    params: EndpointsSet,
+): void;
 ```
 ### Parameters
 - `endpoints`: _string[]_ – List of endpoints provided by server
@@ -541,6 +587,8 @@ type ResultOfGetEndpoints = {
 }
 
 function get_endpoints(): Promise<ResultOfGetEndpoints>;
+
+function get_endpoints_sync(): ResultOfGetEndpoints;
 ```
 
 
@@ -573,6 +621,10 @@ type ResultOfQueryCollection = {
 function query_counterparties(
     params: ParamsOfQueryCounterparties,
 ): Promise<ResultOfQueryCollection>;
+
+function query_counterparties_sync(
+    params: ParamsOfQueryCounterparties,
+): ResultOfQueryCollection;
 ```
 ### Parameters
 - `account`: _string_ – Account address
@@ -638,6 +690,10 @@ type ResultOfQueryTransactionTree = {
 function query_transaction_tree(
     params: ParamsOfQueryTransactionTree,
 ): Promise<ResultOfQueryTransactionTree>;
+
+function query_transaction_tree_sync(
+    params: ParamsOfQueryTransactionTree,
+): ResultOfQueryTransactionTree;
 ```
 ### Parameters
 - `in_msg`: _string_ – Input message id.
@@ -708,6 +764,10 @@ type RegisteredIterator = {
 function create_block_iterator(
     params: ParamsOfCreateBlockIterator,
 ): Promise<RegisteredIterator>;
+
+function create_block_iterator_sync(
+    params: ParamsOfCreateBlockIterator,
+): RegisteredIterator;
 ```
 ### Parameters
 - `start_time`?: _number_ – Starting time to iterate from.
@@ -746,6 +806,10 @@ type RegisteredIterator = {
 function resume_block_iterator(
     params: ParamsOfResumeBlockIterator,
 ): Promise<RegisteredIterator>;
+
+function resume_block_iterator_sync(
+    params: ParamsOfResumeBlockIterator,
+): RegisteredIterator;
 ```
 ### Parameters
 - `resume_state`: _any_ – Iterator state from which to resume.
@@ -835,6 +899,10 @@ type RegisteredIterator = {
 function create_transaction_iterator(
     params: ParamsOfCreateTransactionIterator,
 ): Promise<RegisteredIterator>;
+
+function create_transaction_iterator_sync(
+    params: ParamsOfCreateTransactionIterator,
+): RegisteredIterator;
 ```
 ### Parameters
 - `start_time`?: _number_ – Starting time to iterate from.
@@ -881,6 +949,10 @@ type RegisteredIterator = {
 function resume_transaction_iterator(
     params: ParamsOfResumeTransactionIterator,
 ): Promise<RegisteredIterator>;
+
+function resume_transaction_iterator_sync(
+    params: ParamsOfResumeTransactionIterator,
+): RegisteredIterator;
 ```
 ### Parameters
 - `resume_state`: _any_ – Iterator state from which to resume.
@@ -930,6 +1002,10 @@ type ResultOfIteratorNext = {
 function iterator_next(
     params: ParamsOfIteratorNext,
 ): Promise<ResultOfIteratorNext>;
+
+function iterator_next_sync(
+    params: ParamsOfIteratorNext,
+): ResultOfIteratorNext;
 ```
 ### Parameters
 - `iterator`: _number_ – Iterator handle
@@ -964,6 +1040,10 @@ type RegisteredIterator = {
 function remove_iterator(
     params: RegisteredIterator,
 ): Promise<void>;
+
+function remove_iterator_sync(
+    params: RegisteredIterator,
+): void;
 ```
 ### Parameters
 - `handle`: _number_ – Iterator handle.
@@ -980,6 +1060,8 @@ type ResultOfGetSignatureId = {
 }
 
 function get_signature_id(): Promise<ResultOfGetSignatureId>;
+
+function get_signature_id_sync(): ResultOfGetSignatureId;
 ```
 
 

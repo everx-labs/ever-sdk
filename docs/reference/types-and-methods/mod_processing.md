@@ -146,6 +146,10 @@ type ParamsOfMonitorMessages = {
 function monitor_messages(
     params: ParamsOfMonitorMessages,
 ): Promise<void>;
+
+function monitor_messages_sync(
+    params: ParamsOfMonitorMessages,
+): void;
 ```
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
@@ -169,6 +173,10 @@ type MonitoringQueueInfo = {
 function get_monitor_info(
     params: ParamsOfGetMonitorInfo,
 ): Promise<MonitoringQueueInfo>;
+
+function get_monitor_info_sync(
+    params: ParamsOfGetMonitorInfo,
+): MonitoringQueueInfo;
 ```
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
@@ -200,6 +208,10 @@ type ResultOfFetchNextMonitorResults = {
 function fetch_next_monitor_results(
     params: ParamsOfFetchNextMonitorResults,
 ): Promise<ResultOfFetchNextMonitorResults>;
+
+function fetch_next_monitor_results_sync(
+    params: ParamsOfFetchNextMonitorResults,
+): ResultOfFetchNextMonitorResults;
 ```
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
@@ -224,6 +236,10 @@ type ParamsOfCancelMonitor = {
 function cancel_monitor(
     params: ParamsOfCancelMonitor,
 ): Promise<void>;
+
+function cancel_monitor_sync(
+    params: ParamsOfCancelMonitor,
+): void;
 ```
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
@@ -246,6 +262,10 @@ type ResultOfSendMessages = {
 function send_messages(
     params: ParamsOfSendMessages,
 ): Promise<ResultOfSendMessages>;
+
+function send_messages_sync(
+    params: ParamsOfSendMessages,
+): ResultOfSendMessages;
 ```
 ### Parameters
 - `messages`: _[MessageSendingParams](mod\_processing.md#messagesendingparams)[]_ – Messages that must be sent to the blockchain.
@@ -280,6 +300,10 @@ function send_message(
     params: ParamsOfSendMessage,
     responseHandler?: ResponseHandler,
 ): Promise<ResultOfSendMessage>;
+
+function send_message_sync(
+    params: ParamsOfSendMessage,
+): ResultOfSendMessage;
 ```
 ### Parameters
 - `message`: _string_ – Message BOC.
@@ -345,6 +369,10 @@ function wait_for_transaction(
     params: ParamsOfWaitForTransaction,
     responseHandler?: ResponseHandler,
 ): Promise<ResultOfProcessMessage>;
+
+function wait_for_transaction_sync(
+    params: ParamsOfWaitForTransaction,
+): ResultOfProcessMessage;
 ```
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Optional ABI for decoding the transaction result.
@@ -406,6 +434,10 @@ function process_message(
     params: ParamsOfProcessMessage,
     responseHandler?: ResponseHandler,
 ): Promise<ResultOfProcessMessage>;
+
+function process_message_sync(
+    params: ParamsOfProcessMessage,
+): ResultOfProcessMessage;
 ```
 ### Parameters
 - `message_encode_params`: _[ParamsOfEncodeMessage](mod\_abi.md#paramsofencodemessage)_ – Message encode parameters.

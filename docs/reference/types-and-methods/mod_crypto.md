@@ -373,6 +373,10 @@ type ResultOfFactorize = {
 function factorize(
     params: ParamsOfFactorize,
 ): Promise<ResultOfFactorize>;
+
+function factorize_sync(
+    params: ParamsOfFactorize,
+): ResultOfFactorize;
 ```
 ### Parameters
 - `composite`: _string_ – Hexadecimal representation of u64 composite number.
@@ -404,6 +408,10 @@ type ResultOfModularPower = {
 function modular_power(
     params: ParamsOfModularPower,
 ): Promise<ResultOfModularPower>;
+
+function modular_power_sync(
+    params: ParamsOfModularPower,
+): ResultOfModularPower;
 ```
 ### Parameters
 - `base`: _string_ – `base` argument of calculation.
@@ -432,6 +440,10 @@ type ResultOfTonCrc16 = {
 function ton_crc16(
     params: ParamsOfTonCrc16,
 ): Promise<ResultOfTonCrc16>;
+
+function ton_crc16_sync(
+    params: ParamsOfTonCrc16,
+): ResultOfTonCrc16;
 ```
 ### Parameters
 - `data`: _string_ – Input data for CRC calculation.
@@ -459,6 +471,10 @@ type ResultOfGenerateRandomBytes = {
 function generate_random_bytes(
     params: ParamsOfGenerateRandomBytes,
 ): Promise<ResultOfGenerateRandomBytes>;
+
+function generate_random_bytes_sync(
+    params: ParamsOfGenerateRandomBytes,
+): ResultOfGenerateRandomBytes;
 ```
 ### Parameters
 - `length`: _number_ – Size of random byte array.
@@ -485,6 +501,10 @@ type ResultOfConvertPublicKeyToTonSafeFormat = {
 function convert_public_key_to_ton_safe_format(
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
 ): Promise<ResultOfConvertPublicKeyToTonSafeFormat>;
+
+function convert_public_key_to_ton_safe_format_sync(
+    params: ParamsOfConvertPublicKeyToTonSafeFormat,
+): ResultOfConvertPublicKeyToTonSafeFormat;
 ```
 ### Parameters
 - `public_key`: _string_ – Public key - 64 symbols hex string
@@ -506,6 +526,8 @@ type KeyPair = {
 }
 
 function generate_random_sign_keys(): Promise<KeyPair>;
+
+function generate_random_sign_keys_sync(): KeyPair;
 ```
 
 
@@ -533,6 +555,10 @@ type ResultOfSign = {
 function sign(
     params: ParamsOfSign,
 ): Promise<ResultOfSign>;
+
+function sign_sync(
+    params: ParamsOfSign,
+): ResultOfSign;
 ```
 ### Parameters
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
@@ -562,6 +588,10 @@ type ResultOfVerifySignature = {
 function verify_signature(
     params: ParamsOfVerifySignature,
 ): Promise<ResultOfVerifySignature>;
+
+function verify_signature_sync(
+    params: ParamsOfVerifySignature,
+): ResultOfVerifySignature;
 ```
 ### Parameters
 - `signed`: _string_ – Signed data that must be verified encoded in `base64`.
@@ -589,6 +619,10 @@ type ResultOfHash = {
 function sha256(
     params: ParamsOfHash,
 ): Promise<ResultOfHash>;
+
+function sha256_sync(
+    params: ParamsOfHash,
+): ResultOfHash;
 ```
 ### Parameters
 - `data`: _string_ – Input data for hash calculation.
@@ -617,6 +651,10 @@ type ResultOfHash = {
 function sha512(
     params: ParamsOfHash,
 ): Promise<ResultOfHash>;
+
+function sha512_sync(
+    params: ParamsOfHash,
+): ResultOfHash;
 ```
 ### Parameters
 - `data`: _string_ – Input data for hash calculation.
@@ -666,6 +704,10 @@ type ResultOfScrypt = {
 function scrypt(
     params: ParamsOfScrypt,
 ): Promise<ResultOfScrypt>;
+
+function scrypt_sync(
+    params: ParamsOfScrypt,
+): ResultOfScrypt;
 ```
 ### Parameters
 - `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
@@ -703,6 +745,10 @@ type KeyPair = {
 function nacl_sign_keypair_from_secret_key(
     params: ParamsOfNaclSignKeyPairFromSecret,
 ): Promise<KeyPair>;
+
+function nacl_sign_keypair_from_secret_key_sync(
+    params: ParamsOfNaclSignKeyPairFromSecret,
+): KeyPair;
 ```
 ### Parameters
 - `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
@@ -731,6 +777,10 @@ type ResultOfNaclSign = {
 function nacl_sign(
     params: ParamsOfNaclSign,
 ): Promise<ResultOfNaclSign>;
+
+function nacl_sign_sync(
+    params: ParamsOfNaclSign,
+): ResultOfNaclSign;
 ```
 ### Parameters
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
@@ -764,6 +814,10 @@ type ResultOfNaclSignOpen = {
 function nacl_sign_open(
     params: ParamsOfNaclSignOpen,
 ): Promise<ResultOfNaclSignOpen>;
+
+function nacl_sign_open_sync(
+    params: ParamsOfNaclSignOpen,
+): ResultOfNaclSignOpen;
 ```
 ### Parameters
 - `signed`: _string_ – Signed data that must be unsigned.
@@ -796,6 +850,10 @@ type ResultOfNaclSignDetached = {
 function nacl_sign_detached(
     params: ParamsOfNaclSign,
 ): Promise<ResultOfNaclSignDetached>;
+
+function nacl_sign_detached_sync(
+    params: ParamsOfNaclSign,
+): ResultOfNaclSignDetached;
 ```
 ### Parameters
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
@@ -825,6 +883,10 @@ type ResultOfNaclSignDetachedVerify = {
 function nacl_sign_detached_verify(
     params: ParamsOfNaclSignDetachedVerify,
 ): Promise<ResultOfNaclSignDetachedVerify>;
+
+function nacl_sign_detached_verify_sync(
+    params: ParamsOfNaclSignDetachedVerify,
+): ResultOfNaclSignDetachedVerify;
 ```
 ### Parameters
 - `unsigned`: _string_ – Unsigned data that must be verified.
@@ -850,6 +912,8 @@ type KeyPair = {
 }
 
 function nacl_box_keypair(): Promise<KeyPair>;
+
+function nacl_box_keypair_sync(): KeyPair;
 ```
 
 
@@ -876,6 +940,10 @@ type KeyPair = {
 function nacl_box_keypair_from_secret_key(
     params: ParamsOfNaclBoxKeyPairFromSecret,
 ): Promise<KeyPair>;
+
+function nacl_box_keypair_from_secret_key_sync(
+    params: ParamsOfNaclBoxKeyPairFromSecret,
+): KeyPair;
 ```
 ### Parameters
 - `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
@@ -909,6 +977,10 @@ type ResultOfNaclBox = {
 function nacl_box(
     params: ParamsOfNaclBox,
 ): Promise<ResultOfNaclBox>;
+
+function nacl_box_sync(
+    params: ParamsOfNaclBox,
+): ResultOfNaclBox;
 ```
 ### Parameters
 - `decrypted`: _string_ – Data that must be encrypted encoded in `base64`.
@@ -941,6 +1013,10 @@ type ResultOfNaclBoxOpen = {
 function nacl_box_open(
     params: ParamsOfNaclBoxOpen,
 ): Promise<ResultOfNaclBoxOpen>;
+
+function nacl_box_open_sync(
+    params: ParamsOfNaclBoxOpen,
+): ResultOfNaclBoxOpen;
 ```
 ### Parameters
 - `encrypted`: _string_ – Data that must be decrypted.
@@ -973,6 +1049,10 @@ type ResultOfNaclBox = {
 function nacl_secret_box(
     params: ParamsOfNaclSecretBox,
 ): Promise<ResultOfNaclBox>;
+
+function nacl_secret_box_sync(
+    params: ParamsOfNaclSecretBox,
+): ResultOfNaclBox;
 ```
 ### Parameters
 - `decrypted`: _string_ – Data that must be encrypted.
@@ -1004,6 +1084,10 @@ type ResultOfNaclBoxOpen = {
 function nacl_secret_box_open(
     params: ParamsOfNaclSecretBoxOpen,
 ): Promise<ResultOfNaclBoxOpen>;
+
+function nacl_secret_box_open_sync(
+    params: ParamsOfNaclSecretBoxOpen,
+): ResultOfNaclBoxOpen;
 ```
 ### Parameters
 - `encrypted`: _string_ – Data that must be decrypted.
@@ -1033,6 +1117,10 @@ type ResultOfMnemonicWords = {
 function mnemonic_words(
     params: ParamsOfMnemonicWords,
 ): Promise<ResultOfMnemonicWords>;
+
+function mnemonic_words_sync(
+    params: ParamsOfMnemonicWords,
+): ResultOfMnemonicWords;
 ```
 ### Parameters
 - `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
@@ -1062,6 +1150,10 @@ type ResultOfMnemonicFromRandom = {
 function mnemonic_from_random(
     params: ParamsOfMnemonicFromRandom,
 ): Promise<ResultOfMnemonicFromRandom>;
+
+function mnemonic_from_random_sync(
+    params: ParamsOfMnemonicFromRandom,
+): ResultOfMnemonicFromRandom;
 ```
 ### Parameters
 - `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
@@ -1091,6 +1183,10 @@ type ResultOfMnemonicFromEntropy = {
 function mnemonic_from_entropy(
     params: ParamsOfMnemonicFromEntropy,
 ): Promise<ResultOfMnemonicFromEntropy>;
+
+function mnemonic_from_entropy_sync(
+    params: ParamsOfMnemonicFromEntropy,
+): ResultOfMnemonicFromEntropy;
 ```
 ### Parameters
 - `entropy`: _string_ – Entropy bytes.
@@ -1125,6 +1221,10 @@ type ResultOfMnemonicVerify = {
 function mnemonic_verify(
     params: ParamsOfMnemonicVerify,
 ): Promise<ResultOfMnemonicVerify>;
+
+function mnemonic_verify_sync(
+    params: ParamsOfMnemonicVerify,
+): ResultOfMnemonicVerify;
 ```
 ### Parameters
 - `phrase`: _string_ – Phrase
@@ -1160,6 +1260,10 @@ type KeyPair = {
 function mnemonic_derive_sign_keys(
     params: ParamsOfMnemonicDeriveSignKeys,
 ): Promise<KeyPair>;
+
+function mnemonic_derive_sign_keys_sync(
+    params: ParamsOfMnemonicDeriveSignKeys,
+): KeyPair;
 ```
 ### Parameters
 - `phrase`: _string_ – Phrase
@@ -1192,6 +1296,10 @@ type ResultOfHDKeyXPrvFromMnemonic = {
 function hdkey_xprv_from_mnemonic(
     params: ParamsOfHDKeyXPrvFromMnemonic,
 ): Promise<ResultOfHDKeyXPrvFromMnemonic>;
+
+function hdkey_xprv_from_mnemonic_sync(
+    params: ParamsOfHDKeyXPrvFromMnemonic,
+): ResultOfHDKeyXPrvFromMnemonic;
 ```
 ### Parameters
 - `phrase`: _string_ – String with seed phrase
@@ -1222,6 +1330,10 @@ type ResultOfHDKeyDeriveFromXPrv = {
 function hdkey_derive_from_xprv(
     params: ParamsOfHDKeyDeriveFromXPrv,
 ): Promise<ResultOfHDKeyDeriveFromXPrv>;
+
+function hdkey_derive_from_xprv_sync(
+    params: ParamsOfHDKeyDeriveFromXPrv,
+): ResultOfHDKeyDeriveFromXPrv;
 ```
 ### Parameters
 - `xprv`: _string_ – Serialized extended private key
@@ -1251,6 +1363,10 @@ type ResultOfHDKeyDeriveFromXPrvPath = {
 function hdkey_derive_from_xprv_path(
     params: ParamsOfHDKeyDeriveFromXPrvPath,
 ): Promise<ResultOfHDKeyDeriveFromXPrvPath>;
+
+function hdkey_derive_from_xprv_path_sync(
+    params: ParamsOfHDKeyDeriveFromXPrvPath,
+): ResultOfHDKeyDeriveFromXPrvPath;
 ```
 ### Parameters
 - `xprv`: _string_ – Serialized extended private key
@@ -1278,6 +1394,10 @@ type ResultOfHDKeySecretFromXPrv = {
 function hdkey_secret_from_xprv(
     params: ParamsOfHDKeySecretFromXPrv,
 ): Promise<ResultOfHDKeySecretFromXPrv>;
+
+function hdkey_secret_from_xprv_sync(
+    params: ParamsOfHDKeySecretFromXPrv,
+): ResultOfHDKeySecretFromXPrv;
 ```
 ### Parameters
 - `xprv`: _string_ – Serialized extended private key
@@ -1304,6 +1424,10 @@ type ResultOfHDKeyPublicFromXPrv = {
 function hdkey_public_from_xprv(
     params: ParamsOfHDKeyPublicFromXPrv,
 ): Promise<ResultOfHDKeyPublicFromXPrv>;
+
+function hdkey_public_from_xprv_sync(
+    params: ParamsOfHDKeyPublicFromXPrv,
+): ResultOfHDKeyPublicFromXPrv;
 ```
 ### Parameters
 - `xprv`: _string_ – Serialized extended private key
@@ -1332,6 +1456,10 @@ type ResultOfChaCha20 = {
 function chacha20(
     params: ParamsOfChaCha20,
 ): Promise<ResultOfChaCha20>;
+
+function chacha20_sync(
+    params: ParamsOfChaCha20,
+): ResultOfChaCha20;
 ```
 ### Parameters
 - `data`: _string_ – Source data to be encrypted or decrypted.
@@ -1376,6 +1504,10 @@ function create_crypto_box(
     params: ParamsOfCreateCryptoBox,
     obj: AppPasswordProvider,
 ): Promise<RegisteredCryptoBox>;
+
+function create_crypto_box_sync(
+    params: ParamsOfCreateCryptoBox,
+): RegisteredCryptoBox;
 ```
 ### Parameters
 - `secret_encryption_salt`: _string_ – Salt used for secret encryption. For example, a mobile device can use device ID as salt.
@@ -1401,6 +1533,10 @@ type RegisteredCryptoBox = {
 function remove_crypto_box(
     params: RegisteredCryptoBox,
 ): Promise<void>;
+
+function remove_crypto_box_sync(
+    params: RegisteredCryptoBox,
+): void;
 ```
 ### Parameters
 - `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
@@ -1422,6 +1558,10 @@ type ResultOfGetCryptoBoxInfo = {
 function get_crypto_box_info(
     params: RegisteredCryptoBox,
 ): Promise<ResultOfGetCryptoBoxInfo>;
+
+function get_crypto_box_info_sync(
+    params: RegisteredCryptoBox,
+): ResultOfGetCryptoBoxInfo;
 ```
 ### Parameters
 - `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
@@ -1452,6 +1592,10 @@ type ResultOfGetCryptoBoxSeedPhrase = {
 function get_crypto_box_seed_phrase(
     params: RegisteredCryptoBox,
 ): Promise<ResultOfGetCryptoBoxSeedPhrase>;
+
+function get_crypto_box_seed_phrase_sync(
+    params: RegisteredCryptoBox,
+): ResultOfGetCryptoBoxSeedPhrase;
 ```
 ### Parameters
 - `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
@@ -1482,6 +1626,10 @@ type RegisteredSigningBox = {
 function get_signing_box_from_crypto_box(
     params: ParamsOfGetSigningBoxFromCryptoBox,
 ): Promise<RegisteredSigningBox>;
+
+function get_signing_box_from_crypto_box_sync(
+    params: ParamsOfGetSigningBoxFromCryptoBox,
+): RegisteredSigningBox;
 ```
 ### Parameters
 - `handle`: _number_ – Crypto Box Handle.
@@ -1520,6 +1668,10 @@ type RegisteredEncryptionBox = {
 function get_encryption_box_from_crypto_box(
     params: ParamsOfGetEncryptionBoxFromCryptoBox,
 ): Promise<RegisteredEncryptionBox>;
+
+function get_encryption_box_from_crypto_box_sync(
+    params: ParamsOfGetEncryptionBoxFromCryptoBox,
+): RegisteredEncryptionBox;
 ```
 ### Parameters
 - `handle`: _number_ – Crypto Box Handle.
@@ -1546,6 +1698,10 @@ type RegisteredCryptoBox = {
 function clear_crypto_box_secret_cache(
     params: RegisteredCryptoBox,
 ): Promise<void>;
+
+function clear_crypto_box_secret_cache_sync(
+    params: RegisteredCryptoBox,
+): void;
 ```
 ### Parameters
 - `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
@@ -1563,6 +1719,8 @@ type RegisteredSigningBox = {
 function register_signing_box(
     obj: AppSigningBox,
 ): Promise<RegisteredSigningBox>;
+
+function register_signing_box_sync(): RegisteredSigningBox;
 ```
 ### Parameters
 - `obj`: [AppSigningBox](mod\_AppSigningBox.md#appsigningbox) – Signing box callbacks.
@@ -1591,6 +1749,10 @@ type RegisteredSigningBox = {
 function get_signing_box(
     params: KeyPair,
 ): Promise<RegisteredSigningBox>;
+
+function get_signing_box_sync(
+    params: KeyPair,
+): RegisteredSigningBox;
 ```
 ### Parameters
 - `public`: _string_ – Public key - 64 symbols hex string
@@ -1618,6 +1780,10 @@ type ResultOfSigningBoxGetPublicKey = {
 function signing_box_get_public_key(
     params: RegisteredSigningBox,
 ): Promise<ResultOfSigningBoxGetPublicKey>;
+
+function signing_box_get_public_key_sync(
+    params: RegisteredSigningBox,
+): ResultOfSigningBoxGetPublicKey;
 ```
 ### Parameters
 - `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Handle of the signing box.
@@ -1646,6 +1812,10 @@ type ResultOfSigningBoxSign = {
 function signing_box_sign(
     params: ParamsOfSigningBoxSign,
 ): Promise<ResultOfSigningBoxSign>;
+
+function signing_box_sign_sync(
+    params: ParamsOfSigningBoxSign,
+): ResultOfSigningBoxSign;
 ```
 ### Parameters
 - `signing_box`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Signing Box handle.
@@ -1671,6 +1841,10 @@ type RegisteredSigningBox = {
 function remove_signing_box(
     params: RegisteredSigningBox,
 ): Promise<void>;
+
+function remove_signing_box_sync(
+    params: RegisteredSigningBox,
+): void;
 ```
 ### Parameters
 - `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Handle of the signing box.
@@ -1688,6 +1862,8 @@ type RegisteredEncryptionBox = {
 function register_encryption_box(
     obj: AppEncryptionBox,
 ): Promise<RegisteredEncryptionBox>;
+
+function register_encryption_box_sync(): RegisteredEncryptionBox;
 ```
 ### Parameters
 - `obj`: [AppEncryptionBox](mod\_AppEncryptionBox.md#appencryptionbox) – Interface for data encryption/decryption
@@ -1711,6 +1887,10 @@ type RegisteredEncryptionBox = {
 function remove_encryption_box(
     params: RegisteredEncryptionBox,
 ): Promise<void>;
+
+function remove_encryption_box_sync(
+    params: RegisteredEncryptionBox,
+): void;
 ```
 ### Parameters
 - `handle`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
@@ -1732,6 +1912,10 @@ type ResultOfEncryptionBoxGetInfo = {
 function encryption_box_get_info(
     params: ParamsOfEncryptionBoxGetInfo,
 ): Promise<ResultOfEncryptionBoxGetInfo>;
+
+function encryption_box_get_info_sync(
+    params: ParamsOfEncryptionBoxGetInfo,
+): ResultOfEncryptionBoxGetInfo;
 ```
 ### Parameters
 - `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
@@ -1762,6 +1946,10 @@ type ResultOfEncryptionBoxEncrypt = {
 function encryption_box_encrypt(
     params: ParamsOfEncryptionBoxEncrypt,
 ): Promise<ResultOfEncryptionBoxEncrypt>;
+
+function encryption_box_encrypt_sync(
+    params: ParamsOfEncryptionBoxEncrypt,
+): ResultOfEncryptionBoxEncrypt;
 ```
 ### Parameters
 - `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
@@ -1794,6 +1982,10 @@ type ResultOfEncryptionBoxDecrypt = {
 function encryption_box_decrypt(
     params: ParamsOfEncryptionBoxDecrypt,
 ): Promise<ResultOfEncryptionBoxDecrypt>;
+
+function encryption_box_decrypt_sync(
+    params: ParamsOfEncryptionBoxDecrypt,
+): ResultOfEncryptionBoxDecrypt;
 ```
 ### Parameters
 - `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
@@ -1821,6 +2013,10 @@ type RegisteredEncryptionBox = {
 function create_encryption_box(
     params: ParamsOfCreateEncryptionBox,
 ): Promise<RegisteredEncryptionBox>;
+
+function create_encryption_box_sync(
+    params: ParamsOfCreateEncryptionBox,
+): RegisteredEncryptionBox;
 ```
 ### Parameters
 - `algorithm`: _[EncryptionAlgorithm](mod\_crypto.md#encryptionalgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
@@ -3469,6 +3665,10 @@ type ResultOfAppPasswordProviderGetPasswordVariant = ResultOfAppPasswordProvider
 function get_password(
     params: ParamsOfAppPasswordProviderGetPasswordVariant,
 ): Promise<ResultOfAppPasswordProviderGetPasswordVariant>;
+
+function get_password_sync(
+    params: ParamsOfAppPasswordProviderGetPasswordVariant,
+): ResultOfAppPasswordProviderGetPasswordVariant;
 ```
 ### Parameters
 - `encryption_public_key`: _string_ – Temporary library pubkey, that is used on application side for password encryption, along with application temporary private key and nonce. Used for password decryption on library side.
@@ -3501,6 +3701,8 @@ Get signing box public key
 type ResultOfAppSigningBoxGetPublicKeyVariant = ResultOfAppSigningBoxGetPublicKeyVariant
 
 function get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKeyVariant>;
+
+function get_public_key_sync(): ResultOfAppSigningBoxGetPublicKeyVariant;
 ```
 
 
@@ -3521,6 +3723,10 @@ type ResultOfAppSigningBoxSignVariant = ResultOfAppSigningBoxSignVariant
 function sign(
     params: ParamsOfAppSigningBoxSignVariant,
 ): Promise<ResultOfAppSigningBoxSignVariant>;
+
+function sign_sync(
+    params: ParamsOfAppSigningBoxSignVariant,
+): ResultOfAppSigningBoxSignVariant;
 ```
 ### Parameters
 - `unsigned`: _string_ – Data to sign encoded as base64
@@ -3552,6 +3758,8 @@ Get encryption box info
 type ResultOfAppEncryptionBoxGetInfoVariant = ResultOfAppEncryptionBoxGetInfoVariant
 
 function get_info(): Promise<ResultOfAppEncryptionBoxGetInfoVariant>;
+
+function get_info_sync(): ResultOfAppEncryptionBoxGetInfoVariant;
 ```
 
 
@@ -3572,6 +3780,10 @@ type ResultOfAppEncryptionBoxEncryptVariant = ResultOfAppEncryptionBoxEncryptVar
 function encrypt(
     params: ParamsOfAppEncryptionBoxEncryptVariant,
 ): Promise<ResultOfAppEncryptionBoxEncryptVariant>;
+
+function encrypt_sync(
+    params: ParamsOfAppEncryptionBoxEncryptVariant,
+): ResultOfAppEncryptionBoxEncryptVariant;
 ```
 ### Parameters
 - `data`: _string_ – Data, encoded in Base64
@@ -3594,6 +3806,10 @@ type ResultOfAppEncryptionBoxDecryptVariant = ResultOfAppEncryptionBoxDecryptVar
 function decrypt(
     params: ParamsOfAppEncryptionBoxDecryptVariant,
 ): Promise<ResultOfAppEncryptionBoxDecryptVariant>;
+
+function decrypt_sync(
+    params: ParamsOfAppEncryptionBoxDecryptVariant,
+): ResultOfAppEncryptionBoxDecryptVariant;
 ```
 ### Parameters
 - `data`: _string_ – Data, encoded in Base64
