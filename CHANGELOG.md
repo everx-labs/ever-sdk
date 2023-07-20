@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 ### New
 
 - functions with callbacks (e.g. `processing.process_messages`) can be called as sync.
+- `send_event` parameter is now optional with default value `false`.
 
 ## [1.44.0] – 2023-07-12
 

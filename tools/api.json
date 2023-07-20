@@ -1,5 +1,5 @@
 {
-  "version": "1.44.0",
+  "version": "1.44.1",
   "modules": [
     {
       "name": "client",
@@ -10755,8 +10755,11 @@
             },
             {
               "name": "send_events",
-              "type": "Boolean",
-              "summary": "Flag for requesting events sending",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Flag for requesting events sending. Default is `false`.",
               "description": null
             }
           ],
@@ -10814,8 +10817,11 @@
             },
             {
               "name": "send_events",
-              "type": "Boolean",
-              "summary": "Flag that enables/disables intermediate events",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Flag that enables/disables intermediate events. Default is `false`.",
               "description": null
             },
             {
@@ -10847,8 +10853,11 @@
             },
             {
               "name": "send_events",
-              "type": "Boolean",
-              "summary": "Flag for requesting events sending",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
+              },
+              "summary": "Flag for requesting events sending. Default is `false`.",
               "description": null
             }
           ],
