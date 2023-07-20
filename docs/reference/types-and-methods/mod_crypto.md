@@ -378,6 +378,7 @@ function factorize_sync(
     params: ParamsOfFactorize,
 ): ResultOfFactorize;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `composite`: _string_ – Hexadecimal representation of u64 composite number.
 
@@ -413,6 +414,7 @@ function modular_power_sync(
     params: ParamsOfModularPower,
 ): ResultOfModularPower;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `base`: _string_ – `base` argument of calculation.
 - `exponent`: _string_ – `exponent` argument of calculation.
@@ -445,6 +447,7 @@ function ton_crc16_sync(
     params: ParamsOfTonCrc16,
 ): ResultOfTonCrc16;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `data`: _string_ – Input data for CRC calculation.
 <br>Encoded with `base64`.
@@ -476,6 +479,7 @@ function generate_random_bytes_sync(
     params: ParamsOfGenerateRandomBytes,
 ): ResultOfGenerateRandomBytes;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `length`: _number_ – Size of random byte array.
 
@@ -506,6 +510,7 @@ function convert_public_key_to_ton_safe_format_sync(
     params: ParamsOfConvertPublicKeyToTonSafeFormat,
 ): ResultOfConvertPublicKeyToTonSafeFormat;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `public_key`: _string_ – Public key - 64 symbols hex string
 
@@ -529,6 +534,7 @@ function generate_random_sign_keys(): Promise<KeyPair>;
 
 function generate_random_sign_keys_sync(): KeyPair;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -560,6 +566,7 @@ function sign_sync(
     params: ParamsOfSign,
 ): ResultOfSign;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
 - `keys`: _[KeyPair](mod\_crypto.md#keypair)_ – Sign keys.
@@ -593,6 +600,7 @@ function verify_signature_sync(
     params: ParamsOfVerifySignature,
 ): ResultOfVerifySignature;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `signed`: _string_ – Signed data that must be verified encoded in `base64`.
 - `public`: _string_ – Signer's public key - 64 symbols hex string
@@ -624,6 +632,7 @@ function sha256_sync(
     params: ParamsOfHash,
 ): ResultOfHash;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `data`: _string_ – Input data for hash calculation.
 <br>Encoded with `base64`.
@@ -656,6 +665,7 @@ function sha512_sync(
     params: ParamsOfHash,
 ): ResultOfHash;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `data`: _string_ – Input data for hash calculation.
 <br>Encoded with `base64`.
@@ -709,6 +719,7 @@ function scrypt_sync(
     params: ParamsOfScrypt,
 ): ResultOfScrypt;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `password`: _string_ – The password bytes to be hashed. Must be encoded with `base64`.
 - `salt`: _string_ – Salt bytes that modify the hash to protect against Rainbow table attacks. Must be encoded with `base64`.
@@ -750,6 +761,7 @@ function nacl_sign_keypair_from_secret_key_sync(
     params: ParamsOfNaclSignKeyPairFromSecret,
 ): KeyPair;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
@@ -782,6 +794,7 @@ function nacl_sign_sync(
     params: ParamsOfNaclSign,
 ): ResultOfNaclSign;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
 - `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
@@ -819,6 +832,7 @@ function nacl_sign_open_sync(
     params: ParamsOfNaclSignOpen,
 ): ResultOfNaclSignOpen;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `signed`: _string_ – Signed data that must be unsigned.
 <br>Encoded with `base64`.
@@ -855,6 +869,7 @@ function nacl_sign_detached_sync(
     params: ParamsOfNaclSign,
 ): ResultOfNaclSignDetached;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `unsigned`: _string_ – Data that must be signed encoded in `base64`.
 - `secret`: _string_ – Signer's secret key - unprefixed 0-padded to 128 symbols hex string (concatenation of 64 symbols secret and 64 symbols public keys). See `nacl_sign_keypair_from_secret_key`.
@@ -888,6 +903,7 @@ function nacl_sign_detached_verify_sync(
     params: ParamsOfNaclSignDetachedVerify,
 ): ResultOfNaclSignDetachedVerify;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `unsigned`: _string_ – Unsigned data that must be verified.
 <br>Encoded with `base64`.
@@ -915,6 +931,7 @@ function nacl_box_keypair(): Promise<KeyPair>;
 
 function nacl_box_keypair_sync(): KeyPair;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -945,6 +962,7 @@ function nacl_box_keypair_from_secret_key_sync(
     params: ParamsOfNaclBoxKeyPairFromSecret,
 ): KeyPair;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `secret`: _string_ – Secret key - unprefixed 0-padded to 64 symbols hex string
 
@@ -982,6 +1000,7 @@ function nacl_box_sync(
     params: ParamsOfNaclBox,
 ): ResultOfNaclBox;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `decrypted`: _string_ – Data that must be encrypted encoded in `base64`.
 - `nonce`: _string_ – Nonce, encoded in `hex`
@@ -1018,6 +1037,7 @@ function nacl_box_open_sync(
     params: ParamsOfNaclBoxOpen,
 ): ResultOfNaclBoxOpen;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `encrypted`: _string_ – Data that must be decrypted.
 <br>Encoded with `base64`.
@@ -1054,6 +1074,7 @@ function nacl_secret_box_sync(
     params: ParamsOfNaclSecretBox,
 ): ResultOfNaclBox;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `decrypted`: _string_ – Data that must be encrypted.
 <br>Encoded with `base64`.
@@ -1089,6 +1110,7 @@ function nacl_secret_box_open_sync(
     params: ParamsOfNaclSecretBoxOpen,
 ): ResultOfNaclBoxOpen;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `encrypted`: _string_ – Data that must be decrypted.
 <br>Encoded with `base64`.
@@ -1122,6 +1144,7 @@ function mnemonic_words_sync(
     params: ParamsOfMnemonicWords,
 ): ResultOfMnemonicWords;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 
@@ -1155,6 +1178,7 @@ function mnemonic_from_random_sync(
     params: ParamsOfMnemonicFromRandom,
 ): ResultOfMnemonicFromRandom;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
 - `word_count`?: _number_ – Mnemonic word count
@@ -1188,6 +1212,7 @@ function mnemonic_from_entropy_sync(
     params: ParamsOfMnemonicFromEntropy,
 ): ResultOfMnemonicFromEntropy;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `entropy`: _string_ – Entropy bytes.
 <br>Hex encoded.
@@ -1226,6 +1251,7 @@ function mnemonic_verify_sync(
     params: ParamsOfMnemonicVerify,
 ): ResultOfMnemonicVerify;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `phrase`: _string_ – Phrase
 - `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
@@ -1265,6 +1291,7 @@ function mnemonic_derive_sign_keys_sync(
     params: ParamsOfMnemonicDeriveSignKeys,
 ): KeyPair;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `phrase`: _string_ – Phrase
 - `path`?: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
@@ -1301,6 +1328,7 @@ function hdkey_xprv_from_mnemonic_sync(
     params: ParamsOfHDKeyXPrvFromMnemonic,
 ): ResultOfHDKeyXPrvFromMnemonic;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `phrase`: _string_ – String with seed phrase
 - `dictionary`?: _[MnemonicDictionary](mod\_crypto.md#mnemonicdictionary)_ – Dictionary identifier
@@ -1335,6 +1363,7 @@ function hdkey_derive_from_xprv_sync(
     params: ParamsOfHDKeyDeriveFromXPrv,
 ): ResultOfHDKeyDeriveFromXPrv;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `xprv`: _string_ – Serialized extended private key
 - `child_index`: _number_ – Child index (see BIP-0032)
@@ -1368,6 +1397,7 @@ function hdkey_derive_from_xprv_path_sync(
     params: ParamsOfHDKeyDeriveFromXPrvPath,
 ): ResultOfHDKeyDeriveFromXPrvPath;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `xprv`: _string_ – Serialized extended private key
 - `path`: _string_ – Derivation path, for instance "m/44'/396'/0'/0/0"
@@ -1399,6 +1429,7 @@ function hdkey_secret_from_xprv_sync(
     params: ParamsOfHDKeySecretFromXPrv,
 ): ResultOfHDKeySecretFromXPrv;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `xprv`: _string_ – Serialized extended private key
 
@@ -1429,6 +1460,7 @@ function hdkey_public_from_xprv_sync(
     params: ParamsOfHDKeyPublicFromXPrv,
 ): ResultOfHDKeyPublicFromXPrv;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `xprv`: _string_ – Serialized extended private key
 
@@ -1461,6 +1493,7 @@ function chacha20_sync(
     params: ParamsOfChaCha20,
 ): ResultOfChaCha20;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `data`: _string_ – Source data to be encrypted or decrypted.
 <br>Must be encoded with `base64`.
@@ -1509,6 +1542,7 @@ function create_crypto_box_sync(
     params: ParamsOfCreateCryptoBox,
 ): RegisteredCryptoBox;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `secret_encryption_salt`: _string_ – Salt used for secret encryption. For example, a mobile device can use device ID as salt.
 - `secret`: _[CryptoBoxSecret](mod\_crypto.md#cryptoboxsecret)_ – Cryptobox secret
@@ -1538,6 +1572,7 @@ function remove_crypto_box_sync(
     params: RegisteredCryptoBox,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
@@ -1563,6 +1598,7 @@ function get_crypto_box_info_sync(
     params: RegisteredCryptoBox,
 ): ResultOfGetCryptoBoxInfo;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
@@ -1597,6 +1633,7 @@ function get_crypto_box_seed_phrase_sync(
     params: RegisteredCryptoBox,
 ): ResultOfGetCryptoBoxSeedPhrase;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
@@ -1631,6 +1668,7 @@ function get_signing_box_from_crypto_box_sync(
     params: ParamsOfGetSigningBoxFromCryptoBox,
 ): RegisteredSigningBox;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _number_ – Crypto Box Handle.
 - `hdpath`?: _string_ – HD key derivation path.
@@ -1673,6 +1711,7 @@ function get_encryption_box_from_crypto_box_sync(
     params: ParamsOfGetEncryptionBoxFromCryptoBox,
 ): RegisteredEncryptionBox;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _number_ – Crypto Box Handle.
 - `hdpath`?: _string_ – HD key derivation path.
@@ -1703,6 +1742,7 @@ function clear_crypto_box_secret_cache_sync(
     params: RegisteredCryptoBox,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _[CryptoBoxHandle](mod\_crypto.md#cryptoboxhandle)_
 
@@ -1722,6 +1762,7 @@ function register_signing_box(
 
 function register_signing_box_sync(): RegisteredSigningBox;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `obj`: [AppSigningBox](mod\_AppSigningBox.md#appsigningbox) – Signing box callbacks.
 
@@ -1754,6 +1795,7 @@ function get_signing_box_sync(
     params: KeyPair,
 ): RegisteredSigningBox;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `public`: _string_ – Public key - 64 symbols hex string
 - `secret`: _string_ – Private key - u64 symbols hex string
@@ -1785,6 +1827,7 @@ function signing_box_get_public_key_sync(
     params: RegisteredSigningBox,
 ): ResultOfSigningBoxGetPublicKey;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
@@ -1817,6 +1860,7 @@ function signing_box_sign_sync(
     params: ParamsOfSigningBoxSign,
 ): ResultOfSigningBoxSign;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `signing_box`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Signing Box handle.
 - `unsigned`: _string_ – Unsigned user data.
@@ -1846,6 +1890,7 @@ function remove_signing_box_sync(
     params: RegisteredSigningBox,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _[SigningBoxHandle](mod\_crypto.md#signingboxhandle)_ – Handle of the signing box.
 
@@ -1865,6 +1910,7 @@ function register_encryption_box(
 
 function register_encryption_box_sync(): RegisteredEncryptionBox;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `obj`: [AppEncryptionBox](mod\_AppEncryptionBox.md#appencryptionbox) – Interface for data encryption/decryption
 
@@ -1892,6 +1938,7 @@ function remove_encryption_box_sync(
     params: RegisteredEncryptionBox,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Handle of the encryption box.
 
@@ -1917,6 +1964,7 @@ function encryption_box_get_info_sync(
     params: ParamsOfEncryptionBoxGetInfo,
 ): ResultOfEncryptionBoxGetInfo;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
 
@@ -1951,6 +1999,7 @@ function encryption_box_encrypt_sync(
     params: ParamsOfEncryptionBoxEncrypt,
 ): ResultOfEncryptionBoxEncrypt;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
 - `data`: _string_ – Data to be encrypted, encoded in Base64
@@ -1987,6 +2036,7 @@ function encryption_box_decrypt_sync(
     params: ParamsOfEncryptionBoxDecrypt,
 ): ResultOfEncryptionBoxDecrypt;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `encryption_box`: _[EncryptionBoxHandle](mod\_crypto.md#encryptionboxhandle)_ – Encryption box handle
 - `data`: _string_ – Data to be decrypted, encoded in Base64
@@ -2018,6 +2068,7 @@ function create_encryption_box_sync(
     params: ParamsOfCreateEncryptionBox,
 ): RegisteredEncryptionBox;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `algorithm`: _[EncryptionAlgorithm](mod\_crypto.md#encryptionalgorithm)_ – Encryption algorithm specifier including cipher parameters (key, IV, etc)
 
@@ -3670,6 +3721,7 @@ function get_password_sync(
     params: ParamsOfAppPasswordProviderGetPasswordVariant,
 ): ResultOfAppPasswordProviderGetPasswordVariant;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `encryption_public_key`: _string_ – Temporary library pubkey, that is used on application side for password encryption, along with application temporary private key and nonce. Used for password decryption on library side.
 
@@ -3704,6 +3756,7 @@ function get_public_key(): Promise<ResultOfAppSigningBoxGetPublicKeyVariant>;
 
 function get_public_key_sync(): ResultOfAppSigningBoxGetPublicKeyVariant;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -3728,6 +3781,7 @@ function sign_sync(
     params: ParamsOfAppSigningBoxSignVariant,
 ): ResultOfAppSigningBoxSignVariant;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `unsigned`: _string_ – Data to sign encoded as base64
 
@@ -3761,6 +3815,7 @@ function get_info(): Promise<ResultOfAppEncryptionBoxGetInfoVariant>;
 
 function get_info_sync(): ResultOfAppEncryptionBoxGetInfoVariant;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -3785,6 +3840,7 @@ function encrypt_sync(
     params: ParamsOfAppEncryptionBoxEncryptVariant,
 ): ResultOfAppEncryptionBoxEncryptVariant;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `data`: _string_ – Data, encoded in Base64
 
@@ -3811,6 +3867,7 @@ function decrypt_sync(
     params: ParamsOfAppEncryptionBoxDecryptVariant,
 ): ResultOfAppEncryptionBoxDecryptVariant;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `data`: _string_ – Data, encoded in Base64
 

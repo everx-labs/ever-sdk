@@ -68,6 +68,7 @@ function get_api_reference(): Promise<ResultOfGetApiReference>;
 
 function get_api_reference_sync(): ResultOfGetApiReference;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -88,6 +89,7 @@ function version(): Promise<ResultOfVersion>;
 
 function version_sync(): ResultOfVersion;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -114,6 +116,7 @@ function config(): Promise<ClientConfig>;
 
 function config_sync(): ClientConfig;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -141,6 +144,7 @@ function build_info(): Promise<ResultOfBuildInfo>;
 
 function build_info_sync(): ResultOfBuildInfo;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -167,6 +171,7 @@ function resolve_app_request_sync(
     params: ParamsOfResolveAppRequest,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `app_request_id`: _number_ – Request ID received from SDK
 - `result`: _[AppRequestResult](mod\_client.md#apprequestresult)_ – Result of request processing

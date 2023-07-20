@@ -111,6 +111,7 @@ function init_sync(
     params: ParamsOfInit,
 ): RegisteredDebot;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `address`: _string_ – Debot smart contract address
 - `obj`: [AppDebotBrowser](mod\_AppDebotBrowser.md#appdebotbrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
@@ -152,6 +153,7 @@ function start_sync(
     params: ParamsOfStart,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod\_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 
@@ -179,6 +181,7 @@ function fetch_sync(
     params: ParamsOfFetch,
 ): ResultOfFetch;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `address`: _string_ – Debot smart contract address.
 
@@ -212,6 +215,7 @@ function execute_sync(
     params: ParamsOfExecute,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod\_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 - `action`: _[DebotAction](mod\_debot.md#debotaction)_ – Debot Action that must be executed.
@@ -237,6 +241,7 @@ function send_sync(
     params: ParamsOfSend,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod\_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 - `message`: _string_ – BOC of internal message to debot encoded in base64 format.
@@ -261,6 +266,7 @@ function remove_sync(
     params: ParamsOfRemove,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `debot_handle`: _[DebotHandle](mod\_debot.md#debothandle)_ – Debot handle which references an instance of debot engine.
 
@@ -859,6 +865,7 @@ function log_sync(
     params: ParamsOfAppDebotBrowserLogVariant,
 ): ;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `msg`: _string_ – A string that must be printed to user.
 
@@ -878,6 +885,7 @@ function switch_sync(
     params: ParamsOfAppDebotBrowserSwitchVariant,
 ): ;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `context_id`: _number_ – Debot context ID to which debot is switched.
 
@@ -891,6 +899,7 @@ function switch_completed(): Promise<>;
 
 function switch_completed_sync(): ;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ## show_action
@@ -908,6 +917,7 @@ function show_action_sync(
     params: ParamsOfAppDebotBrowserShowActionVariant,
 ): ;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `action`: _[DebotAction](mod\_debot.md#debotaction)_ – Debot action that must be shown to user as menu item. At least `description` property must be shown from [DebotAction] structure.
 
@@ -929,6 +939,7 @@ function input_sync(
     params: ParamsOfAppDebotBrowserInputVariant,
 ): ResultOfAppDebotBrowserInputVariant;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `prompt`: _string_ – A prompt string that must be printed to user before input request.
 
@@ -951,6 +962,7 @@ function get_signing_box(): Promise<ResultOfAppDebotBrowserGetSigningBoxVariant>
 
 function get_signing_box_sync(): ResultOfAppDebotBrowserGetSigningBoxVariant;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -974,6 +986,7 @@ function invoke_debot_sync(
     params: ParamsOfAppDebotBrowserInvokeDebotVariant,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `debot_addr`: _string_ – Address of debot in blockchain.
 - `action`: _[DebotAction](mod\_debot.md#debotaction)_ – Debot action to execute.
@@ -994,6 +1007,7 @@ function send_sync(
     params: ParamsOfAppDebotBrowserSendVariant,
 ): ;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `message`: _string_ – Internal message to DInterface address.
 <br>Message body contains interface function and parameters.
@@ -1016,6 +1030,7 @@ function approve_sync(
     params: ParamsOfAppDebotBrowserApproveVariant,
 ): ResultOfAppDebotBrowserApproveVariant;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `activity`: _[DebotActivity](mod\_debot.md#debotactivity)_ – DeBot activity details.
 

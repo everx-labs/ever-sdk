@@ -69,6 +69,7 @@ function convert_address_sync(
     params: ParamsOfConvertAddress,
 ): ResultOfConvertAddress;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `address`: _string_ – Account address in any TON format.
 - `output_format`: _[AddressStringFormat](mod\_utils.md#addressstringformat)_ – Specify the format to convert to.
@@ -109,6 +110,7 @@ function get_address_type_sync(
     params: ParamsOfGetAddressType,
 ): ResultOfGetAddressType;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `address`: _string_ – Account address in any TON format.
 
@@ -140,6 +142,7 @@ function calc_storage_fee_sync(
     params: ParamsOfCalcStorageFee,
 ): ResultOfCalcStorageFee;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `account`: _string_
 - `period`: _number_
@@ -172,6 +175,7 @@ function compress_zstd_sync(
     params: ParamsOfCompressZstd,
 ): ResultOfCompressZstd;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `uncompressed`: _string_ – Uncompressed data.
 <br>Must be encoded as base64.
@@ -205,6 +209,7 @@ function decompress_zstd_sync(
     params: ParamsOfDecompressZstd,
 ): ResultOfDecompressZstd;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `compressed`: _string_ – Compressed data.
 <br>Must be encoded as base64.

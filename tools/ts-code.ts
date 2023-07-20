@@ -163,8 +163,13 @@ export class ${Code.upperFirst(module.name)}Module {
 
         for (const func of module.functions) {
             const info = this.getFunctionInfo(func);
-            const funcDoc = () => {
+            const funcDoc = (isSync: boolean) => {
                 ts += jsDocStart(func, INDENT);
+                if (isSync) {
+                    ts += jsDoc("", INDENT);
+                    ts += jsDoc(`NOTE: Available only for \`lib-node\` binding.\n`, INDENT);
+                    ts += jsDoc("", INDENT);
+                }
                 if (info.params) {
                     ts += jsDoc("", INDENT);
                     ts += jsDoc(`@param {${getRefName(info.params)}} ${info.params.name}`, INDENT);
@@ -172,9 +177,9 @@ export class ${Code.upperFirst(module.name)}Module {
                 ts += jsDoc(`@returns ${getRefName(func.result)}`, INDENT);
                 ts += jsDocEnd(INDENT);
             }
-            funcDoc()
+            funcDoc(false)
             ts += this.functionImpl(func);
-            funcDoc()
+            funcDoc(true)
             ts += this.syncFunctionImpl(func);
         }
 

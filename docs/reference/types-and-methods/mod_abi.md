@@ -187,6 +187,7 @@ function encode_message_body_sync(
     params: ParamsOfEncodeMessageBody,
 ): ResultOfEncodeMessageBody;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 - `call_set`: _[CallSet](mod\_abi.md#callset)_ – Function call parameters.
@@ -229,6 +230,7 @@ function attach_signature_to_message_body_sync(
     params: ParamsOfAttachSignatureToMessageBody,
 ): ResultOfAttachSignatureToMessageBody;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `public_key`: _string_ – Public key.
@@ -305,6 +307,7 @@ function encode_message_sync(
     params: ParamsOfEncodeMessage,
 ): ResultOfEncodeMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 - `address`?: _string_ – Target address the message will be sent to.
@@ -373,6 +376,7 @@ function encode_internal_message_sync(
     params: ParamsOfEncodeInternalMessage,
 ): ResultOfEncodeInternalMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 <br>Can be None if both deploy_set and call_set are None.
@@ -422,6 +426,7 @@ function attach_signature_sync(
     params: ParamsOfAttachSignature,
 ): ResultOfAttachSignature;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `public_key`: _string_ – Public key encoded in `hex`.
@@ -463,6 +468,7 @@ function decode_message_sync(
     params: ParamsOfDecodeMessage,
 ): DecodedMessageBody;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – contract ABI
 - `message`: _string_ – Message BOC
@@ -508,6 +514,7 @@ function decode_message_body_sync(
     params: ParamsOfDecodeMessageBody,
 ): DecodedMessageBody;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
 - `body`: _string_ – Message body BOC encoded in `base64`.
@@ -555,6 +562,7 @@ function encode_account_sync(
     params: ParamsOfEncodeAccount,
 ): ResultOfEncodeAccount;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `state_init`: _[StateInitSource](mod\_abi.md#stateinitsource)_ – Source of the account state init.
 - `balance`?: _bigint_ – Initial balance.
@@ -595,6 +603,7 @@ function decode_account_data_sync(
     params: ParamsOfDecodeAccountData,
 ): ResultOfDecodeAccountData;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
@@ -631,6 +640,7 @@ function update_initial_data_sync(
     params: ParamsOfUpdateInitialData,
 ): ResultOfUpdateInitialData;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
@@ -671,6 +681,7 @@ function encode_initial_data_sync(
     params: ParamsOfEncodeInitialData,
 ): ResultOfEncodeInitialData;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `initial_data`?: _any_ – List of initial values for contract's static variables.
@@ -708,6 +719,7 @@ function decode_initial_data_sync(
     params: ParamsOfDecodeInitialData,
 ): ResultOfDecodeInitialData;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 <br>Initial data is decoded if this parameter is provided
@@ -761,6 +773,7 @@ function decode_boc_sync(
     params: ParamsOfDecodeBoc,
 ): ResultOfDecodeBoc;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `params`: _[AbiParam](mod\_abi.md#abiparam)[]_ – Parameters to decode from BOC
 - `boc`: _string_ – Data BOC or BOC handle
@@ -795,6 +808,7 @@ function encode_boc_sync(
     params: ParamsOfAbiEncodeBoc,
 ): ResultOfAbiEncodeBoc;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `params`: _[AbiParam](mod\_abi.md#abiparam)[]_ – Parameters to encode into BOC
 - `data`: _any_ – Parameters and values as a JSON structure
@@ -830,6 +844,7 @@ function calc_function_id_sync(
     params: ParamsOfCalcFunctionId,
 ): ResultOfCalcFunctionId;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 - `function_name`: _string_ – Contract function name
@@ -865,6 +880,7 @@ function get_signature_data_sync(
     params: ParamsOfGetSignatureData,
 ): ResultOfGetSignatureData;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
 - `message`: _string_ – Message BOC encoded in `base64`.

@@ -151,6 +151,7 @@ function monitor_messages_sync(
     params: ParamsOfMonitorMessages,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
 - `messages`: _[MessageMonitoringParams](mod\_processing.md#messagemonitoringparams)[]_ – Messages to start monitoring for.
@@ -178,6 +179,7 @@ function get_monitor_info_sync(
     params: ParamsOfGetMonitorInfo,
 ): MonitoringQueueInfo;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
 
@@ -213,6 +215,7 @@ function fetch_next_monitor_results_sync(
     params: ParamsOfFetchNextMonitorResults,
 ): ResultOfFetchNextMonitorResults;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
 - `wait_mode`?: _[MonitorFetchWaitMode](mod\_processing.md#monitorfetchwaitmode)_ – Wait mode.
@@ -241,6 +244,7 @@ function cancel_monitor_sync(
     params: ParamsOfCancelMonitor,
 ): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
 
@@ -267,6 +271,7 @@ function send_messages_sync(
     params: ParamsOfSendMessages,
 ): ResultOfSendMessages;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `messages`: _[MessageSendingParams](mod\_processing.md#messagesendingparams)[]_ – Messages that must be sent to the blockchain.
 - `monitor_queue`?: _string_ – Optional message monitor queue that starts monitoring for the processing results for sent messages.
@@ -305,6 +310,7 @@ function send_message_sync(
     params: ParamsOfSendMessage,
 ): ResultOfSendMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `message`: _string_ – Message BOC.
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Optional message ABI.
@@ -374,6 +380,7 @@ function wait_for_transaction_sync(
     params: ParamsOfWaitForTransaction,
 ): ResultOfProcessMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Optional ABI for decoding the transaction result.
 <br>If it is specified, then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
@@ -439,6 +446,7 @@ function process_message_sync(
     params: ParamsOfProcessMessage,
 ): ResultOfProcessMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `message_encode_params`: _[ParamsOfEncodeMessage](mod\_abi.md#paramsofencodemessage)_ – Message encode parameters.
 - `send_events`: _boolean_ – Flag for requesting events sending
