@@ -306,7 +306,7 @@ impl TestClient {
 
     async fn calc_giver_address(&self, keys: KeyPair) -> String {
         self.encode_message(ParamsOfEncodeMessage {
-            abi:  Self::giver_abi(),
+            abi: Self::giver_abi(),
             deploy_set: DeploySet::some_with_tvc(Self::giver_tvc()),
             signer: Signer::Keys { keys },
             ..Default::default()
@@ -316,30 +316,11 @@ impl TestClient {
         .address
     }
 
-    fn calc_giver_address_sync(&self, keys: KeyPair) -> String {
-        self.encode_message_sync(ParamsOfEncodeMessage {
-            abi:  Self::giver_abi(),
-            deploy_set: DeploySet::some_with_tvc(Self::giver_tvc()),
-            signer: Signer::Keys { keys },
-            ..Default::default()
-        })
-        .unwrap()
-        .address
-    }
-
     pub async fn giver_address(&self) -> String {
         if let Some(address) = env::giver_address() {
             address
         } else {
             self.calc_giver_address(Self::giver_keys()).await
-        }
-    }
-
-    pub fn giver_address_sync(&self) -> String {
-        if let Some(address) = env::giver_address() {
-            address
-        } else {
-            self.calc_giver_address_sync(Self::giver_keys())
         }
     }
 
@@ -734,30 +715,6 @@ impl TestClient {
         .await
     }
 
-    pub(crate) fn process_function_sync(
-        &self,
-        address: String,
-        abi: Abi,
-        function_name: &str,
-        input: Value,
-        signer: Signer,
-    ) -> ClientResult<ResultOfProcessMessage> {
-        self.process_message_sync(ParamsOfProcessMessage {
-            message_encode_params: ParamsOfEncodeMessage {
-                address: Some(address),
-                abi,
-                call_set: Some(CallSet {
-                    header: None,
-                    function_name: function_name.into(),
-                    input: Some(input),
-                }),
-                signer,
-                ..Default::default()
-            },
-            send_events: false,
-        })
-    }
-
     pub(crate) async fn get_tokens_from_giver_async(
         &self,
         account: &str,
@@ -849,82 +806,10 @@ impl TestClient {
         account: &str,
         value: Option<u64>,
     ) -> ResultOfProcessMessage {
-        let giver_exists: ResultOfQuery = self
-            .request(
-                "net.query",
-                ParamsOfQuery {
-                    query: r#"query($addr: String!) {
-                        blockchain {
-                            account(address: $addr) {
-                                info {
-                                    acc_type
-                                }
-                            }
-                        }
-                    }"#
-                    .to_string(),
-                    variables: Some(json!({"addr": self.giver_address_sync()})),
-                },
-            )
-            .unwrap_or_default();
-
-        if giver_exists.result["data"]["blockchain"]["account"]["info"]["acc_type"]
-            .as_i64()
-            .unwrap_or_default()
-            != 1
-        {
-            panic!("The giver contract should be deployed and active");
-        }
-
-        let (function, input) = match env::giver_type().as_str() {
-            "v1" => (
-                "sendGrams",
-                json!({
-                    "dest": account.to_string(),
-                    "amount": value.unwrap_or(500_000_000u64),
-                }),
-            ),
-            "v2" | "v3" => (
-                "sendTransaction",
-                json!({
-                    "dest": account.to_string(),
-                    "value": value.unwrap_or(500_000_000u64),
-                    "bounce": false,
-                }),
-            ),
-            _ => panic!("Unknown giver version"),
-        };
-        let run_result = self
-            .process_function_sync(
-                self.giver_address_sync(),
-                Self::giver_abi(),
-                function,
-                input,
-                Signer::Keys {
-                    keys: Self::giver_keys(),
-                },
-            )
-            .unwrap();
-
-        if run_result.transaction["out_msgs"][0].is_null() {
-            panic!("The giver's topup call should result in at least 1 internal outbound message");
-        }
-
-        // wait for tokens reception
-        let _: ResultOfQueryTransactionTree = self
-            .request(
-                "net.query_transaction_tree",
-                ParamsOfQueryTransactionTree {
-                    in_msg: run_result.transaction["in_msg"]
-                        .as_str()
-                        .unwrap()
-                        .to_string(),
-                    ..Default::default()
-                },
-            )
-            .unwrap();
-
-        run_result
+        self.context()
+            .clone()
+            .env
+            .block_on(self.get_tokens_from_giver_async(account, value))
     }
 
     pub(crate) async fn deploy_with_giver_async(
