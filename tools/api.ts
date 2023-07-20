@@ -393,6 +393,10 @@ export abstract class Code {
 
     abstract functionInterface(func: ApiFunction): string;
 
+    syncFunctionInterface(func: ApiFunction): string {
+        return this.functionInterface(func)
+    }
+
     abstract appObjectInterface(obj: ApiModule): string;
 
     abstract modules(): string;

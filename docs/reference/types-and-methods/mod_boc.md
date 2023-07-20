@@ -153,7 +153,12 @@ type ResultOfDecodeTvc = {
 function decode_tvc(
     params: ParamsOfDecodeTvc,
 ): Promise<ResultOfDecodeTvc>;
+
+function decode_tvc_sync(
+    params: ParamsOfDecodeTvc,
+): ResultOfDecodeTvc;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `tvc`: _string_ – Contract TVC BOC encoded as base64 or BOC handle
 
@@ -181,7 +186,12 @@ type ResultOfParse = {
 function parse_message(
     params: ParamsOfParse,
 ): Promise<ResultOfParse>;
+
+function parse_message_sync(
+    params: ParamsOfParse,
+): ResultOfParse;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
 
@@ -209,7 +219,12 @@ type ResultOfParse = {
 function parse_transaction(
     params: ParamsOfParse,
 ): Promise<ResultOfParse>;
+
+function parse_transaction_sync(
+    params: ParamsOfParse,
+): ResultOfParse;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
 
@@ -237,7 +252,12 @@ type ResultOfParse = {
 function parse_account(
     params: ParamsOfParse,
 ): Promise<ResultOfParse>;
+
+function parse_account_sync(
+    params: ParamsOfParse,
+): ResultOfParse;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
 
@@ -265,7 +285,12 @@ type ResultOfParse = {
 function parse_block(
     params: ParamsOfParse,
 ): Promise<ResultOfParse>;
+
+function parse_block_sync(
+    params: ParamsOfParse,
+): ResultOfParse;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
 
@@ -295,7 +320,12 @@ type ResultOfParse = {
 function parse_shardstate(
     params: ParamsOfParseShardstate,
 ): Promise<ResultOfParse>;
+
+function parse_shardstate_sync(
+    params: ParamsOfParseShardstate,
+): ResultOfParse;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64
 - `id`: _string_ – Shardstate identifier
@@ -323,7 +353,12 @@ type ResultOfGetBlockchainConfig = {
 function get_blockchain_config(
     params: ParamsOfGetBlockchainConfig,
 ): Promise<ResultOfGetBlockchainConfig>;
+
+function get_blockchain_config_sync(
+    params: ParamsOfGetBlockchainConfig,
+): ResultOfGetBlockchainConfig;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `block_boc`: _string_ – Key block BOC or zerostate BOC encoded as base64
 
@@ -349,7 +384,12 @@ type ResultOfGetBocHash = {
 function get_boc_hash(
     params: ParamsOfGetBocHash,
 ): Promise<ResultOfGetBocHash>;
+
+function get_boc_hash_sync(
+    params: ParamsOfGetBocHash,
+): ResultOfGetBocHash;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64 or BOC handle
 
@@ -375,7 +415,12 @@ type ResultOfGetBocDepth = {
 function get_boc_depth(
     params: ParamsOfGetBocDepth,
 ): Promise<ResultOfGetBocDepth>;
+
+function get_boc_depth_sync(
+    params: ParamsOfGetBocDepth,
+): ResultOfGetBocDepth;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64 or BOC handle
 
@@ -401,7 +446,12 @@ type ResultOfGetCodeFromTvc = {
 function get_code_from_tvc(
     params: ParamsOfGetCodeFromTvc,
 ): Promise<ResultOfGetCodeFromTvc>;
+
+function get_code_from_tvc_sync(
+    params: ParamsOfGetCodeFromTvc,
+): ResultOfGetCodeFromTvc;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `tvc`: _string_ – Contract TVC image or image BOC handle
 
@@ -427,7 +477,12 @@ type ResultOfBocCacheGet = {
 function cache_get(
     params: ParamsOfBocCacheGet,
 ): Promise<ResultOfBocCacheGet>;
+
+function cache_get_sync(
+    params: ParamsOfBocCacheGet,
+): ResultOfBocCacheGet;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `boc_ref`: _string_ – Reference to the cached BOC
 
@@ -454,7 +509,12 @@ type ResultOfBocCacheSet = {
 function cache_set(
     params: ParamsOfBocCacheSet,
 ): Promise<ResultOfBocCacheSet>;
+
+function cache_set_sync(
+    params: ParamsOfBocCacheSet,
+): ResultOfBocCacheSet;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `boc`: _string_ – BOC encoded as base64 or BOC reference
 - `cache_type`: _[BocCacheType](mod\_boc.md#boccachetype)_ – Cache type
@@ -478,7 +538,12 @@ type ParamsOfBocCacheUnpin = {
 function cache_unpin(
     params: ParamsOfBocCacheUnpin,
 ): Promise<void>;
+
+function cache_unpin_sync(
+    params: ParamsOfBocCacheUnpin,
+): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `pin`: _string_ – Pinned name
 - `boc_ref`?: _string_ – Reference to the cached BOC.
@@ -502,7 +567,12 @@ type ResultOfEncodeBoc = {
 function encode_boc(
     params: ParamsOfEncodeBoc,
 ): Promise<ResultOfEncodeBoc>;
+
+function encode_boc_sync(
+    params: ParamsOfEncodeBoc,
+): ResultOfEncodeBoc;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `builder`: _[BuilderOp](mod\_boc.md#builderop)[]_ – Cell builder operations.
 - `boc_cache`?: _[BocCacheType](mod\_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
@@ -530,7 +600,12 @@ type ResultOfGetCodeSalt = {
 function get_code_salt(
     params: ParamsOfGetCodeSalt,
 ): Promise<ResultOfGetCodeSalt>;
+
+function get_code_salt_sync(
+    params: ParamsOfGetCodeSalt,
+): ResultOfGetCodeSalt;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
 - `boc_cache`?: _[BocCacheType](mod\_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
@@ -562,7 +637,12 @@ type ResultOfSetCodeSalt = {
 function set_code_salt(
     params: ParamsOfSetCodeSalt,
 ): Promise<ResultOfSetCodeSalt>;
+
+function set_code_salt_sync(
+    params: ParamsOfSetCodeSalt,
+): ResultOfSetCodeSalt;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
 - `salt`: _string_ – Code salt to set.
@@ -603,7 +683,12 @@ type ResultOfDecodeStateInit = {
 function decode_state_init(
     params: ParamsOfDecodeStateInit,
 ): Promise<ResultOfDecodeStateInit>;
+
+function decode_state_init_sync(
+    params: ParamsOfDecodeStateInit,
+): ResultOfDecodeStateInit;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `state_init`: _string_ – Contract StateInit image BOC encoded as base64 or BOC handle
 - `boc_cache`?: _[BocCacheType](mod\_boc.md#boccachetype)_ – Cache type to put the result. The BOC itself returned if no cache type provided.
@@ -648,7 +733,12 @@ type ResultOfEncodeStateInit = {
 function encode_state_init(
     params: ParamsOfEncodeStateInit,
 ): Promise<ResultOfEncodeStateInit>;
+
+function encode_state_init_sync(
+    params: ParamsOfEncodeStateInit,
+): ResultOfEncodeStateInit;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `code`?: _string_ – Contract code BOC encoded as base64 or BOC handle
 - `data`?: _string_ – Contract data BOC encoded as base64 or BOC handle
@@ -689,7 +779,12 @@ type ResultOfEncodeExternalInMessage = {
 function encode_external_in_message(
     params: ParamsOfEncodeExternalInMessage,
 ): Promise<ResultOfEncodeExternalInMessage>;
+
+function encode_external_in_message_sync(
+    params: ParamsOfEncodeExternalInMessage,
+): ResultOfEncodeExternalInMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `src`?: _string_ – Source address.
 - `dst`: _string_ – Destination address.
@@ -721,7 +816,12 @@ type ResultOfGetCompilerVersion = {
 function get_compiler_version(
     params: ParamsOfGetCompilerVersion,
 ): Promise<ResultOfGetCompilerVersion>;
+
+function get_compiler_version_sync(
+    params: ParamsOfGetCompilerVersion,
+): ResultOfGetCompilerVersion;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `code`: _string_ – Contract code BOC encoded as base64 or code BOC handle
 

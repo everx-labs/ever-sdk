@@ -3,6 +3,12 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.44.1] – 2023-07-12
+
+### New
+
+- functions with callbacks (e.g. `processing.process_messages`) can be called as sync.
+
 ## [1.44.0] – 2023-07-12
 
 ### New

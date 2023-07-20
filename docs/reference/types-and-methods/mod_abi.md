@@ -182,7 +182,12 @@ type ResultOfEncodeMessageBody = {
 function encode_message_body(
     params: ParamsOfEncodeMessageBody,
 ): Promise<ResultOfEncodeMessageBody>;
+
+function encode_message_body_sync(
+    params: ParamsOfEncodeMessageBody,
+): ResultOfEncodeMessageBody;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 - `call_set`: _[CallSet](mod\_abi.md#callset)_ – Function call parameters.
@@ -220,7 +225,12 @@ type ResultOfAttachSignatureToMessageBody = {
 function attach_signature_to_message_body(
     params: ParamsOfAttachSignatureToMessageBody,
 ): Promise<ResultOfAttachSignatureToMessageBody>;
+
+function attach_signature_to_message_body_sync(
+    params: ParamsOfAttachSignatureToMessageBody,
+): ResultOfAttachSignatureToMessageBody;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `public_key`: _string_ – Public key.
@@ -292,7 +302,12 @@ type ResultOfEncodeMessage = {
 function encode_message(
     params: ParamsOfEncodeMessage,
 ): Promise<ResultOfEncodeMessage>;
+
+function encode_message_sync(
+    params: ParamsOfEncodeMessage,
+): ResultOfEncodeMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 - `address`?: _string_ – Target address the message will be sent to.
@@ -356,7 +371,12 @@ type ResultOfEncodeInternalMessage = {
 function encode_internal_message(
     params: ParamsOfEncodeInternalMessage,
 ): Promise<ResultOfEncodeInternalMessage>;
+
+function encode_internal_message_sync(
+    params: ParamsOfEncodeInternalMessage,
+): ResultOfEncodeInternalMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 <br>Can be None if both deploy_set and call_set are None.
@@ -401,7 +421,12 @@ type ResultOfAttachSignature = {
 function attach_signature(
     params: ParamsOfAttachSignature,
 ): Promise<ResultOfAttachSignature>;
+
+function attach_signature_sync(
+    params: ParamsOfAttachSignature,
+): ResultOfAttachSignature;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `public_key`: _string_ – Public key encoded in `hex`.
@@ -438,7 +463,12 @@ type DecodedMessageBody = {
 function decode_message(
     params: ParamsOfDecodeMessage,
 ): Promise<DecodedMessageBody>;
+
+function decode_message_sync(
+    params: ParamsOfDecodeMessage,
+): DecodedMessageBody;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – contract ABI
 - `message`: _string_ – Message BOC
@@ -479,7 +509,12 @@ type DecodedMessageBody = {
 function decode_message_body(
     params: ParamsOfDecodeMessageBody,
 ): Promise<DecodedMessageBody>;
+
+function decode_message_body_sync(
+    params: ParamsOfDecodeMessageBody,
+): DecodedMessageBody;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
 - `body`: _string_ – Message body BOC encoded in `base64`.
@@ -522,7 +557,12 @@ type ResultOfEncodeAccount = {
 function encode_account(
     params: ParamsOfEncodeAccount,
 ): Promise<ResultOfEncodeAccount>;
+
+function encode_account_sync(
+    params: ParamsOfEncodeAccount,
+): ResultOfEncodeAccount;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `state_init`: _[StateInitSource](mod\_abi.md#stateinitsource)_ – Source of the account state init.
 - `balance`?: _bigint_ – Initial balance.
@@ -558,7 +598,12 @@ type ResultOfDecodeAccountData = {
 function decode_account_data(
     params: ParamsOfDecodeAccountData,
 ): Promise<ResultOfDecodeAccountData>;
+
+function decode_account_data_sync(
+    params: ParamsOfDecodeAccountData,
+): ResultOfDecodeAccountData;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
@@ -590,7 +635,12 @@ type ResultOfUpdateInitialData = {
 function update_initial_data(
     params: ParamsOfUpdateInitialData,
 ): Promise<ResultOfUpdateInitialData>;
+
+function update_initial_data_sync(
+    params: ParamsOfUpdateInitialData,
+): ResultOfUpdateInitialData;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
@@ -626,7 +676,12 @@ type ResultOfEncodeInitialData = {
 function encode_initial_data(
     params: ParamsOfEncodeInitialData,
 ): Promise<ResultOfEncodeInitialData>;
+
+function encode_initial_data_sync(
+    params: ParamsOfEncodeInitialData,
+): ResultOfEncodeInitialData;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `initial_data`?: _any_ – List of initial values for contract's static variables.
@@ -659,7 +714,12 @@ type ResultOfDecodeInitialData = {
 function decode_initial_data(
     params: ParamsOfDecodeInitialData,
 ): Promise<ResultOfDecodeInitialData>;
+
+function decode_initial_data_sync(
+    params: ParamsOfDecodeInitialData,
+): ResultOfDecodeInitialData;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 <br>Initial data is decoded if this parameter is provided
@@ -708,7 +768,12 @@ type ResultOfDecodeBoc = {
 function decode_boc(
     params: ParamsOfDecodeBoc,
 ): Promise<ResultOfDecodeBoc>;
+
+function decode_boc_sync(
+    params: ParamsOfDecodeBoc,
+): ResultOfDecodeBoc;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `params`: _[AbiParam](mod\_abi.md#abiparam)[]_ – Parameters to decode from BOC
 - `boc`: _string_ – Data BOC or BOC handle
@@ -738,7 +803,12 @@ type ResultOfAbiEncodeBoc = {
 function encode_boc(
     params: ParamsOfAbiEncodeBoc,
 ): Promise<ResultOfAbiEncodeBoc>;
+
+function encode_boc_sync(
+    params: ParamsOfAbiEncodeBoc,
+): ResultOfAbiEncodeBoc;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `params`: _[AbiParam](mod\_abi.md#abiparam)[]_ – Parameters to encode into BOC
 - `data`: _any_ – Parameters and values as a JSON structure
@@ -769,7 +839,12 @@ type ResultOfCalcFunctionId = {
 function calc_function_id(
     params: ParamsOfCalcFunctionId,
 ): Promise<ResultOfCalcFunctionId>;
+
+function calc_function_id_sync(
+    params: ParamsOfCalcFunctionId,
+): ResultOfCalcFunctionId;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 - `function_name`: _string_ – Contract function name
@@ -800,7 +875,12 @@ type ResultOfGetSignatureData = {
 function get_signature_data(
     params: ParamsOfGetSignatureData,
 ): Promise<ResultOfGetSignatureData>;
+
+function get_signature_data_sync(
+    params: ParamsOfGetSignatureData,
+): ResultOfGetSignatureData;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI used to decode.
 - `message`: _string_ – Message BOC encoded in `base64`.

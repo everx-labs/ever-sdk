@@ -95,7 +95,12 @@ type ResultOfRunExecutor = {
 function run_executor(
     params: ParamsOfRunExecutor,
 ): Promise<ResultOfRunExecutor>;
+
+function run_executor_sync(
+    params: ParamsOfRunExecutor,
+): ResultOfRunExecutor;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `message`: _string_ – Input message BOC.
 <br>Must be encoded as base64.
@@ -157,7 +162,12 @@ type ResultOfRunTvm = {
 function run_tvm(
     params: ParamsOfRunTvm,
 ): Promise<ResultOfRunTvm>;
+
+function run_tvm_sync(
+    params: ParamsOfRunTvm,
+): ResultOfRunTvm;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `message`: _string_ – Input message BOC.
 <br>Must be encoded as base64.
@@ -203,7 +213,12 @@ type ResultOfRunGet = {
 function run_get(
     params: ParamsOfRunGet,
 ): Promise<ResultOfRunGet>;
+
+function run_get_sync(
+    params: ParamsOfRunGet,
+): ResultOfRunGet;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `account`: _string_ – Account BOC in `base64`
 - `function_name`: _string_ – Function name

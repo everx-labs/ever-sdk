@@ -762,3 +762,94 @@ async fn test_deploy_from_tvc_v1() {
         })
     );
 }
+
+#[test]
+fn test_process_message_sync() {
+    TestClient::init_log();
+    let client = TestClient::new();
+    let (events_abi, events_tvc) = TestClient::package(EVENTS_OLD, Some(2));
+    let keys = client.generate_sign_keys();
+    let abi = events_abi.clone();
+
+    let encode_params = ParamsOfEncodeMessage {
+        abi: abi.clone(),
+        deploy_set: DeploySet::some_with_tvc(events_tvc.clone()),
+        call_set: Some(CallSet {
+            function_name: "constructor".into(),
+            header: Some(FunctionHeader {
+                expire: None,
+                time: None,
+                pubkey: Some(keys.public.clone()),
+            }),
+            input: None,
+        }),
+        signer: Signer::Keys { keys: keys.clone() },
+        ..Default::default()
+    };
+
+    let encoded = client.encode_message_sync(encode_params.clone()).unwrap();
+
+    client.get_tokens_from_giver_sync(&encoded.address, None);
+
+    let output = client
+        .process_message_sync(
+            ParamsOfProcessMessage {
+                message_encode_params: encode_params,
+                send_events: true,
+            },
+        )
+        .unwrap();
+
+    assert!(output.fees.total_account_fees > 0);
+    assert_eq!(output.out_messages.len(), 0);
+    assert_eq!(
+        output.decoded,
+        Some(DecodedOutput {
+            out_messages: vec![],
+            output: None,
+        })
+    );
+
+    let output = client
+        .process_message_sync(
+            ParamsOfProcessMessage {
+                message_encode_params: ParamsOfEncodeMessage {
+                    abi: abi.clone(),
+                    address: Some(encoded.address.clone()),
+                    call_set: CallSet::some_with_function_and_input(
+                        "returnValue",
+                        json!({
+                            "id": "0x1"
+                        }),
+                    ),
+                    signer: Signer::Keys { keys: keys.clone() },
+                    ..Default::default()
+                },
+                send_events: true,
+            },
+        )
+        .unwrap();
+    assert_eq!(output.out_messages.len(), 2);
+    assert_eq!(
+        output.decoded,
+        Some(DecodedOutput {
+            out_messages: vec![
+                Some(DecodedMessageBody {
+                    body_type: MessageBodyType::Event,
+                    name: "EventThrown".into(),
+                    value: Some(json!({"id": abi_uint(1, 256)})),
+                    header: None,
+                }),
+                Some(DecodedMessageBody {
+                    body_type: MessageBodyType::Output,
+                    name: "returnValue".into(),
+                    value: Some(json!({"value0": abi_uint(1, 256)})),
+                    header: None,
+                })
+            ],
+            output: Some(json!({
+                "value0": abi_uint(1, 256)
+            })),
+        })
+    );
+}
