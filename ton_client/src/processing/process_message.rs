@@ -14,7 +14,9 @@ pub struct ParamsOfProcessMessage {
     /// Message encode parameters.
     pub message_encode_params: ParamsOfEncodeMessage,
 
-    /// Flag for requesting events sending
+    /// Flag for requesting events sending.
+    /// Default is `false`.
+    #[serde(default)]
     pub send_events: bool,
 }
 
@@ -82,7 +84,7 @@ pub async fn process_message<F: futures::Future<Output = ()> + Send>(
                     return Err(err);
                 }
                 if params.send_events {
-                    callback(ProcessingEvent::MessageExpired { 
+                    callback(ProcessingEvent::MessageExpired {
                         message_id: message.message_id,
                         message_dst: message.address,
                         message: message.message,
