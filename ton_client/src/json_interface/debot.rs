@@ -18,7 +18,7 @@ use crate::debot::Error;
 use crate::debot::{DAction, DebotAction, BrowserCallbacks, ParamsOfInit, RegisteredDebot, DebotActivity};
 use crate::crypto::SigningBoxHandle;
 
-/// [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Returning values from Debot Browser callbacks.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
 #[serde(tag="type")]
 pub enum ResultOfAppDebotBrowser {
@@ -41,7 +41,7 @@ pub enum ResultOfAppDebotBrowser {
     }
 }
 
-/// [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Debot Browser callbacks
 ///
 /// Called by debot engine to communicate with debot browser.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType)]
@@ -184,7 +184,7 @@ impl DebotBrowserAdapter {
     }
 }
 
-/// [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Creates and instance of DeBot.
 ///
 /// Downloads debot smart contract (code and data) from blockchain and creates
 /// an instance of Debot Engine for it.
