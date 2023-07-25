@@ -142,7 +142,12 @@ type ResultOfQuery = {
 function query(
     params: ParamsOfQuery,
 ): Promise<ResultOfQuery>;
+
+function query_sync(
+    params: ParamsOfQuery,
+): ResultOfQuery;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `query`: _string_ – GraphQL query text.
 - `variables`?: _any_ – Variables used in query.
@@ -170,7 +175,12 @@ type ResultOfBatchQuery = {
 function batch_query(
     params: ParamsOfBatchQuery,
 ): Promise<ResultOfBatchQuery>;
+
+function batch_query_sync(
+    params: ParamsOfBatchQuery,
+): ResultOfBatchQuery;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `operations`: _[ParamsOfQueryOperation](mod\_net.md#paramsofqueryoperation)[]_ – List of query operations that must be performed per single fetch.
 
@@ -205,7 +215,12 @@ type ResultOfQueryCollection = {
 function query_collection(
     params: ParamsOfQueryCollection,
 ): Promise<ResultOfQueryCollection>;
+
+function query_collection_sync(
+    params: ParamsOfQueryCollection,
+): ResultOfQueryCollection;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
@@ -240,7 +255,12 @@ type ResultOfAggregateCollection = {
 function aggregate_collection(
     params: ParamsOfAggregateCollection,
 ): Promise<ResultOfAggregateCollection>;
+
+function aggregate_collection_sync(
+    params: ParamsOfAggregateCollection,
+): ResultOfAggregateCollection;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
@@ -279,7 +299,12 @@ type ResultOfWaitForCollection = {
 function wait_for_collection(
     params: ParamsOfWaitForCollection,
 ): Promise<ResultOfWaitForCollection>;
+
+function wait_for_collection_sync(
+    params: ParamsOfWaitForCollection,
+): ResultOfWaitForCollection;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
@@ -306,7 +331,12 @@ type ResultOfSubscribeCollection = {
 function unsubscribe(
     params: ResultOfSubscribeCollection,
 ): Promise<void>;
+
+function unsubscribe_sync(
+    params: ResultOfSubscribeCollection,
+): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _number_ – Subscription handle.
 <br>Must be closed with `unsubscribe`
@@ -372,7 +402,12 @@ function subscribe_collection(
     params: ParamsOfSubscribeCollection,
     responseHandler?: ResponseHandler,
 ): Promise<ResultOfSubscribeCollection>;
+
+function subscribe_collection_sync(
+    params: ParamsOfSubscribeCollection,
+): ResultOfSubscribeCollection;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `collection`: _string_ – Collection name (accounts, blocks, transactions, messages, block_signatures)
 - `filter`?: _any_ – Collection filter
@@ -438,7 +473,12 @@ function subscribe(
     params: ParamsOfSubscribe,
     responseHandler?: ResponseHandler,
 ): Promise<ResultOfSubscribeCollection>;
+
+function subscribe_sync(
+    params: ParamsOfSubscribe,
+): ResultOfSubscribeCollection;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `subscription`: _string_ – GraphQL subscription text.
 - `variables`?: _any_ – Variables used in subscription.
@@ -457,7 +497,10 @@ Suspends network module to stop any network activity
 
 ```ts
 function suspend(): Promise<void>;
+
+function suspend_sync(): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ## resume
@@ -466,7 +509,10 @@ Resumes network module to enable network activity
 
 ```ts
 function resume(): Promise<void>;
+
+function resume_sync(): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ## find_last_shard_block
@@ -485,7 +531,12 @@ type ResultOfFindLastShardBlock = {
 function find_last_shard_block(
     params: ParamsOfFindLastShardBlock,
 ): Promise<ResultOfFindLastShardBlock>;
+
+function find_last_shard_block_sync(
+    params: ParamsOfFindLastShardBlock,
+): ResultOfFindLastShardBlock;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `address`: _string_ – Account address
 
@@ -505,7 +556,10 @@ type EndpointsSet = {
 }
 
 function fetch_endpoints(): Promise<EndpointsSet>;
+
+function fetch_endpoints_sync(): EndpointsSet;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -525,7 +579,12 @@ type EndpointsSet = {
 function set_endpoints(
     params: EndpointsSet,
 ): Promise<void>;
+
+function set_endpoints_sync(
+    params: EndpointsSet,
+): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `endpoints`: _string[]_ – List of endpoints provided by server
 
@@ -541,7 +600,10 @@ type ResultOfGetEndpoints = {
 }
 
 function get_endpoints(): Promise<ResultOfGetEndpoints>;
+
+function get_endpoints_sync(): ResultOfGetEndpoints;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result
@@ -573,7 +635,12 @@ type ResultOfQueryCollection = {
 function query_counterparties(
     params: ParamsOfQueryCounterparties,
 ): Promise<ResultOfQueryCollection>;
+
+function query_counterparties_sync(
+    params: ParamsOfQueryCounterparties,
+): ResultOfQueryCollection;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `account`: _string_ – Account address
 - `result`: _string_ – Projection (result) string
@@ -638,7 +705,12 @@ type ResultOfQueryTransactionTree = {
 function query_transaction_tree(
     params: ParamsOfQueryTransactionTree,
 ): Promise<ResultOfQueryTransactionTree>;
+
+function query_transaction_tree_sync(
+    params: ParamsOfQueryTransactionTree,
+): ResultOfQueryTransactionTree;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `in_msg`: _string_ – Input message id.
 - `abi_registry`?: _[Abi](mod\_abi.md#abi)[]_ – List of contract ABIs that will be used to decode message bodies. Library will try to decode each returned message body using any ABI from the registry.
@@ -708,7 +780,12 @@ type RegisteredIterator = {
 function create_block_iterator(
     params: ParamsOfCreateBlockIterator,
 ): Promise<RegisteredIterator>;
+
+function create_block_iterator_sync(
+    params: ParamsOfCreateBlockIterator,
+): RegisteredIterator;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `start_time`?: _number_ – Starting time to iterate from.
 <br>If the application specifies this parameter then the iteration<br>includes blocks with `gen_utime` >= `start_time`.<br>Otherwise the iteration starts from zero state.<br><br>Must be specified in seconds.
@@ -746,7 +823,12 @@ type RegisteredIterator = {
 function resume_block_iterator(
     params: ParamsOfResumeBlockIterator,
 ): Promise<RegisteredIterator>;
+
+function resume_block_iterator_sync(
+    params: ParamsOfResumeBlockIterator,
+): RegisteredIterator;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `resume_state`: _any_ – Iterator state from which to resume.
 <br>Same as value returned from `iterator_next`.
@@ -835,7 +917,12 @@ type RegisteredIterator = {
 function create_transaction_iterator(
     params: ParamsOfCreateTransactionIterator,
 ): Promise<RegisteredIterator>;
+
+function create_transaction_iterator_sync(
+    params: ParamsOfCreateTransactionIterator,
+): RegisteredIterator;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `start_time`?: _number_ – Starting time to iterate from.
 <br>If the application specifies this parameter then the iteration<br>includes blocks with `gen_utime` >= `start_time`.<br>Otherwise the iteration starts from zero state.<br><br>Must be specified in seconds.
@@ -881,7 +968,12 @@ type RegisteredIterator = {
 function resume_transaction_iterator(
     params: ParamsOfResumeTransactionIterator,
 ): Promise<RegisteredIterator>;
+
+function resume_transaction_iterator_sync(
+    params: ParamsOfResumeTransactionIterator,
+): RegisteredIterator;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `resume_state`: _any_ – Iterator state from which to resume.
 <br>Same as value returned from `iterator_next`.
@@ -930,7 +1022,12 @@ type ResultOfIteratorNext = {
 function iterator_next(
     params: ParamsOfIteratorNext,
 ): Promise<ResultOfIteratorNext>;
+
+function iterator_next_sync(
+    params: ParamsOfIteratorNext,
+): ResultOfIteratorNext;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `iterator`: _number_ – Iterator handle
 - `limit`?: _number_ – Maximum count of the returned items.
@@ -964,7 +1061,12 @@ type RegisteredIterator = {
 function remove_iterator(
     params: RegisteredIterator,
 ): Promise<void>;
+
+function remove_iterator_sync(
+    params: RegisteredIterator,
+): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `handle`: _number_ – Iterator handle.
 <br>Must be removed using `remove_iterator`<br>when it is no more needed for the application.
@@ -980,7 +1082,10 @@ type ResultOfGetSignatureId = {
 }
 
 function get_signature_id(): Promise<ResultOfGetSignatureId>;
+
+function get_signature_id_sync(): ResultOfGetSignatureId;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 
 
 ### Result

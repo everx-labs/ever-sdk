@@ -64,7 +64,12 @@ type ResultOfConvertAddress = {
 function convert_address(
     params: ParamsOfConvertAddress,
 ): Promise<ResultOfConvertAddress>;
+
+function convert_address_sync(
+    params: ParamsOfConvertAddress,
+): ResultOfConvertAddress;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `address`: _string_ – Account address in any TON format.
 - `output_format`: _[AddressStringFormat](mod\_utils.md#addressstringformat)_ – Specify the format to convert to.
@@ -100,7 +105,12 @@ type ResultOfGetAddressType = {
 function get_address_type(
     params: ParamsOfGetAddressType,
 ): Promise<ResultOfGetAddressType>;
+
+function get_address_type_sync(
+    params: ParamsOfGetAddressType,
+): ResultOfGetAddressType;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `address`: _string_ – Account address in any TON format.
 
@@ -127,7 +137,12 @@ type ResultOfCalcStorageFee = {
 function calc_storage_fee(
     params: ParamsOfCalcStorageFee,
 ): Promise<ResultOfCalcStorageFee>;
+
+function calc_storage_fee_sync(
+    params: ParamsOfCalcStorageFee,
+): ResultOfCalcStorageFee;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `account`: _string_
 - `period`: _number_
@@ -155,7 +170,12 @@ type ResultOfCompressZstd = {
 function compress_zstd(
     params: ParamsOfCompressZstd,
 ): Promise<ResultOfCompressZstd>;
+
+function compress_zstd_sync(
+    params: ParamsOfCompressZstd,
+): ResultOfCompressZstd;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `uncompressed`: _string_ – Uncompressed data.
 <br>Must be encoded as base64.
@@ -184,7 +204,12 @@ type ResultOfDecompressZstd = {
 function decompress_zstd(
     params: ParamsOfDecompressZstd,
 ): Promise<ResultOfDecompressZstd>;
+
+function decompress_zstd_sync(
+    params: ParamsOfDecompressZstd,
+): ResultOfDecompressZstd;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `compressed`: _string_ – Compressed data.
 <br>Must be encoded as base64.

@@ -58,11 +58,11 @@ pub const DEBOT_WC: i8 = -31; // 0xDB
 type TonClient = Arc<ClientContext>;
 type JsonValue = serde_json::Value;
 
-/// [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Handle of registered in SDK debot
 #[derive(Serialize, Deserialize, Default, ApiType, Clone)]
 pub struct DebotHandle(u32);
 
-/// [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes a debot action in a Debot Context.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct DebotAction {
     /// A short action description. Should be used by Debot Browser as name of
@@ -108,7 +108,7 @@ impl Into<DAction> for DebotAction {
     }
 }
 
-/// [UNSTABLE](UNSTABLE.md) Describes DeBot metadata.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes DeBot metadata.
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
 pub struct DebotInfo {
     /// DeBot short name.
@@ -157,7 +157,7 @@ impl From<DInfo> for DebotInfo {
     }
 }
 
-/// [UNSTABLE](UNSTABLE.md) Parameters to start DeBot.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to start DeBot.
 /// DeBot must be already initialized with init() function.
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfStart {
@@ -165,7 +165,7 @@ pub struct ParamsOfStart {
     debot_handle: DebotHandle,
 }
 
-/// [UNSTABLE](UNSTABLE.md) Starts the DeBot.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Starts the DeBot.
 ///
 /// Downloads debot smart contract from blockchain and switches it to
 /// context zero.
@@ -190,21 +190,21 @@ pub async fn start(
     dengine.start().await.map_err(Error::start_failed)
 }
 
-/// [UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to fetch DeBot metadata.
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfFetch {
     /// Debot smart contract address.
     pub address: String,
 }
 
-/// [UNSTABLE](UNSTABLE.md)
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md)
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ResultOfFetch {
     /// Debot metadata.
     pub info: DebotInfo,
 }
 
-/// [UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Fetches DeBot metadata from blockchain.
 ///
 /// Downloads DeBot from blockchain and creates and fetches its metadata.
 #[api_function]
@@ -217,14 +217,14 @@ pub async fn fetch(
     })
 }
 
-/// [UNSTABLE](UNSTABLE.md) Parameters to init DeBot.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to init DeBot.
 #[derive(Serialize, Deserialize, Default, ApiType)]
 pub struct ParamsOfInit {
     /// Debot smart contract address
     pub address: String,
 }
 
-/// [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Structure for storing debot handle returned from `init` function.
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct RegisteredDebot {
     /// Debot handle which references an instance of debot engine.
@@ -235,7 +235,7 @@ pub struct RegisteredDebot {
     pub info: DebotInfo,
 }
 
-/// [UNSTABLE](UNSTABLE.md) Creates an instance of DeBot.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Creates an instance of DeBot.
 ///
 /// Downloads DeBot smart contract (code and data) from blockchain and creates
 /// an instance of Debot Engine for it.
@@ -258,7 +258,7 @@ pub async fn init(
     Ok(RegisteredDebot { debot_handle: DebotHandle(handle), info, debot_abi })
 }
 
-/// [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters for executing debot action.
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfExecute {
     /// Debot handle which references an instance of debot engine.
@@ -267,7 +267,7 @@ pub struct ParamsOfExecute {
     pub action: DebotAction,
 }
 
-/// [UNSTABLE](UNSTABLE.md) Executes debot action.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Executes debot action.
 ///
 /// Calls debot engine referenced by debot handle to execute input action.
 /// Calls Debot Browser Callbacks if needed.
@@ -287,14 +287,14 @@ pub async fn execute(context: Arc<ClientContext>, params: ParamsOfExecute) -> Cl
         .map_err(Error::execute_failed)
 }
 
-/// [UNSTABLE](UNSTABLE.md)
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md)
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfRemove {
     /// Debot handle which references an instance of debot engine.
     pub debot_handle: DebotHandle,
 }
 
-/// [UNSTABLE](UNSTABLE.md) Destroys debot handle.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Destroys debot handle.
 ///
 /// Removes handle from Client Context and drops debot engine referenced by that handle.
 #[api_function]
@@ -303,7 +303,7 @@ pub fn remove(context: Arc<ClientContext>, params: ParamsOfRemove) -> ClientResu
     Ok(())
 }
 
-/// [UNSTABLE](UNSTABLE.md) Parameters of `send` function.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters of `send` function.
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfSend {
     /// Debot handle which references an instance of debot engine.
@@ -312,7 +312,7 @@ pub struct ParamsOfSend {
     pub message: String,
 }
 
-/// [UNSTABLE](UNSTABLE.md) Sends message to Debot.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Sends message to Debot.
 ///
 /// Used by Debot Browser to send response on Dinterface call or from other Debots.
 #[api_function]

@@ -138,16 +138,23 @@ impl<'h> ModuleReg<'h> {
         self.module.functions.push(function);
         self.handlers
             .register_async(name.clone(), Box::new(SpawnHandlerCallback::new(handler)));
+        #[cfg(not(feature = "wasm-base"))]
+        self.handlers.register_sync(
+            name,
+            Box::new(CallHandler::new(move |context, params| {
+                context.clone().env.block_on(handler(
+                    context,
+                    params,
+                    Arc::new(Request::new(1, |_, _, _, _| {})),
+                ))
+            })),
+        );
     }
 
     #[allow(dead_code)]
     pub fn register_async_fn_with_app_object<P, R, F, AP, AR>(
         &mut self,
-        handler: fn(
-            context: Arc<ClientContext>,
-            params: P,
-            app_object: AppObject<AP, AR>,
-        ) -> F,
+        handler: fn(context: Arc<ClientContext>, params: P, app_object: AppObject<AP, AR>) -> F,
         api: fn() -> api_info::Function,
     ) where
         P: ApiType + Send + DeserializeOwned + Default + 'static,

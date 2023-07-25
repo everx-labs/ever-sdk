@@ -146,7 +146,12 @@ type ParamsOfMonitorMessages = {
 function monitor_messages(
     params: ParamsOfMonitorMessages,
 ): Promise<void>;
+
+function monitor_messages_sync(
+    params: ParamsOfMonitorMessages,
+): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
 - `messages`: _[MessageMonitoringParams](mod\_processing.md#messagemonitoringparams)[]_ – Messages to start monitoring for.
@@ -169,7 +174,12 @@ type MonitoringQueueInfo = {
 function get_monitor_info(
     params: ParamsOfGetMonitorInfo,
 ): Promise<MonitoringQueueInfo>;
+
+function get_monitor_info_sync(
+    params: ParamsOfGetMonitorInfo,
+): MonitoringQueueInfo;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
 
@@ -200,7 +210,12 @@ type ResultOfFetchNextMonitorResults = {
 function fetch_next_monitor_results(
     params: ParamsOfFetchNextMonitorResults,
 ): Promise<ResultOfFetchNextMonitorResults>;
+
+function fetch_next_monitor_results_sync(
+    params: ParamsOfFetchNextMonitorResults,
+): ResultOfFetchNextMonitorResults;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
 - `wait_mode`?: _[MonitorFetchWaitMode](mod\_processing.md#monitorfetchwaitmode)_ – Wait mode.
@@ -224,7 +239,12 @@ type ParamsOfCancelMonitor = {
 function cancel_monitor(
     params: ParamsOfCancelMonitor,
 ): Promise<void>;
+
+function cancel_monitor_sync(
+    params: ParamsOfCancelMonitor,
+): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `queue`: _string_ – Name of the monitoring queue.
 
@@ -246,7 +266,12 @@ type ResultOfSendMessages = {
 function send_messages(
     params: ParamsOfSendMessages,
 ): Promise<ResultOfSendMessages>;
+
+function send_messages_sync(
+    params: ParamsOfSendMessages,
+): ResultOfSendMessages;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `messages`: _[MessageSendingParams](mod\_processing.md#messagesendingparams)[]_ – Messages that must be sent to the blockchain.
 - `monitor_queue`?: _string_ – Optional message monitor queue that starts monitoring for the processing results for sent messages.
@@ -268,7 +293,7 @@ before the message was sent. It will be required later for message processing.
 type ParamsOfSendMessage = {
     message: string,
     abi?: Abi,
-    send_events: boolean
+    send_events?: boolean
 }
 
 type ResultOfSendMessage = {
@@ -280,12 +305,17 @@ function send_message(
     params: ParamsOfSendMessage,
     responseHandler?: ResponseHandler,
 ): Promise<ResultOfSendMessage>;
+
+function send_message_sync(
+    params: ParamsOfSendMessage,
+): ResultOfSendMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `message`: _string_ – Message BOC.
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Optional message ABI.
 <br>If this parameter is specified and the message has the<br>`expire` header then expiration time will be checked against<br>the current time to prevent unnecessary sending of already expired message.<br><br>The `message already expired` error will be returned in this<br>case.<br><br>Note, that specifying `abi` for ABI compliant contracts is<br>strongly recommended, so that proper processing strategy can be<br>chosen.
-- `send_events`: _boolean_ – Flag for requesting events sending
+- `send_events`?: _boolean_ – Flag for requesting events sending. Default is `false`.
 - `responseHandler`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.
 
 ### Result
@@ -330,7 +360,7 @@ type ParamsOfWaitForTransaction = {
     abi?: Abi,
     message: string,
     shard_block_id: string,
-    send_events: boolean,
+    send_events?: boolean,
     sending_endpoints?: string[]
 }
 
@@ -345,7 +375,12 @@ function wait_for_transaction(
     params: ParamsOfWaitForTransaction,
     responseHandler?: ResponseHandler,
 ): Promise<ResultOfProcessMessage>;
+
+function wait_for_transaction_sync(
+    params: ParamsOfWaitForTransaction,
+): ResultOfProcessMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Optional ABI for decoding the transaction result.
 <br>If it is specified, then the output messages' bodies will be<br>decoded according to this ABI.<br><br>The `abi_decoded` result field will be filled out.
@@ -353,7 +388,7 @@ function wait_for_transaction(
 <br>Encoded with `base64`.
 - `shard_block_id`: _string_ – The last generated block id of the destination account shard before the message was sent.
 <br>You must provide the same value as the `send_message` has returned.
-- `send_events`: _boolean_ – Flag that enables/disables intermediate events
+- `send_events`?: _boolean_ – Flag that enables/disables intermediate events. Default is `false`.
 - `sending_endpoints`?: _string[]_ – The list of endpoints to which the message was sent.
 <br>Use this field to get more informative errors.<br>Provide the same value as the `send_message` has returned.<br>If the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending.
 - `responseHandler`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.
@@ -392,7 +427,7 @@ then, if no transaction is found within the network timeout (see config paramete
 ```ts
 type ParamsOfProcessMessage = {
     message_encode_params: ParamsOfEncodeMessage,
-    send_events: boolean
+    send_events?: boolean
 }
 
 type ResultOfProcessMessage = {
@@ -406,10 +441,15 @@ function process_message(
     params: ParamsOfProcessMessage,
     responseHandler?: ResponseHandler,
 ): Promise<ResultOfProcessMessage>;
+
+function process_message_sync(
+    params: ParamsOfProcessMessage,
+): ResultOfProcessMessage;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `message_encode_params`: _[ParamsOfEncodeMessage](mod\_abi.md#paramsofencodemessage)_ – Message encode parameters.
-- `send_events`: _boolean_ – Flag for requesting events sending
+- `send_events`?: _boolean_ – Flag for requesting events sending. Default is `false`.
 - `responseHandler`?: _[ResponseHandler](modules.md#responsehandler)_ – additional responses handler.
 
 ### Result
@@ -1187,13 +1227,13 @@ type ResultOfSendMessages = {
 type ParamsOfSendMessage = {
     message: string,
     abi?: Abi,
-    send_events: boolean
+    send_events?: boolean
 }
 ```
 - `message`: _string_ – Message BOC.
 - `abi`?: _[Abi](mod\_abi.md#abi)_ – Optional message ABI.
 <br>If this parameter is specified and the message has the<br>`expire` header then expiration time will be checked against<br>the current time to prevent unnecessary sending of already expired message.<br><br>The `message already expired` error will be returned in this<br>case.<br><br>Note, that specifying `abi` for ABI compliant contracts is<br>strongly recommended, so that proper processing strategy can be<br>chosen.
-- `send_events`: _boolean_ – Flag for requesting events sending
+- `send_events`?: _boolean_ – Flag for requesting events sending. Default is `false`.
 
 
 ## ResultOfSendMessage
@@ -1215,7 +1255,7 @@ type ParamsOfWaitForTransaction = {
     abi?: Abi,
     message: string,
     shard_block_id: string,
-    send_events: boolean,
+    send_events?: boolean,
     sending_endpoints?: string[]
 }
 ```
@@ -1225,7 +1265,7 @@ type ParamsOfWaitForTransaction = {
 <br>Encoded with `base64`.
 - `shard_block_id`: _string_ – The last generated block id of the destination account shard before the message was sent.
 <br>You must provide the same value as the `send_message` has returned.
-- `send_events`: _boolean_ – Flag that enables/disables intermediate events
+- `send_events`?: _boolean_ – Flag that enables/disables intermediate events. Default is `false`.
 - `sending_endpoints`?: _string[]_ – The list of endpoints to which the message was sent.
 <br>Use this field to get more informative errors.<br>Provide the same value as the `send_message` has returned.<br>If the message was not delivered (expired), SDK will log the endpoint URLs, used for its sending.
 
@@ -1234,10 +1274,10 @@ type ParamsOfWaitForTransaction = {
 ```ts
 type ParamsOfProcessMessage = {
     message_encode_params: ParamsOfEncodeMessage,
-    send_events: boolean
+    send_events?: boolean
 }
 ```
 - `message_encode_params`: _[ParamsOfEncodeMessage](mod\_abi.md#paramsofencodemessage)_ – Message encode parameters.
-- `send_events`: _boolean_ – Flag for requesting events sending
+- `send_events`?: _boolean_ – Flag for requesting events sending. Default is `false`.
 
 

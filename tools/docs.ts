@@ -217,7 +217,10 @@ export class Docs extends Code {
             code += `${this.code.typeDef(result)}\n`;
         }
         code += this.code.functionInterface(func);
+        code += "\n\n"
+        code += this.code.syncFunctionInterface(func);
         md += `\`\`\`${this.code.language()}\n${code}\n\`\`\`\n`;
+        md += `NOTE: Sync version is available only for \`lib-node\` binding.\n`;
 
         if (appObject || params || funcInfo.hasResponseHandler) {
             md += "### Parameters\n";

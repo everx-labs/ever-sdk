@@ -1,10 +1,11 @@
 {
 	"name": "tools",
-	"version": "1.44.0",
+	"version": "1.44.1",
 	"description": "",
 	"main": "index.js",
 	"scripts": {
-		"test": "echo \"Error: no test specified\" && exit 1"
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"docs": "node index docs -o ../docs/reference/types-and-methods"
 	},
 	"keywords": [],
 	"author": "",

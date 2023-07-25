@@ -289,21 +289,21 @@ Where:
 
 [get_signature_id](mod\_net.md#get_signature_id) – Returns signature ID for configured network if it should be used in messages signature
 
-## [debot](mod\_debot.md) – [UNSTABLE](UNSTABLE.md) Module for working with debot.
+## [debot](mod\_debot.md) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Module for working with debot.
 
-[init](mod\_debot.md#init) – [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
+[init](mod\_debot.md#init) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Creates and instance of DeBot.
 
-[start](mod\_debot.md#start) – [UNSTABLE](UNSTABLE.md) Starts the DeBot.
+[start](mod\_debot.md#start) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Starts the DeBot.
 
-[fetch](mod\_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.
+[fetch](mod\_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Fetches DeBot metadata from blockchain.
 
-[execute](mod\_debot.md#execute) – [UNSTABLE](UNSTABLE.md) Executes debot action.
+[execute](mod\_debot.md#execute) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Executes debot action.
 
-[send](mod\_debot.md#send) – [UNSTABLE](UNSTABLE.md) Sends message to Debot.
+[send](mod\_debot.md#send) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Sends message to Debot.
 
-[remove](mod\_debot.md#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
+[remove](mod\_debot.md#remove) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Destroys debot handle.
 
-## [proofs](mod\_proofs.md) – [UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.
+## [proofs](mod\_proofs.md) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Module for proving data, retrieved from TONOS API.
 
 [proof_block_data](mod\_proofs.md#proof_block_data) – Proves that a given block's data, which is queried from TONOS API, can be trusted.
 

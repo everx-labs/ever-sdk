@@ -1,6 +1,6 @@
 # Module proofs
 
-[UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Module for proving data, retrieved from TONOS API.
 
 
 ## Functions
@@ -92,7 +92,12 @@ type ParamsOfProofBlockData = {
 function proof_block_data(
     params: ParamsOfProofBlockData,
 ): Promise<void>;
+
+function proof_block_data_sync(
+    params: ParamsOfProofBlockData,
+): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `block`: _any_ – Single block's data, retrieved from TONOS API, that needs proof. Required fields are `id` and/or top-level `boc` (for block identification), others are optional.
 
@@ -125,7 +130,12 @@ type ParamsOfProofTransactionData = {
 function proof_transaction_data(
     params: ParamsOfProofTransactionData,
 ): Promise<void>;
+
+function proof_transaction_data_sync(
+    params: ParamsOfProofTransactionData,
+): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `transaction`: _any_ – Single transaction's data as queried from DApp server, without modifications. The required fields are `id` and/or top-level `boc`, others are optional. In order to reduce network requests count, it is recommended to provide `block_id` and `boc` of transaction.
 
@@ -158,7 +168,12 @@ type ParamsOfProofMessageData = {
 function proof_message_data(
     params: ParamsOfProofMessageData,
 ): Promise<void>;
+
+function proof_message_data_sync(
+    params: ParamsOfProofMessageData,
+): void;
 ```
+NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `message`: _any_ – Single message's data as queried from DApp server, without modifications. The required fields are `id` and/or top-level `boc`, others are optional. In order to reduce network requests count, it is recommended to provide at least `boc` of message and non-null `src_transaction.id` or `dst_transaction.id`.
 

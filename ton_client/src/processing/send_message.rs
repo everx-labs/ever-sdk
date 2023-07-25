@@ -44,7 +44,9 @@ pub struct ParamsOfSendMessage {
     /// chosen.
     pub abi: Option<Abi>,
 
-    /// Flag for requesting events sending
+    /// Flag for requesting events sending.
+    /// Default is `false`.
+    #[serde(default)]
     pub send_events: bool,
 }
 

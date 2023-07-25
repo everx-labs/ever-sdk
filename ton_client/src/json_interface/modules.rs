@@ -671,7 +671,7 @@ fn register_utils(handlers: &mut RuntimeHandlers) {
     module.register();
 }
 
-/// [UNSTABLE](UNSTABLE.md) Module for working with debot.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Module for working with debot.
 #[derive(ApiModule)]
 #[api_module(name = "debot")]
 pub struct DebotModule;
@@ -698,7 +698,7 @@ fn register_debot(handlers: &mut RuntimeHandlers) {
     module.register();
 }
 
-/// [UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.
+/// [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Module for proving data, retrieved from TONOS API.
 #[derive(ApiModule)]
 #[api_module(name = "proofs")]
 pub struct ProofsModule;

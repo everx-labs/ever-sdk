@@ -33,7 +33,9 @@ pub struct ParamsOfWaitForTransaction {
     /// You must provide the same value as the `send_message` has returned.
     pub shard_block_id: String,
 
-    /// Flag that enables/disables intermediate events
+    /// Flag that enables/disables intermediate events.
+    /// Default is `false`.
+    #[serde(default)]
     pub send_events: bool,
 
     /// The list of endpoints to which the message was sent.

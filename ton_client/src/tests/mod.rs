@@ -16,13 +16,13 @@ use crate::abi::{
     encode_message, Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::client::*;
-use crate::net::{ParamsOfQuery, ResultOfQuery};
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
 use crate::json_interface::interop::{ResponseType, StringData};
 use crate::json_interface::modules::{AbiModule, NetModule, ProcessingModule};
 use crate::json_interface::runtime::Runtime;
+use crate::net::{ParamsOfQuery, ResultOfQuery};
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
 use crate::{
     crypto::KeyPair,
@@ -291,7 +291,7 @@ impl TestClient {
             "v3" => Self::abi(GIVER_V3, Some(2)),
             "v2" => Self::abi(GIVER_V2, Some(2)),
             "v1" => Self::abi("Giver", Some(1)),
-            _ => panic!("Unknown giver type")
+            _ => panic!("Unknown giver type"),
         }
     }
 
@@ -300,13 +300,13 @@ impl TestClient {
             "v3" => Self::tvc(GIVER_V3, Some(2)),
             "v2" => Self::tvc(GIVER_V2, Some(2)),
             "v1" => Self::tvc("Giver", Some(1)),
-            _ => panic!("Unknown giver type")
+            _ => panic!("Unknown giver type"),
         }
     }
 
     async fn calc_giver_address(&self, keys: KeyPair) -> String {
         self.encode_message(ParamsOfEncodeMessage {
-            abi:  Self::giver_abi(),
+            abi: Self::giver_abi(),
             deploy_set: DeploySet::some_with_tvc(Self::giver_tvc()),
             signer: Signer::Keys { keys },
             ..Default::default()
@@ -420,7 +420,8 @@ impl TestClient {
     }
 
     pub fn init_simple_logger() {
-        let _ = log::set_boxed_logger(Box::new(SimpleLogger)).map(|()| log::set_max_level(MAX_LEVEL));
+        let _ =
+            log::set_boxed_logger(Box::new(SimpleLogger)).map(|()| log::set_max_level(MAX_LEVEL));
     }
 
     pub(crate) fn init_log() {
@@ -634,6 +635,13 @@ impl TestClient {
         encode.call(params).await
     }
 
+    pub(crate) fn encode_message_sync(
+        &self,
+        params: ParamsOfEncodeMessage,
+    ) -> ClientResult<ResultOfEncodeMessage> {
+        self.request("abi.encode_message", params)
+    }
+
     pub(crate) async fn net_process_message<CF, CT, CR>(
         &self,
         params: ParamsOfProcessMessage,
@@ -650,6 +658,13 @@ impl TestClient {
             crate::json_interface::processing::process_message_api(),
         );
         process.call_with_callback(params, callback).await
+    }
+
+    pub(crate) fn process_message_sync(
+        &self,
+        params: ParamsOfProcessMessage,
+    ) -> ClientResult<ResultOfProcessMessage> {
+        self.request("processing.process_message", params)
     }
 
     pub(crate) async fn fetch_account(&self, address: &str) -> Value {
@@ -700,7 +715,11 @@ impl TestClient {
         .await
     }
 
-    pub(crate) async fn get_tokens_from_giver_async(&self, account: &str, value: Option<u64>) -> ResultOfProcessMessage {
+    pub(crate) async fn get_tokens_from_giver_async(
+        &self,
+        account: &str,
+        value: Option<u64>,
+    ) -> ResultOfProcessMessage {
         let giver_exists: ResultOfQuery = self
             .request_async(
                 "net.query",
@@ -713,38 +732,39 @@ impl TestClient {
                                 }
                             }
                         }
-                    }"#.to_string(),
+                    }"#
+                    .to_string(),
                     variables: Some(json!({"addr": self.giver_address().await})),
                 },
             )
             .await
             .unwrap_or_default();
 
-        if giver_exists.result["data"]["blockchain"]["account"]["info"]["acc_type"].as_i64().unwrap_or_default() != 1 {
+        if giver_exists.result["data"]["blockchain"]["account"]["info"]["acc_type"]
+            .as_i64()
+            .unwrap_or_default()
+            != 1
+        {
             panic!("The giver contract should be deployed and active");
         }
 
         let (function, input) = match env::giver_type().as_str() {
-            "v1" => {
-                (
-                    "sendGrams",
-                    json!({
-                        "dest": account.to_string(),
-                        "amount": value.unwrap_or(500_000_000u64),
-                    })
-                )
-            },
-            "v2" | "v3" => {
-                (
-                    "sendTransaction",
-                    json!({
-                        "dest": account.to_string(),
-                        "value": value.unwrap_or(500_000_000u64),
-                        "bounce": false,
-                    })
-                )
-            },
-            _ => panic!("Unknown giver version")
+            "v1" => (
+                "sendGrams",
+                json!({
+                    "dest": account.to_string(),
+                    "amount": value.unwrap_or(500_000_000u64),
+                }),
+            ),
+            "v2" | "v3" => (
+                "sendTransaction",
+                json!({
+                    "dest": account.to_string(),
+                    "value": value.unwrap_or(500_000_000u64),
+                    "bounce": false,
+                }),
+            ),
+            _ => panic!("Unknown giver version"),
         };
         let run_result = self
             .net_process_function(
@@ -779,6 +799,17 @@ impl TestClient {
             .unwrap();
 
         run_result
+    }
+
+    pub(crate) fn get_tokens_from_giver_sync(
+        &self,
+        account: &str,
+        value: Option<u64>,
+    ) -> ResultOfProcessMessage {
+        self.context()
+            .clone()
+            .env
+            .block_on(self.get_tokens_from_giver_async(account, value))
     }
 
     pub(crate) async fn deploy_with_giver_async(
