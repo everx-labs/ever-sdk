@@ -1,39 +1,39 @@
 # Module debot
 
-[UNSTABLE](UNSTABLE.md) Module for working with debot.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Module for working with debot.
 
 
 ## Functions
-[init](mod\_debot.md#init) – [UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
+[init](mod\_debot.md#init) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Creates and instance of DeBot.
 
-[start](mod\_debot.md#start) – [UNSTABLE](UNSTABLE.md) Starts the DeBot.
+[start](mod\_debot.md#start) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Starts the DeBot.
 
-[fetch](mod\_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.
+[fetch](mod\_debot.md#fetch) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Fetches DeBot metadata from blockchain.
 
-[execute](mod\_debot.md#execute) – [UNSTABLE](UNSTABLE.md) Executes debot action.
+[execute](mod\_debot.md#execute) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Executes debot action.
 
-[send](mod\_debot.md#send) – [UNSTABLE](UNSTABLE.md) Sends message to Debot.
+[send](mod\_debot.md#send) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Sends message to Debot.
 
-[remove](mod\_debot.md#remove) – [UNSTABLE](UNSTABLE.md) Destroys debot handle.
+[remove](mod\_debot.md#remove) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Destroys debot handle.
 
 ## Types
 [DebotErrorCode](mod\_debot.md#deboterrorcode)
 
-[DebotHandle](mod\_debot.md#debothandle) – [UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
+[DebotHandle](mod\_debot.md#debothandle) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Handle of registered in SDK debot
 
-[DebotAction](mod\_debot.md#debotaction) – [UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
+[DebotAction](mod\_debot.md#debotaction) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes a debot action in a Debot Context.
 
-[DebotInfo](mod\_debot.md#debotinfo) – [UNSTABLE](UNSTABLE.md) Describes DeBot metadata.
+[DebotInfo](mod\_debot.md#debotinfo) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes DeBot metadata.
 
 [DebotActivityTransactionVariant](mod\_debot.md#debotactivitytransactionvariant) – DeBot wants to create new transaction in blockchain.
 
-[DebotActivity](mod\_debot.md#debotactivity) – [UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
+[DebotActivity](mod\_debot.md#debotactivity) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes the operation that the DeBot wants to perform.
 
-[Spending](mod\_debot.md#spending) – [UNSTABLE](UNSTABLE.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.
+[Spending](mod\_debot.md#spending) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.
 
-[ParamsOfInit](mod\_debot.md#paramsofinit) – [UNSTABLE](UNSTABLE.md) Parameters to init DeBot.
+[ParamsOfInit](mod\_debot.md#paramsofinit) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to init DeBot.
 
-[RegisteredDebot](mod\_debot.md#registereddebot) – [UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.
+[RegisteredDebot](mod\_debot.md#registereddebot) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Structure for storing debot handle returned from `init` function.
 
 [ParamsOfAppDebotBrowserLogVariant](mod\_debot.md#paramsofappdebotbrowserlogvariant) – Print message to user.
 
@@ -53,7 +53,7 @@
 
 [ParamsOfAppDebotBrowserApproveVariant](mod\_debot.md#paramsofappdebotbrowserapprovevariant) – Requests permission from DeBot Browser to execute DeBot operation.
 
-[ParamsOfAppDebotBrowser](mod\_debot.md#paramsofappdebotbrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
+[ParamsOfAppDebotBrowser](mod\_debot.md#paramsofappdebotbrowser) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Debot Browser callbacks
 
 [ResultOfAppDebotBrowserInputVariant](mod\_debot.md#resultofappdebotbrowserinputvariant) – Result of user input.
 
@@ -63,27 +63,27 @@
 
 [ResultOfAppDebotBrowserApproveVariant](mod\_debot.md#resultofappdebotbrowserapprovevariant) – Result of `approve` callback.
 
-[ResultOfAppDebotBrowser](mod\_debot.md#resultofappdebotbrowser) – [UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
+[ResultOfAppDebotBrowser](mod\_debot.md#resultofappdebotbrowser) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Returning values from Debot Browser callbacks.
 
-[ParamsOfStart](mod\_debot.md#paramsofstart) – [UNSTABLE](UNSTABLE.md) Parameters to start DeBot. DeBot must be already initialized with init() function.
+[ParamsOfStart](mod\_debot.md#paramsofstart) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to start DeBot. DeBot must be already initialized with init() function.
 
-[ParamsOfFetch](mod\_debot.md#paramsoffetch) – [UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.
+[ParamsOfFetch](mod\_debot.md#paramsoffetch) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to fetch DeBot metadata.
 
-[ResultOfFetch](mod\_debot.md#resultoffetch) – [UNSTABLE](UNSTABLE.md)
+[ResultOfFetch](mod\_debot.md#resultoffetch) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md)
 
-[ParamsOfExecute](mod\_debot.md#paramsofexecute) – [UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
+[ParamsOfExecute](mod\_debot.md#paramsofexecute) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters for executing debot action.
 
-[ParamsOfSend](mod\_debot.md#paramsofsend) – [UNSTABLE](UNSTABLE.md) Parameters of `send` function.
+[ParamsOfSend](mod\_debot.md#paramsofsend) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters of `send` function.
 
-[ParamsOfRemove](mod\_debot.md#paramsofremove) – [UNSTABLE](UNSTABLE.md)
+[ParamsOfRemove](mod\_debot.md#paramsofremove) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md)
 
-[AppDebotBrowser](mod\_debot.md#appdebotbrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
+[AppDebotBrowser](mod\_debot.md#appdebotbrowser) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Debot Browser callbacks
 
 
 # Functions
 ## init
 
-[UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Creates and instance of DeBot.
 
 Downloads debot smart contract (code and data) from blockchain and creates
 an instance of Debot Engine for it.
@@ -114,7 +114,7 @@ function init_sync(
 NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
 - `address`: _string_ – Debot smart contract address
-- `obj`: [AppDebotBrowser](mod\_AppDebotBrowser.md#appdebotbrowser) – [UNSTABLE](UNSTABLE.md) Debot Browser callbacks
+- `obj`: [AppDebotBrowser](mod\_AppDebotBrowser.md#appdebotbrowser) – [UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Debot Browser callbacks
 
 
 
@@ -127,7 +127,7 @@ NOTE: Sync version is available only for `lib-node` binding.
 
 ## start
 
-[UNSTABLE](UNSTABLE.md) Starts the DeBot.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Starts the DeBot.
 
 Downloads debot smart contract from blockchain and switches it to
 context zero.
@@ -160,7 +160,7 @@ NOTE: Sync version is available only for `lib-node` binding.
 
 ## fetch
 
-[UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Fetches DeBot metadata from blockchain.
 
 Downloads DeBot from blockchain and creates and fetches its metadata.
 
@@ -193,7 +193,7 @@ NOTE: Sync version is available only for `lib-node` binding.
 
 ## execute
 
-[UNSTABLE](UNSTABLE.md) Executes debot action.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Executes debot action.
 
 Calls debot engine referenced by debot handle to execute input action.
 Calls Debot Browser Callbacks if needed.
@@ -223,7 +223,7 @@ NOTE: Sync version is available only for `lib-node` binding.
 
 ## send
 
-[UNSTABLE](UNSTABLE.md) Sends message to Debot.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Sends message to Debot.
 
 Used by Debot Browser to send response on Dinterface call or from other Debots.
 
@@ -249,7 +249,7 @@ NOTE: Sync version is available only for `lib-node` binding.
 
 ## remove
 
-[UNSTABLE](UNSTABLE.md) Destroys debot handle.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Destroys debot handle.
 
 Removes handle from Client Context and drops debot engine referenced by that handle.
 
@@ -308,7 +308,7 @@ One of the following value:
 
 
 ## DebotHandle
-[UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Handle of registered in SDK debot
 
 ```ts
 type DebotHandle = number
@@ -316,7 +316,7 @@ type DebotHandle = number
 
 
 ## DebotAction
-[UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes a debot action in a Debot Context.
 
 ```ts
 type DebotAction = {
@@ -341,7 +341,7 @@ type DebotAction = {
 
 
 ## DebotInfo
-[UNSTABLE](UNSTABLE.md) Describes DeBot metadata.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes DeBot metadata.
 
 ```ts
 type DebotInfo = {
@@ -397,7 +397,7 @@ type DebotActivityTransactionVariant = {
 
 
 ## DebotActivity
-[UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes the operation that the DeBot wants to perform.
 
 ```ts
 type DebotActivity = ({
@@ -426,7 +426,7 @@ function debotActivityTransaction(msg: string, dst: string, out: Spending[], fee
 ```
 
 ## Spending
-[UNSTABLE](UNSTABLE.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.
 
 ```ts
 type Spending = {
@@ -439,7 +439,7 @@ type Spending = {
 
 
 ## ParamsOfInit
-[UNSTABLE](UNSTABLE.md) Parameters to init DeBot.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to init DeBot.
 
 ```ts
 type ParamsOfInit = {
@@ -450,7 +450,7 @@ type ParamsOfInit = {
 
 
 ## RegisteredDebot
-[UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Structure for storing debot handle returned from `init` function.
 
 ```ts
 type RegisteredDebot = {
@@ -567,7 +567,7 @@ type ParamsOfAppDebotBrowserApproveVariant = {
 
 
 ## ParamsOfAppDebotBrowser
-[UNSTABLE](UNSTABLE.md) Debot Browser callbacks
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Debot Browser callbacks
 
 Called by debot engine to communicate with debot browser.
 
@@ -710,7 +710,7 @@ type ResultOfAppDebotBrowserApproveVariant = {
 
 
 ## ResultOfAppDebotBrowser
-[UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Returning values from Debot Browser callbacks.
 
 ```ts
 type ResultOfAppDebotBrowser = ({
@@ -760,7 +760,7 @@ function resultOfAppDebotBrowserApprove(approved: boolean): ResultOfAppDebotBrow
 ```
 
 ## ParamsOfStart
-[UNSTABLE](UNSTABLE.md) Parameters to start DeBot. DeBot must be already initialized with init() function.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to start DeBot. DeBot must be already initialized with init() function.
 
 ```ts
 type ParamsOfStart = {
@@ -771,7 +771,7 @@ type ParamsOfStart = {
 
 
 ## ParamsOfFetch
-[UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to fetch DeBot metadata.
 
 ```ts
 type ParamsOfFetch = {
@@ -782,7 +782,7 @@ type ParamsOfFetch = {
 
 
 ## ResultOfFetch
-[UNSTABLE](UNSTABLE.md)
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md)
 
 ```ts
 type ResultOfFetch = {
@@ -793,7 +793,7 @@ type ResultOfFetch = {
 
 
 ## ParamsOfExecute
-[UNSTABLE](UNSTABLE.md) Parameters for executing debot action.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters for executing debot action.
 
 ```ts
 type ParamsOfExecute = {
@@ -806,7 +806,7 @@ type ParamsOfExecute = {
 
 
 ## ParamsOfSend
-[UNSTABLE](UNSTABLE.md) Parameters of `send` function.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters of `send` function.
 
 ```ts
 type ParamsOfSend = {
@@ -819,7 +819,7 @@ type ParamsOfSend = {
 
 
 ## ParamsOfRemove
-[UNSTABLE](UNSTABLE.md)
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md)
 
 ```ts
 type ParamsOfRemove = {
@@ -830,7 +830,7 @@ type ParamsOfRemove = {
 
 
 ## AppDebotBrowser
-[UNSTABLE](UNSTABLE.md) Debot Browser callbacks
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Debot Browser callbacks
 
 Called by debot engine to communicate with debot browser.
 

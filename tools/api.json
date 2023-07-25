@@ -14406,7 +14406,7 @@
     },
     {
       "name": "debot",
-      "summary": "[UNSTABLE](UNSTABLE.md) Module for working with debot.",
+      "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Module for working with debot.",
       "description": null,
       "types": [
         {
@@ -14513,7 +14513,7 @@
           "type": "Number",
           "number_type": "UInt",
           "number_size": 32,
-          "summary": "[UNSTABLE](UNSTABLE.md) Handle of registered in SDK debot",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Handle of registered in SDK debot",
           "description": null
         },
         {
@@ -14561,7 +14561,7 @@
               "description": "Used by debot only."
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Describes a debot action in a Debot Context.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes a debot action in a Debot Context.",
           "description": null
         },
         {
@@ -14674,7 +14674,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Describes DeBot metadata.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes DeBot metadata.",
           "description": null
         },
         {
@@ -14740,7 +14740,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Describes the operation that the DeBot wants to perform.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes the operation that the DeBot wants to perform.",
           "description": null
         },
         {
@@ -14762,7 +14762,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Describes how much funds will be debited from the target  contract balance as a result of the transaction.",
           "description": null
         },
         {
@@ -14776,7 +14776,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to init DeBot.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to init DeBot.",
           "description": null
         },
         {
@@ -14804,7 +14804,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Structure for storing debot handle returned from `init` function.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Structure for storing debot handle returned from `init` function.",
           "description": null
         },
         {
@@ -14935,7 +14935,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Debot Browser callbacks",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Debot Browser callbacks",
           "description": "Called by debot engine to communicate with debot browser."
         },
         {
@@ -14993,7 +14993,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Returning values from Debot Browser callbacks.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Returning values from Debot Browser callbacks.",
           "description": null
         },
         {
@@ -15008,7 +15008,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to start DeBot. DeBot must be already initialized with init() function.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to start DeBot. DeBot must be already initialized with init() function.",
           "description": null
         },
         {
@@ -15022,7 +15022,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Parameters to fetch DeBot metadata.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters to fetch DeBot metadata.",
           "description": null
         },
         {
@@ -15037,7 +15037,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md)",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md)",
           "description": null
         },
         {
@@ -15059,7 +15059,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Parameters for executing debot action.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters for executing debot action.",
           "description": null
         },
         {
@@ -15080,7 +15080,7 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md) Parameters of `send` function.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Parameters of `send` function.",
           "description": null
         },
         {
@@ -15095,14 +15095,14 @@
               "description": null
             }
           ],
-          "summary": "[UNSTABLE](UNSTABLE.md)",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md)",
           "description": null
         }
       ],
       "functions": [
         {
           "name": "init",
-          "summary": "[UNSTABLE](UNSTABLE.md) Creates and instance of DeBot.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Creates and instance of DeBot.",
           "description": "Downloads debot smart contract (code and data) from blockchain and creates\nan instance of Debot Engine for it.\n\n# Remarks\nIt does not switch debot to context 0. Browser Callbacks are not called.",
           "params": [
             {
@@ -15157,7 +15157,7 @@
         },
         {
           "name": "start",
-          "summary": "[UNSTABLE](UNSTABLE.md) Starts the DeBot.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Starts the DeBot.",
           "description": "Downloads debot smart contract from blockchain and switches it to\ncontext zero.\n\nThis function must be used by Debot Browser to start a dialog with debot.\nWhile the function is executing, several Browser Callbacks can be called,\nsince the debot tries to display all actions from the context 0 to the user.\n\nWhen the debot starts SDK registers `BrowserCallbacks` AppObject.\nTherefore when `debote.remove` is called the debot is being deleted and the callback is called\nwith `finish`=`true` which indicates that it will never be used again.",
           "params": [
             {
@@ -15194,7 +15194,7 @@
         },
         {
           "name": "fetch",
-          "summary": "[UNSTABLE](UNSTABLE.md) Fetches DeBot metadata from blockchain.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Fetches DeBot metadata from blockchain.",
           "description": "Downloads DeBot from blockchain and creates and fetches its metadata.",
           "params": [
             {
@@ -15232,7 +15232,7 @@
         },
         {
           "name": "execute",
-          "summary": "[UNSTABLE](UNSTABLE.md) Executes debot action.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Executes debot action.",
           "description": "Calls debot engine referenced by debot handle to execute input action.\nCalls Debot Browser Callbacks if needed.\n\n# Remarks\nChain of actions can be executed if input action generates a list of subactions.",
           "params": [
             {
@@ -15269,7 +15269,7 @@
         },
         {
           "name": "send",
-          "summary": "[UNSTABLE](UNSTABLE.md) Sends message to Debot.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Sends message to Debot.",
           "description": "Used by Debot Browser to send response on Dinterface call or from other Debots.",
           "params": [
             {
@@ -15306,7 +15306,7 @@
         },
         {
           "name": "remove",
-          "summary": "[UNSTABLE](UNSTABLE.md) Destroys debot handle.",
+          "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Destroys debot handle.",
           "description": "Removes handle from Client Context and drops debot engine referenced by that handle.",
           "params": [
             {
@@ -15345,7 +15345,7 @@
     },
     {
       "name": "proofs",
-      "summary": "[UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.",
+      "summary": "[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Module for proving data, retrieved from TONOS API.",
       "description": null,
       "types": [
         {

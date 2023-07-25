@@ -1,6 +1,6 @@
 # Module proofs
 
-[UNSTABLE](UNSTABLE.md) Module for proving data, retrieved from TONOS API.
+[UNSTABLE](UNSTABLE.md) [DEPRECATED](DEPRECATED.md) Module for proving data, retrieved from TONOS API.
 
 
 ## Functions
