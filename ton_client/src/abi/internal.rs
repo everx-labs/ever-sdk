@@ -74,6 +74,7 @@ pub(crate) async fn try_to_sign_message(
 
 pub(crate) fn create_tvc_image(
     abi: &str,
+    data_map_supported: bool,
     init_params: Option<&Value>,
     state_init: Cell,
 ) -> ClientResult<ContractImage> {
@@ -81,9 +82,8 @@ pub(crate) fn create_tvc_image(
         ContractImage::from_cell(state_init).map_err(|err| Error::invalid_tvc_image(err))?;
 
     if let Some(params) = init_params {
-        image.update_data(&params.to_string(), abi).map_err(|err| {
-            Error::invalid_tvc_image(format!("Failed to set initial data: {}", err))
-        })?;
+        image.update_data(data_map_supported, &params.to_string(), abi)
+            .map_err(Error::encode_init_data_failed)?;
     }
 
     Ok(image)

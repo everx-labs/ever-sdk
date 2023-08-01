@@ -176,14 +176,20 @@ impl ContractImage {
     }
 
     ///Allows to change initial values for public contract variables
-    pub fn update_data(&mut self, data_json: &str, abi_json: &str) -> Result<()> {
-        let new_data = ton_abi::json_abi::update_contract_data(
-            abi_json,
-            data_json,
-            SliceData::load_cell(self.state_init.data.clone().unwrap_or_default())?,
-        )?;
+    pub fn update_data(&mut self, data_map_supported: bool, data_json: &str, abi_json: &str) -> Result<()> {
+        let new_data = if data_map_supported {
+            ton_abi::json_abi::update_contract_data(
+                abi_json,
+                data_json,
+                SliceData::load_cell(self.state_init.data.clone().unwrap_or_default())?,
+            )?
+            .into_cell()
+        } else {
+            ton_abi::json_abi::encode_storage_fields(abi_json, Some(data_json))?
+                .into_cell()?
+        };
 
-        self.state_init.set_data(new_data.into_cell());
+        self.state_init.set_data(new_data);
         self.id = self.state_init.hash()?.into();
 
         Ok(())

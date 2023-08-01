@@ -15,16 +15,17 @@
 use super::*;
 use super::types::resolve_network_params;
 use crate::abi::{
-    encode_account::{ParamsOfEncodeAccount, StateInitSource},
+    encode_account::ParamsOfEncodeAccount,
     Abi, CallSet, DeploySet, FunctionHeader, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
+use crate::boc::ParamsOfEncodeStateInit;
 use crate::tests::GIVER_V2;
 use crate::boc::{
     internal::{deserialize_object_from_base64, serialize_cell_to_base64},
     BocCacheType,
 };
 use crate::error::ClientResult;
-use crate::json_interface::modules::{AbiModule, TvmModule};
+use crate::json_interface::modules::{AbiModule, TvmModule, BocModule};
 use crate::net::{ParamsOfQueryCollection, ResultOfQueryCollection};
 use crate::net::network_params::offline_config;
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
@@ -49,25 +50,34 @@ async fn test_execute_get() {
         TvmModule::api(),
         crate::tvm::run_get::run_get_api(),
     );
-    let encode_account = client.wrap_async(
+    let encode_account = client.wrap(
         crate::abi::encode_account::encode_account,
         AbiModule::api(),
         crate::abi::encode_account::encode_account_api(),
     );
+    let encode_state_init = client.wrap(
+        crate::boc::encode_state_init,
+        BocModule::api(),
+        crate::boc::state_init::encode_state_init_api(),
+    );
+
+    let state_init = encode_state_init
+        .call(ParamsOfEncodeStateInit {
+            code: Some(ELECTOR_CODE.into()),
+            data: Some(ELECTOR_DATA.into()),
+            ..Default::default()
+        })
+        .unwrap()
+        .state_init;
 
     let elector = encode_account
         .call(ParamsOfEncodeAccount {
-            state_init: StateInitSource::StateInit {
-                code: ELECTOR_CODE.into(),
-                data: ELECTOR_DATA.into(),
-                library: None,
-            },
+            state_init,
             last_paid: None,
             last_trans_lt: None,
             balance: None,
             boc_cache: None,
         })
-        .await
         .unwrap()
         .account;
 

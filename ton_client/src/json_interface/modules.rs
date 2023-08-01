@@ -314,9 +314,6 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
     module.register_type::<crate::abi::DeploySet>();
     module.register_type::<crate::abi::Signer>();
     module.register_type::<crate::abi::MessageBodyType>();
-    module.register_type::<crate::abi::StateInitSource>();
-    module.register_type::<crate::abi::StateInitParams>();
-    module.register_type::<crate::abi::MessageSource>();
     module.register_type::<crate::abi::AbiParam>();
     module.register_type::<crate::abi::AbiEvent>();
     module.register_type::<crate::abi::AbiData>();
@@ -352,7 +349,7 @@ fn register_abi(handlers: &mut RuntimeHandlers) {
         crate::abi::decode_message_body,
         crate::abi::decode_message::decode_message_body_api,
     );
-    module.register_async_fn(
+    module.register_sync_fn(
         crate::abi::encode_account,
         crate::abi::encode_account::encode_account_api,
     );
