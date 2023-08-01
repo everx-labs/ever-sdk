@@ -18,6 +18,7 @@ pub enum ErrorCode {
     InvalidData = 313,
     EncodeInitialDataFailed = 314,
     InvalidFunctionName = 315,
+    PubKeyNotSupported = 316,
 }
 
 pub struct Error;
@@ -124,6 +125,16 @@ impl Error {
         error(
             ErrorCode::InvalidFunctionName,
             format!("Function {} is not found in contract ABI", func_name),
+        )
+    }
+
+    pub fn initial_pubkey_not_supported(abi_version: &ton_abi::contract::AbiVersion) -> ClientError {
+        error(
+            ErrorCode::PubKeyNotSupported,
+            format!(
+                "Your contract ABI version is {}. You must specify initial public key in 'initial_data' (see ABI specification).",
+                abi_version
+            )
         )
     }
 }

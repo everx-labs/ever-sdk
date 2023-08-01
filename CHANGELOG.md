@@ -2,6 +2,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.45.0] – 2023-08-01
+
+### New
+
+- ABI 2.4 supported.
+
+### Breaking
+
+- For contracts with ABI version => 2.4 initial public key should be explicitly supplied 
+inside `initial_data` in `abi` module functions. Signer public key and `initial_pubkey` parameter
+are not used in contract initial data encoding since ABI version 2.4.
+
+- `abi.decode_initial_data` and `abi.update_initial_data` functions don't support ABI version => 2.4.
+`abi.decode_account_data` and `abi.encode_initial_data` should be used instead
+
+- Only `workchain_id` parameter is allowed if `state_init` parameter of `DeploySet` is provided.
+State init should be finalized and ready to be used in message as is.
+
+- `abi.encode_account` parameter `state_init` is BOC or cached BOC reference instead of
+`StateInitSource` enum. There is only one way to provide account state init now.
+
 
 ## [1.44.1] – 2023-07-25
 

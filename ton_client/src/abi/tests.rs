@@ -8,11 +8,11 @@ use crate::abi::internal::{create_tvc_image, is_empty_pubkey, resolve_pubkey};
 use crate::abi::{FunctionHeader, ParamsOfDecodeMessageBody, Signer};
 use crate::boc::internal::{
     deserialize_object_from_base64, deserialize_object_from_cell, get_boc_hash,
-    serialize_cell_to_base64, serialize_object_to_base64,
+    serialize_cell_to_base64, serialize_object_to_base64, deserialize_cell_from_base64,
 };
 use crate::boc::{
     parse_message, ParamsOfDecodeStateInit, ParamsOfGetCodeFromTvc, ParamsOfParse,
-    ResultOfDecodeStateInit, ResultOfGetCodeFromTvc,
+    ResultOfDecodeStateInit, ResultOfGetCodeFromTvc, ResultOfEncodeBoc,
 };
 use crate::crypto::KeyPair;
 use crate::encoding::account_decode;
@@ -474,7 +474,7 @@ fn test_resolve_pubkey() -> Result<()> {
         tvc: Some(tvc.clone()),
         ..Default::default()
     };
-    let mut image = create_tvc_image("", None, resolve_state_init_cell(&context, &tvc)?)?;
+    let mut image = create_tvc_image("", true, None, resolve_state_init_cell(&context, &tvc)?)?;
     assert!(resolve_pubkey(&deploy_set, &image, &None)?.is_none());
 
     let external_pub_key =
@@ -590,6 +590,7 @@ async fn test_encode_message_pubkey_internal(
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let mut image = create_tvc_image(
         &abi.json_string()?,
+        abi.abi()?.data_map_supported(),
         None,
         resolve_state_init_cell(&context, tvc.as_ref().unwrap())?,
     )?;
@@ -647,6 +648,7 @@ async fn test_encode_internal_message() -> Result<()> {
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let image = create_tvc_image(
         &abi.json_string()?,
+        abi.abi()?.data_map_supported(),
         None,
         resolve_state_init_cell(&context, tvc.as_ref().unwrap())?,
     )?;
@@ -1007,20 +1009,20 @@ fn test_init_data() {
         .request(
             "abi.decode_initial_data",
             ParamsOfDecodeInitialData {
-                abi: Some(abi.clone()),
+                abi: abi.clone(),
                 data: data.clone(),
                 allow_partial: false,
             },
         )
         .unwrap();
-    assert_eq!(result.initial_data, Some(json!({})));
+    assert_eq!(result.initial_data, json!({}));
     assert_eq!(result.initial_pubkey, hex::encode(&[0u8; 32]));
 
     let result: ResultOfEncodeInitialData = client
         .request(
             "abi.encode_initial_data",
             ParamsOfEncodeInitialData {
-                abi: Some(abi.clone()),
+                abi: abi.clone(),
                 ..Default::default()
             },
         )
@@ -1041,7 +1043,7 @@ fn test_init_data() {
         .request(
             "abi.encode_initial_data",
             ParamsOfEncodeInitialData {
-                abi: Some(abi.clone()),
+                abi: abi.clone(),
                 initial_data: Some(initial_data.clone()),
                 initial_pubkey: Some(hex::encode(&[0x22u8; 32])),
                 boc_cache: None,
@@ -1055,7 +1057,7 @@ fn test_init_data() {
         .request(
             "abi.update_initial_data",
             ParamsOfUpdateInitialData {
-                abi: Some(abi.clone()),
+                abi: abi.clone(),
                 data: data.clone(),
                 initial_data: Some(initial_data.clone()),
                 initial_pubkey: Some(hex::encode(&[0x22u8; 32])),
@@ -1069,20 +1071,20 @@ fn test_init_data() {
         .request(
             "abi.decode_initial_data",
             ParamsOfDecodeInitialData {
-                abi: Some(abi.clone()),
+                abi: abi.clone(),
                 data: result.data,
                 allow_partial: false,
             },
         )
         .unwrap();
-    assert_eq!(result.initial_data, Some(initial_data.clone()));
+    assert_eq!(result.initial_data, initial_data.clone());
     assert_eq!(result.initial_pubkey, hex::encode(&[0x22u8; 32]));
 
     let encode_result: ResultOfEncodeInitialData = client
         .request(
             "abi.encode_initial_data",
             ParamsOfEncodeInitialData {
-                abi: Some(abi.clone()),
+                abi: abi.clone(),
                 initial_data: Some(initial_data.clone()),
                 ..Default::default()
             },
@@ -1093,7 +1095,7 @@ fn test_init_data() {
         .request(
             "abi.update_initial_data",
             ParamsOfUpdateInitialData {
-                abi: Some(abi.clone()),
+                abi: abi.clone(),
                 data,
                 initial_data: Some(initial_data.clone()),
                 ..Default::default()
@@ -1297,12 +1299,28 @@ fn decode_responsible() {
     assert_eq!(expected, result);
 }
 
+const TINY_ABI_V24: &str = r#"
+{
+	"version": "2.4",
+	"functions": [],
+	"fields": [
+		{"name":"_pubkey","type":"uint256","init":true},
+		{"name":"_timestamp","type":"uint64"},
+		{"name":"_constructorFlag","type":"bool"},
+        {"name":"value","type":"uint32","init":true}
+	]
+}
+"#;
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_deploy_code_variants() -> Result<()> {
-    test_deploy_code_variants_with_contract(EVENTS_OLD, None, true).await?;
-    test_deploy_code_variants_with_contract(EVENTS, None, false).await?;
+    let (abi, tvc) = TestClient::package(EVENTS_OLD, Some(2));
+    test_deploy_code_variants_with_contract((abi, tvc.unwrap()), None, true).await?;
+    let (abi, tvc) = TestClient::package(EVENTS, Some(2));
+    test_deploy_code_variants_with_contract((abi, tvc.unwrap()), None, false).await?;
+    let (abi, tvc) = TestClient::package(T24_INIT_DATA, Some(2));
     test_deploy_code_variants_with_contract(
-        T24_INIT_DATA,
+        (abi, tvc.unwrap()),
         Some(json!({
             "a": 123,
             "s": "abc"
@@ -1310,17 +1328,28 @@ async fn test_deploy_code_variants() -> Result<()> {
         false,
     )
     .await?;
+
+    let mut state_init = StateInit::default();
+    state_init.set_code(ton_types::Cell::default());
+    let tvc = serialize_object_to_base64(&state_init, "state init").unwrap();
+    test_deploy_code_variants_with_contract(
+        (Abi::Json(TINY_ABI_V24.to_owned()), tvc),
+        Some(json!({ "value": 123 })),
+        false,
+    )
+    .await?;
+
     Ok(())
 }
 
 async fn test_deploy_code_variants_with_contract(
-    contract: &str,
+    contract: (Abi, String),
     initial_data: Option<Value>,
     ignore_data: bool,
 ) -> Result<()> {
     test_deploy_code_variants_with_fn(
         encode_internal_deploy,
-        contract,
+        contract.clone(),
         initial_data.clone(),
         ignore_data,
     )
@@ -1334,26 +1363,34 @@ async fn test_deploy_code_variants_with_fn<
     R: Future<Output = Value>,
 >(
     encode: F,
-    contract: &str,
+    contract: (Abi, String),
     initial_data: Option<Value>,
     ignore_data: bool,
 ) -> Result<()> {
     let client = TestClient::new();
-    let (abi, unknown_tvc) = TestClient::package(contract, Some(2));
+    let (abi, unknown_tvc) = contract;
     let keys = KeyPair {
         public: "4c7c408ff1ddebb8d6405ee979c716a14fdd6cc08124107a61d3c25597099499".into(),
         secret: "cc8929d635719612a9478b9cd17675a39cfad52d8959e8a177389b8c0b9122a7".into(),
     };
     let state_init_cell =
-        resolve_state_init_cell(&client.context(), &unknown_tvc.clone().unwrap())?;
-    let state_init =
+        resolve_state_init_cell(&client.context(), &unknown_tvc.clone())?;
+    let mut state_init =
         deserialize_object_from_cell::<StateInit>(state_init_cell.clone(), "state init")?;
+
+    let (pubkey, initial_data) = if abi.abi()?.data_map_supported() {
+        (Some(keys.public.clone()), initial_data)
+    } else {
+        let mut initial_data = initial_data.unwrap_or_default();
+        initial_data["_pubkey"] = format!("0x{}", keys.public).into();
+        (None, Some(initial_data))
+    };
 
     let encoded_with_unknown_tvc = encode(
         abi.clone(),
-        Some(keys.public.clone()),
+        pubkey.clone(),
         initial_data.clone(),
-        unknown_tvc.clone(),
+        Some(unknown_tvc.clone()),
         None,
         None,
     )
@@ -1361,7 +1398,7 @@ async fn test_deploy_code_variants_with_fn<
 
     let encoded_with_code = encode(
         abi.clone(),
-        Some(keys.public.clone()),
+        pubkey.clone(),
         initial_data.clone(),
         None,
         Some(serialize_cell_to_base64(
@@ -1376,16 +1413,31 @@ async fn test_deploy_code_variants_with_fn<
         convert_parsed(&encoded_with_code, ignore_data)
     );
 
+    let data = crate::abi::encode_initial_data(
+        client.context(), crate::abi::ParamsOfEncodeInitialData {
+            abi: abi.clone(),
+            initial_data: initial_data.clone(),
+            initial_pubkey: pubkey.clone(),
+            ..Default::default()
+        }
+    ).unwrap();
+    let data = deserialize_cell_from_base64(&data.data, "Encoded initial data").unwrap();
+
+    state_init.set_data(data.1);
+
     let encoded_with_state_init = encode(
         abi.clone(),
-        Some(keys.public.clone()),
-        initial_data.clone(),
         None,
         None,
-        Some(serialize_cell_to_base64(&state_init_cell, "state init").unwrap()),
+        None,
+        None,
+        Some(serialize_object_to_base64(&state_init, "state init").unwrap()),
     )
     .await;
-    assert_eq!(encoded_with_unknown_tvc, encoded_with_state_init);
+    assert_eq!(
+        convert_parsed(&encoded_with_unknown_tvc, ignore_data),
+        convert_parsed(&encoded_with_state_init, ignore_data)
+    );
 
     let tvc = base64::encode(
         &TVC::new(
@@ -1400,7 +1452,7 @@ async fn test_deploy_code_variants_with_fn<
     );
     let encoded_with_tvc = encode(
         abi.clone(),
-        Some(keys.public.clone()),
+        pubkey.clone(),
         initial_data.clone(),
         Some(tvc),
         None,
@@ -1500,4 +1552,119 @@ fn convert_parsed(value: &Value, strip_data: bool) -> Value {
         }
     }
     value
+}
+
+#[test]
+fn test_abi_v24_changes() {
+    let client = TestClient::new();
+
+    let mut state_init = StateInit::default();
+    state_init.set_code(ton_types::Cell::default());
+    let tvc = serialize_object_to_base64(&state_init, "state init").unwrap();
+    let abi = Abi::Json(TINY_ABI_V24.to_owned());
+
+    let empty_cell = serialize_cell_to_base64(&ton_types::Cell::default(), "data cell").unwrap();
+
+    let error = client
+        .request::<_, ResultOfDecodeInitialData>(
+            "abi.decode_initial_data",
+            ParamsOfDecodeInitialData {
+                abi: abi.clone(),
+                data: empty_cell.clone(),
+                allow_partial: false,
+            },
+        )
+        .unwrap_err();
+    assert_eq!(error.code, ErrorCode::InvalidAbi as u32);
+
+    let error = client
+        .request::<_, ResultOfUpdateInitialData>(
+            "abi.update_initial_data",
+            ParamsOfUpdateInitialData {
+                abi: abi.clone(),
+                data: empty_cell.clone(),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+    assert_eq!(error.code, ErrorCode::InvalidAbi as u32);
+
+    let pubkey = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef";
+
+    let error = client
+        .request::<_, ResultOfEncodeInitialData>(
+            "abi.encode_initial_data",
+            ParamsOfEncodeInitialData {
+                abi: abi.clone(),
+                initial_pubkey: Some(pubkey.to_owned()),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+    assert_eq!(error.code, ErrorCode::PubKeyNotSupported as u32);
+
+    let result: ResultOfEncodeInitialData = client
+        .request(
+            "abi.encode_initial_data",
+            ParamsOfEncodeInitialData {
+                abi: abi.clone(),
+                initial_data: Some(json!({
+                    "_pubkey": format!("0x{}", pubkey),
+                    "value": 123,
+                })),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    let abi_contract: AbiContract = serde_json::from_str(TINY_ABI_V24).unwrap();
+    let encoded_data: ResultOfEncodeBoc = client
+        .request(
+            "abi.encode_boc",
+            ParamsOfAbiEncodeBoc {
+                params: abi_contract.fields,                
+                data: json!({
+                    "_pubkey": format!("0x{}", pubkey),
+                    "value": 123,
+                    "_constructorFlag": false,
+                    "_timestamp": 0,
+                }),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+    assert_eq!(result.data, encoded_data.boc);
+
+
+    let error = client
+        .request::<_, ResultOfEncodeMessage>(
+            "abi.encode_message",
+            ParamsOfEncodeMessage {
+                abi: abi.clone(),
+                deploy_set: Some(DeploySet {
+                    initial_pubkey: Some(pubkey.to_owned()),
+                    tvc: Some(tvc.clone()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+    assert_eq!(error.code, ErrorCode::PubKeyNotSupported as u32);
+
+    let error = client
+        .request::<_, ResultOfEncodeInternalMessage>(
+            "abi.encode_internal_message",
+            ParamsOfEncodeInternalMessage {
+                abi: Some(abi.clone()),
+                value: "0".to_owned(),
+                deploy_set: Some(DeploySet {
+                    initial_pubkey: Some(pubkey.to_owned()),
+                    tvc: Some(tvc.clone()),
+                    ..Default::default()
+                }),
+                ..Default::default()
+            },
+        )
+        .unwrap_err();
+    assert_eq!(error.code, ErrorCode::PubKeyNotSupported as u32);
 }
