@@ -37,9 +37,7 @@ Get the setup scripts in this repository: [https://github.com/tonlabs/evernode-d
 
 #### 1. System Requirements&#x20;
 
-| Configuration | CPU (cores) | RAM (GiB) | Storage (GiB) | Network (Gbit/s) |
-| ------------- | ----------- | --------- | ------------- | ---------------- |
-| Recommended   | 24          | 128       | 2000          | 1                |
+<table><thead><tr><th width="169">Configuration</th><th>CPU (cores)</th><th>RAM (GiB)</th><th>Storage (GiB)</th><th>Network (Gbit/s)</th></tr></thead><tbody><tr><td>Recommended</td><td>24</td><td>128</td><td>2000</td><td>1</td></tr></tbody></table>
 
 NVMe SSD disks are recommended for storage.
 
@@ -417,6 +415,8 @@ In these samples JS SDK is used. [Bindings](https://docs.everos.dev/ever-sdk/#co
 
 The [pagination](https://github.com/tonlabs/sdk-samples/tree/master/demo/paginate-transactions) sample queries and displays transactions in workchain 0 (workchain where simple transfers happen, -1 workchain is masterchain where you can find service transactions and validator transactions) from the beginning. We can get all the transaction and filter by account addresses on the backend side.
 
+**Note**: By default the Blockchain API queries, such as the one used here provide only data from the past 7 days. To retrieve older data, make sure to use the `archive: true` flag, as shown in the sample:
+
 ```typescript
    async function main(client: TonClient) {
     // In this example, we want the query to return 2 items per page.
@@ -432,6 +432,7 @@ The [pagination](https://github.com/tonlabs/sdk-samples/tree/master/demo/paginat
             blockchain {
                 transactions(
                     workchain: 0
+                    archive: true
                     first: $count
                     after: $cursor
                  ) {
