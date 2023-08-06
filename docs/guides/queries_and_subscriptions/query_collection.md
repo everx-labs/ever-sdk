@@ -3,7 +3,7 @@
 {% hint style="warning" %}
 <mark style="color:red;">**Collections is an analytics API  (not real-time, though it may look like one).**</mark>&#x20;
 
-<mark style="color:red;">**Not all filters and sortings are working now.**</mark>
+<mark style="color:red;">**Not all filters and sortings are working now. Data is provided only for the past 7 days.**</mark>
 {% endhint %}
 
 ## When you may need collections?&#x20;
