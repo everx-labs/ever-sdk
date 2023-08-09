@@ -22,7 +22,7 @@ ton_sdk = { default-features = false, path = '../ton_sdk' }
 ton_client_processing = { default-features = false, path = '../ton_client_processing' }
 
 ton_abi = { git = 'https://github.com/tonlabs/ever-abi.git', tag = '2.3.129' }
-ton_block = { features = ["fast_finality"], git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.88' }
+ton_block = { git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.88' }
 ton_block_json = { git = 'https://github.com/tonlabs/ever-block-json.git', tag = '0.7.168' }
 ton_types = { git = 'https://github.com/tonlabs/ever-types.git', tag = '2.0.18' }
 ton_executor = { features = ['signature_with_id'], git = 'https://github.com/tonlabs/ever-executor.git', tag = '1.16.58' }
@@ -140,3 +140,4 @@ wasm-base = [
     'wasm-bindgen-futures',
     'web-sys'
 ]
+fast_finality = ["ton_block/fast_finality"]
