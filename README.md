@@ -1,6 +1,6 @@
 # Ever SDK
 
-Client libraries in 13 programming languages for DApp development in TVM blockchains (Everscale, TON, Venom Blockchain, etc).&#x20;
+Client libraries in 13 programming languages for DApp development in TVM blockchains (Everscale, Gosh, TON, Venom Blockchain, etc).
 
 Libraries works over [GraphQL API](https://docs.everos.dev/ever-platform/reference/graphql-api). So, they can be used to interact directly with [Evercloud](https://docs.evercloud.dev/products/evercloud/networks-endpoints), [SE](https://docs.evercloud.dev/products/simple-emulator-se) or [Dapp Server](https://docs.evercloud.dev/products/dapp-server-ds).
 
@@ -18,28 +18,27 @@ Libraries works over [GraphQL API](https://docs.everos.dev/ever-platform/referen
 
 [![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ever\_sdk)
 
-- [Ever SDK](#ever-sdk)
-  - [Use-cases](#use-cases)
-  - [Supported languages](#supported-languages)
-    - [Official Javascript(Typescript) SDK](#official-javascripttypescript-sdk)
-    - [Community SDKs](#community-sdks)
-  - [Quick Start](#quick-start)
-  - [What is Core Client Library](#what-is-core-client-library)
-  - [If you did not find the language you need](#if-you-did-not-find-the-language-you-need)
-  - [How to avoid Soft Breaking Problems](#how-to-avoid-soft-breaking-problems)
-  - [Build client library](#build-client-library)
-  - [Build artifacts](#build-artifacts)
-  - [Run tests](#run-tests)
-  - [Download precompiled binaries](#download-precompiled-binaries)
-
+* [Ever SDK](./#ever-sdk)
+  * [Use-cases](./#use-cases)
+  * [Supported languages](./#supported-languages)
+    * [Official Javascript(Typescript) SDK](./#official-javascripttypescript-sdk)
+    * [Community SDKs](./#community-sdks)
+  * [Quick Start](./#quick-start)
+  * [What is Core Client Library](./#what-is-core-client-library)
+  * [If you did not find the language you need](./#if-you-did-not-find-the-language-you-need)
+  * [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
+  * [Build client library](./#build-client-library)
+  * [Build artifacts](./#build-artifacts)
+  * [Run tests](./#run-tests)
+  * [Download precompiled binaries](./#download-precompiled-binaries)
 
 ## Use-cases
 
-With Ever-SDK you can implement logic of any complexity on TVM compatible blockchains (Everscale, TON, Venom, Gosh, etc).
+With Ever-SDK you can implement logic of any complexity on TVM compatible blockchains (Everscale, Gosh, TON, Venom, etc).
 
 * Create and send messages to blockchain
 * Process messages reliably (supports retries and message expiration mechanics)
-* Supports Everscale Solidity and ABI compatible contracts
+* Supports TON Solidity and ABI compatible contracts
 * Emulate transactions locally
 * Run get methods
 * Get account state
@@ -58,34 +57,33 @@ Repository: [JavaScript SDK](https://github.com/tonlabs/ever-sdk-js)
 
 You need to install core package and the package with binary for your platform. [See the documentation.](https://github.com/tonlabs/ever-sdk-js#library-distribution)
 
-| Platform                       | Package                                                                                                            |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| core package for all platforms | [@eversdk/core](https://github.com/tonlabs/ever-sdk-js#install-core-package)                                       |
-| Node.js                        | [@eversdk/lib-node](https://github.com/tonlabs/ever-sdk-js#nodejs)                                                 |
-| Web                            | [@eversdk/lib-web](https://github.com/tonlabs/ever-sdk-js#web)                                                     |
-| React-Native                   | [@eversdk/lib-react-native ](https://github.com/tonlabs/ever-sdk-js#react-native)                                  |
-| React-Native with JSI support  | [@eversdk/lib-react-native-jsi ](https://github.com/tonlabs/ever-sdk-js/tree/master/packages/lib-react-native-jsi) |
+| Platform                       | Package                                                                                                           |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
+| core package for all platforms | [@eversdk/core](https://github.com/tonlabs/ever-sdk-js#install-core-package)                                      |
+| Node.js                        | [@eversdk/lib-node](https://github.com/tonlabs/ever-sdk-js#nodejs)                                                |
+| Web                            | [@eversdk/lib-web](https://github.com/tonlabs/ever-sdk-js#web)                                                    |
+| React-Native                   | [@eversdk/lib-react-native](https://github.com/tonlabs/ever-sdk-js#react-native)                                  |
+| React-Native with JSI support  | [@eversdk/lib-react-native-jsi](https://github.com/tonlabs/ever-sdk-js/tree/master/packages/lib-react-native-jsi) |
 
 ### Community SDKs
 
-| Language | Repository                                                                                                                                                                                                                                                                                                                                              |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Clojure  | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)                                                                                                                                                                                                                                                           |
-| Dart     | [freetonsurfer/ton\_client\_dart](https://github.com/freetonsurfer/ton\_client\_dart)                                                                                                                                                                                                                                                                   |
-| Golang   | <p><a href="https://github.com/radianceteam/ton-client-go">radianceteam/ton-client-go</a><br><a href="https://github.com/markgenuine/ever-client-go">markgenuine/ever-client-go</a></p>                                                                                                                                                                 |
-| Java     | <p><a href="https://github.com/radianceteam/ton-client-java">radianceteam/ton-client-java</a><br><a href="https://github.com/deplant/java4ever-binding">laugan/java4ever-binding</a></p>                                                                                                                                                                |
-| Kotlin   | [mdorofeev/ton-client-kotlin](https://github.com/mdorofeev/ton-client-kotlin)                                                                                                                                                                                                                                                                           |
-| Lua      | [serge-medvedev/tonos-client-lua](https://github.com/serge-medvedev/tonos-client-lua)                                                                                                                                                                                                                                                                   |
-| .NET     | <p><a href="https://github.com/radianceteam/ton-client-dotnet">radianceteam/ton-client-dotnet</a><br><a href="https://github.com/everscale-actions/everscale-dotnet">everscale-actions/everscale-dotnet</a><br><a href="https://github.com/vcvetkovs/TonSdk">vcvetkovs/TonSdk</a><br><a href="https://github.com/staszx/Ton.Sdk">staszx/Ton.Sdk</a></p> |
-| PHP      | <p><a href="https://github.com/extraton/php-ton-client">extraton/php-ton-client</a><br><a href="https://github.com/radianceteam/ton-client-php">radianceteam/ton-client-php</a></p>                                                                                                                                                                     |
-| Python   | [move-ton/ton-client-py](https://github.com/move-ton/ton-client-py)                                                                                                                                                                                                                                                                                     |
-| Ruby     | <p><a href="https://github.com/radianceteam/ton-client-ruby">radianceteam/ton-client-ruby</a><br><a href="https://github.com/nerzh/ton-client-ruby">nerzh/ton-client-ruby</a></p>                                                                                                                                                                       |
-| Scala    | <p><a href="https://github.com/slavaschmidt/ton-sdk-client-scala-binding/">slavaschmidt/ton-sdk-client-scala-binding/</a><br><a href="https://github.com/radianceteam/ton-client-scala">radianceteam/ton-client-scala</a></p>                                                                                                                           |
-| Swift    | [nerzh/ton-client-swift](https://github.com/nerzh/ton-client-swift)                                                                                                                                                                                                                                                                                     |
+| Language | Repository                                                                                                                                                                               |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Clojure  | [serge-medvedev/tonos-client-clojure](https://github.com/serge-medvedev/tonos-client-clojure)                                                                                            |
+| Golang   | <p><a href="https://github.com/radianceteam/ton-client-go">radianceteam/ton-client-go</a><br><a href="https://github.com/markgenuine/ever-client-go">markgenuine/ever-client-go</a></p>  |
+| Java     | <p><a href="https://github.com/radianceteam/ton-client-java">radianceteam/ton-client-java</a><br><a href="https://github.com/deplant/java4ever-binding">laugan/java4ever-binding</a></p> |
+| Kotlin   | [mdorofeev/ton-client-kotlin](https://github.com/mdorofeev/ton-client-kotlin)                                                                                                            |
+| Lua      | [serge-medvedev/tonos-client-lua](https://github.com/serge-medvedev/tonos-client-lua)                                                                                                    |
+| .NET     | <p><a href="https://github.com/everscale-actions/everscale-dotnet">everscale-actions/everscale-dotnet</a><br><a href="https://github.com/vcvetkovs/TonSdk">vcvetkovs/TonSdk</a><br></p>  |
+| PHP      | <p><a href="https://github.com/extraton/php-ton-client">extraton/php-ton-client</a><br><a href="https://github.com/radianceteam/ton-client-php">radianceteam/ton-client-php</a></p>      |
+| Python   | [move-ton/ton-client-py](https://github.com/move-ton/ton-client-py)                                                                                                                      |
+| Ruby     | [nerzh/ton-client-ruby](https://github.com/nerzh/ton-client-ruby)                                                                                                                        |
+| Scala    | [radianceteam/ton-client-scala](https://github.com/radianceteam/ton-client-scala)                                                                                                        |
+| Swift    | [nerzh/ton-client-swift](https://github.com/nerzh/ton-client-swift)                                                                                                                      |
 
 ## Quick Start
 
-Get your endpoing at [dashboard.evercloud.dev](https://dashboard.evercloud.dev/)
+Get your endpoing at [dashboard.evercloud.dev](https://dashboard.evercloud.dev/) or run Evernode-SE (local node) or Dapp Server (self-hosted blockchain node).&#x20;
 
 See the list of available TVM networks: https://docs.evercloud.dev/products/evercloud/networks-endpoints
 
