@@ -74,7 +74,7 @@ You need to install core package and the package with binary for your platform. 
 | Java     | <p><a href="https://github.com/radianceteam/ton-client-java">radianceteam/ton-client-java</a><br><a href="https://github.com/deplant/java4ever-binding">laugan/java4ever-binding</a></p> |
 | Kotlin   | [mdorofeev/ton-client-kotlin](https://github.com/mdorofeev/ton-client-kotlin)                                                                                                            |
 | Lua      | [serge-medvedev/tonos-client-lua](https://github.com/serge-medvedev/tonos-client-lua)                                                                                                    |
-| .NET     | <p><a href="https://github.com/everscale-actions/everscale-dotnet">everscale-actions/everscale-dotnet</a><br><a href="https://github.com/vcvetkovs/TonSdk">vcvetkovs/TonSdk</a><br></p>  |
+| .NET     | [everscale-actions/everscale-dotnet](https://github.com/everscale-actions/everscale-dotnet)                                                                                              |
 | PHP      | <p><a href="https://github.com/extraton/php-ton-client">extraton/php-ton-client</a><br><a href="https://github.com/radianceteam/ton-client-php">radianceteam/ton-client-php</a></p>      |
 | Python   | [move-ton/ton-client-py](https://github.com/move-ton/ton-client-py)                                                                                                                      |
 | Ruby     | [nerzh/ton-client-ruby](https://github.com/nerzh/ton-client-ruby)                                                                                                                        |
