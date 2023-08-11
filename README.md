@@ -1,14 +1,13 @@
 # Ever SDK
-
 Client libraries for DApp development in TVM blockchains (Everscale, Gosh, TON, Venom Blockchain, etc).
 
 Core Ever-SDK client library is written in Rust, with bindings in 11 programming languages.
 
 <div>
-<figure><img src="docs/.gitbook/assets/vf-dev-program.png" alt="" width="300"><figcaption></figcaption></figure>
-<figure><img src="docs/.gitbook/assets/GoshLogo.png" alt="" width="300"><figcaption></figcaption></figure>
+<img src="docs/.gitbook/assets/vf-dev-program.png" alt="" width="300">
+<img src="docs/.gitbook/assets/GoshLogo.png" alt="" width="300">
 </br>
-<figure><img src="docs/.gitbook/assets/Everscale Logo.png" alt="" width="300"><figcaption></figcaption></figure>
+<img src="docs/.gitbook/assets/Everscale Logo.png" alt="" width="300">
 
 </div>
 
