@@ -5,15 +5,10 @@ Client libraries for DApp development in TVM blockchains (Everscale, Gosh, TON, 
 Core Ever-SDK client library is written in Rust, with bindings in 11 programming languages.
 
 <div>
-
-<figure><img src="docs/.gitbook/assets/Everscale Logo.png" alt=""><figcaption></figcaption></figure>
-
- 
-
-<figure><img src="docs/.gitbook/assets/vf-dev-program.png" alt=""><figcaption></figcaption></figure>
-
-
-<figure><img src="docs/.gitbook/assets/GoshLogo.png" alt=""><figcaption></figcaption></figure>
+<figure><img src="docs/.gitbook/assets/vf-dev-program.png" alt="" width="500"><figcaption></figcaption></figure>
+<figure><img src="docs/.gitbook/assets/GoshLogo.png" alt="" width="500"><figcaption></figcaption></figure>
+</br>
+<figure><img src="docs/.gitbook/assets/Everscale Logo.png" alt="" width="500"><figcaption></figcaption></figure>
 
 </div>
 
@@ -43,7 +38,7 @@ Core Ever-SDK client library is written in Rust, with bindings in 11 programming
 
 Repository: https://github.com/tonlabs/ever-sdk
 
-*** What is Core Client Library? ***
+**What is Core Client Library?**
 
 Core Client Library is written in Rust that can be dynamically linked. It provides all heavy-computation components and functions, such as TON Virtual Machine, TON Transaction Executor, ABI-related functions, boc-related functions, crypto functions.
 
