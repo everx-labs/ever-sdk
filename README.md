@@ -20,7 +20,7 @@ Core Ever-SDK client library is written in Rust, with bindings in 11 programming
   - [Supported languages](#supported-languages)
     - [Rust (core library)](#rust-core-library)
     - [Official Javascript(Typescript) binding](#official-javascripttypescript-binding)
-    - [Community binding](#community-binding)
+    - [Community bindings](#community-bindings)
     - [If you did not find the language you need](#if-you-did-not-find-the-language-you-need)
   - [Use-cases](#use-cases)
   - [Quick Start](#quick-start)
@@ -63,7 +63,7 @@ You need to install core package and the package with binary for your platform. 
 | React-Native                   | [@eversdk/lib-react-native](https://github.com/tonlabs/ever-sdk-js#react-native)                                  |
 | React-Native with JSI support  | [@eversdk/lib-react-native-jsi](https://github.com/tonlabs/ever-sdk-js/tree/master/packages/lib-react-native-jsi) |
 
-### Community binding
+### Community bindings
 
 | Language | Repository                                                                                                                                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
