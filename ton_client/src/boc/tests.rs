@@ -16,6 +16,7 @@ use crate::abi::{
     CallSet, DeploySet, FunctionHeader, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::api_info::ApiModule;
+use crate::boc::internal::deserialize_object_from_boc_bin;
 use crate::boc::tvc::{ParamsOfDecodeTvc, ResultOfDecodeTvc};
 use crate::crypto::KeyPair;
 use crate::json_interface::modules::BocModule;
@@ -429,7 +430,7 @@ fn get_code_from_tvc() {
         "te6ccgECFgEAA/8AAib/APSkICLAAZL0oOGK7VNYMPShAwEBCvSkIPShAgAAAgEgBgQB6P9/IdMAAY4mgQIA1xgg+QEBcO1E0PQFgED0DvKK1wv/Ae1HIm917VcDAfkQ8qje7UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+LTPwHtR28TIbkgBQBgnzAg+COBA+iogggbd0Cgud6Z7Uchb1Mg7VcwlIA08vDiMNMfAfgjvPK50x8B8UABAgEgEgcCASALCAEJuotV8/gJAfrtR29hbo477UTQINdJwgGOFvQE0z/TAO1HAW9xAW92AW9zAW9y7VeOGPQF7UcBb3Jwb3Nwb3bIgCDPQMnQb3HtV+Le7UdvFpLyM5ftR3FvVu1X4gD4ANH4I7Uf7UcgbxEwAcjLH8nQb1HtV+1HbxLI9ADtR28Tzws/7UdvFgoAHM8LAO1HbxHPFsntVHBqAgFqDwwBCbQAGtbADQH87UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi3u1Hb2UgbpIwcN5w7UdvEoBA9A7yitcL/7ry4GT4APpA0SDIyfsEgQPocIEAgMhxzwsBIs8KAHHPQPgoDgCOzxYkzxYj+gJxz0Bw+gJw+gKAQM9A+CPPCx9yz0AgySL7AF8FMO1HbxLI9ADtR28Tzws/7UdvFs8LAO1HbxHPFsntVHBq2zABCbRl9ovAEAH47UdvYW6OO+1E0CDXScIBjhb0BNM/0wDtRwFvcQFvdgFvcwFvcu1Xjhj0Be1HAW9ycG9zcG92yIAgz0DJ0G9x7Vfi3tHtR28R1wsfyIIQUMvtF4IQgAAAALHPCx8hzwsfyHPPCwH4KM8Wcs9A+CXPCz+AIc9AIM81Is8xvBEAeJZxz0AhzxeVcc9BIc3iIMlx+wBbIcD/jh7tR28SyPQA7UdvE88LP+1HbxbPCwDtR28RzxbJ7VTecWrbMAIBIBUTAQm7cxLkWBQA+O1Hb2FujjvtRNAg10nCAY4W9ATTP9MA7UcBb3EBb3YBb3MBb3LtV44Y9AXtRwFvcnBvc3BvdsiAIM9AydBvce1X4t74ANH4I7Uf7UcgbxEwAcjLH8nQb1HtV+1HbxLI9ADtR28Tzws/7UdvFs8LAO1HbxHPFsntVHBq2zAAyt1wIddJIMEgjisgwACOHCPQc9ch1wsAIMABltswXwfbMJbbMF8H2zDjBNmW2zBfBtsw4wTZ4CLTHzQgdLsgjhUwIIIQ/////7ogmTAgghD////+ut/fltswXwfbMOAjIfFAAV8H"
     );
 
-    let tvc_boc = "te6ccgEBBQEAMgACCQFn9wzgAwEBAtACACZTb21lIFNtYXJ0IENvbnRyYWN0ART/APSkE/S88sgLBAAC0w==";
+    let tvc_boc = "te6ccgEBBAEALgACCaLwuBzgAgEAJlNvbWUgU21hcnQgQ29udHJhY3QBFP8A9KQT9LzyyAsDAALT";
     let code_boc = "te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT";
 
     let result: ResultOfGetCodeFromTvc = client
@@ -488,6 +489,43 @@ fn parse_account() {
     );
     assert_eq!(result.parsed["last_trans_lt"], "0x20eadff7e03");
     assert_eq!(result.parsed["balance"], "0x958a26eb8e7a18d");
+}
+
+#[test]
+fn parse_pruned_account() {
+    let client = TestClient::new();
+
+    let (account, _) = deserialize_object_from_boc_bin::<ton_block::Account>(include_bytes!("test_data/account.boc")).unwrap();
+
+    let code = account.get_code().map(|cell| cell.repr_hash());
+    let data = account.get_data().map(|cell| cell.repr_hash());
+    let libs = account.libraries().root().map(|cell| cell.repr_hash());
+    
+    let cell = account.serialize().unwrap();
+
+    let proof = ton_block::MerkleProof::create(
+        &cell,
+        |hash| Some(hash) != code.as_ref() && Some(hash) != data.as_ref() && Some(hash) != libs.as_ref()
+    ).unwrap();
+    let boc = proof.write_to_bytes().unwrap();
+
+    let result: ResultOfParse = client
+        .request(
+            "boc.parse_account",
+            ParamsOfParse {
+                boc: base64::encode(&boc),
+            },
+        )
+        .unwrap();
+
+    assert_eq!(
+        result.parsed["id"],
+        "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"
+    );
+    assert!(result.parsed["data"].is_null());
+    assert_eq!(result.parsed["data_hash"], "8ec587d3f253261f8b1e49c1201e912136c5feba29b184b2b56cf5727e9d79dd");
+    assert!(result.parsed["code"].is_null());
+    assert_eq!(result.parsed["code_hash"], "ccbfc821853aa641af3813ebd477e26818b51e4ca23e5f6d34509215aa7123d9");
 }
 
 #[test]
@@ -902,7 +940,7 @@ fn encode_external_in_message() {
 #[test]
 fn test_decode_tvc() {
     let client = TestClient::new();
-    let tvc_boc = "te6ccgEBBQEAMgACCQFn9wzgAwEBAtACACZTb21lIFNtYXJ0IENvbnRyYWN0ART/APSkE/S88sgLBAAC0w==";
+    let tvc_boc = "te6ccgEBBAEALgACCaLwuBzgAgEAJlNvbWUgU21hcnQgQ29udHJhY3QBFP8A9KQT9LzyyAsDAALT";
     let code_boc = "te6ccgEBAgEAEAABFP8A9KQT9LzyyAsBAALT";
     let description = "Some Smart Contract";
 

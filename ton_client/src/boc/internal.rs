@@ -17,7 +17,7 @@ use crate::ClientContext;
 #[allow(unused_imports)]
 use std::str::FromStr;
 use ton_block::{Deserializable, Serializable};
-use ton_types::{UInt256};
+use ton_types::UInt256;
 
 pub(crate) fn get_boc_hash(boc: &[u8]) -> ClientResult<String> {
     let cells =
