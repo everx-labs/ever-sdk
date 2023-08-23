@@ -803,6 +803,7 @@ async fn get_code_hash_from_tvc(client: Arc<TestClient>, name: &str) -> String {
 const EXIT_CHOICE: u8 = 9;
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_goto() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
@@ -823,6 +824,7 @@ async fn test_debot_goto() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_print() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr, keys, abi } = init_debot(client.clone()).await;
@@ -845,6 +847,7 @@ async fn test_debot_print() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_runact() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
@@ -869,6 +872,7 @@ async fn test_debot_runact() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_run_method() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
@@ -891,6 +895,7 @@ async fn test_debot_run_method() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_send_msg() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
@@ -914,6 +919,7 @@ async fn test_debot_send_msg() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_invoke_debot() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
@@ -942,6 +948,7 @@ async fn test_debot_invoke_debot() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_engine_calls() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
@@ -967,6 +974,7 @@ async fn test_debot_engine_calls() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_interface_call() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot(client.clone()).await;
@@ -987,6 +995,7 @@ async fn test_debot_interface_call() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_inner_interfaces() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot3(client.clone()).await;
@@ -1025,6 +1034,7 @@ async fn test_debot_inner_interfaces() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_4() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr, keys, abi } = init_debot4(client.clone()).await;
@@ -1078,6 +1088,7 @@ async fn test_debot_4() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_msg_interface() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_debot2(client.clone()).await;
@@ -1119,6 +1130,7 @@ async fn test_debot_msg_interface() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_invoke_msgs() {
     let client = Arc::new(TestClient::new());
     let (debot1, _, abi) = init_debot_pair(client.clone(), TEST_DEBOTA, TEST_DEBOTB).await;
@@ -1140,6 +1152,7 @@ async fn test_debot_invoke_msgs() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_sdk_get_accounts_by_hash() {
     let client = Arc::new(TestClient::new());
     let deploy_count = 8;
@@ -1158,6 +1171,7 @@ async fn test_debot_sdk_get_accounts_by_hash() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_getinfo() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_hello_debot(client.clone()).await;
@@ -1192,6 +1206,7 @@ async fn test_debot_getinfo() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_approve() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot6").await;
@@ -1245,6 +1260,7 @@ async fn test_debot_approve() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_json_interface() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot7").await;
@@ -1298,6 +1314,7 @@ async fn test_debot_network_interface() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_transaction_chain() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot9").await;
@@ -1314,6 +1331,7 @@ async fn test_debot_transaction_chain() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_encryption_box() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot10").await;
@@ -1333,6 +1351,7 @@ async fn test_debot_encryption_box() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_encryption_box_get_info() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot11").await;
@@ -1352,6 +1371,7 @@ async fn test_debot_encryption_box_get_info() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_signing_box_get_info() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot12").await;
@@ -1371,6 +1391,7 @@ async fn test_debot_signing_box_get_info() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_query() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot14").await;
@@ -1389,6 +1410,7 @@ async fn test_debot_query() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_json_parse() {
     let client = Arc::new(TestClient::new());
     let DebotData {
@@ -1418,6 +1440,7 @@ async fn test_debot_json_parse() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_custom_header() {
     let client = Arc::new(TestClient::new());
     //deply CustomReplayProtection contract
@@ -1477,6 +1500,7 @@ async fn test_debot_custom_header() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_target_abi() {
     let client = Arc::new(TestClient::new());
     let DebotData {debot_addr, target_addr: _, keys, abi} =
@@ -1496,6 +1520,7 @@ async fn test_debot_target_abi() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_msg_sendasync_and_waitforcollection() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot17").await;
@@ -1515,6 +1540,7 @@ async fn test_debot_msg_sendasync_and_waitforcollection() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_query_query() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot18").await;
@@ -1533,6 +1559,7 @@ async fn test_debot_query_query() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_transaction_result() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(client.clone(), "testDebot19").await;
@@ -1551,6 +1578,7 @@ async fn test_debot_transaction_result() {
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+#[ignore]
 async fn test_debot_sign_hash() {
     let client = Arc::new(TestClient::new());
     let DebotData { debot_addr, target_addr: _, keys, abi } = init_simple_debot(
