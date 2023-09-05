@@ -63,9 +63,7 @@ pub(crate) async fn get_default_params(context: &Arc<ClientContext>) -> ClientRe
     }
 
     let (config, global_id) = if let Ok(link) = context.get_server_link() {
-        query_network_params(link)
-            .await
-            .unwrap_or_else(|_| offline_config())
+        query_network_params(link).await?
     } else {
         offline_config()
     };
