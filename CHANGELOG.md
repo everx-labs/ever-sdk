@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.44.3] – 2023-09-05
+
+### New
+
+- Error appeared during network paramaters resolving is returned to client instead of using default parameters
+
 ## [1.44.2] – 2023-08-22
 
 ### New
