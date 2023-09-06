@@ -505,7 +505,7 @@ impl Signatures {
     }
 }
 
-pub(crate) struct BlockProof {
+pub struct BlockProof {
     id: BlockIdExt,
     root: Cell,
     signatures: Signatures,
@@ -552,7 +552,6 @@ impl BlockProof {
         Ok(Self { id, root, signatures })
     }
 
-    #[cfg(test)]
     pub fn deserialize(data: &[u8]) -> Result<Self> {
         let proof = ton_block::BlockProof::construct_from_bytes(data)?;
         let signatures = proof.signatures
@@ -960,7 +959,7 @@ async fn resolve_initial_trusted_key_block(
 }
 
 #[async_trait::async_trait]
-pub(crate) trait ProofHelperEngine {
+pub trait ProofHelperEngine {
     async fn load_zerostate(&self) -> Result<ShardStateUnsplit>;
     async fn load_key_block_proof(&self, mc_seq_no: u32) -> Result<BlockProof>;
 }
