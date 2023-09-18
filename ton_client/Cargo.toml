@@ -73,8 +73,8 @@ zeroize = { features = [ 'zeroize_derive' ], version = '1.3' }
 zstd = { default-features = false, optional = true, version = '0.11.0' }
 
 # optional for std
-reqwest = { features = [ 'cookies' ], optional = true, version = '0.11.11' }
-tokio-tungstenite = { features = [ 'native-tls' ], optional = true, version = '0.17.1' }
+reqwest = { features = [ 'cookies' ], optional = true, version = '0.11.11', default-features = false }
+tokio-tungstenite = { optional = true, version = '0.17.1' }
 
 # optional for wasm
 indexed_db_futures = { default-features = false, optional = true, version = '0.2.0' }
@@ -110,7 +110,7 @@ pretty_assertions = '1.2'
 
 
 [features]
-default = [ 'std' ]
+default = [ 'std', 'native-tls' ]
 include-zstd = [ 'ton_block/gosh', 'ton_vm/gosh' ]
 std = [
     'tokio/rt-multi-thread',
@@ -118,12 +118,14 @@ std = [
     'tokio/time',
     'tokio/net',
     'tokio/fs',
-    'reqwest',
-    'tokio-tungstenite',
     'home',
     'include-zstd',
     'zstd'
 ]
+native-tls = [ 'reqwest/default', 'tokio-tungstenite/native-tls' ]
+native-tls-vendored = [ 'reqwest/native-tls-vendored', 'tokio-tungstenite/native-tls-vendored' ]
+rustls-tls-native-roots = [ 'reqwest/rustls-tls-native-roots', 'tokio-tungstenite/rustls-tls-native-roots' ]
+rustls-tls-webpki-roots = [ 'reqwest/rustls-tls-webpki-roots', 'tokio-tungstenite/rustls-tls-webpki-roots' ]
 wasm = [
     'wasm-base',
     'include-zstd',
