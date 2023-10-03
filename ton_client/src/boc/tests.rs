@@ -16,6 +16,7 @@ use crate::abi::{
     CallSet, DeploySet, FunctionHeader, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::api_info::ApiModule;
+use crate::boc::internal::deserialize_object_from_boc_bin;
 use crate::boc::tvc::{ParamsOfDecodeTvc, ResultOfDecodeTvc};
 use crate::crypto::KeyPair;
 use crate::json_interface::modules::BocModule;
@@ -488,6 +489,43 @@ fn parse_account() {
     );
     assert_eq!(result.parsed["last_trans_lt"], "0x20eadff7e03");
     assert_eq!(result.parsed["balance"], "0x958a26eb8e7a18d");
+}
+
+#[test]
+fn parse_pruned_account() {
+    let client = TestClient::new();
+
+    let (account, _) = deserialize_object_from_boc_bin::<ton_block::Account>(include_bytes!("test_data/account.boc")).unwrap();
+
+    let code = account.get_code().map(|cell| cell.repr_hash());
+    let data = account.get_data().map(|cell| cell.repr_hash());
+    let libs = account.libraries().root().map(|cell| cell.repr_hash());
+    
+    let cell = account.serialize().unwrap();
+
+    let proof = ton_block::MerkleProof::create(
+        &cell,
+        |hash| Some(hash) != code.as_ref() && Some(hash) != data.as_ref() && Some(hash) != libs.as_ref()
+    ).unwrap();
+    let boc = proof.write_to_bytes().unwrap();
+
+    let result: ResultOfParse = client
+        .request(
+            "boc.parse_account",
+            ParamsOfParse {
+                boc: base64::encode(&boc),
+            },
+        )
+        .unwrap();
+
+    assert_eq!(
+        result.parsed["id"],
+        "0:2bb4a0e8391e7ea8877f4825064924bd41ce110fce97e939d3323999e1efbb13"
+    );
+    assert!(result.parsed["data"].is_null());
+    assert_eq!(result.parsed["data_hash"], "8ec587d3f253261f8b1e49c1201e912136c5feba29b184b2b56cf5727e9d79dd");
+    assert!(result.parsed["code"].is_null());
+    assert_eq!(result.parsed["code_hash"], "ccbfc821853aa641af3813ebd477e26818b51e4ca23e5f6d34509215aa7123d9");
 }
 
 #[test]

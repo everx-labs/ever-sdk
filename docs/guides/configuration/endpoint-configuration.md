@@ -53,7 +53,7 @@ network: {
 
 ### Self-hosted dedicated node
 
-If you want to run your own dedicated node yourself - see the[ Evernode-DS documentation ](https://docs.everos.dev/evernode-platform/products/dapp-server-ds)how to run your dedicaded node.
+If you want to run your own dedicated node yourself - see the[ Evernode-DS documentation ](https://docs.everos.dev/evernode-platform/products/dapp-server-ds)how to run your dedicated node.
 
 ### Dedicated Evercloud
 

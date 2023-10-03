@@ -23,6 +23,17 @@ State init should be finalized and ready to be used in message as is.
 - `abi.encode_account` parameter `state_init` is BOC or cached BOC reference instead of
 `StateInitSource` enum. There is only one way to provide account state init now.
 
+## [1.44.3] – 2023-09-05
+
+### New
+
+- Error appeared during network paramaters resolving is returned to client instead of using default parameters
+
+## [1.44.2] – 2023-08-22
+
+### New
+
+- Pruned account serialization supported
 
 ## [1.44.1] – 2023-07-25
 

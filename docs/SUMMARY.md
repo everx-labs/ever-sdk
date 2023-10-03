@@ -49,6 +49,7 @@
   * [Emulate Transaction](guides/work\_with\_contracts/emulate\_transaction.md)
   * [Estimate Fees](guides/work\_with\_contracts/estimate\_fees.md)
   * [Validate address, convert address](guides/work\_with\_contracts/validate\_address\_convert\_address.md)
+  * [Monitor Messages](guides/work\_with\_contracts/monitor-messages.md)
   * [Trace message processing with REMP](guides/work\_with\_contracts/trace-message-processing-with-remp.md)
 * [Crypto](guides/crypto/README.md)
   * [Mnemonics and Keys](guides/crypto/mnemonics\_and\_keys.md)

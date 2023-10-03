@@ -854,13 +854,9 @@ async fn test_method_error(
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn test_resolve_blockchain_config() {
-    if TestClient::node_se() {
-        return;
-    }
-
-    let mut config = crate::ClientConfig::default();
-    config.network.endpoints = Some(TestClient::endpoints());
-    let net_context = Arc::new(crate::ClientContext::new(config).unwrap());
+    let mut client_config = crate::ClientConfig::default();
+    client_config.network.endpoints = Some(TestClient::endpoints());
+    let net_context = Arc::new(crate::ClientContext::new(client_config.clone()).unwrap());
 
     let local_context =
         Arc::new(crate::ClientContext::new(crate::ClientConfig::default()).unwrap());
@@ -881,6 +877,11 @@ async fn test_resolve_blockchain_config() {
 
     let config = resolve_network_params(&net_context, None, None).await.unwrap().blockchain_config;
     assert_ne!(config.raw_config(), offline_config().0.raw_config());
+
+    client_config.network.endpoints = Some(vec!["-1".to_owned()]);
+    client_config.network.max_reconnect_timeout = 1;
+    let wrong_net_context = Arc::new(crate::ClientContext::new(client_config.clone()).unwrap());
+    assert!(resolve_network_params(&wrong_net_context, None, None).await.is_err());
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

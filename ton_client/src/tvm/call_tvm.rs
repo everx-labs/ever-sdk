@@ -100,7 +100,7 @@ pub(crate) fn call_tvm(
         }
         Ok(_) => match engine.get_committed_state().get_root() {
             StackItem::Cell(data) => {
-                account.set_data(data);
+                account.set_data(data.clone());
                 Ok(engine)
             }
             _ => Err(Error::internal_error("invalid committed state")),

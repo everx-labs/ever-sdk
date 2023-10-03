@@ -35,7 +35,7 @@ Generated seed phrase: "garden wedding range mixed during left powder grid modif
 
 ## Key pair generation from mnemonic
 
-Here is the fast way to generate a key pair for a signature from a specified mnemonic and path with `mnemonic_derive_sign_keys` method. The specified path, dictionary and word count is compatible with Surf and tonos-cli:
+Here is the fast way to generate a key pair for a signature from a specified mnemonic and path with `mnemonic_derive_sign_keys` method. The specified path, dictionary and word count is compatible with Surf and Everdev CLI:
 
 ```javascript
 const HD_PATH = "m/44'/396'/0'/0/0";

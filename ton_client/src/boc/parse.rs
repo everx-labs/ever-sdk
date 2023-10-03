@@ -16,6 +16,9 @@ use crate::boc::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
 use serde_json::Value;
+use ton_block::Deserializable;
+
+use super::internal::{deserialize_cell_from_boc, deserialize_object_from_cell};
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
 pub struct ParamsOfParse {
@@ -114,12 +117,21 @@ pub fn parse_account(
     context: std::sync::Arc<ClientContext>,
     params: ParamsOfParse,
 ) -> ClientResult<ResultOfParse> {
-    let object = deserialize_object_from_boc::<ton_block::Account>(&context, &params.boc, "account")?;
+    let (boc, cell) = deserialize_cell_from_boc(&context, &params.boc, "account")?;
+
+    let account = if cell.cell_type() == ton_types::CellType::MerkleProof {
+        let proof = ton_block::MerkleProof::construct_from_cell(cell)
+            .map_err(|err| Error::invalid_boc(format!("Can not deserialize Merkle proof from pruned account BOC: {}", err)))?;
+        proof.virtualize()
+            .map_err(|err| Error::invalid_boc(format!("Can not virtualize pruned account from Merkle proof: {}", err)))?
+    } else {
+        deserialize_object_from_cell(cell, "account")?
+    };
 
     let set = ton_block_json::AccountSerializationSet {
-        boc: object.boc.bytes("account")?,
+        boc: boc.bytes("account")?,
         proof: None,
-        account: object.object,
+        account,
         ..Default::default()
     };
 
