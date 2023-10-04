@@ -16,15 +16,15 @@ use crate::json_helper;
 use crate::{AbiContract, MessageId};
 
 use chrono::prelude::Utc;
-use ed25519_dalek::{Keypair, PublicKey};
 use serde_json::Value;
-use std::convert::Into;
+use ton_abi::PublicKeyData;
+use std::convert::{Into, TryInto};
 use std::io::{Read, Seek};
 use ton_abi::json_abi::DecodedMessage;
 use ton_block::{AccountIdPrefixFull, Deserializable, ExternalInboundMessageHeader, GetRepresentationHash,
     Message as TvmMessage, MsgAddressInt, Serializable, ShardIdent, StateInit,
     InternalMessageHeader, CurrencyCollection};
-use ton_types::{error, fail, AccountId, Result, SliceData, BocReader};
+use ton_types::{error, fail, AccountId, Result, SliceData, BocReader, Ed25519PrivateKey};
 
 pub struct Contract {}
 
@@ -95,7 +95,7 @@ impl ContractImage {
         Ok(Self { state_init, id })
     }
 
-    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKey) -> Result<Self>
+    pub fn from_state_init_and_key<T>(state_init_bag: &mut T, pub_key: &PublicKeyData) -> Result<Self>
     where
         T: Read + Seek,
     {
@@ -112,21 +112,19 @@ impl ContractImage {
         Ok(Self { state_init, id })
     }
 
-    pub fn get_public_key(&self) -> Result<Option<PublicKey>> {
+    pub fn get_public_key(&self) -> Result<Option<PublicKeyData>> {
         let Some(data) = self.state_init.data.clone() else {
             return Ok(None);
         };
-        Ok(AbiContract::get_pubkey(&SliceData::load_cell(data)?)?
-            .map(|pub_key| PublicKey::from_bytes(&pub_key))
-            .transpose()?)
+        AbiContract::get_pubkey(&SliceData::load_cell(data)?)
     }
 
-    pub fn set_public_key(&mut self, pub_key: &PublicKey) -> Result<()> {
+    pub fn set_public_key(&mut self, pub_key: &PublicKeyData) -> Result<()> {
         let state_init = &mut self.state_init;
 
         let new_data = AbiContract::insert_pubkey(
             SliceData::load_cell(state_init.data.clone().unwrap_or_default())?,
-            pub_key.as_bytes(),
+            pub_key,
         )?;
         state_init.set_data(new_data.into_cell());
 
@@ -211,8 +209,8 @@ pub struct ShardDescr {
 impl Contract {
     /// Decodes output parameters returned by contract function call
     pub fn decode_function_response_json(
-        abi: String,
-        function: String,
+        abi: &str,
+        function: &str,
         response: SliceData,
         internal: bool,
         allow_partial: bool,
@@ -228,8 +226,8 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call from serialized message body
     pub fn decode_function_response_from_bytes_json(
-        abi: String,
-        function: String,
+        abi: &str,
+        function: &str,
         response: &[u8],
         internal: bool,
         allow_partial: bool,
@@ -241,7 +239,7 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call
     pub fn decode_unknown_function_response_json(
-        abi: String,
+        abi: &str,
         response: SliceData,
         internal: bool,
         allow_partial: bool,
@@ -251,7 +249,7 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call from serialized message body
     pub fn decode_unknown_function_response_from_bytes_json(
-        abi: String,
+        abi: &str,
         response: &[u8],
         internal: bool,
         allow_partial: bool,
@@ -263,7 +261,7 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call
     pub fn decode_unknown_function_call_json(
-        abi: String,
+        abi: &str,
         response: SliceData,
         internal: bool,
         allow_partial: bool,
@@ -273,7 +271,7 @@ impl Contract {
 
     /// Decodes output parameters returned by contract function call from serialized message body
     pub fn decode_unknown_function_call_from_bytes_json(
-        abi: String,
+        abi: &str,
         response: &[u8],
         internal: bool,
         allow_partial: bool,
@@ -290,18 +288,18 @@ impl Contract {
     // Returns message's bag of cells and identifier.
     pub fn construct_call_ext_in_message_json(
         address: MsgAddressInt,
-        params: FunctionCallSet,
-        key_pair: Option<&Keypair>,
+        params: &FunctionCallSet,
+        key_pair: Option<&Ed25519PrivateKey>,
     ) -> Result<SdkMessage> {
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(
-            params.abi,
-            params.func,
-            params.header,
-            params.input,
+            &params.abi,
+            &params.func,
+            params.header.as_deref(),
+            &params.input,
             false,
             key_pair,
-            Some(address.to_string()),
+            Some(&address.to_string()),
         )?;
 
         let msg = Self::create_ext_in_message(
@@ -326,17 +324,17 @@ impl Contract {
         ihr_disabled: bool,
         bounce: bool,
         value: CurrencyCollection,
-        params: FunctionCallSet,
+        params: &FunctionCallSet,
     ) -> Result<SdkMessage> {
         // pack params into bag of cells via ABI
         let msg_body = ton_abi::encode_function_call(
-            params.abi,
-            params.func,
+            &params.abi,
+            &params.func,
             None,
-            params.input,
+            &params.input,
             true,
             None,
-            Some(address.to_string()),
+            Some(&address.to_string()),
         )?;
 
         Self::construct_int_message_with_body(
@@ -379,15 +377,15 @@ impl Contract {
     // Works with json representation of input and abi.
     pub fn get_call_message_bytes_for_signing(
         address: MsgAddressInt,
-        params: FunctionCallSet,
+        params: &FunctionCallSet,
     ) -> Result<MessageToSign> {
         // pack params into bag of cells via ABI
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
-            params.abi,
-            params.func,
-            params.header,
-            params.input,
-            Some(address.to_string()),
+            &params.abi,
+            &params.func,
+            params.header.as_deref(),
+            &params.input,
+            Some(&address.to_string()),
         )?;
 
         let msg =
@@ -405,19 +403,19 @@ impl Contract {
     // Works with json representation of input and abi.
     // Returns message's bag of cells and identifier.
     pub fn construct_deploy_message_json(
-        params: FunctionCallSet,
+        params: &FunctionCallSet,
         image: ContractImage,
-        key_pair: Option<&Keypair>,
+        key_pair: Option<&Ed25519PrivateKey>,
         workchain_id: i32,
     ) -> Result<SdkMessage> {
         let msg_body = ton_abi::encode_function_call(
-            params.abi,
-            params.func,
-            params.header,
-            params.input,
+            &params.abi,
+            &params.func,
+            params.header.as_deref(),
+            &params.input,
             false,
             key_pair,
-            Some(image.msg_address(workchain_id).to_string()),
+            Some(&image.msg_address(workchain_id).to_string()),
         )?;
 
         let cell = SliceData::load_cell(msg_body.into_cell()?)?;
@@ -480,16 +478,16 @@ impl Contract {
     // Signature should be then added with `add_sign_to_message` function
     // Works with json representation of input and abi.
     pub fn get_deploy_message_bytes_for_signing(
-        params: FunctionCallSet,
+        params: &FunctionCallSet,
         image: ContractImage,
         workchain_id: i32,
     ) -> Result<MessageToSign> {
         let (msg_body, data_to_sign) = ton_abi::prepare_function_call_for_sign(
-            params.abi,
-            params.func,
-            params.header,
-            params.input,
-            Some(image.msg_address(workchain_id).to_string()),
+            &params.abi,
+            &params.func,
+            params.header.as_deref(),
+            &params.input,
+            Some(&image.msg_address(workchain_id).to_string()),
         )?;
 
         let cell = SliceData::load_cell(msg_body.into_cell()?)?;
@@ -505,7 +503,7 @@ impl Contract {
     // Works with json representation of input and abi.
     pub fn get_int_deploy_message_bytes(
         src: Option<MsgAddressInt>,
-        params: FunctionCallSet,
+        params: &FunctionCallSet,
         image: ContractImage,
         workchain_id: i32,
         ihr_disabled: bool,
@@ -513,13 +511,13 @@ impl Contract {
         value: CurrencyCollection,
     ) -> Result<Vec<u8>> {
         let msg_body = ton_abi::encode_function_call(
-            params.abi,
-            params.func,
+            &params.abi,
+            &params.func,
             None,
-            params.input,
+            &params.input,
             true,
             None,
-            Some(image.msg_address(workchain_id).to_string()),
+            Some(&image.msg_address(workchain_id).to_string()),
         )?;
 
         let cell = SliceData::load_cell(msg_body.into_cell()?)?;
@@ -540,7 +538,7 @@ impl Contract {
     // `get_run_message_bytes_for_signing` function.
     // Returns serialized message and identifier.
     pub fn add_sign_to_message(
-        abi: String,
+        abi: &str,
         signature: &[u8],
         public_key: Option<&[u8]>,
         message: &[u8],
@@ -553,7 +551,11 @@ impl Contract {
             msg: "No message body".to_owned()
         }))?;
 
-        let signed_body = ton_abi::add_sign_to_function_call(abi, signature, public_key, body)?;
+        let signed_body = ton_abi::add_sign_to_function_call(
+            abi,
+            signature.try_into()?,
+            public_key.map(|slice| slice.try_into()).transpose()?,
+            body)?;
         message.set_body(SliceData::load_cell(signed_body.into_cell()?)?);
 
         let address = match message.dst_ref() {
@@ -589,7 +591,11 @@ impl Contract {
             msg: "No message body".to_owned()
         }))?;
 
-        let signed_body = abi.add_sign_to_encoded_input(signature, public_key, body)?;
+        let signed_body = abi.add_sign_to_encoded_input(
+            signature.try_into()?,
+            public_key.map(|slice| slice.try_into()).transpose()?,
+            body
+        )?;
         message.set_body(SliceData::load_cell(signed_body.into_cell()?)?);
 
         let address = match message.dst_ref() {

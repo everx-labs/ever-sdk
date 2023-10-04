@@ -451,17 +451,12 @@ fn decode_v2() {
 
 #[test]
 fn test_is_empty_pubkey() -> Result<()> {
-    let pubkey = ed25519_dalek::PublicKey::from_bytes(&[0; 32])?;
-
-    assert!(is_empty_pubkey(&pubkey));
-
-    let pubkey = ed25519_dalek::PublicKey::from_bytes(&[1; 32])?;
-    assert!(!is_empty_pubkey(&pubkey));
+    assert!(is_empty_pubkey(&[0; 32]));
+    assert!(!is_empty_pubkey(&[1; 32]));
 
     let mut array = [0; 32];
     array[0] = 1;
-    let pubkey = ed25519_dalek::PublicKey::from_bytes(&array)?;
-    assert!(!is_empty_pubkey(&pubkey));
+    assert!(!is_empty_pubkey(&array));
 
     Ok(())
 }
@@ -486,19 +481,18 @@ fn test_resolve_pubkey() -> Result<()> {
 
     assert_eq!(resolved, external_pub_key);
 
-    let tvc_pubkey_empty = ed25519_dalek::PublicKey::from_bytes(&[0; 32])?;
-    image.set_public_key(&tvc_pubkey_empty)?;
+    image.set_public_key(&[0; 32])?;
 
     let resolved = resolve_pubkey(&deploy_set, &image, &external_pub_key)?;
 
     assert_eq!(resolved, external_pub_key);
 
-    let tvc_pubkey_1 = ed25519_dalek::PublicKey::from_bytes(&[1; 32])?;
+    let tvc_pubkey_1 = [1; 32];
     image.set_public_key(&tvc_pubkey_1)?;
 
     let resolved = resolve_pubkey(&deploy_set, &image, &external_pub_key)?;
 
-    assert_eq!(resolved, Some(hex::encode(tvc_pubkey_1.as_bytes())));
+    assert_eq!(resolved, Some(hex::encode(&tvc_pubkey_1)));
 
     let initial_pub_key =
         Some("1234567890123456789012345678901234567890123456789012345678901234".to_owned());
@@ -595,7 +589,7 @@ async fn test_encode_message_pubkey_internal(
         resolve_state_init_cell(&context, tvc.as_ref().unwrap())?,
     )?;
     if let Some(tvc_pubkey) = tvc_pubkey {
-        image.set_public_key(tvc_pubkey)?;
+        image.set_public_key(tvc_pubkey.as_bytes())?;
     }
 
     let tvc = base64::encode(&image.serialize()?);
@@ -630,7 +624,7 @@ async fn test_encode_message_pubkey_internal(
     let image = ContractImage::from_state_init(&mut Cursor::new(state_init))?;
     let public_key = image.get_public_key()?;
 
-    assert_eq!(&public_key, expected_pubkey);
+    assert_eq!(public_key, expected_pubkey.map(|key| *key.as_bytes()));
 
     Ok(())
 }

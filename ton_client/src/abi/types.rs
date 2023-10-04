@@ -160,7 +160,7 @@ fn required_expire(token: &Token) -> ClientResult<u32> {
 
 fn required_pubkey(token: &Token) -> ClientResult<Option<String>> {
     match token.value {
-        TokenValue::PublicKey(key) => Ok(key.as_ref().map(|x| hex::encode(x.as_bytes()))),
+        TokenValue::PublicKey(key) => Ok(key.as_ref().map(|x| hex::encode(&x))),
         _ => Err(Error::invalid_message_for_decode(
             "`pubkey` header has invalid format",
         )),

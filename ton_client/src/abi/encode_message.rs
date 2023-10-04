@@ -315,7 +315,7 @@ fn encode_deploy(
     Ok(match signer {
         Signer::None => {
             let message = ton_sdk::Contract::construct_deploy_message_json(
-                call_set.to_function_call_set(
+                &call_set.to_function_call_set(
                     pubkey,
                     processing_try_index,
                     &context,
@@ -331,7 +331,7 @@ fn encode_deploy(
         }
         _ => {
             let unsigned = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
-                call_set.to_function_call_set(
+                &call_set.to_function_call_set(
                     pubkey,
                     processing_try_index,
                     &context,
@@ -361,7 +361,7 @@ fn encode_int_deploy(
     let address = image.msg_address(workchain_id);
     let message = ton_sdk::Contract::get_int_deploy_message_bytes(
         src,
-        call_set.to_function_call_set(None, None, &context, &abi, true)?,
+        &call_set.to_function_call_set(None, None, &context, &abi, true)?,
         image,
         workchain_id,
         ihr_disabled,
@@ -434,7 +434,7 @@ fn encode_run(
         Signer::None => {
             let message = ton_sdk::Contract::construct_call_ext_in_message_json(
                 address.clone(),
-                call_set.to_function_call_set(
+                &call_set.to_function_call_set(
                     pubkey,
                     processing_try_index,
                     &context,
@@ -449,7 +449,7 @@ fn encode_run(
         _ => {
             let unsigned = ton_sdk::Contract::get_call_message_bytes_for_signing(
                 address.clone(),
-                call_set.to_function_call_set(
+                &call_set.to_function_call_set(
                     pubkey,
                     processing_try_index,
                     &context,
@@ -713,7 +713,7 @@ pub fn encode_internal_message(
                 ihr_disabled,
                 bounce,
                 value,
-                call_set.to_function_call_set(None, None, &context, &abi, true)?,
+                &call_set.to_function_call_set(None, None, &context, &abi, true)?,
             )
             .map_err(|err| Error::encode_run_message_failed(err, Some(&call_set.function_name)))?;
 
@@ -816,35 +816,35 @@ pub async fn encode_message_body(
     let (body, data_to_sign) = match params.signer {
         Signer::None => {
             let body = ton_abi::encode_function_call(
-                abi.clone(),
-                func.clone(),
-                call.header,
-                call.input.clone(),
+                &abi,
+                &func,
+                call.header.as_deref(),
+                &call.input,
                 params.is_internal,
                 None,
-                params.address,
+                params.address.as_deref(),
             )
             .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?;
             (body, None)
         }
         _ => if params.is_internal {
             ton_abi::encode_function_call(
-                abi.clone(),
-                func.clone(),
+                &abi,
+                &func,
                 None,
-                call.input,
+                &call.input,
                 true,
                 None,
-                params.address,
+                params.address.as_deref(),
             )
             .map(|body| (body, None))
         } else {
             ton_abi::prepare_function_call_for_sign(
-                abi.clone(),
-                func.clone(),
-                call.header,
-                call.input,
-                params.address,
+                &abi,
+                &func,
+                call.header.as_deref(),
+                &call.input,
+                params.address.as_deref(),
             )
             .map(|(body, data_to_sign)| (body, Some(data_to_sign)))
         }

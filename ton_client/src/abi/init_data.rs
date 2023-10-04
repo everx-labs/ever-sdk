@@ -8,6 +8,7 @@ use crate::encoding::{hex_decode, slice_from_cell};
 use crate::error::ClientResult;
 use serde_json;
 use serde_json::Value;
+use std::convert::TryInto;
 use std::sync::Arc;
 use ton_types::{Cell, SliceData};
 
@@ -83,8 +84,11 @@ fn update_initial_data_internal(
     match initial_pubkey {
         Some(pubkey) => {
             let data = slice_from_cell(data)?;
+            let pubkey = hex_decode(&pubkey)?
+                .try_into()
+                .map_err(|vec: Vec<u8>| Error::encode_init_data_failed(format!("invalid public key size {}", vec.len())))?;
             Ok(
-                ton_abi::Contract::insert_pubkey(data, &hex_decode(&pubkey)?)
+                ton_abi::Contract::insert_pubkey(data, &pubkey)
                     .map_err(|err| Error::encode_init_data_failed(err))?
                     .into_cell(),
             )
