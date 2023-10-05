@@ -532,7 +532,7 @@ fn mnemonic() {
         .request(
             "crypto.convert_public_key_to_ton_safe_format",
             ParamsOfConvertPublicKeyToTonSafeFormat {
-                public_key: result.public,
+                public_key: result.public.clone(),
             },
         )
         .unwrap();
@@ -551,7 +551,7 @@ fn mnemonic() {
         .request(
             "crypto.convert_public_key_to_ton_safe_format",
             ParamsOfConvertPublicKeyToTonSafeFormat {
-                public_key: result.public,
+                public_key: result.public.clone(),
             },
         )
         .unwrap();
@@ -575,7 +575,7 @@ fn mnemonic() {
         .request(
             "crypto.convert_public_key_to_ton_safe_format",
             ParamsOfConvertPublicKeyToTonSafeFormat {
-                public_key: result.public,
+                public_key: result.public.clone(),
             },
         )
         .unwrap();
@@ -643,7 +643,7 @@ fn mnemonic() {
         .request(
             "crypto.convert_public_key_to_ton_safe_format",
             ParamsOfConvertPublicKeyToTonSafeFormat {
-                public_key: result.public,
+                public_key: result.public.clone(),
             },
         )
         .unwrap();
@@ -1237,7 +1237,7 @@ fn password_provider(
                 encryption_public_key,
             } = serde_json::from_value(request.request_data).unwrap();
 
-            let KeyPair { public, secret } =
+            let keypair: KeyPair =
                 client.request_no_params("crypto.nacl_box_keypair").unwrap();
 
             let ResultOfNaclBox { encrypted } = client
@@ -1247,7 +1247,7 @@ fn password_provider(
                         decrypted: base64::encode(&hex::decode(password_hash.as_ref()).unwrap()),
                         nonce: encryption_public_key[..48].to_string(),
                         their_public: encryption_public_key,
-                        secret,
+                        secret: keypair.secret.clone(),
                     },
                 )
                 .await
@@ -1258,7 +1258,7 @@ fn password_provider(
                     request.app_request_id,
                     ResultOfAppPasswordProvider::GetPassword {
                         encrypted_password: encrypted,
-                        app_encryption_pubkey: public,
+                        app_encryption_pubkey: keypair.public.clone(),
                     },
                 )
                 .await;

@@ -15,6 +15,7 @@ use crate::client::ClientContext;
 use crate::crypto;
 use crate::crypto::internal::{key256, key512, sha256, Key256, Key264};
 use crate::crypto::mnemonic::{check_phrase, mnemonics};
+use crate::crypto::{default_hdkey_compliant, MnemonicDictionary};
 use crate::error::{ClientError, ClientResult};
 use base58::*;
 use byteorder::{BigEndian, ByteOrder, LittleEndian};
@@ -22,11 +23,11 @@ use hmac::*;
 use pbkdf2::pbkdf2;
 use libsecp256k1::{SecretKey, PublicKey};
 use sha2::{Digest, Sha512};
-use crate::crypto::{default_hdkey_compliant, MnemonicDictionary};
+use zeroize::ZeroizeOnDrop;
 
 //----------------------------------------------------------------- crypto.hdkey_xprv_from_mnemonic
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfHDKeyXPrvFromMnemonic {
     /// String with seed phrase
     pub phrase: String,
@@ -36,7 +37,7 @@ pub struct ParamsOfHDKeyXPrvFromMnemonic {
     pub word_count: Option<u8>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ResultOfHDKeyXPrvFromMnemonic {
     /// Serialized extended master private key
     pub xprv: String,
@@ -59,13 +60,13 @@ pub fn hdkey_xprv_from_mnemonic(
 
 //------------------------------------------------------------------- crypto.hdkey_secret_from_xprv
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfHDKeySecretFromXPrv {
     /// Serialized extended private key
     pub xprv: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ResultOfHDKeySecretFromXPrv {
     /// Private key - 64 symbols hex string
     pub secret: String,
@@ -84,7 +85,7 @@ pub fn hdkey_secret_from_xprv(
 
 //------------------------------------------------------------------- crypto.hdkey_public_from_xprv
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfHDKeyPublicFromXPrv {
     /// Serialized extended private key
     pub xprv: String,
@@ -104,7 +105,7 @@ pub fn hdkey_public_from_xprv(
 ) -> ClientResult<ResultOfHDKeyPublicFromXPrv> {
     let key = HDPrivateKey::from_serialized_string(&params.xprv)?;
     let secret = ed25519_dalek::SecretKey::from_bytes(&key.secret())
-        .map_err(|_| crypto::Error::bip32_invalid_key(&params.xprv))?;
+        .map_err(|err| crypto::Error::bip32_invalid_key(err))?;
     let public = ed25519_dalek::PublicKey::from(&secret);
     Ok(ResultOfHDKeyPublicFromXPrv {
         public: hex::encode(public.as_bytes()),
@@ -113,7 +114,7 @@ pub fn hdkey_public_from_xprv(
 
 //------------------------------------------------------------ crypto.hdkey_derive_from_xprv
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfHDKeyDeriveFromXPrv {
     /// Serialized extended private key
     pub xprv: String,
@@ -123,7 +124,7 @@ pub struct ParamsOfHDKeyDeriveFromXPrv {
     pub hardened: bool,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ResultOfHDKeyDeriveFromXPrv {
     /// Serialized extended private key
     pub xprv: String,
@@ -148,7 +149,7 @@ pub fn hdkey_derive_from_xprv(
 
 //-------------------------------------------------------------- crypto.hdkey_derive_from_xprv_path
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfHDKeyDeriveFromXPrvPath {
     /// Serialized extended private key
     pub xprv: String,
@@ -156,7 +157,7 @@ pub struct ParamsOfHDKeyDeriveFromXPrvPath {
     pub path: String,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ResultOfHDKeyDeriveFromXPrvPath {
     /// Derived serialized extended private key
     pub xprv: String,
@@ -327,12 +328,12 @@ impl HDPrivateKey {
 
     fn from_serialized(bytes: &[u8]) -> ClientResult<HDPrivateKey> {
         if bytes.len() != 82 {
-            return Err(crypto::Error::bip32_invalid_key(bytes.to_base58()));
+            return Err(crypto::Error::bip32_invalid_key("wrong key length"));
         }
         let mut version = [0u8; 4];
         version.clone_from_slice(&bytes[0..4]);
         if version != XPRV_VERSION {
-            return Err(crypto::Error::bip32_invalid_key(bytes.to_base58()));
+            return Err(crypto::Error::bip32_invalid_key("wrong key version"));
         }
         let mut xprv: HDPrivateKey = Default::default();
         xprv.depth = bytes[4];
@@ -340,7 +341,7 @@ impl HDPrivateKey {
         xprv.child_number.copy_from_slice(&bytes[9..13]);
         xprv.child_chain.0.copy_from_slice(&bytes[13..45]);
         if bytes[45] != 0 {
-            return Err(crypto::Error::bip32_invalid_key(bytes.to_base58()));
+            return Err(crypto::Error::bip32_invalid_key("key is not separated with 0"));
         }
         xprv.key.0.copy_from_slice(&bytes[46..78]);
         Ok(xprv)
@@ -363,7 +364,7 @@ impl HDPrivateKey {
         Self::from_serialized(
             &string
                 .from_base58()
-                .map_err(|_| crypto::Error::bip32_invalid_key(string))?,
+                .map_err(|err| crypto::Error::bip32_invalid_key(format!("{:?}", err)))?,
         )
     }
 

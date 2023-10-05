@@ -2987,7 +2987,6 @@ dependencies = [
  "api_info",
  "base64 0.10.1",
  "chrono",
- "ed25519-dalek 2.0.0",
  "failure",
  "hex 0.3.2",
  "lazy_static",

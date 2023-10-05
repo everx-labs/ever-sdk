@@ -11,7 +11,7 @@ use crate::crypto::boxes::encryption_box::chacha20::ChaCha20EncryptionBox;
 use crate::crypto::boxes::encryption_box::nacl_box::NaclEncryptionBox;
 use crate::crypto::boxes::encryption_box::nacl_secret_box::NaclSecretEncryptionBox;
 use crate::crypto::boxes::signing_box::KeysSigningBox;
-use crate::crypto::internal::{SecretBuf, SecretString};
+use crate::crypto::internal::{SecretBuf, SecretString, hex_decode_secret};
 use crate::crypto::mnemonic::mnemonics;
 use crate::crypto::{register_encryption_box, register_signing_box, CryptoConfig, EncryptionBox, EncryptionBoxInfo, Error, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox, MnemonicDictionary};
 use crate::encoding::{base64_decode, hex_decode};
@@ -398,7 +398,7 @@ impl<T: Send + Sync + 'static> BoxFromCryptoBoxLifeCycleManager<T> {
                     Ok(Keypair {
                         public: PublicKey::from_bytes(&hex_decode(&keypair.public)?)
                             .map_err(|err| Error::invalid_public_key(err, &keypair.public))?,
-                        secret: SecretKey::from_bytes(&hex_decode(&keypair.secret)?)
+                        secret: SecretKey::from_bytes(&hex_decode_secret(&keypair.secret)?)
                             .map_err(|err| Error::invalid_secret_key(err, &keypair.secret))?,
                     })
                 })??

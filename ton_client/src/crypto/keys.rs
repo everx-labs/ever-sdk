@@ -37,7 +37,7 @@ pub(crate) fn strip_secret(secret: &str) -> String {
 
 //----------------------------------------------------------------------------------------- KeyPair
 ///
-#[derive(Serialize, Deserialize, Clone, ApiType, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default, PartialEq, zeroize::ZeroizeOnDrop)]
 pub struct KeyPair {
     /// Public key - 64 symbols hex string
     pub public: String,

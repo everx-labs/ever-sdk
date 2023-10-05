@@ -18,7 +18,7 @@ use crate::crypto::{internal, Error};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 use ed25519_dalek::Verifier;
-use zeroize::Zeroize;
+use zeroize::{Zeroize, ZeroizeOnDrop};
 
 use super::internal::{SecretBufConst, hex_decode_secret, hex_decode_secret_const};
 
@@ -26,7 +26,7 @@ use super::internal::{SecretBufConst, hex_decode_secret, hex_decode_secret_const
 
 //------------------------------------------------------------------------ sign_keypair_from_secret
 ///
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfNaclSignKeyPairFromSecret {
     /// Secret key - unprefixed 0-padded to 64 symbols hex string
     pub secret: String,
@@ -53,9 +53,10 @@ pub fn nacl_sign_keypair_from_secret_key(
 
 //--------------------------------------------------------------------------------------- nacl_sign
 ///
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfNaclSign {
     /// Data that must be signed encoded in `base64`.
+    #[zeroize(skip)]
     pub unsigned: String,
     /// Signer's secret key - unprefixed 0-padded to 128 symbols hex string
     /// (concatenation of 64 symbols secret and 64 symbols public keys).
@@ -76,8 +77,8 @@ pub fn nacl_sign(
     params: ParamsOfNaclSign,
 ) -> ClientResult<ResultOfNaclSign> {
     let signed = sign(
-        base64_decode(&params.unsigned)?,
-        hex_decode(&params.secret)?,
+        &base64_decode(&params.unsigned)?,
+        &hex_decode_secret(&params.secret)?,
     )?;
     Ok(ResultOfNaclSign {
         signed: base64::encode(&signed),
@@ -85,13 +86,14 @@ pub fn nacl_sign(
 }
 
 //------------------------------------------------------------------------------ nacl_sign_detached
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfNaclSignDetached {
     /// Data that must be signed encoded in `base64`.
     pub unsigned: String,
     /// Signer's secret key - unprefixed 0-padded to 128 symbols hex string
     /// (concatenation of 64 symbols secret and 64 symbols public keys).
     /// See `nacl_sign_keypair_from_secret_key`.
+    #[zeroize(skip)]
     pub secret: String,
 }
 
@@ -113,7 +115,7 @@ pub fn nacl_sign_detached(
 ) -> ClientResult<ResultOfNaclSignDetached> {
     let (_, signature) = internal::sign_using_secret(
         &base64_decode(&params.unsigned)?,
-        &hex_decode(&params.secret)?,
+        &hex_decode_secret(&params.secret)?,
     )?;
     Ok(ResultOfNaclSignDetached {
         signature: hex::encode(signature),
@@ -153,7 +155,7 @@ pub fn nacl_sign_open(
     let len = sodalite::sign_attached_open(
         &mut unsigned,
         &signed,
-        &key256(&hex_decode(&params.public)?)?.0,
+        &key256(&hex_decode_secret(&params.public)?)?.0,
     )
     .map_err(|_| Error::nacl_sign_failed("box sign open failed"))?;
     unsigned.resize(len, 0);
@@ -225,7 +227,7 @@ pub fn nacl_box_keypair(_context: std::sync::Arc<ClientContext>) -> ClientResult
 
 //-------------------------------------------------------------------- nacl_box_keypair_from_secret
 ///
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfNaclBoxKeyPairFromSecret {
     /// Secret key - unprefixed 0-padded to 64 symbols hex string
     pub secret: String,
@@ -440,9 +442,9 @@ pub fn nacl_secret_box_open(
 
 // Internals
 
-fn sign(unsigned: Vec<u8>, secret: Vec<u8>) -> ClientResult<Vec<u8>> {
+fn sign(unsigned: &[u8], secret: &[u8]) -> ClientResult<Vec<u8>> {
     let mut signed: Vec<u8> = Vec::new();
     signed.resize(unsigned.len() + sodalite::SIGN_LEN, 0);
-    sodalite::sign_attached(&mut signed, &unsigned, &key512(&secret)?.0);
+    sodalite::sign_attached(&mut signed, unsigned, &key512(secret)?.0);
     Ok(signed)
 }

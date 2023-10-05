@@ -21,6 +21,18 @@ impl std::ops::Deref for SecretBuf {
     }
 }
 
+impl std::ops::DerefMut for SecretBuf {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+impl AsRef<[u8]> for SecretBuf {
+    fn as_ref(&self) -> &[u8] {
+        &self.0
+    }
+}
+
 #[derive(Debug, Clone)]
 pub(crate) struct SecretBufConst<const N: usize>(pub [u8; N]);
 
