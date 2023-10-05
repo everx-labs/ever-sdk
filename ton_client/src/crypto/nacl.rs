@@ -20,7 +20,7 @@ use crate::error::ClientResult;
 use ed25519_dalek::Verifier;
 use zeroize::{Zeroize, ZeroizeOnDrop};
 
-use super::internal::{SecretBufConst, hex_decode_secret, hex_decode_secret_const};
+use super::internal::{SecretBufConst, hex_decode_secret, hex_decode_secret_const, decode_public_key};
 
 // Signing
 
@@ -189,11 +189,9 @@ pub fn nacl_sign_detached_verify(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfNaclSignDetachedVerify,
 ) -> ClientResult<ResultOfNaclSignDetachedVerify> {
-    let public = ed25519_dalek::PublicKey::from_bytes(&hex_decode(&params.public)?)
-        .map_err(|err| Error::invalid_public_key(err, &params.public))?;
+    let public = decode_public_key(&params.public)?;
     let message = base64_decode(&params.unsigned)?;
-    let signature = ed25519_dalek::Signature::from_bytes(&key512(&hex_decode(&params.signature)?)?)
-        .map_err(|err| Error::invalid_signature(err, &params.signature))?;
+    let signature = ed25519_dalek::Signature::from_bytes(&key512(&hex_decode(&params.signature)?)?.0);
     let succeeded = public.verify(&message, &signature).is_ok();
     Ok(ResultOfNaclSignDetachedVerify { succeeded })
 }

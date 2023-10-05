@@ -41,13 +41,13 @@ pub trait SigningBox: Send + Sync {
 }
 
 pub(crate) struct KeysSigningBox {
-    key_pair: ed25519_dalek::Keypair
+    sign_key: ed25519_dalek::SigningKey
 }
 
 impl KeysSigningBox {
-    pub fn new(key_pair: ed25519_dalek::Keypair) -> Self {
+    pub fn new(sign_key: ed25519_dalek::SigningKey) -> Self {
         Self {
-            key_pair
+            sign_key
         }
     }
 
@@ -59,11 +59,11 @@ impl KeysSigningBox {
 #[async_trait::async_trait]
 impl SigningBox for KeysSigningBox {
     async fn get_public_key(&self, _context: Arc<ClientContext>) -> ClientResult<Vec<u8>> {
-        Ok(self.key_pair.public.to_bytes().to_vec())
+        Ok(self.sign_key.verifying_key().to_bytes().to_vec())
     }
 
     async fn sign(&self, _context: Arc<ClientContext>, unsigned: &[u8]) -> ClientResult<Vec<u8>> {
-        crate::crypto::internal::sign_using_keys(unsigned, &self.key_pair).map(|result| result.1)
+        crate::crypto::internal::sign_using_keys(unsigned, &self.sign_key).map(|result| result.1)
     }
 }
 

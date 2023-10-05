@@ -104,11 +104,9 @@ pub fn hdkey_public_from_xprv(
     params: ParamsOfHDKeyPublicFromXPrv,
 ) -> ClientResult<ResultOfHDKeyPublicFromXPrv> {
     let key = HDPrivateKey::from_serialized_string(&params.xprv)?;
-    let secret = ed25519_dalek::SecretKey::from_bytes(&key.secret())
-        .map_err(|err| crypto::Error::bip32_invalid_key(err))?;
-    let public = ed25519_dalek::PublicKey::from(&secret);
+    let secret = ed25519_dalek::SigningKey::from_bytes(&key.secret().0);
     Ok(ResultOfHDKeyPublicFromXPrv {
-        public: hex::encode(public.as_bytes()),
+        public: hex::encode(&secret.verifying_key().to_bytes()),
     })
 }
 

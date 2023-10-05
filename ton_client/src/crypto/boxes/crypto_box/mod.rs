@@ -1,7 +1,7 @@
 use std::future::Future;
 use std::sync::Arc;
 
-use ed25519_dalek::{Keypair, PublicKey, SecretKey};
+use ed25519_dalek::SigningKey;
 use lockfree::map::ReadGuard;
 use tokio::sync::RwLock;
 use zeroize::Zeroize;
@@ -11,10 +11,14 @@ use crate::crypto::boxes::encryption_box::chacha20::ChaCha20EncryptionBox;
 use crate::crypto::boxes::encryption_box::nacl_box::NaclEncryptionBox;
 use crate::crypto::boxes::encryption_box::nacl_secret_box::NaclSecretEncryptionBox;
 use crate::crypto::boxes::signing_box::KeysSigningBox;
-use crate::crypto::internal::{SecretBuf, SecretString, hex_decode_secret};
+use crate::crypto::internal::{SecretBuf, SecretString, SecretBufConst};
 use crate::crypto::mnemonic::mnemonics;
-use crate::crypto::{register_encryption_box, register_signing_box, CryptoConfig, EncryptionBox, EncryptionBoxInfo, Error, RegisteredEncryptionBox, RegisteredSigningBox, SigningBox, MnemonicDictionary};
-use crate::encoding::{base64_decode, hex_decode};
+use crate::crypto::{
+    register_encryption_box, register_signing_box,
+    CryptoConfig, EncryptionBox, EncryptionBoxInfo, Error, RegisteredEncryptionBox,
+    RegisteredSigningBox, SigningBox, MnemonicDictionary
+};
+use crate::encoding::base64_decode;
 use crate::error::ClientResult;
 use crate::ClientContext;
 
@@ -353,7 +357,7 @@ impl<T: Send + Sync + 'static> BoxFromCryptoBoxLifeCycleManager<T> {
         &self,
         context: Arc<ClientContext>,
         callback: Cb,
-        factory: impl Fn(Keypair) -> ClientResult<T>,
+        factory: impl Fn(SigningKey) -> ClientResult<T>,
     ) -> ClientResult<Ret>
     where
         Cb: Fn(Arc<T>) -> Fut,
@@ -394,14 +398,7 @@ impl<T: Send + Sync + 'static> BoxFromCryptoBoxLifeCycleManager<T> {
                     &seed_phrase.phrase,
                     hdpath,
                 )
-                .map::<ClientResult<Keypair>, _>(|keypair| {
-                    Ok(Keypair {
-                        public: PublicKey::from_bytes(&hex_decode(&keypair.public)?)
-                            .map_err(|err| Error::invalid_public_key(err, &keypair.public))?,
-                        secret: SecretKey::from_bytes(&hex_decode_secret(&keypair.secret)?)
-                            .map_err(|err| Error::invalid_secret_key(err, &keypair.secret))?,
-                    })
-                })??
+                .map(|keypair| keypair.decode())??
         };
 
         let lifetime = self.params.secret_lifetime.unwrap_or(0) as u64;
@@ -581,8 +578,8 @@ struct EncryptionBoxFromCryptoBox {
 }
 
 impl EncryptionBoxFromCryptoBox {
-    fn factory(&self, key_pair: Keypair) -> ClientResult<Box<dyn EncryptionBox + 'static>> {
-        let secret = SecretString(hex::encode(key_pair.secret));
+    fn factory(&self, sign_key: SigningKey) -> ClientResult<Box<dyn EncryptionBox + 'static>> {
+        let secret = SecretString(hex::encode(&SecretBufConst(sign_key.to_bytes())));
         Ok(match &self.algorithm {
             BoxEncryptionAlgorithm::ChaCha20(params) => Box::new(ChaCha20EncryptionBox::new(
                 params.to_encryption_box_params(secret),

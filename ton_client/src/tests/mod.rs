@@ -16,6 +16,8 @@ use crate::abi::{
     encode_message, Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::client::*;
+use crate::crypto::internal::hex_decode_secret_const;
+use crate::crypto::mnemonic::ed25519_keys_from_secret_bytes;
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
@@ -326,13 +328,7 @@ impl TestClient {
 
     pub fn giver_keys() -> KeyPair {
         if let Some(secret) = env::giver_secret() {
-            let secret_key =
-                ed25519_dalek::SecretKey::from_bytes(&hex::decode(&secret).unwrap()).unwrap();
-            let public_key = ed25519_dalek::PublicKey::from(&secret_key);
-            KeyPair {
-                public: hex::encode(public_key.to_bytes()),
-                secret,
-            }
+            ed25519_keys_from_secret_bytes(&hex_decode_secret_const(&secret).unwrap().0).unwrap()
         } else {
             KeyPair {
                 public: "2ada2e65ab8eeab09490e3521415f45b6e42df9c760a639bcf53957550b25a16"
