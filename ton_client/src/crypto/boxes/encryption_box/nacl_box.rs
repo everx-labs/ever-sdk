@@ -31,13 +31,13 @@ impl NaclEncryptionBox {
 #[async_trait::async_trait]
 impl EncryptionBox for NaclEncryptionBox {
     async fn get_info(&self, context: Arc<ClientContext>) -> ClientResult<EncryptionBoxInfo> {
-        let keys = nacl_box_keypair_from_secret_key(context, ParamsOfNaclBoxKeyPairFromSecret {
+        let mut keys = nacl_box_keypair_from_secret_key(context, ParamsOfNaclBoxKeyPairFromSecret {
             secret: self.params.secret.clone(),
         })?;
         Ok(EncryptionBoxInfo {
             algorithm: Some("NaclBox".to_owned()),
             hdpath: self.hdpath.clone(),
-            public: Some(keys.public.into()),
+            public: Some(std::mem::take(&mut keys.public).into()),
             options: Some(json!({
                 "their_public": &self.params.their_public,
                 "nonce": &self.params.nonce,

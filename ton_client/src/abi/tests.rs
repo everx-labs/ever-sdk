@@ -28,7 +28,7 @@ use crate::boc::tvc::resolve_state_init_cell;
 use ever_struct::scheme::TVC;
 use serde_json::Value;
 use std::io::Cursor;
-use ton_abi::Contract;
+use ton_abi::{Contract, PublicKeyData};
 use ton_block::{
     CurrencyCollection, Deserializable, InternalMessageHeader, Message, Serializable, StateInit,
 };
@@ -576,10 +576,10 @@ async fn test_encode_message_pubkey_internal(
     client: &TestClient,
     abi: &Abi,
     tvc: &Option<String>,
-    initial_pubkey: &Option<ed25519_dalek::PublicKey>,
-    tvc_pubkey: &Option<ed25519_dalek::PublicKey>,
-    signer_pubkey: &Option<ed25519_dalek::PublicKey>,
-    expected_pubkey: &Option<ed25519_dalek::PublicKey>,
+    initial_pubkey: &Option<PublicKeyData>,
+    tvc_pubkey: &Option<PublicKeyData>,
+    signer_pubkey: &Option<PublicKeyData>,
+    expected_pubkey: &Option<PublicKeyData>,
 ) -> Result<()> {
     let context = crate::ClientContext::new(crate::ClientConfig::default()).unwrap();
     let mut image = create_tvc_image(
@@ -589,7 +589,7 @@ async fn test_encode_message_pubkey_internal(
         resolve_state_init_cell(&context, tvc.as_ref().unwrap())?,
     )?;
     if let Some(tvc_pubkey) = tvc_pubkey {
-        image.set_public_key(tvc_pubkey.as_bytes())?;
+        image.set_public_key(tvc_pubkey)?;
     }
 
     let tvc = base64::encode(&image.serialize()?);
@@ -598,12 +598,12 @@ async fn test_encode_message_pubkey_internal(
         abi: abi.clone(),
         deploy_set: Some(DeploySet {
             tvc: Some(tvc),
-            initial_pubkey: initial_pubkey.map(|key| hex::encode(key.as_bytes())),
+            initial_pubkey: initial_pubkey.map(|key| hex::encode(key)),
             ..Default::default()
         }),
         signer: if let Some(key) = signer_pubkey {
             Signer::External {
-                public_key: hex::encode(key.as_bytes()),
+                public_key: hex::encode(key),
             }
         } else {
             Signer::None
@@ -624,13 +624,13 @@ async fn test_encode_message_pubkey_internal(
     let image = ContractImage::from_state_init(&mut Cursor::new(state_init))?;
     let public_key = image.get_public_key()?;
 
-    assert_eq!(public_key, expected_pubkey.map(|key| *key.as_bytes()));
+    assert_eq!(&public_key, expected_pubkey);
 
     Ok(())
 }
 
-fn gen_pubkey() -> ed25519_dalek::PublicKey {
-    ed25519_dalek::Keypair::generate(&mut rand::thread_rng()).public
+fn gen_pubkey() -> PublicKeyData {
+    ton_types::ed25519_generate_private_key().unwrap().verifying_key()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]

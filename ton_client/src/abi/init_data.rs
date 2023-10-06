@@ -98,7 +98,7 @@ fn update_initial_data_internal(
 }
 
 fn default_init_data() -> ClientResult<Cell> {
-    ton_abi::Contract::insert_pubkey(Default::default(), &[0; ed25519_dalek::PUBLIC_KEY_LENGTH])
+    ton_abi::Contract::insert_pubkey(Default::default(), &[0; ton_types::ED25519_PUBLIC_KEY_LENGTH])
         .map_err(|err| Error::encode_init_data_failed(err))
         .map(SliceData::into_cell)
 }

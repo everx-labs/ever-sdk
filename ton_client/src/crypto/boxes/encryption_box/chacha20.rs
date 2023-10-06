@@ -5,7 +5,7 @@ use chacha20::{Key, Nonce};
 use zeroize::Zeroize;
 
 use crate::ClientContext;
-use crate::crypto::internal::SecretBuf;
+use crate::crypto::internal::{SecretBuf, hex_decode_secret};
 use crate::crypto::{EncryptionBox, EncryptionBoxInfo, Error};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
@@ -27,7 +27,7 @@ pub struct ChaCha20EncryptionBox {
 
 impl ChaCha20EncryptionBox {
     pub fn new(params: ChaCha20ParamsEB, hdpath: Option<String>) -> ClientResult<Self> {
-        let key = Key::clone_from_slice(&hex_decode(&params.key)?);
+        let key = Key::clone_from_slice(&hex_decode_secret(&params.key)?);
         let nonce = Nonce::clone_from_slice(&hex_decode(&params.nonce)?);
         if key.len() != 32 {
             return Err(Error::invalid_key_size(key.len(), &[32]));

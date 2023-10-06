@@ -1,7 +1,7 @@
 use crate::error::ClientError;
 use std::fmt::Display;
 
-use super::CipherMode;
+use super::{CipherMode, keys::strip_secret};
 
 #[derive(ApiType)]
 pub enum ErrorCode {
@@ -110,10 +110,10 @@ impl Error {
         )
     }
 
-    pub fn bip32_invalid_key<E: Display>(key: E) -> ClientError {
+    pub fn bip32_invalid_key<E: Display>(err: E) -> ClientError {
         error(
             ErrorCode::Bip32InvalidKey,
-            format!("Invalid bip32 key: {}", key),
+            format!("Invalid bip32 key: {}", err),
         )
     }
 
@@ -141,7 +141,7 @@ impl Error {
     pub fn invalid_secret_key<E: Display>(err: E, key: &String) -> ClientError {
         error(
             ErrorCode::InvalidSecretKey,
-            format!("Invalid secret key [{}]: {}", key, err),
+            format!("Invalid secret key [{}]: {}", strip_secret(key), err),
         )
     }
 
@@ -162,7 +162,7 @@ impl Error {
     pub fn invalid_key<E: Display>(err: E, key: &String) -> ClientError {
         error(
             ErrorCode::InvalidKey,
-            format!("Invalid key [{}]: {}", key, err),
+            format!("Invalid key [{}]: {}", strip_secret(key), err),
         )
     }
 
