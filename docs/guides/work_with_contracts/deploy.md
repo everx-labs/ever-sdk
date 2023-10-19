@@ -296,7 +296,7 @@ This is not a correct way.
 You can get it several ways:
 
 * You can use SDK function [get\_code\_from\_tvc](../../reference/types-and-methods/mod\_boc.md#get\_code\_from\_tvc) of `boc` module and retrieve the code's boc from tvc file.
-* You can download another account with the same `code_hash`'s `boc` from graphql, using [blockchain API](https://docs.evercloud.dev/samples/graphql-samples/accounts#get-account-info) and retrieve the 'code' from the result `boc` field.
+* You can download another account with the same `code_hash`'s `boc` from graphql, using [blockchain API](https://docs.everplatform.dev/samples/graphql-samples/accounts#get-account-info) and retrieve the 'code' from the result `boc` field.
 
 ## Sample Source Code
 

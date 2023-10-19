@@ -2,7 +2,7 @@
 
 ## When you may need message monitor?
 
-The **Message Monitor object** is based on the [GraphQL API extension of the same name](https://docs.evercloud.dev/reference/graphql-api/message-monitor-api). It was developed to solve the problem of batch external message processing.
+The **Message Monitor object** is based on the [GraphQL API extension of the same name](https://docs.everplatform.dev/reference/graphql-api/message-monitor-api). It was developed to solve the problem of batch external message processing.
 
 ## About Message Monitor
 
