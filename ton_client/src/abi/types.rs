@@ -101,6 +101,8 @@ pub struct AbiParam {
     pub param_type: String,
     #[serde(default)]
     pub components: Vec<AbiParam>,
+    #[serde(default)]
+    pub init: bool,
 }
 
 impl TryInto<ton_abi::Param> for AbiParam {
