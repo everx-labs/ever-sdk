@@ -2,6 +2,12 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.44.4] – 2023-11-07
+
+### New
+
+- Account BOC for local error resolving is fetched from blockchain API instead of collections API
+
 ## [1.44.3] – 2023-09-05
 
 ### New
