@@ -1,6 +1,6 @@
 [package]
 name = 'ton_client'
-version = '1.44.3'
+version = '1.44.4'
 authors = [ 'TON Labs LTD <support@tonlabs.io>' ]
 edition = '2018'
 license = 'Apache-2.0'
