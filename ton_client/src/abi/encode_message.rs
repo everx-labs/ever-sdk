@@ -45,6 +45,9 @@ pub struct DeploySet {
     /// 1. Public key from deploy set.
     /// 2. Public key, specified in TVM file.
     /// 3. Public key, provided by Signer.
+    /// 
+    /// Applicable only for contracts with ABI version < 2.4. Contract initial public key should be
+    /// explicitly provided inside `initial_data` since ABI 2.4
     pub initial_pubkey: Option<String>,
 }
 
@@ -70,7 +73,11 @@ impl DeploySet {
                 state_init_with_code(deserialize_cell_from_boc(context, code, "code")?.1)
             }
             (None, None, Some(state_init)) => {
-                Ok(deserialize_cell_from_boc(context, state_init, "state init")?.1)
+                if self.initial_data.is_some() || self.initial_pubkey.is_some() {
+                    error("Only `workchain_id` parameter is allowed if `state_init` parameter is provided")
+                } else {
+                    Ok(deserialize_cell_from_boc(context, state_init, "state init")?.1)
+                }
             }
             (None, None, None) => error(
                 "at least one of the `tvc`, `code` or `state_init` value should be specified.",
@@ -265,7 +272,7 @@ pub struct ParamsOfEncodeMessage {
     pub signature_id: Option<i32>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ResultOfEncodeMessage {
     /// Message BOC encoded with `base64`.
     pub message: String,
@@ -308,7 +315,7 @@ fn encode_deploy(
     Ok(match signer {
         Signer::None => {
             let message = ton_sdk::Contract::construct_deploy_message_json(
-                call_set.to_function_call_set(
+                &call_set.to_function_call_set(
                     pubkey,
                     processing_try_index,
                     &context,
@@ -324,7 +331,7 @@ fn encode_deploy(
         }
         _ => {
             let unsigned = ton_sdk::Contract::get_deploy_message_bytes_for_signing(
-                call_set.to_function_call_set(
+                &call_set.to_function_call_set(
                     pubkey,
                     processing_try_index,
                     &context,
@@ -347,7 +354,6 @@ fn encode_int_deploy(
     image: ContractImage,
     workchain_id: i32,
     call_set: &CallSet,
-    pubkey: Option<&str>,
     ihr_disabled: bool,
     bounce: bool,
     value: CurrencyCollection,
@@ -355,7 +361,7 @@ fn encode_int_deploy(
     let address = image.msg_address(workchain_id);
     let message = ton_sdk::Contract::get_int_deploy_message_bytes(
         src,
-        call_set.to_function_call_set(pubkey, None, &context, &abi, true)?,
+        &call_set.to_function_call_set(None, None, &context, &abi, true)?,
         image,
         workchain_id,
         ihr_disabled,
@@ -428,7 +434,7 @@ fn encode_run(
         Signer::None => {
             let message = ton_sdk::Contract::construct_call_ext_in_message_json(
                 address.clone(),
-                call_set.to_function_call_set(
+                &call_set.to_function_call_set(
                     pubkey,
                     processing_try_index,
                     &context,
@@ -443,7 +449,7 @@ fn encode_run(
         _ => {
             let unsigned = ton_sdk::Contract::get_call_message_bytes_for_signing(
                 address.clone(),
-                call_set.to_function_call_set(
+                &call_set.to_function_call_set(
                     pubkey,
                     processing_try_index,
                     &context,
@@ -496,7 +502,8 @@ pub async fn encode_message(
     context: Arc<ClientContext>,
     params: ParamsOfEncodeMessage,
 ) -> ClientResult<ResultOfEncodeMessage> {
-    let abi = params.abi.json_string()?;
+    let abi_contract = params.abi.abi()?;
+    let abi_string = params.abi.json_string()?;
 
     let public = params.signer.resolve_public_key(context.clone()).await?;
     let (message, data_to_sign, address) = if let Some(deploy_set) = params.deploy_set {
@@ -504,17 +511,22 @@ pub async fn encode_message(
             .workchain_id
             .unwrap_or(context.config.abi.workchain);
         let mut image = create_tvc_image(
-            &abi,
+            &abi_string,
+            abi_contract.data_map_supported(),
             deploy_set.initial_data.as_ref(),
             deploy_set.get_state_init(&context)?,
         )?;
 
-        required_public_key(update_pubkey(&deploy_set, &mut image, &public)?)?;
+        if abi_contract.data_map_supported() {
+            required_public_key(update_pubkey(&deploy_set, &mut image, &public)?)?;
+        } else if deploy_set.initial_pubkey.is_some() {
+            return Err(Error::initial_pubkey_not_supported(abi_contract.version()));
+        }
 
         if let Some(call_set) = &params.call_set {
             encode_deploy(
                 context.clone(),
-                &abi,
+                &abi_string,
                 image,
                 workchain,
                 call_set,
@@ -529,7 +541,7 @@ pub async fn encode_message(
         encode_run(
             context.clone(),
             &params,
-            &abi,
+            &abi_string,
             call_set,
             public.as_ref().map(|x| x.as_str()),
             params.processing_try_index,
@@ -540,7 +552,7 @@ pub async fn encode_message(
 
     let data_to_sign = extend_data_to_sign(&context, params.signature_id, data_to_sign).await?;
     let (message, data_to_sign) =
-        try_to_sign_message(context.clone(), &abi, message, data_to_sign, &params.signer).await?;
+        try_to_sign_message(context.clone(), &abi_string, message, data_to_sign, &params.signer).await?;
 
     Ok(ResultOfEncodeMessage {
         message: base64::encode(&message),
@@ -588,7 +600,7 @@ pub struct ParamsOfEncodeInternalMessage {
     pub enable_ihr: Option<bool>,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, Debug)]
 pub struct ResultOfEncodeInternalMessage {
     /// Message BOC encoded with `base64`.
     pub message: String,
@@ -641,29 +653,35 @@ pub fn encode_internal_message(
     let (message, address) = if let Some(deploy_set) = params.deploy_set {
         let abi = params
             .abi
-            .ok_or_else(|| Error::invalid_abi("abi is undefined"))?
-            .json_string()?;
+            .ok_or_else(|| Error::invalid_abi("abi is undefined"))?;
+
+        let abi_contract = abi.abi()?;
+        let abi_string = abi.json_string()?;
 
         let workchain_id = deploy_set
             .workchain_id
             .unwrap_or(context.config.abi.workchain);
+
         let mut image = create_tvc_image(
-            &abi,
+            &abi_string,
+            abi_contract.data_map_supported(),
             deploy_set.initial_data.as_ref(),
             deploy_set.get_state_init(&context)?,
         )?;
+        if abi_contract.data_map_supported() {
+            update_pubkey(&deploy_set, &mut image, &None)?;
+        } else if deploy_set.initial_pubkey.is_some() {
+            return Err(Error::initial_pubkey_not_supported(abi_contract.version()));
+        }
 
-        let public = update_pubkey(&deploy_set, &mut image, &None)?;
-        let public = required_public_key(public)?;
         if let Some(call_set) = &params.call_set {
             encode_int_deploy(
                 src_address,
                 Arc::clone(&context),
-                &abi,
+                &abi_string,
                 image,
                 workchain_id,
                 call_set,
-                Some(&public),
                 ihr_disabled,
                 bounce,
                 value,
@@ -695,7 +713,7 @@ pub fn encode_internal_message(
                 ihr_disabled,
                 bounce,
                 value,
-                call_set.to_function_call_set(None, None, &context, &abi, true)?,
+                &call_set.to_function_call_set(None, None, &context, &abi, true)?,
             )
             .map_err(|err| Error::encode_run_message_failed(err, Some(&call_set.function_name)))?;
 
@@ -798,35 +816,35 @@ pub async fn encode_message_body(
     let (body, data_to_sign) = match params.signer {
         Signer::None => {
             let body = ton_abi::encode_function_call(
-                abi.clone(),
-                func.clone(),
-                call.header,
-                call.input.clone(),
+                &abi,
+                &func,
+                call.header.as_deref(),
+                &call.input,
                 params.is_internal,
                 None,
-                params.address,
+                params.address.as_deref(),
             )
             .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?;
             (body, None)
         }
         _ => if params.is_internal {
             ton_abi::encode_function_call(
-                abi.clone(),
-                func.clone(),
+                &abi,
+                &func,
                 None,
-                call.input,
+                &call.input,
                 true,
                 None,
-                params.address,
+                params.address.as_deref(),
             )
             .map(|body| (body, None))
         } else {
             ton_abi::prepare_function_call_for_sign(
-                abi.clone(),
-                func.clone(),
-                call.header,
-                call.input,
-                params.address,
+                &abi,
+                &func,
+                call.header.as_deref(),
+                &call.input,
+                params.address.as_deref(),
             )
             .map(|(body, data_to_sign)| (body, Some(data_to_sign)))
         }

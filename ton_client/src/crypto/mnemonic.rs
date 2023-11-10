@@ -14,20 +14,20 @@
 use crate::client::ClientContext;
 use crate::crypto;
 use crate::crypto::hdkey::HDPrivateKey;
-use crate::crypto::internal::{hmac_sha512, key256, pbkdf2_hmac_sha512};
+use crate::crypto::internal::{hex_decode_secret, hmac_sha512, key256, pbkdf2_hmac_sha512};
 use crate::crypto::keys::KeyPair;
 use crate::crypto::{default_hdkey_compliant, CryptoConfig};
-use crate::encoding::hex_decode;
 use crate::error::{ClientError, ClientResult};
 use bip39::{Language, Mnemonic, MnemonicType};
-use ed25519_dalek::{PublicKey, SecretKey};
+use ed25519_dalek::SigningKey;
 use hmac::Hmac;
 use pbkdf2::pbkdf2;
 use rand::RngCore;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use sha2::Sha512;
 use std::convert::TryFrom;
-use zeroize::Zeroize;
+use zeroize::{Zeroize, ZeroizeOnDrop};
+
 
 #[derive(Copy, Clone, Debug, Deserialize_repr, Serialize_repr, Zeroize, PartialEq, ApiType)]
 #[repr(u8)]
@@ -139,7 +139,7 @@ pub fn mnemonic_from_random(
 
 //--------------------------------------------------------------------------- mnemonic_from_entropy
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfMnemonicFromEntropy {
     /// Entropy bytes. Hex encoded.
     pub entropy: String,
@@ -163,7 +163,7 @@ pub fn mnemonic_from_entropy(
 ) -> ClientResult<ResultOfMnemonicFromEntropy> {
     let mnemonic = mnemonics(&context.config.crypto, params.dictionary, params.word_count)?;
     Ok(ResultOfMnemonicFromEntropy {
-        phrase: mnemonic.phrase_from_entropy(&hex_decode(&params.entropy)?)?,
+        phrase: mnemonic.phrase_from_entropy(&hex_decode_secret(&params.entropy)?)?,
     })
 }
 
@@ -298,13 +298,11 @@ impl Bip39Mnemonic {
     }
 }
 
-fn ed25519_keys_from_secret_bytes(bytes: &[u8]) -> ClientResult<KeyPair> {
-    let secret = SecretKey::from_bytes(bytes)
-        .map_err(|_| crypto::Error::bip32_invalid_key(&hex::encode(bytes)))?;
-    let public = PublicKey::from(&secret);
+pub(crate) fn ed25519_keys_from_secret_bytes(bytes: &ed25519_dalek::SecretKey) -> ClientResult<KeyPair> {
+    let secret = SigningKey::from_bytes(bytes);
     Ok(KeyPair::new(
-        hex::encode(public.to_bytes()),
-        hex::encode(secret.to_bytes()),
+        hex::encode(secret.verifying_key().as_bytes()),
+        hex::encode(bytes),
     ))
 }
 
@@ -335,7 +333,7 @@ impl CryptoMnemonic for Bip39Mnemonic {
         check_phrase(self, phrase)?;
         let derived =
             HDPrivateKey::from_mnemonic(phrase)?.derive_path(path, default_hdkey_compliant())?;
-        ed25519_keys_from_secret_bytes(&derived.secret())
+        ed25519_keys_from_secret_bytes(&derived.secret().0)
     }
 
     fn phrase_from_entropy(&self, entropy: &[u8]) -> ClientResult<String> {
@@ -456,7 +454,7 @@ impl CryptoMnemonic for TonMnemonic {
         let seed = Self::seed_from_string(&phrase, "TON default seed", 100_000);
         let master = HDPrivateKey::master(&key256(&seed[32..])?, &key256(&seed[..32])?);
         let derived = master.derive_path(path, default_hdkey_compliant())?;
-        ed25519_keys_from_secret_bytes(&derived.secret())
+        ed25519_keys_from_secret_bytes(&derived.secret().0)
     }
 
     fn phrase_from_entropy(&self, entropy: &[u8]) -> ClientResult<String> {

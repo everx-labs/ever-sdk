@@ -25,16 +25,6 @@ impl Default for Signer {
 }
 
 impl Signer {
-    pub(crate) fn is_external(&self) -> bool {
-        if let Signer::External { .. } = self {
-            true
-        } else {
-            false
-        }
-    }
-}
-
-impl Signer {
     pub async fn sign(&self, context: Arc<ClientContext>, data_to_sign: &[u8]) -> ClientResult<Option<Vec<u8>>> {
         match self {
             Signer::None => Ok(None),

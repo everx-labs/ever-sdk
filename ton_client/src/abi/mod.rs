@@ -38,7 +38,7 @@ pub use decode_message::{
     ResultOfGetSignatureData
 };
 pub use encode_account::{
-    encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount, StateInitParams, StateInitSource,
+    encode_account, ParamsOfEncodeAccount, ResultOfEncodeAccount,
 };
 pub use encode_boc::{
     encode_boc, ParamsOfAbiEncodeBoc, ResultOfAbiEncodeBoc,
@@ -60,7 +60,6 @@ pub use init_data::{
 pub use signing::Signer;
 pub use types::{
     Abi, AbiContract, AbiData, AbiEvent, AbiFunction, AbiHandle, AbiParam, FunctionHeader,
-    MessageSource,
 };
 
 pub fn default_workchain() -> i32 {

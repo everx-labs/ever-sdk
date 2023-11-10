@@ -149,7 +149,7 @@ pub fn get_code_salt(
     Ok(ResultOfGetCodeSalt { salt })
 }
 
-fn builder_to_cell(builder: BuilderData) -> ClientResult<Cell> {
+pub(crate)fn builder_to_cell(builder: BuilderData) -> ClientResult<Cell> {
     builder
         .into_cell()
         .map_err(|err| Error::invalid_boc(format!("can not convert builder to cell: {}", err)))

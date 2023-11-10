@@ -1,4 +1,4 @@
-use super::calltype::{ContractCall};
+use super::calltype::ContractCall;
 use super::dinterface::{get_arg, DebotInterface, InterfaceResult};
 use crate::abi::{decode_message, Abi, ParamsOfDecodeMessage};
 use crate::crypto::{get_signing_box, KeyPair};

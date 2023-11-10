@@ -1,5 +1,5 @@
 {
-  "version": "1.44.4",
+  "version": "1.45.0",
   "modules": [
     {
       "name": "client",
@@ -5552,6 +5552,13 @@
               "value": "315",
               "summary": null,
               "description": null
+            },
+            {
+              "name": "PubKeyNotSupported",
+              "type": "Number",
+              "value": "316",
+              "summary": null,
+              "description": null
             }
           ],
           "summary": null,
@@ -5764,7 +5771,7 @@
                 "type": "String"
               },
               "summary": "Optional public key that can be provided in deploy set in order to substitute one in TVM file or provided by Signer.",
-              "description": "Public key resolving priority:\n1. Public key from deploy set.\n2. Public key, specified in TVM file.\n3. Public key, provided by Signer."
+              "description": "Public key resolving priority:\n1. Public key from deploy set.\n2. Public key, specified in TVM file.\n3. Public key, provided by Signer.\n\nApplicable only for contracts with ABI version < 2.4. Contract initial public key should be\nexplicitly provided inside `initial_data` since ABI 2.4"
             }
           ],
           "summary": null,
@@ -5862,152 +5869,6 @@
           "description": null
         },
         {
-          "name": "StateInitSource",
-          "type": "EnumOfTypes",
-          "enum_types": [
-            {
-              "name": "Message",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "source",
-                  "type": "Ref",
-                  "ref_name": "abi.MessageSource",
-                  "summary": null,
-                  "description": null
-                }
-              ],
-              "summary": "Deploy message.",
-              "description": null
-            },
-            {
-              "name": "StateInit",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "code",
-                  "type": "String",
-                  "summary": "Code BOC.",
-                  "description": "Encoded in `base64`."
-                },
-                {
-                  "name": "data",
-                  "type": "String",
-                  "summary": "Data BOC.",
-                  "description": "Encoded in `base64`."
-                },
-                {
-                  "name": "library",
-                  "type": "Optional",
-                  "optional_inner": {
-                    "type": "String"
-                  },
-                  "summary": "Library BOC.",
-                  "description": "Encoded in `base64`."
-                }
-              ],
-              "summary": "State init data.",
-              "description": null
-            },
-            {
-              "name": "Tvc",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "tvc",
-                  "type": "String",
-                  "summary": null,
-                  "description": null
-                },
-                {
-                  "name": "public_key",
-                  "type": "Optional",
-                  "optional_inner": {
-                    "type": "String"
-                  },
-                  "summary": null,
-                  "description": null
-                },
-                {
-                  "name": "init_params",
-                  "type": "Optional",
-                  "optional_inner": {
-                    "type": "Ref",
-                    "ref_name": "abi.StateInitParams"
-                  },
-                  "summary": null,
-                  "description": null
-                }
-              ],
-              "summary": "Content of the TVC file.",
-              "description": "Encoded in `base64`."
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
-        {
-          "name": "StateInitParams",
-          "type": "Struct",
-          "struct_fields": [
-            {
-              "name": "abi",
-              "type": "Ref",
-              "ref_name": "abi.Abi",
-              "summary": null,
-              "description": null
-            },
-            {
-              "name": "value",
-              "type": "Ref",
-              "ref_name": "Value",
-              "summary": null,
-              "description": null
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
-        {
-          "name": "MessageSource",
-          "type": "EnumOfTypes",
-          "enum_types": [
-            {
-              "name": "Encoded",
-              "type": "Struct",
-              "struct_fields": [
-                {
-                  "name": "message",
-                  "type": "String",
-                  "summary": null,
-                  "description": null
-                },
-                {
-                  "name": "abi",
-                  "type": "Optional",
-                  "optional_inner": {
-                    "type": "Ref",
-                    "ref_name": "abi.Abi"
-                  },
-                  "summary": null,
-                  "description": null
-                }
-              ],
-              "summary": null,
-              "description": null
-            },
-            {
-              "name": "EncodingParams",
-              "type": "Ref",
-              "ref_name": "abi.ParamsOfEncodeMessage",
-              "summary": null,
-              "description": null
-            }
-          ],
-          "summary": null,
-          "description": null
-        },
-        {
           "name": "AbiParam",
           "type": "Struct",
           "struct_fields": [
@@ -6032,6 +5893,15 @@
                   "type": "Ref",
                   "ref_name": "abi.AbiParam"
                 }
+              },
+              "summary": null,
+              "description": null
+            },
+            {
+              "name": "init",
+              "type": "Optional",
+              "optional_inner": {
+                "type": "Boolean"
               },
               "summary": null,
               "description": null
@@ -6843,9 +6713,8 @@
           "struct_fields": [
             {
               "name": "state_init",
-              "type": "Ref",
-              "ref_name": "abi.StateInitSource",
-              "summary": "Source of the account state init.",
+              "type": "String",
+              "summary": "Account state init.",
               "description": null
             },
             {
@@ -6966,11 +6835,8 @@
           "struct_fields": [
             {
               "name": "abi",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "abi.Abi"
-              },
+              "type": "Ref",
+              "ref_name": "abi.Abi",
               "summary": "Contract ABI",
               "description": null
             },
@@ -7033,11 +6899,8 @@
           "struct_fields": [
             {
               "name": "abi",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "abi.Abi"
-              },
+              "type": "Ref",
+              "ref_name": "abi.Abi",
               "summary": "Contract ABI",
               "description": null
             },
@@ -7094,11 +6957,8 @@
           "struct_fields": [
             {
               "name": "abi",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "abi.Abi"
-              },
+              "type": "Ref",
+              "ref_name": "abi.Abi",
               "summary": "Contract ABI.",
               "description": "Initial data is decoded if this parameter is provided"
             },
@@ -7127,11 +6987,8 @@
           "struct_fields": [
             {
               "name": "initial_data",
-              "type": "Optional",
-              "optional_inner": {
-                "type": "Ref",
-                "ref_name": "Value"
-              },
+              "type": "Ref",
+              "ref_name": "Value",
               "summary": "List of initial values of contract's public variables.",
               "description": "Initial data is decoded if `abi` input parameter is provided"
             },
@@ -7608,7 +7465,7 @@
         {
           "name": "encode_account",
           "summary": "Creates account state BOC",
-          "description": "Creates account state provided with one of these sets of data :\n1. BOC of code, BOC of data, BOC of library\n2. TVC (string in `base64`), keys, init params",
+          "description": null,
           "params": [
             {
               "name": "context",
@@ -7684,7 +7541,7 @@
         {
           "name": "update_initial_data",
           "summary": "Updates initial account data with initial values for the contract's static variables and owner's public key. This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.",
-          "description": null,
+          "description": "Doesn't support ABI version >= 2.4. Use `encode_initial_data` instead",
           "params": [
             {
               "name": "context",
@@ -7760,7 +7617,7 @@
         {
           "name": "decode_initial_data",
           "summary": "Decodes initial values of a contract's static variables and owner's public key from account initial data This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.",
-          "description": null,
+          "description": "Doesn't support ABI version >= 2.4. Use `decode_account_data` instead",
           "params": [
             {
               "name": "context",

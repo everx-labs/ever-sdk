@@ -1,6 +1,6 @@
-use crate::abi::{Error, ParamsOfEncodeMessage};
+use crate::abi::Error;
 use crate::error::{ClientError, ClientResult};
-use crate::{processing, ClientContext};
+use crate::ClientContext;
 use std::convert::TryInto;
 use std::sync::Arc;
 use ton_abi::{Token, TokenValue};
@@ -101,6 +101,8 @@ pub struct AbiParam {
     pub param_type: String,
     #[serde(default)]
     pub components: Vec<AbiParam>,
+    #[serde(default)]
+    pub init: bool,
 }
 
 impl TryInto<ton_abi::Param> for AbiParam {
@@ -160,7 +162,7 @@ fn required_expire(token: &Token) -> ClientResult<u32> {
 
 fn required_pubkey(token: &Token) -> ClientResult<Option<String>> {
     match token.value {
-        TokenValue::PublicKey(key) => Ok(key.as_ref().map(|x| hex::encode(x.as_bytes()))),
+        TokenValue::PublicKey(key) => Ok(key.as_ref().map(|x| hex::encode(&x))),
         _ => Err(Error::invalid_message_for_decode(
             "`pubkey` header has invalid format",
         )),
@@ -182,36 +184,6 @@ impl FunctionHeader {
             }
         }
         Ok(Some(header))
-    }
-}
-
-#[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
-#[serde(tag = "type")]
-pub enum MessageSource {
-    Encoded { message: String, abi: Option<Abi> },
-    EncodingParams(ParamsOfEncodeMessage),
-}
-
-impl MessageSource {
-    pub(crate) async fn encode(
-        &self,
-        context: &Arc<ClientContext>,
-    ) -> ClientResult<(String, Option<Abi>)> {
-        Ok(match self {
-            MessageSource::EncodingParams(params) => {
-                if params.signer.is_external() {
-                    return Err(processing::Error::external_signer_must_not_be_used());
-                }
-                let abi = params.abi.clone();
-                (
-                    crate::abi::encode_message(context.clone(), params.clone())
-                        .await?
-                        .message,
-                    Some(abi),
-                )
-            }
-            MessageSource::Encoded { abi, message } => (message.clone(), abi.clone()),
-        })
     }
 }
 

@@ -4,6 +4,8 @@ use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use crate::ClientContext;
 use serde_json::Value;
+use ton_abi::PublicKeyData;
+use std::convert::TryInto;
 use std::sync::Arc;
 use ton_sdk::ContractImage;
 use ton_types::Cell;
@@ -16,13 +18,9 @@ pub(crate) fn add_sign_to_message(
     public_key: Option<&[u8]>,
     unsigned_message: &[u8],
 ) -> ClientResult<Vec<u8>> {
-    let signed = ton_sdk::Contract::add_sign_to_message(
-        abi.to_string(),
-        signature,
-        public_key,
-        unsigned_message,
-    )
-    .map_err(|err| Error::attach_signature_failed(err))?;
+    let signed =
+        ton_sdk::Contract::add_sign_to_message(abi, signature, public_key, unsigned_message)
+            .map_err(|err| Error::attach_signature_failed(err))?;
     Ok(signed.serialized_message)
 }
 
@@ -36,8 +34,18 @@ pub(crate) fn add_sign_to_message_body(
 ) -> ClientResult<Vec<u8>> {
     let unsigned = ton_sdk::Contract::deserialize_tree_to_slice(unsigned_body)
         .map_err(|err| Error::attach_signature_failed(err))?;
-    let body = ton_abi::add_sign_to_function_call(abi.to_string(), signature, public_key, unsigned)
-        .map_err(|err| Error::attach_signature_failed(err))?;
+    let body = ton_abi::add_sign_to_function_call(
+        abi,
+        signature
+            .try_into()
+            .map_err(|err| Error::attach_signature_failed(err))?,
+        public_key
+            .map(|slice| slice.try_into())
+            .transpose()
+            .map_err(|err| Error::attach_signature_failed(err))?,
+        unsigned,
+    )
+    .map_err(|err| Error::attach_signature_failed(err))?;
     Ok(ton_types::boc::write_boc(
         &body
             .into_cell()
@@ -74,6 +82,7 @@ pub(crate) async fn try_to_sign_message(
 
 pub(crate) fn create_tvc_image(
     abi: &str,
+    data_map_supported: bool,
     init_params: Option<&Value>,
     state_init: Cell,
 ) -> ClientResult<ContractImage> {
@@ -81,17 +90,17 @@ pub(crate) fn create_tvc_image(
         ContractImage::from_cell(state_init).map_err(|err| Error::invalid_tvc_image(err))?;
 
     if let Some(params) = init_params {
-        image.update_data(&params.to_string(), abi).map_err(|err| {
-            Error::invalid_tvc_image(format!("Failed to set initial data: {}", err))
-        })?;
+        image
+            .update_data(data_map_supported, &params.to_string(), abi)
+            .map_err(Error::encode_init_data_failed)?;
     }
 
     Ok(image)
 }
 
 /// Determines, if public key consists only zeroes, i.e. is empty.
-pub(crate) fn is_empty_pubkey(pubkey: &ed25519_dalek::PublicKey) -> bool {
-    pubkey.as_bytes() == &[0; ed25519_dalek::PUBLIC_KEY_LENGTH]
+pub(crate) fn is_empty_pubkey(pubkey: &PublicKeyData) -> bool {
+    pubkey == &[0; ton_types::ED25519_PUBLIC_KEY_LENGTH]
 }
 
 /// Resolves public key from deploy set, tvc or signer, using this priority:
@@ -128,7 +137,7 @@ pub(crate) fn update_pubkey(
     let resolved = resolve_pubkey(deploy_set, image, signer_pubkey)?;
     if let Some(ref public) = resolved {
         image
-            .set_public_key(&decode_public_key(public)?)
+            .set_public_key(&decode_public_key(public)?.to_bytes())
             .map_err(|err| Error::invalid_tvc_image(err))?;
         Ok(resolved)
     } else {

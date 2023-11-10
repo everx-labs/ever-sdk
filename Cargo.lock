@@ -67,9 +67,21 @@ version = "0.7.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5a824f2aa7e75a0c98c5a504fceb80649e9c35265d44525b5f94de4771a395cd"
 dependencies = [
- "getrandom 0.2.10",
+ "getrandom 0.2.11",
  "once_cell",
  "version_check",
+]
+
+[[package]]
+name = "ahash"
+version = "0.8.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "91429305e9f0a25f6205c5b8e0d2db09e0708a7a6df0f42212bb56c32c8ac97a"
+dependencies = [
+ "cfg-if 1.0.0",
+ "once_cell",
+ "version_check",
+ "zerocopy",
 ]
 
 [[package]]
@@ -113,7 +125,7 @@ checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
 name = "api_derive"
-version = "1.44.4"
+version = "1.45.0"
 dependencies = [
  "api_info",
  "proc-macro2",
@@ -124,7 +136,7 @@ dependencies = [
 
 [[package]]
 name = "api_info"
-version = "1.44.4"
+version = "1.45.0"
 dependencies = [
  "serde",
  "serde_derive",
@@ -133,7 +145,7 @@ dependencies = [
 
 [[package]]
 name = "api_test"
-version = "1.44.4"
+version = "1.45.0"
 dependencies = [
  "api_derive",
  "api_info",
@@ -768,9 +780,9 @@ checksum = "5443807d6dff69373d433ab9ef5378ad8df50ca6298caf15de6e52e24aaf54d5"
 
 [[package]]
 name = "errno"
-version = "0.3.5"
+version = "0.3.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ac3e13f66a2f95e32a39eaa81f6b95d42878ca0e1db0c7543723dfe12557e860"
+checksum = "7c18ee0ed65a5f1f81cac6b1d213b69c35fa47d4252ad41f1486dbd8226fe36e"
 dependencies = [
  "libc",
  "windows-sys",
@@ -778,14 +790,14 @@ dependencies = [
 
 [[package]]
 name = "ever-struct"
-version = "1.0.7"
-source = "git+https://github.com/tonlabs/ever-struct.git?tag=1.0.7#7d5370dbfdcfd72bf7c66dc2ca72e4a82de8d213"
+version = "1.0.9"
+source = "git+https://github.com/tonlabs/ever-struct.git?tag=1.0.9#f34411791c6333a7b980b3f1a55310371a50cbd7"
 dependencies = [
  "anyhow",
  "failure",
  "hex-literal",
  "ton_block",
- "ton_types 2.0.26",
+ "ton_types 2.0.29",
 ]
 
 [[package]]
@@ -824,9 +836,9 @@ checksum = "25cbce373ec4653f1a01a31e8a5e5ec0c622dc27ff9c4e6606eefef5cbbed4a5"
 
 [[package]]
 name = "fiat-crypto"
-version = "0.2.2"
+version = "0.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a481586acf778f1b1455424c343f71124b048ffa5f4fc3f8f6ae9dc432dcb3c7"
+checksum = "f69037fe1b785e84986b4f2cbcf647381876a00671d25ceef715d7812dd7e1dd"
 
 [[package]]
 name = "float-cmp"
@@ -981,9 +993,9 @@ dependencies = [
 
 [[package]]
 name = "getrandom"
-version = "0.2.10"
+version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be4136b2a15dd319360be1c07d9933517ccf0be8f16bf62a3bee4f0d618df427"
+checksum = "fe9006bed769170c11f845cf00c7c1e9092aeb3f268e007c3e760ac68008070f"
 dependencies = [
  "cfg-if 1.0.0",
  "js-sys",
@@ -1033,7 +1045,7 @@ version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8a9ee70c43aaf417c914396645a0fa852624801b24ebb7ae78fe8272889ac888"
 dependencies = [
- "ahash",
+ "ahash 0.7.7",
 ]
 
 [[package]]
@@ -1168,6 +1180,20 @@ dependencies = [
  "tower-service",
  "tracing",
  "want",
+]
+
+[[package]]
+name = "hyper-rustls"
+version = "0.24.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ec3efd23720e2049821a693cbc7e65ea87c72f1c58ff2f9522ff332b1491e590"
+dependencies = [
+ "futures-util",
+ "http",
+ "hyper",
+ "rustls 0.21.8",
+ "tokio",
+ "tokio-rustls 0.24.1",
 ]
 
 [[package]]
@@ -1406,9 +1432,9 @@ checksum = "0717cef1bc8b636c6e1c1bbdefc09e6322da8a9321966e8928ef80d20f7f770f"
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.4.10"
+version = "0.4.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "da2479e8c062e40bf0066ffa0bc823de0a9368974af99c9f6df941d2c231e03f"
+checksum = "969488b55f8ac402214f3f5fd243ebb7206cf82de60d3172994707a4bcc2b829"
 
 [[package]]
 name = "lock_api"
@@ -1489,6 +1515,28 @@ name = "memchr"
 version = "2.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f665ee40bc4a3c5590afb1e9677db74a508659dfd71e126420da8274909a0167"
+
+[[package]]
+name = "metrics"
+version = "0.21.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fde3af1a009ed76a778cb84fdef9e7dbbdf5775ae3e4cc1f434a6a307f6f76c5"
+dependencies = [
+ "ahash 0.8.6",
+ "metrics-macros",
+ "portable-atomic",
+]
+
+[[package]]
+name = "metrics-macros"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ddece26afd34c31585c74a4db0630c376df271c285d682d1e55012197830b6df"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.39",
+]
 
 [[package]]
 name = "mime"
@@ -1691,6 +1739,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff011a302c396a5197692431fc1948019154afc178baf7d8e37367442a4601cf"
 
 [[package]]
+name = "openssl-src"
+version = "300.1.6+3.1.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "439fac53e092cd7442a3660c85dde4643ab3b5bd39040912388dcdabf6b88085"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "openssl-sys"
 version = "0.9.95"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1698,6 +1755,7 @@ checksum = "40a4130519a360279579c2053038317e40eff64d13fd3f004f9e1b72b8a6aaf9"
 dependencies = [
  "cc",
  "libc",
+ "openssl-src",
  "pkg-config",
  "vcpkg",
 ]
@@ -1848,6 +1906,12 @@ name = "pom"
 version = "1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "60f6ce597ecdcc9a098e7fddacb1065093a3d66446fa16c675e7e71d1b5c28e6"
+
+[[package]]
+name = "portable-atomic"
+version = "1.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3bccab0e7fd7cc19f820a1c8c91720af652d0c88dc9664dd72aef2614f04af3b"
 
 [[package]]
 name = "powerfmt"
@@ -2004,7 +2068,7 @@ version = "0.6.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ec0be4795e2f6a28069bec0b5ff3e2ac9bafc99e6a9a7dc3547996c5c816922c"
 dependencies = [
- "getrandom 0.2.10",
+ "getrandom 0.2.11",
 ]
 
 [[package]]
@@ -2031,7 +2095,7 @@ version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a18479200779601e498ada4e8c1e1f50e3ee19deb0259c25825a98b5603b2cb4"
 dependencies = [
- "getrandom 0.2.10",
+ "getrandom 0.2.11",
  "libredox",
  "thiserror",
 ]
@@ -2088,6 +2152,7 @@ dependencies = [
  "http",
  "http-body",
  "hyper",
+ "hyper-rustls",
  "hyper-tls",
  "ipnet",
  "js-sys",
@@ -2097,18 +2162,52 @@ dependencies = [
  "once_cell",
  "percent-encoding",
  "pin-project-lite",
+ "rustls 0.21.8",
+ "rustls-native-certs",
+ "rustls-pemfile",
  "serde",
  "serde_json",
  "serde_urlencoded",
  "system-configuration",
  "tokio",
  "tokio-native-tls",
+ "tokio-rustls 0.24.1",
  "tower-service",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "web-sys",
+ "webpki-roots 0.25.2",
  "winreg",
+]
+
+[[package]]
+name = "ring"
+version = "0.16.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3053cf52e236a3ed746dfc745aa9cacf1b791d846bdaf412f60a8d7d6e17c8fc"
+dependencies = [
+ "cc",
+ "libc",
+ "once_cell",
+ "spin 0.5.2",
+ "untrusted 0.7.1",
+ "web-sys",
+ "winapi",
+]
+
+[[package]]
+name = "ring"
+version = "0.17.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fb0205304757e5d899b9c2e448b867ffd03ae7f988002e47cd24954391394d0b"
+dependencies = [
+ "cc",
+ "getrandom 0.2.11",
+ "libc",
+ "spin 0.9.8",
+ "untrusted 0.9.0",
+ "windows-sys",
 ]
 
 [[package]]
@@ -2143,6 +2242,61 @@ dependencies = [
  "libc",
  "linux-raw-sys",
  "windows-sys",
+]
+
+[[package]]
+name = "rustls"
+version = "0.20.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1b80e3dec595989ea8510028f30c408a4630db12c9cbb8de34203b89d6577e99"
+dependencies = [
+ "log",
+ "ring 0.16.20",
+ "sct",
+ "webpki",
+]
+
+[[package]]
+name = "rustls"
+version = "0.21.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "446e14c5cda4f3f30fe71863c34ec70f5ac79d6087097ad0bb433e1be5edf04c"
+dependencies = [
+ "log",
+ "ring 0.17.5",
+ "rustls-webpki",
+ "sct",
+]
+
+[[package]]
+name = "rustls-native-certs"
+version = "0.6.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a9aace74cb666635c918e9c12bc0d348266037aa8eb599b5cba565709a8dff00"
+dependencies = [
+ "openssl-probe",
+ "rustls-pemfile",
+ "schannel",
+ "security-framework",
+]
+
+[[package]]
+name = "rustls-pemfile"
+version = "1.0.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1c74cae0a4cf6ccbbf5f359f08efdf8ee7e1dc532573bf0db71968cb56b1448c"
+dependencies = [
+ "base64 0.21.5",
+]
+
+[[package]]
+name = "rustls-webpki"
+version = "0.101.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b6275d1ee7a1cd780b64aca7726599a1dbc893b1e64144529e55c3c2f745765"
+dependencies = [
+ "ring 0.17.5",
+ "untrusted 0.9.0",
 ]
 
 [[package]]
@@ -2185,6 +2339,16 @@ dependencies = [
  "pbkdf2 0.8.0",
  "salsa20",
  "sha2 0.9.9",
+]
+
+[[package]]
+name = "sct"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da046153aa2352493d6cb7da4b6e5c0c057d8a1d0a9aa8560baffdd945acd414"
+dependencies = [
+ "ring 0.17.5",
+ "untrusted 0.9.0",
 ]
 
 [[package]]
@@ -2369,9 +2533,9 @@ dependencies = [
 
 [[package]]
 name = "smallvec"
-version = "1.11.1"
+version = "1.11.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "942b4a808e05215192e39f4ab80813e599068285906cc91aa64f923db842bd5a"
+checksum = "4dccd0940a2dcdf68d092b8cbab7dc0ad8fa938bf95787e1b916b0e3d0e8e970"
 
 [[package]]
 name = "socket2"
@@ -2401,6 +2565,18 @@ dependencies = [
  "index-fixed",
  "rand 0.7.3",
 ]
+
+[[package]]
+name = "spin"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6e63cff320ae2c57904679ba7cb63280a3dc4613885beafb148ee7bf9aa9042d"
+
+[[package]]
+name = "spin"
+version = "0.9.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6980e8d7511241f8acf4aebddbb1ff938df5eebe98691418c4468d0b72a96a67"
 
 [[package]]
 name = "spki"
@@ -2587,9 +2763,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.33.0"
+version = "1.34.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4f38200e3ef7995e5ef13baec2f432a6da0aa9ac495b2c0e8f3b7eec2c92d653"
+checksum = "d0c014766411e834f7af5b8f4cf46257aab4036ca95e9d2c144a10f59ad6f5b9"
 dependencies = [
  "backtrace",
  "bytes",
@@ -2604,9 +2780,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-macros"
-version = "2.1.0"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "630bdcf245f78637c13ec01ffae6187cca34625e8c63150d424b59e55af2675e"
+checksum = "5b8a1e28f2deaa14e508979454cb3a223b10b938b45af148bc0986de36f1923b"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2620,6 +2796,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bbae76ab933c85776efabc971569dd6119c580d8f5d448769dec1764bf796ef2"
 dependencies = [
  "native-tls",
+ "tokio",
+]
+
+[[package]]
+name = "tokio-rustls"
+version = "0.23.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c43ee83903113e03984cb9e5cebe6c04a5116269e900e3ddba8f068a62adda59"
+dependencies = [
+ "rustls 0.20.9",
+ "tokio",
+ "webpki",
+]
+
+[[package]]
+name = "tokio-rustls"
+version = "0.24.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c28327cf380ac148141087fbfb9de9d7bd4e84ab5d2c28fbc911d753de8a7081"
+dependencies = [
+ "rustls 0.21.8",
  "tokio",
 ]
 
@@ -2643,9 +2840,14 @@ dependencies = [
  "futures-util",
  "log",
  "native-tls",
+ "rustls 0.20.9",
+ "rustls-native-certs",
  "tokio",
  "tokio-native-tls",
+ "tokio-rustls 0.23.4",
  "tungstenite",
+ "webpki",
+ "webpki-roots 0.22.6",
 ]
 
 [[package]]
@@ -2664,14 +2866,12 @@ dependencies = [
 
 [[package]]
 name = "ton_abi"
-version = "2.3.143"
-source = "git+https://github.com/tonlabs/ever-abi.git?tag=2.3.143#5ac05d08129018ac76deb08d7593c8cf4d3a1848"
+version = "2.4.0"
+source = "git+https://github.com/tonlabs/ever-abi.git?tag=2.4.0#1f5cfa9bf5db917f55d470092f2152f68afed9cc"
 dependencies = [
  "base64 0.10.1",
  "byteorder",
  "chrono",
- "ed25519 1.5.3",
- "ed25519-dalek 1.0.1",
  "failure",
  "hex 0.3.2",
  "num-bigint",
@@ -2681,13 +2881,13 @@ dependencies = [
  "serde_json",
  "sha2 0.10.8",
  "ton_block",
- "ton_types 2.0.26",
+ "ton_types 2.0.29",
 ]
 
 [[package]]
 name = "ton_api"
-version = "0.3.38"
-source = "git+https://github.com/tonlabs/ever-tl.git?tag=0.3.38#a836d3c5c92a2c42bbdeb45507cab92cd2b37da9"
+version = "0.3.44"
+source = "git+https://github.com/tonlabs/ever-tl.git?tag=0.3.44#da823103cb0d9d44af39f5a3bb5b887f8c9d153c"
 dependencies = [
  "byteorder",
  "extfmt",
@@ -2701,13 +2901,13 @@ dependencies = [
  "serde_json",
  "ton_block",
  "ton_tl_codegen",
- "ton_types 2.0.26",
+ "ton_types 2.0.29",
 ]
 
 [[package]]
 name = "ton_block"
-version = "1.9.101"
-source = "git+https://github.com/tonlabs/ever-block.git?tag=1.9.101#0b9b35a2f5d30e47e26db03dc4db11a2084f9ffc"
+version = "1.9.107"
+source = "git+https://github.com/tonlabs/ever-block.git?tag=1.9.107#21b8c33829b4b7f653a656cf9488408ae1898081"
 dependencies = [
  "base64 0.13.1",
  "crc 3.0.1",
@@ -2719,17 +2919,20 @@ dependencies = [
  "num",
  "num-traits",
  "sha2 0.10.8",
- "ton_types 2.0.26",
+ "ton_types 2.0.29",
 ]
 
 [[package]]
 name = "ton_block_json"
-version = "0.7.184"
-source = "git+https://github.com/tonlabs/ever-block-json.git?tag=0.7.184#0712036866af50c54b8543e93caaa35be819070c"
+version = "0.7.192"
+source = "git+https://github.com/tonlabs/ever-block-json.git?tag=0.7.192#96457b8b3bbf7d6d73b4a57d6eda5833c6b3b109"
 dependencies = [
  "base64 0.13.1",
  "failure",
  "hex 0.4.3",
+ "lazy_static",
+ "log",
+ "metrics",
  "num",
  "num-traits",
  "serde",
@@ -2737,12 +2940,12 @@ dependencies = [
  "serde_json",
  "ton_api",
  "ton_block",
- "ton_types 2.0.26",
+ "ton_types 2.0.29",
 ]
 
 [[package]]
 name = "ton_client"
-version = "1.44.4"
+version = "1.45.0"
 dependencies = [
  "aes",
  "api_derive",
@@ -2757,7 +2960,7 @@ dependencies = [
  "chrono",
  "crc 3.0.1",
  "dirs 2.0.2",
- "ed25519-dalek 1.0.1",
+ "ed25519-dalek 2.0.0",
  "ever-struct",
  "failure",
  "futures",
@@ -2798,7 +3001,7 @@ dependencies = [
  "ton_client_processing",
  "ton_executor",
  "ton_sdk",
- "ton_types 2.0.26",
+ "ton_types 2.0.29",
  "ton_vm",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2809,7 +3012,7 @@ dependencies = [
 
 [[package]]
 name = "ton_client_processing"
-version = "1.44.4"
+version = "1.45.0"
 dependencies = [
  "api_derive",
  "api_info",
@@ -2823,31 +3026,30 @@ dependencies = [
  "serde_repr",
  "tokio",
  "ton_block",
- "ton_types 2.0.26",
+ "ton_types 2.0.29",
 ]
 
 [[package]]
 name = "ton_executor"
-version = "1.16.75"
-source = "git+https://github.com/tonlabs/ever-executor.git?tag=1.16.75#aed35e336ed5fc803c0d4869e852cf129a1edb3d"
+version = "1.16.86"
+source = "git+https://github.com/tonlabs/ever-executor.git?tag=1.16.86#452f2bdfcd463dd61a1155580f97740090ef2d25"
 dependencies = [
  "failure",
  "lazy_static",
  "log",
  "ton_block",
- "ton_types 2.0.26",
+ "ton_types 2.0.29",
  "ton_vm",
 ]
 
 [[package]]
 name = "ton_sdk"
-version = "1.44.4"
+version = "1.45.0"
 dependencies = [
  "api_derive",
  "api_info",
  "base64 0.10.1",
  "chrono",
- "ed25519-dalek 1.0.1",
  "failure",
  "hex 0.3.2",
  "lazy_static",
@@ -2860,13 +3062,13 @@ dependencies = [
  "sha2 0.9.9",
  "ton_abi",
  "ton_block",
- "ton_types 2.0.26",
+ "ton_types 2.0.29",
 ]
 
 [[package]]
 name = "ton_tl_codegen"
 version = "0.1.0"
-source = "git+https://github.com/tonlabs/ever-tl.git?tag=0.3.38#a836d3c5c92a2c42bbdeb45507cab92cd2b37da9"
+source = "git+https://github.com/tonlabs/ever-tl.git?tag=0.3.44#da823103cb0d9d44af39f5a3bb5b887f8c9d153c"
 dependencies = [
  "crc 1.8.1",
  "failure",
@@ -2900,8 +3102,8 @@ dependencies = [
 
 [[package]]
 name = "ton_types"
-version = "2.0.26"
-source = "git+https://github.com/tonlabs/ever-types.git?tag=2.0.26#2942de3c92fada379789ca05042947c42c8143bf"
+version = "2.0.29"
+source = "git+https://github.com/tonlabs/ever-types.git?tag=2.0.29#e5f4eff5ea3175afaa650094e785c1c87f86b0f0"
 dependencies = [
  "aes-ctr",
  "base64 0.13.1",
@@ -2927,8 +3129,8 @@ dependencies = [
 
 [[package]]
 name = "ton_vm"
-version = "1.8.205"
-source = "git+https://github.com/tonlabs/ever-vm.git?tag=1.8.205#047b70c39dd34c45f3e058a34fc2e8405a5efaf5"
+version = "1.8.214"
+source = "git+https://github.com/tonlabs/ever-vm.git?tag=1.8.214#868bf89679d64441a01657dfeeda060e27c5243f"
 dependencies = [
  "diffy",
  "ed25519 1.5.3",
@@ -2942,13 +3144,13 @@ dependencies = [
  "rand 0.7.3",
  "similar",
  "ton_block",
- "ton_types 2.0.26",
+ "ton_types 2.0.29",
  "zstd",
 ]
 
 [[package]]
 name = "toncli"
-version = "1.44.4"
+version = "1.45.0"
 dependencies = [
  "api_info",
  "assert_cmd",
@@ -3008,10 +3210,12 @@ dependencies = [
  "log",
  "native-tls",
  "rand 0.8.5",
+ "rustls 0.20.9",
  "sha-1",
  "thiserror",
  "url",
  "utf-8",
+ "webpki",
 ]
 
 [[package]]
@@ -3081,6 +3285,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "untrusted"
+version = "0.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a156c684c91ea7d62626509bce3cb4e1d9ed5c4d978f7b4352658f96a4c26b4a"
+
+[[package]]
+name = "untrusted"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
+
+[[package]]
 name = "update_trusted_blocks"
 version = "0.1.0"
 dependencies = [
@@ -3117,7 +3333,7 @@ version = "0.8.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc5cf98d8186244414c848017f0e2676b3fcb46807f6668a97dfe67359a3c4b7"
 dependencies = [
- "getrandom 0.2.10",
+ "getrandom 0.2.11",
 ]
 
 [[package]]
@@ -3243,6 +3459,31 @@ dependencies = [
  "js-sys",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "webpki"
+version = "0.22.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ed63aea5ce73d0ff405984102c42de94fc55a6b75765d621c65262469b3c9b53"
+dependencies = [
+ "ring 0.17.5",
+ "untrusted 0.9.0",
+]
+
+[[package]]
+name = "webpki-roots"
+version = "0.22.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b6c71e40d7d2c34a5106301fb632274ca37242cd0c9d3e64dbece371a40a2d87"
+dependencies = [
+ "webpki",
+]
+
+[[package]]
+name = "webpki-roots"
+version = "0.25.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "14247bb57be4f377dfb94c72830b8ce8fc6beac03cf4bf7b9732eadd414123fc"
 
 [[package]]
 name = "winapi"
@@ -3377,6 +3618,26 @@ name = "yansi"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "09041cd90cf85f7f8b2df60c646f853b7f535ce68f85244eb6731cf89fa498ec"
+
+[[package]]
+name = "zerocopy"
+version = "0.7.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8cd369a67c0edfef15010f980c3cbe45d7f651deac2cd67ce097cd801de16557"
+dependencies = [
+ "zerocopy-derive",
+]
+
+[[package]]
+name = "zerocopy-derive"
+version = "0.7.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c2f140bda219a26ccc0cdb03dba58af72590c53b22642577d88a927bc5c87d6b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.39",
+]
 
 [[package]]
 name = "zeroize"
