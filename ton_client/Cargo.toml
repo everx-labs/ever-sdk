@@ -21,13 +21,13 @@ api_info = { path = '../api/info' }
 ton_sdk = { default-features = false, path = '../ton_sdk' }
 ton_client_processing = { default-features = false, path = '../ton_client_processing' }
 
-ton_abi = { git = 'https://github.com/tonlabs/ever-abi.git',  branch = 'abi-2.4' }
-ton_block = { git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.104' }
-ton_block_json = { git = 'https://github.com/tonlabs/ever-block-json.git', tag = '0.7.187' }
-ton_types = { git = 'https://github.com/tonlabs/ever-types.git', tag = '2.0.28' }
-ton_executor = { features = ['signature_with_id'], git = 'https://github.com/tonlabs/ever-executor.git', tag = '1.16.82' }
-ton_vm = { features = ['signature_with_id', 'signature_no_check'], git = 'https://github.com/tonlabs/ever-vm.git', tag = '1.8.211' }
-ever-struct = { git = 'https://github.com/tonlabs/ever-struct.git', tag = '1.0.8' }
+ton_abi = { git = 'https://github.com/tonlabs/ever-abi.git',  tag = '2.4.0' }
+ton_block = { git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.107' }
+ton_block_json = { git = 'https://github.com/tonlabs/ever-block-json.git', tag = '0.7.192' }
+ton_types = { git = 'https://github.com/tonlabs/ever-types.git', tag = '2.0.29' }
+ton_executor = { features = ['signature_with_id'], git = 'https://github.com/tonlabs/ever-executor.git', tag = '1.16.86' }
+ton_vm = { features = ['signature_with_id', 'signature_no_check'], git = 'https://github.com/tonlabs/ever-vm.git', tag = '1.8.214' }
+ever-struct = { git = 'https://github.com/tonlabs/ever-struct.git', tag = '1.0.9' }
 
 lockfree = { git = 'https://github.com/tonlabs/lockfree.git', package = 'lockfree' }
 sodalite = { features = [ 'rand' ], git = 'https://github.com/tonlabs/sodalite.git' }
