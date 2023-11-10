@@ -22,14 +22,14 @@ use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
 use crate::json_interface::interop::{ResponseType, StringData};
-use crate::json_interface::modules::{AbiModule, NetModule, ProcessingModule};
+use crate::json_interface::modules::{AbiModule, ProcessingModule};
 use crate::json_interface::runtime::Runtime;
 use crate::net::{ParamsOfQuery, ResultOfQuery};
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
 use crate::{
     crypto::KeyPair,
     error::{ClientError, ClientResult},
-    net::{ParamsOfQueryTransactionTree, ParamsOfWaitForCollection, ResultOfQueryTransactionTree},
+    net::{ParamsOfQueryTransactionTree, ResultOfQueryTransactionTree},
     tc_create_context, tc_destroy_context, ContextHandle,
 };
 use api_info::ApiModule;
@@ -664,23 +664,21 @@ impl TestClient {
     }
 
     pub(crate) async fn fetch_account(&self, address: &str) -> Value {
-        let wait_for = self.wrap_async(
-            crate::net::wait_for_collection,
-            NetModule::api(),
-            crate::net::queries::wait_for_collection_api(),
-        );
-        let result = wait_for
-            .call(ParamsOfWaitForCollection {
-                collection: "accounts".into(),
-                filter: Some(json!({
-                    "id": { "eq": address.to_string() }
+        let mut result: ResultOfQuery = self.request_async(
+            "net.query",
+            ParamsOfQuery {
+                query: "query account($address:String!){blockchain{account(address:$address){info{boc}}}}".to_owned(),
+                variables: Some(json!({
+                    "address": address.to_string(),
                 })),
-                result: "id boc".into(),
-                ..Default::default()
             })
             .await
             .unwrap();
-        result.result
+        result
+            .result
+            .pointer_mut("/data/blockchain/account/info")
+            .unwrap()
+            .take()
     }
 
     pub(crate) async fn net_process_function(

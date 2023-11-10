@@ -78,7 +78,7 @@ messages(
 
 See the full sample here [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/pagination](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/pagination)
 
-Read about used API here -> [Account messages pagination](https://docs.everos.dev/ever-platform/samples/graphql-samples/accounts#pagination-of-accounts-messages). &#x20;
+Read about used API here -> [Account messages pagination](https://docs.everplatform.dev/samples/graphql-samples/accounts#get-messages-within-block-range). &#x20;
 
 ```javascript
 result = await client.net.query({

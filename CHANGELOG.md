@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [1.45.0] – 2023-08-01
+## [1.45.0] – 2023-11-10
 
 ### New
 
@@ -22,6 +22,12 @@ State init should be finalized and ready to be used in message as is.
 
 - `abi.encode_account` parameter `state_init` is BOC or cached BOC reference instead of
 `StateInitSource` enum. There is only one way to provide account state init now.
+
+## [1.44.4] – 2023-11-07
+
+### New
+
+- Account BOC for local error resolving is fetched from blockchain API instead of collections API
 
 ## [1.44.3] – 2023-09-05
 

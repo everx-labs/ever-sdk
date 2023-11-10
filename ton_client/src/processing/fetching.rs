@@ -140,23 +140,21 @@ pub(crate) async fn fetch_account(
     address: &MsgAddressInt,
     result: &str,
 ) -> ClientResult<Value> {
-    let mut result = crate::net::query_collection(
+    let mut result = crate::net::query(
         context,
-        crate::net::ParamsOfQueryCollection {
-            collection: "accounts".to_owned(),
-            filter: Some(serde_json::json!({
-                "id": { "eq": address.to_string() }
+        crate::net::ParamsOfQuery {
+            query: format!("query account($address:String!){{blockchain{{account(address:$address){{info{{{}}}}}}}}}", result),
+            variables: Some(json!({
+                "address": address.to_string(),
             })),
-            limit: None,
-            order: None,
-            result: result.to_owned(),
         },
     )
     .await?;
 
     result
         .result
-        .pop()
+        .pointer_mut("/data/blockchain/account/info")
+        .map(|value| value.take())
         .ok_or(crate::tvm::Error::account_missing(address))
 }
 

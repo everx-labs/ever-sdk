@@ -1,41 +1,35 @@
 # Ever SDK
+
 Client libraries for DApp development in TVM blockchains (Everscale, Gosh, TON, Venom Blockchain, etc).
 
 Core Ever-SDK client library is written in Rust, with bindings in 11 programming languages.
 
-<div>
-<img src="docs/.gitbook/assets/vf-dev-program.png" alt="" width="300">
-<img src="docs/.gitbook/assets/GoshLogo.png" alt="" width="300">
-</br>
-<img src="docs/.gitbook/assets/Everscale Logo.png" alt="" width="300">
-
-</div>
+![](docs/.gitbook/assets/vf-dev-program.png) ![](docs/.gitbook/assets/GoshLogo.png)\
+![](<docs/.gitbook/assets/Everscale Logo.png>)
 
 **Get quick help in our telegram channel:**
 
 [![Channel on Telegram](https://img.shields.io/badge/chat-on%20telegram-9cf.svg)](https://t.me/ever\_sdk)
 
-
-- [Ever SDK](#ever-sdk)
-  - [Supported languages](#supported-languages)
-    - [Rust (core library)](#rust-core-library)
-    - [Official Javascript(Typescript) binding](#official-javascripttypescript-binding)
-    - [Community bindings](#community-bindings)
-    - [If you did not find the language you need](#if-you-did-not-find-the-language-you-need)
-  - [Use-cases](#use-cases)
-  - [Quick Start](#quick-start)
-  - [How to avoid Soft Breaking Problems](#how-to-avoid-soft-breaking-problems)
-  - [Build client library](#build-client-library)
-  - [Build artifacts](#build-artifacts)
-  - [Run tests](#run-tests)
-  - [Download precompiled binaries](#download-precompiled-binaries)
-
+* [Ever SDK](./#ever-sdk)
+  * [Supported languages](./#supported-languages)
+    * [Rust (core library)](./#rust-core-library)
+    * [Official Javascript(Typescript) binding](./#official-javascripttypescript-binding)
+    * [Community bindings](./#community-bindings)
+    * [If you did not find the language you need](./#if-you-did-not-find-the-language-you-need)
+  * [Use-cases](./#use-cases)
+  * [Quick Start](./#quick-start)
+  * [How to avoid Soft Breaking Problems](./#how-to-avoid-soft-breaking-problems)
+  * [Build client library](./#build-client-library)
+  * [Build artifacts](./#build-artifacts)
+  * [Run tests](./#run-tests)
+  * [Download precompiled binaries](./#download-precompiled-binaries)
 
 ## Supported languages
 
 ### Rust (core library)
 
-Repository: https://github.com/tonlabs/ever-sdk 
+Repository: https://github.com/tonlabs/ever-sdk
 
 **What is Core Client Library?**
 
@@ -106,9 +100,9 @@ With Ever-SDK you can implement logic of any complexity on TVM compatible blockc
 
 ## Quick Start
 
-Get your endpoing at [dashboard.evercloud.dev](https://dashboard.evercloud.dev/) or run Evernode-SE (local node) or Dapp Server (self-hosted blockchain node).&#x20;
+Get your endpoing at [dashboard.evercloud.dev](https://dashboard.evercloud.dev/) or run Evernode-SE (local node) or Dapp Server (self-hosted blockchain node).
 
-See the list of available TVM networks: https://docs.evercloud.dev/products/evercloud/networks-endpoints
+See the list of available TVM networks: [https://docs.everplatform.dev/products/evercloud/networks-endpoints](https://docs.everplatform.dev/products/evercloud/networks-endpoints)
 
 [Quick Start (Javascript binding)](docs/quick\_start.md)
 
@@ -119,10 +113,6 @@ See the list of available TVM networks: https://docs.evercloud.dev/products/ever
 [Core Types and Methods (API Reference)](docs/reference/types-and-methods/modules.md)
 
 [Guides](docs/guides/installation/add\_sdk\_to\_your\_app.md)
-
-
-
-
 
 ## How to avoid Soft Breaking Problems
 
@@ -223,7 +213,7 @@ To run test suite use standard Rust test command
 cargo test
 ```
 
-SDK tests need [EVER OS API](https://docs.everos.dev/ever-platform/reference/graphql-api/networks) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/evernode-ds) which runs in real networks and by local blockchain [Evernode SE](https://github.com/tonlabs/evernode-se).
+SDK tests need [EVER OS API](https://docs.everplatform.dev/reference/graphql-api/networks) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/evernode-ds) which runs in real networks and by local blockchain [Evernode SE](https://github.com/tonlabs/evernode-se).
 
 Evernode SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`. If you have Evernode SE running on another address or you need to run tests on a real Everscale network use the following environment variables to override the default parameters
 
