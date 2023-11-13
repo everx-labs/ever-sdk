@@ -25,7 +25,7 @@ impl Default for Abi {
 }
 
 impl Abi {
-    pub(crate) fn json_string(&self) -> ClientResult<String> {
+    pub fn json_string(&self) -> ClientResult<String> {
         match self {
             Self::Contract(abi) | Self::Serialized(abi) => {
                 Ok(serde_json::to_string(abi).map_err(|err| Error::invalid_abi(err))?)
@@ -37,7 +37,7 @@ impl Abi {
         }
     }
 
-    pub(crate) fn abi(&self) -> ClientResult<ton_abi::Contract> {
+    pub fn abi(&self) -> ClientResult<ton_abi::Contract> {
         ton_abi::Contract::load(self.json_string()?.as_bytes())
             .map_err(|x| Error::invalid_json(x))
     }
