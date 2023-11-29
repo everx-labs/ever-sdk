@@ -21,9 +21,15 @@ use crate::{
     },
     net::{OrderBy, ParamsOfQueryCollection, ServerLink, SortDirection},
 };
-use std::sync::Arc;
+use serde_json::Value;
+use std::{fs, path::Path, sync::Arc};
 use ton_block::{Deserializable, GlobalCapabilities};
 use ton_executor::BlockchainConfig;
+
+const ACKI_CONFIG_FILE: &str = "ACKI_CONFIG_FILE";
+const ACKI_GLOBAL_ID: &str = "ACKI_GLOBAL_ID";
+const DEFAULT_ACKI_CONFIG_FILE: &str = "src/blockchain.conf.json";
+const DEFAULT_ACKI_GLOBAL_ID: i32 = 100;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfGetSignatureId {
@@ -62,8 +68,9 @@ pub(crate) async fn get_default_params(context: &Arc<ClientContext>) -> ClientRe
         return Ok(params.clone());
     }
 
-    let (config, global_id) = if let Ok(link) = context.get_server_link() {
-        query_network_params(link).await?
+    let (config, global_id) = if let Ok(_) = context.get_server_link() {
+        // query_network_params(link).await?
+        query_network_params_from_file().await?
     } else {
         offline_config()
     };
@@ -111,6 +118,36 @@ pub(crate) async fn query_network_params(link: &ServerLink) -> ClientResult<(Blo
 
     let config = BlockchainConfig::with_config(config)
         .map_err(|err| crate::tvm::Error::can_not_read_blockchain_config(err))?;
-    
     Ok((config, global_id))
+}
+
+pub(crate) async fn query_network_params_from_file() -> ClientResult<(BlockchainConfig, i32)> {
+    let config_file_name = std::env::var(ACKI_CONFIG_FILE)
+        .ok()
+        .unwrap_or(DEFAULT_ACKI_CONFIG_FILE.to_owned());
+
+    let global_id = std::env::var(ACKI_GLOBAL_ID)
+        .ok()
+        .and_then(|num| i32::from_str_radix(&num, 10).ok())
+        .unwrap_or(DEFAULT_ACKI_GLOBAL_ID);
+
+    let blockchain_config_json = read_str(&config_file_name)?;
+    let config = blockchain_config_from_json(&blockchain_config_json)?;
+    Ok((config, global_id))
+}
+
+fn read_str(path: &str) -> ClientResult<String> {
+    Ok(fs::read_to_string(Path::new(path))
+        .map_err(|err| crate::tvm::Error::can_not_read_blockchain_config_from_file(err))?)
+}
+
+fn blockchain_config_from_json(json: &str) -> ClientResult<BlockchainConfig> {
+    let map =
+        serde_json::from_str::<serde_json::Map<String, Value>>(&json)
+        .map_err(|err| crate::tvm::Error::json_deserialization_failed(err))?;
+    let config_params =
+        ton_block_json::parse_config(&map)
+        .map_err(|err| crate::tvm::Error::can_not_parse_config(err))?;
+    BlockchainConfig::with_config(config_params)
+        .map_err(|err| crate::tvm::Error::can_not_convert_config(err))
 }

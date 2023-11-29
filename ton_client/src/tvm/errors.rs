@@ -69,6 +69,33 @@ impl Error {
         )
     }
 
+    pub fn can_not_read_blockchain_config_from_file<E: Display>(err: E) -> ClientError {
+        error(
+            ErrorCode::CanNotReadBlockchainConfig,
+            format!("Can not read blockchain config from file: {}", err),
+        )
+    }
+
+    pub fn json_deserialization_failed<E: Display>(err: E) -> ClientError {
+        error(
+            ErrorCode::CanNotReadBlockchainConfig,
+            format!("Deserialization blockchain config was failed: {}", err),
+        )
+    }
+
+    pub fn can_not_parse_config<E: Display>(err: E) -> ClientError {
+        error(
+            ErrorCode::CanNotReadBlockchainConfig,
+            format!("Can not parse blockchain config: {}", err),
+        )
+    }
+
+    pub fn can_not_convert_config<E: Display>(err: E) -> ClientError {
+        error(
+            ErrorCode::CanNotReadBlockchainConfig,
+            format!("Can not convert config: {}", err),
+        )
+    }
     pub fn transaction_aborted() -> ClientError {
         let error = error(
             ErrorCode::TransactionAborted,
