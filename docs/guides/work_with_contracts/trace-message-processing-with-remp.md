@@ -169,9 +169,9 @@ Full sample: [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/n
 
 Guides for working with REMP in GraphQL API:
 
-{% embed url="https://docs.evercloud.dev/samples/graphql-samples/subscribe-for-remp-receipts" %}
+{% embed url="https://docs.everplatform.dev/samples/graphql-samples/subscribe-for-remp-receipts" %}
 
-{% embed url="https://docs.evercloud.dev/samples/graphql-samples/send-message" %}
+{% embed url="https://docs.everplatform.dev/samples/graphql-samples/send-message" %}
 
 REMP Architecture documentation:
 

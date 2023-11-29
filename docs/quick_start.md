@@ -46,7 +46,7 @@ $ npm i
 The script implements the following logic:
 
 1. Links the project with Node.js [Ever-SDK](https://github.com/tonlabs/ever-sdk) binary. If you plan to use JS SDK in Web, link it with Wasm binary. Read more [here](https://github.com/tonlabs/ever-sdk-js).
-2. `TONClient` instance is created and initialized with [Evernode SE](https://github.com/tonlabs/evernode-se) ("[http://localhost](http://localhost)", local blockchain) endpoint. See the list of other available [endpoints](https://docs.everos.dev/ever-platform/reference/graphql-api/networks).
+2. `TONClient` instance is created and initialized with [Evernode SE](https://github.com/tonlabs/evernode-se) ("[http://localhost](http://localhost)", local blockchain) endpoint. See the list of other available [endpoints](https://docs.everplatform.dev/reference/graphql-api/networks).
 3. Future address is calculated from the code and data of the contract (data includes signing keys)
 4. &#x20;Flag `useGiver: true` allows to sponsor deploy with Evernode SE giver that is hard coded as the default Account giver. [You can re-assign it to your own giver](guides/work\_with\_contracts/deploy.md#transfer-funds-to-the-future-address).
 

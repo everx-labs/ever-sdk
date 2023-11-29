@@ -17,10 +17,10 @@ use crate::crypto::internal::{decode_public_key, decode_secret_key, sign_using_k
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 use base64::URL_SAFE;
-use ed25519_dalek::Keypair;
+use ed25519_dalek::SigningKey;
 use std::fmt::{Debug, Formatter};
 
-use super::internal::hex_decode_secret_const;
+use super::internal::{hex_decode_secret_const, SecretBufConst};
 
 pub(crate) fn strip_secret(secret: &str) -> String {
     const SECRET_SHOW_LEN: usize = 8;
@@ -37,7 +37,7 @@ pub(crate) fn strip_secret(secret: &str) -> String {
 
 //----------------------------------------------------------------------------------------- KeyPair
 ///
-#[derive(Serialize, Deserialize, Clone, ApiType, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, ApiType, Default, PartialEq, zeroize::ZeroizeOnDrop)]
 pub struct KeyPair {
     /// Public key - 64 symbols hex string
     pub public: String,
@@ -50,11 +50,17 @@ impl KeyPair {
         KeyPair { public, secret }
     }
 
-    pub fn decode(&self) -> ClientResult<Keypair> {
-        Ok(Keypair {
-            public: decode_public_key(&self.public)?,
-            secret: decode_secret_key(&self.secret)?,
-        })
+    pub fn decode(&self) -> ClientResult<SigningKey> {
+        let secret = decode_secret_key(&self.secret)?;
+        let public = decode_public_key(&self.public)?;
+
+        if secret.verifying_key() != public {
+            return Err(super::Error::invalid_public_key(
+                "public key doesn't correspond to secret key", &self.public
+            ));
+        }
+
+        Ok(secret)
     }
 }
 
@@ -107,11 +113,11 @@ pub fn convert_public_key_to_ton_safe_format(
 /// Generates random ed25519 key pair.
 #[api_function]
 pub fn generate_random_sign_keys(_context: std::sync::Arc<ClientContext>) -> ClientResult<KeyPair> {
-    let mut rng = rand::thread_rng();
-    let keypair = Keypair::generate(&mut rng);
+    let bytes = SecretBufConst(rand::random());
+    let sign_key = SigningKey::from_bytes(&bytes.0);
     Ok(KeyPair::new(
-        hex::encode(keypair.public.to_bytes()),
-        hex::encode(keypair.secret.to_bytes()),
+        hex::encode(&sign_key.verifying_key().to_bytes()),
+        hex::encode(bytes),
     ))
 }
 

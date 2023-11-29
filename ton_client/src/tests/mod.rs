@@ -16,18 +16,20 @@ use crate::abi::{
     encode_message, Abi, CallSet, DeploySet, ParamsOfEncodeMessage, ResultOfEncodeMessage, Signer,
 };
 use crate::client::*;
+use crate::crypto::internal::hex_decode_secret_const;
+use crate::crypto::mnemonic::ed25519_keys_from_secret_bytes;
 use crate::crypto::{
     ParamsOfNaclSignDetached, ParamsOfNaclSignKeyPairFromSecret, ResultOfNaclSignDetached,
 };
 use crate::json_interface::interop::{ResponseType, StringData};
-use crate::json_interface::modules::{AbiModule, NetModule, ProcessingModule};
+use crate::json_interface::modules::{AbiModule, ProcessingModule};
 use crate::json_interface::runtime::Runtime;
 use crate::net::{ParamsOfQuery, ResultOfQuery};
 use crate::processing::{ParamsOfProcessMessage, ResultOfProcessMessage};
 use crate::{
     crypto::KeyPair,
     error::{ClientError, ClientResult},
-    net::{ParamsOfQueryTransactionTree, ParamsOfWaitForCollection, ResultOfQueryTransactionTree},
+    net::{ParamsOfQueryTransactionTree, ResultOfQueryTransactionTree},
     tc_create_context, tc_destroy_context, ContextHandle,
 };
 use api_info::ApiModule;
@@ -326,13 +328,7 @@ impl TestClient {
 
     pub fn giver_keys() -> KeyPair {
         if let Some(secret) = env::giver_secret() {
-            let secret_key =
-                ed25519_dalek::SecretKey::from_bytes(&hex::decode(&secret).unwrap()).unwrap();
-            let public_key = ed25519_dalek::PublicKey::from(&secret_key);
-            KeyPair {
-                public: hex::encode(public_key.to_bytes()),
-                secret,
-            }
+            ed25519_keys_from_secret_bytes(&hex_decode_secret_const(&secret).unwrap().0).unwrap()
         } else {
             KeyPair {
                 public: "2ada2e65ab8eeab09490e3521415f45b6e42df9c760a639bcf53957550b25a16"
@@ -668,23 +664,21 @@ impl TestClient {
     }
 
     pub(crate) async fn fetch_account(&self, address: &str) -> Value {
-        let wait_for = self.wrap_async(
-            crate::net::wait_for_collection,
-            NetModule::api(),
-            crate::net::queries::wait_for_collection_api(),
-        );
-        let result = wait_for
-            .call(ParamsOfWaitForCollection {
-                collection: "accounts".into(),
-                filter: Some(json!({
-                    "id": { "eq": address.to_string() }
+        let mut result: ResultOfQuery = self.request_async(
+            "net.query",
+            ParamsOfQuery {
+                query: "query account($address:String!){blockchain{account(address:$address){info{boc}}}}".to_owned(),
+                variables: Some(json!({
+                    "address": address.to_string(),
                 })),
-                result: "id boc".into(),
-                ..Default::default()
             })
             .await
             .unwrap();
-        result.result
+        result
+            .result
+            .pointer_mut("/data/blockchain/account/info")
+            .unwrap()
+            .take()
     }
 
     pub(crate) async fn net_process_function(

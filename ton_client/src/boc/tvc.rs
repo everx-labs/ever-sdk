@@ -21,7 +21,7 @@ use crate::boc::internal::{
 use crate::error::ClientResult;
 use crate::ClientContext;
 use ever_struct::scheme::TVC;
-use ton_block::StateInit;
+use ton_block::{StateInit, Deserializable};
 use ton_types::Cell;
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
@@ -77,13 +77,14 @@ pub(crate) fn resolve_state_init_cell(
     context: &ClientContext,
     tvc_or_state_init: &str,
 ) -> ClientResult<Cell> {
-    if let Ok(tvc) = deserialize_object_from_boc::<TVC>(context, tvc_or_state_init, "TVC") {
-        if let Some(code) = tvc.object.code {
+    let cell = deserialize_cell_from_boc(context, tvc_or_state_init, "state init or TVC")?.1;
+    if let Ok(tvc) = TVC::construct_from_cell(cell.clone()) {
+        if let Some(code) = tvc.code {
             state_init_with_code(code)
         } else {
             Err(crate::boc::Error::invalid_boc("TVC or StateInit"))?
         }
     } else {
-        Ok(deserialize_cell_from_boc(context, tvc_or_state_init, "state init")?.1)
+        Ok(cell)
     }
 }

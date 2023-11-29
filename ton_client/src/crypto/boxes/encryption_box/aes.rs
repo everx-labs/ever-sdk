@@ -14,17 +14,21 @@
 use std::sync::Arc;
 use aes::{Aes128, Aes192, Aes256, BlockCipher, BlockDecrypt, BlockEncrypt, NewBlockCipher};
 use block_modes::{BlockMode, Cbc};
-use crate::ClientContext;
+use zeroize::ZeroizeOnDrop;
 
+use crate::ClientContext;
 use crate::crypto::Error;
+use crate::crypto::internal::{SecretBuf, hex_decode_secret};
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 use super::{CipherMode, EncryptionBox, EncryptionBoxInfo};
 
-#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq)]
+#[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default, PartialEq, ZeroizeOnDrop)]
 pub struct AesParamsEB {
+    #[zeroize(skip)]
     pub mode: CipherMode,
     pub key: String,
+    #[zeroize(skip)]
     pub iv: Option<String>,
 }
 
@@ -35,7 +39,7 @@ pub struct AesInfo {
 }
 
 pub struct AesEncryptionBox {
-    key: Vec<u8>,
+    key: SecretBuf,
     mode: CipherMode,
     iv: Vec<u8>,
 }
@@ -49,7 +53,7 @@ impl AesEncryptionBox {
         if iv_required && params.iv.is_none() {
             return Err(Error::iv_required(&params.mode));
         }
-        let key = hex_decode(&params.key)?;
+        let key = hex_decode_secret(&params.key)?;
         if  key.len() != 16 &&
             key.len() != 24 &&
             key.len() != 32
@@ -57,8 +61,9 @@ impl AesEncryptionBox {
             return Err(Error::invalid_key_size(key.len(), &[128, 192, 256]));
         }
         let iv = params.iv
+            .as_ref()
             .map(|string| {
-                let iv = hex_decode(&string)?;
+                let iv = hex_decode(string)?;
                 if iv.len() == aes::BLOCK_SIZE {
                     Ok(iv)
                 } else {
@@ -68,7 +73,7 @@ impl AesEncryptionBox {
             .transpose()?
             .unwrap_or_default();
         
-        Ok(Self { key, iv, mode: params.mode })
+        Ok(Self { key, iv, mode: params.mode.clone() })
     }
 
     fn create_block_mode<C, B>(key: &[u8], iv: &[u8]) -> ClientResult<B>

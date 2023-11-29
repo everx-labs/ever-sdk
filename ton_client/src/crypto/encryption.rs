@@ -16,17 +16,21 @@ use crate::client::ClientContext;
 use crate::encoding::{base64_decode, hex_decode};
 use crate::error::ClientResult;
 use super::Error;
+use super::internal::hex_decode_secret;
 use chacha20::cipher::{NewStreamCipher, SyncStreamCipher};
 use chacha20::{Key, Nonce};
 use std::sync::Arc;
+use zeroize::ZeroizeOnDrop;
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfChaCha20 {
     /// Source data to be encrypted or decrypted. Must be encoded with `base64`.
+    #[zeroize(skip)]
     pub data: String,
     /// 256-bit key. Must be encoded with `hex`.
     pub key: String,
     /// 96-bit nonce. Must be encoded with `hex`.
+    #[zeroize(skip)]
     pub nonce: String,
 }
 
@@ -42,7 +46,7 @@ pub fn chacha20(
     _context: Arc<ClientContext>,
     params: ParamsOfChaCha20,
 ) -> ClientResult<ResultOfChaCha20> {
-    let key = hex_decode(&params.key)?;
+    let key = hex_decode_secret(&params.key)?;
     let nonce = hex_decode(&params.nonce)?;
     if key.len() != 32 {
         return Err(Error::invalid_key_size(key.len(), &[32]));

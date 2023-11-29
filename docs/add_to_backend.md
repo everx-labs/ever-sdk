@@ -12,16 +12,16 @@ This document describes the various ways to accomplish the most important tasks 
 
 There are a few different ways to accomplish the necessary tasks:
 
-* Blockchain access may be set up either through the [Evercloud](https://docs.evercloud.dev/products/evercloud/get-started) or through your own supernode - the [DApp server](https://docs.evercloud.dev/products/dapp-server-ds).
+* Blockchain access may be set up either through the [Evercloud](https://docs.everplatform.dev/products/evercloud/get-started) or through your own supernode - the [DApp server](https://docs.everplatform.dev/products/dapp-server-ds).
 * User account management can be accomplished either through the [everdev](https://docs.everos.dev/everdev/) command line tool or integrate into your backend with  EVER-SDK client libraries. Both of these approaches are compatible with either of the blockchain access setups.
 
 ## Setting up Blockchain Access
 
 ### Using Evercloud
 
-Using [Evercloud](https://docs.evercloud.dev/products/evercloud/get-started) allows you to work with TVM blockchains without having to run your own node. Everdev and SDK can connect to it, as if it were a regular node. It has the same API as a node, and provides all neede capabilities.
+Using [Evercloud](https://docs.everplatform.dev/products/evercloud/get-started) allows you to work with TVM blockchains without having to run your own node. Everdev and SDK can connect to it, as if it were a regular node. It has the same API as a node, and provides all neede capabilities.
 
-This page lists the [cloud endpoints](https://docs.evercloud.dev/products/evercloud/networks-endpoints). To get access credentials go through this [guide](https://docs.evercloud.dev/products/evercloud/get-started).
+This page lists the [cloud endpoints](https://docs.everplatform.dev/products/evercloud/networks-endpoints). To get access credentials go through this [guide](https://docs.everplatform.dev/products/evercloud/get-started).
 
 Whenever you have to specify a network endpoint in the examples given below, use the endpoints and credentials you receive in the [Evercloud dashboard](https://dashboard.evercloud.dev/projects).
 
@@ -31,7 +31,7 @@ Note: We recommend testing out the full setup on the developer network first.
 
 ### Using DApp Server&#x20;
 
-If you prefer to run your own node, you may set up your own [DApp server](https://docs.evercloud.dev/products/dapp-server-ds). It is a client supernode, that may be set up on your own servers and provide full access to TVM networks. To connect to it with Everdev or SDK, it needs to have a domain name and a DNS record. You can specify its URL whenever you have to set the network in the examples given below.
+If you prefer to run your own node, you may set up your own [DApp server](https://docs.everplatform.dev/products/dapp-server-ds). It is a client supernode, that may be set up on your own servers and provide full access to TVM networks. To connect to it with Everdev or SDK, it needs to have a domain name and a DNS record. You can specify its URL whenever you have to set the network in the examples given below.
 
 Get the setup scripts in this repository: [https://github.com/tonlabs/evernode-ds](https://github.com/tonlabs/evernode-ds)
 

@@ -8,10 +8,10 @@ description: >-
 
 Read about each entity type pagination API:
 
-* [Blocks](https://docs.everos.dev/ever-platform/samples/graphql-samples/blocks#blocks-pagination)
-* [Transactions](https://docs.everos.dev/ever-platform/samples/graphql-samples/transactions#paginate-blockchain-transactions)
-* [Account transactions](https://docs.everos.dev/ever-platform/samples/graphql-samples/accounts#pagination-of-account-transactions)
-* [Account messages](https://docs.everos.dev/ever-platform/samples/graphql-samples/accounts#pagination-of-accounts-messages)
+* [Blocks](https://docs.everplatform.dev/samples/graphql-samples/blocks#blocks-pagination)
+* [Transactions](https://docs.everplatform.dev/samples/graphql-samples/transactions#paginate-blockchain-transactions)
+* [Account transactions](https://docs.everplatform.dev/samples/graphql-samples/accounts#get-transactions-within-block-seqno-range)
+* [Account messages](https://docs.everplatform.dev/samples/graphql-samples/accounts#get-messages-within-block-range)
 
 Look at the sample how to implement these entities pagination with JS SDK:
 

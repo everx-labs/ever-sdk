@@ -69,20 +69,6 @@ Provides message encoding and decoding according to the ABI specification.
 
 [MessageBodyType](mod\_abi.md#messagebodytype)
 
-[StateInitSourceMessageVariant](mod\_abi.md#stateinitsourcemessagevariant) – Deploy message.
-
-[StateInitSourceStateInitVariant](mod\_abi.md#stateinitsourcestateinitvariant) – State init data.
-
-[StateInitSourceTvcVariant](mod\_abi.md#stateinitsourcetvcvariant) – Content of the TVC file.
-
-[StateInitSource](mod\_abi.md#stateinitsource)
-
-[StateInitParams](mod\_abi.md#stateinitparams)
-
-[MessageSourceEncodedVariant](mod\_abi.md#messagesourceencodedvariant)
-
-[MessageSource](mod\_abi.md#messagesource)
-
 [AbiParam](mod\_abi.md#abiparam)
 
 [AbiEvent](mod\_abi.md#abievent)
@@ -536,13 +522,9 @@ NOTE: Sync version is available only for `lib-node` binding.
 
 Creates account state BOC
 
-Creates account state provided with one of these sets of data :
-1. BOC of code, BOC of data, BOC of library
-2. TVC (string in `base64`), keys, init params
-
 ```ts
 type ParamsOfEncodeAccount = {
-    state_init: StateInitSource,
+    state_init: string,
     balance?: bigint,
     last_trans_lt?: bigint,
     last_paid?: number,
@@ -564,7 +546,7 @@ function encode_account_sync(
 ```
 NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
-- `state_init`: _[StateInitSource](mod\_abi.md#stateinitsource)_ – Source of the account state init.
+- `state_init`: _string_ – Account state init.
 - `balance`?: _bigint_ – Initial balance.
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
@@ -619,9 +601,11 @@ NOTE: Sync version is available only for `lib-node` binding.
 
 Updates initial account data with initial values for the contract's static variables and owner's public key. This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
 
+Doesn't support ABI version >= 2.4. Use `encode_initial_data` instead
+
 ```ts
 type ParamsOfUpdateInitialData = {
-    abi?: Abi,
+    abi: Abi,
     data: string,
     initial_data?: any,
     initial_pubkey?: string,
@@ -642,7 +626,7 @@ function update_initial_data_sync(
 ```
 NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
-- `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
 - `initial_data`?: _any_ – List of initial values for contract's static variables.
 <br>`abi` parameter should be provided to set initial data
@@ -663,7 +647,7 @@ This function is analogue of `tvm.buildDataInit` function in Solidity.
 
 ```ts
 type ParamsOfEncodeInitialData = {
-    abi?: Abi,
+    abi: Abi,
     initial_data?: any,
     initial_pubkey?: string,
     boc_cache?: BocCacheType
@@ -683,7 +667,7 @@ function encode_initial_data_sync(
 ```
 NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
-- `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `initial_data`?: _any_ – List of initial values for contract's static variables.
 <br>`abi` parameter should be provided to set initial data
 - `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
@@ -699,15 +683,17 @@ NOTE: Sync version is available only for `lib-node` binding.
 
 Decodes initial values of a contract's static variables and owner's public key from account initial data This operation is applicable only for initial account data (before deploy). If the contract is already deployed, its data doesn't contain this data section any more.
 
+Doesn't support ABI version >= 2.4. Use `decode_account_data` instead
+
 ```ts
 type ParamsOfDecodeInitialData = {
-    abi?: Abi,
+    abi: Abi,
     data: string,
     allow_partial?: boolean
 }
 
 type ResultOfDecodeInitialData = {
-    initial_data?: any,
+    initial_data: any,
     initial_pubkey: string
 }
 
@@ -721,7 +707,7 @@ function decode_initial_data_sync(
 ```
 NOTE: Sync version is available only for `lib-node` binding.
 ### Parameters
-- `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 <br>Initial data is decoded if this parameter is provided
 - `data`: _string_ – Data BOC or BOC handle
 - `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
@@ -729,7 +715,7 @@ NOTE: Sync version is available only for `lib-node` binding.
 
 ### Result
 
-- `initial_data`?: _any_ – List of initial values of contract's public variables.
+- `initial_data`: _any_ – List of initial values of contract's public variables.
 <br>Initial data is decoded if `abi` input parameter is provided
 - `initial_pubkey`: _string_ – Initial account owner's public key
 
@@ -911,7 +897,8 @@ enum AbiErrorCode {
     InvalidFunctionId = 312,
     InvalidData = 313,
     EncodeInitialDataFailed = 314,
-    InvalidFunctionName = 315
+    InvalidFunctionName = 315,
+    PubKeyNotSupported = 316
 }
 ```
 One of the following value:
@@ -931,6 +918,7 @@ One of the following value:
 - `InvalidData = 313`
 - `EncodeInitialDataFailed = 314`
 - `InvalidFunctionName = 315`
+- `PubKeyNotSupported = 316`
 
 
 ## AbiContractVariant
@@ -1071,7 +1059,7 @@ type DeploySet = {
 <br>Default is `0`.
 - `initial_data`?: _any_ – List of initial values for contract's public variables.
 - `initial_pubkey`?: _string_ – Optional public key that can be provided in deploy set in order to substitute one in TVM file or provided by Signer.
-<br>Public key resolving priority:<br>1. Public key from deploy set.<br>2. Public key, specified in TVM file.<br>3. Public key, provided by Signer.
+<br>Public key resolving priority:<br>1. Public key from deploy set.<br>2. Public key, specified in TVM file.<br>3. Public key, provided by Signer.<br><br>Applicable only for contracts with ABI version < 2.4. Contract initial public key should be<br>explicitly provided inside `initial_data` since ABI 2.4
 
 
 ## SignerNoneVariant
@@ -1186,170 +1174,19 @@ One of the following value:
 - `Event = "Event"` – Message contains the input of the ABI event.
 
 
-## StateInitSourceMessageVariant
-Deploy message.
-
-```ts
-type StateInitSourceMessageVariant = {
-    source: MessageSource
-}
-```
-- `source`: _[MessageSource](mod\_abi.md#messagesource)_
-
-
-## StateInitSourceStateInitVariant
-State init data.
-
-```ts
-type StateInitSourceStateInitVariant = {
-    code: string,
-    data: string,
-    library?: string
-}
-```
-- `code`: _string_ – Code BOC.
-<br>Encoded in `base64`.
-- `data`: _string_ – Data BOC.
-<br>Encoded in `base64`.
-- `library`?: _string_ – Library BOC.
-<br>Encoded in `base64`.
-
-
-## StateInitSourceTvcVariant
-Content of the TVC file.
-
-Encoded in `base64`.
-
-```ts
-type StateInitSourceTvcVariant = {
-    tvc: string,
-    public_key?: string,
-    init_params?: StateInitParams
-}
-```
-- `tvc`: _string_
-- `public_key`?: _string_
-- `init_params`?: _[StateInitParams](mod\_abi.md#stateinitparams)_
-
-
-## StateInitSource
-```ts
-type StateInitSource = ({
-    type: 'Message'
-} & StateInitSourceMessageVariant) | ({
-    type: 'StateInit'
-} & StateInitSourceStateInitVariant) | ({
-    type: 'Tvc'
-} & StateInitSourceTvcVariant)
-```
-Depends on value of the  `type` field.
-
-When _type_ is _'Message'_
-
-Deploy message.
-
-- `source`: _[MessageSource](mod\_abi.md#messagesource)_
-
-When _type_ is _'StateInit'_
-
-State init data.
-
-- `code`: _string_ – Code BOC.
-<br>Encoded in `base64`.
-- `data`: _string_ – Data BOC.
-<br>Encoded in `base64`.
-- `library`?: _string_ – Library BOC.
-<br>Encoded in `base64`.
-
-When _type_ is _'Tvc'_
-
-Content of the TVC file.
-
-Encoded in `base64`.
-
-- `tvc`: _string_
-- `public_key`?: _string_
-- `init_params`?: _[StateInitParams](mod\_abi.md#stateinitparams)_
-
-
-Variant constructors:
-
-```ts
-function stateInitSourceMessage(source: MessageSource): StateInitSource;
-function stateInitSourceStateInit(code: string, data: string, library?: string): StateInitSource;
-function stateInitSourceTvc(tvc: string, public_key?: string, init_params?: StateInitParams): StateInitSource;
-```
-
-## StateInitParams
-```ts
-type StateInitParams = {
-    abi: Abi,
-    value: any
-}
-```
-- `abi`: _[Abi](mod\_abi.md#abi)_
-- `value`: _any_
-
-
-## MessageSourceEncodedVariant
-```ts
-type MessageSourceEncodedVariant = {
-    message: string,
-    abi?: Abi
-}
-```
-- `message`: _string_
-- `abi`?: _[Abi](mod\_abi.md#abi)_
-
-
-## MessageSource
-```ts
-type MessageSource = ({
-    type: 'Encoded'
-} & MessageSourceEncodedVariant) | ({
-    type: 'EncodingParams'
-} & ParamsOfEncodeMessage)
-```
-Depends on value of the  `type` field.
-
-When _type_ is _'Encoded'_
-
-- `message`: _string_
-- `abi`?: _[Abi](mod\_abi.md#abi)_
-
-When _type_ is _'EncodingParams'_
-
-- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
-- `address`?: _string_ – Target address the message will be sent to.
-<br>Must be specified in case of non-deploy message.
-- `deploy_set`?: _[DeploySet](mod\_abi.md#deployset)_ – Deploy parameters.
-<br>Must be specified in case of deploy message.
-- `call_set`?: _[CallSet](mod\_abi.md#callset)_ – Function call parameters.
-<br>Must be specified in case of non-deploy message.<br><br>In case of deploy message it is optional and contains parameters<br>of the functions that will to be called upon deploy transaction.
-- `signer`: _[Signer](mod\_abi.md#signer)_ – Signing parameters.
-- `processing_try_index`?: _number_ – Processing try index.
-<br>Used in message processing with retries (if contract's ABI includes "expire" header).<br><br>Encoder uses the provided try index to calculate message<br>expiration time. The 1st message expiration time is specified in<br>Client config.<br><br>Expiration timeouts will grow with every retry.<br>Retry grow factor is set in Client config:<br><.....add config parameter with default value here><br><br>Default value is 0.
-- `signature_id`?: _number_ – Signature ID to be used in data to sign preparing when CapSignatureWithId capability is enabled
-
-
-Variant constructors:
-
-```ts
-function messageSourceEncoded(message: string, abi?: Abi): MessageSource;
-function messageSourceEncodingParams(params: ParamsOfEncodeMessage): MessageSource;
-```
-
 ## AbiParam
 ```ts
 type AbiParam = {
     name: string,
     type: string,
-    components?: AbiParam[]
+    components?: AbiParam[],
+    init?: boolean
 }
 ```
 - `name`: _string_
 - `type`: _string_
 - `components`?: _[AbiParam](mod\_abi.md#abiparam)[]_
+- `init`?: _boolean_
 
 
 ## AbiEvent
@@ -1657,14 +1494,14 @@ type ParamsOfDecodeMessageBody = {
 ## ParamsOfEncodeAccount
 ```ts
 type ParamsOfEncodeAccount = {
-    state_init: StateInitSource,
+    state_init: string,
     balance?: bigint,
     last_trans_lt?: bigint,
     last_paid?: number,
     boc_cache?: BocCacheType
 }
 ```
-- `state_init`: _[StateInitSource](mod\_abi.md#stateinitsource)_ – Source of the account state init.
+- `state_init`: _string_ – Account state init.
 - `balance`?: _bigint_ – Initial balance.
 - `last_trans_lt`?: _bigint_ – Initial value for the `last_trans_lt`.
 - `last_paid`?: _number_ – Initial value for the `last_paid`.
@@ -1708,14 +1545,14 @@ type ResultOfDecodeAccountData = {
 ## ParamsOfUpdateInitialData
 ```ts
 type ParamsOfUpdateInitialData = {
-    abi?: Abi,
+    abi: Abi,
     data: string,
     initial_data?: any,
     initial_pubkey?: string,
     boc_cache?: BocCacheType
 }
 ```
-- `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `data`: _string_ – Data BOC or BOC handle
 - `initial_data`?: _any_ – List of initial values for contract's static variables.
 <br>`abi` parameter should be provided to set initial data
@@ -1735,13 +1572,13 @@ type ResultOfUpdateInitialData = {
 ## ParamsOfEncodeInitialData
 ```ts
 type ParamsOfEncodeInitialData = {
-    abi?: Abi,
+    abi: Abi,
     initial_data?: any,
     initial_pubkey?: string,
     boc_cache?: BocCacheType
 }
 ```
-- `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI
 - `initial_data`?: _any_ – List of initial values for contract's static variables.
 <br>`abi` parameter should be provided to set initial data
 - `initial_pubkey`?: _string_ – Initial account owner's public key to set into account data
@@ -1760,12 +1597,12 @@ type ResultOfEncodeInitialData = {
 ## ParamsOfDecodeInitialData
 ```ts
 type ParamsOfDecodeInitialData = {
-    abi?: Abi,
+    abi: Abi,
     data: string,
     allow_partial?: boolean
 }
 ```
-- `abi`?: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
+- `abi`: _[Abi](mod\_abi.md#abi)_ – Contract ABI.
 <br>Initial data is decoded if this parameter is provided
 - `data`: _string_ – Data BOC or BOC handle
 - `allow_partial`?: _boolean_ – Flag allowing partial BOC decoding when ABI doesn't describe the full body BOC. Controls decoder behaviour when after decoding all described in ABI params there are some data left in BOC: `true` - return decoded values `false` - return error of incomplete BOC deserialization (default)
@@ -1774,11 +1611,11 @@ type ParamsOfDecodeInitialData = {
 ## ResultOfDecodeInitialData
 ```ts
 type ResultOfDecodeInitialData = {
-    initial_data?: any,
+    initial_data: any,
     initial_pubkey: string
 }
 ```
-- `initial_data`?: _any_ – List of initial values of contract's public variables.
+- `initial_data`: _any_ – List of initial values of contract's public variables.
 <br>Initial data is decoded if `abi` input parameter is provided
 - `initial_pubkey`: _string_ – Initial account owner's public key
 

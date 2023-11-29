@@ -11,15 +11,18 @@
 * limitations under the License.
 */
 
-extern crate scrypt;
 use crate::client::ClientContext;
 use crate::crypto;
 use crate::encoding::base64_decode;
 use crate::error::ClientResult;
 
+use super::internal::SecretBuf;
+
+use zeroize::ZeroizeOnDrop;
+
 //------------------------------------------------------------------------------------------ scrypt
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ParamsOfScrypt {
     /// The password bytes to be hashed.
     /// Must be encoded with `base64`.
@@ -37,7 +40,7 @@ pub struct ParamsOfScrypt {
     pub dk_len: u32,
 }
 
-#[derive(Serialize, Deserialize, ApiType, Default)]
+#[derive(Serialize, Deserialize, ApiType, Default, ZeroizeOnDrop)]
 pub struct ResultOfScrypt {
     /// Derived key. Encoded with `hex`.
     pub key: String,
@@ -65,8 +68,8 @@ pub fn scrypt(
     _context: std::sync::Arc<ClientContext>,
     params: ParamsOfScrypt,
 ) -> ClientResult<ResultOfScrypt> {
-    let mut key = Vec::new();
-    key.resize(params.dk_len as usize, 0);
+    let mut key = SecretBuf(Vec::new());
+    key.0.resize(params.dk_len as usize, 0);
     let scrypt_params = scrypt::Params::new(params.log_n, params.r, params.p)
         .map_err(|err| crypto::Error::scrypt_failed(err))?;
     let password = base64_decode(&params.password)?;
@@ -74,6 +77,6 @@ pub fn scrypt(
     scrypt::scrypt(&password, &salt, &scrypt_params, &mut key)
         .map_err(|err| crypto::Error::scrypt_failed(err))?;
     Ok(ResultOfScrypt {
-        key: hex::encode(&key),
+        key: hex::encode(&key.0),
     })
 }
