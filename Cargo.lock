@@ -2156,9 +2156,9 @@ checksum = "c08c74e62047bb2de4ff487b251e4a92e24f48745648451635cec7d591162d9f"
 
 [[package]]
 name = "reqwest"
-version = "0.11.22"
+version = "0.11.23"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "046cd98826c46c2ac8ddecae268eb5c2e58628688a5fc7a2643704a73faba95b"
+checksum = "37b1ae8d9ac08420c66222fb9096fc5de435c3c48542bc5336c51892cffafb41"
 dependencies = [
  "base64 0.21.5",
  "bytes",
@@ -2888,7 +2888,7 @@ dependencies = [
 [[package]]
 name = "ton_abi"
 version = "2.4.10"
-source = "git+https://github.com/tonlabs/ever-abi.git?branch=mu/fix-decode#cd77a7aee1b7d191977fdb262bc7b314272416af"
+source = "git+https://github.com/tonlabs/ever-abi.git?tag=2.4.10#157d4ee3f5c2b433db01f0b82630dab9c51e5efe"
 dependencies = [
  "base64 0.10.1",
  "byteorder",

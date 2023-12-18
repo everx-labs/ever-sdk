@@ -21,7 +21,7 @@ api_info = { path = '../api/info' }
 ton_sdk = { default-features = false, path = '../ton_sdk' }
 ton_client_processing = { default-features = false, path = '../ton_client_processing' }
 
-ton_abi = { git = 'https://github.com/tonlabs/ever-abi.git',  branch = 'mu/fix-decode' }
+ton_abi = { git = 'https://github.com/tonlabs/ever-abi.git',  tag = '2.4.10' }
 ton_block = { git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.118' }
 ton_block_json = { git = 'https://github.com/tonlabs/ever-block-json.git', tag = '0.7.206' }
 ton_types = { git = 'https://github.com/tonlabs/ever-types.git', tag = '2.0.31' }

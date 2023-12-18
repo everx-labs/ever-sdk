@@ -6,7 +6,7 @@ license = 'Apache-2.0'
 authors = [ 'TON Labs LTD <support@tonlabs.io>' ]
 
 [dependencies]
-ton_abi = { git = 'https://github.com/tonlabs/ever-abi.git',  branch = 'mu/fix-decode' }
+ton_abi = { git = 'https://github.com/tonlabs/ever-abi.git',  tag = '2.4.10' }
 ton_block = { git = 'https://github.com/tonlabs/ever-block.git', tag = '1.9.118' }
 ton_types = { git = 'https://github.com/tonlabs/ever-types.git', tag = '2.0.31' }
 
