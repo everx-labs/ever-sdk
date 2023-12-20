@@ -125,7 +125,7 @@ checksum = "a4668cab20f66d8d020e1fbc0ebe47217433c1b6c8f2040faf858554e394ace6"
 
 [[package]]
 name = "api_derive"
-version = "1.45.0"
+version = "1.45.1"
 dependencies = [
  "api_info",
  "proc-macro2",
@@ -136,7 +136,7 @@ dependencies = [
 
 [[package]]
 name = "api_info"
-version = "1.45.0"
+version = "1.45.1"
 dependencies = [
  "serde",
  "serde_derive",
@@ -145,7 +145,7 @@ dependencies = [
 
 [[package]]
 name = "api_test"
-version = "1.45.0"
+version = "1.45.1"
 dependencies = [
  "api_derive",
  "api_info",
@@ -3172,7 +3172,7 @@ dependencies = [
 
 [[package]]
 name = "toncli"
-version = "1.45.0"
+version = "1.45.1"
 dependencies = [
  "api_info",
  "assert_cmd",
