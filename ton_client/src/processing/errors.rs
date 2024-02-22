@@ -78,7 +78,7 @@ impl Error {
             "message_id": message_id,
         });
         if let Some(shard_block_id) = shard_block_id {
-            data["shard_block_id"] = shard_block_id.clone().into();
+            data["shard_block_id"] = shard_block_id.into();
         }
         error_with_data(code, message, data)
     }
