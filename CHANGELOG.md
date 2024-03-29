@@ -139,7 +139,7 @@ scenario is started
 - Improved error resolving for deleted accounts
 - `net.first_remp_status_timeout` config parameter default value set to 1 ms in order to start 
 fallback scenario together with REMP statuses processing while REMP is not properly tuned yet.
-- Network errors are returned on subscription creation if occured
+- Network errors are returned on subscription creation if occurred
 
 ### Fixed
 
