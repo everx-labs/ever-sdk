@@ -140,7 +140,7 @@ async function main(client) {
 
     // Request contract deployment funds form the Giver
     await getTokensFromGiver(client, address, 1_000_000_000);
-    console.log(`Tokens were transfered from giver to ${address}`);
+    console.log(`Tokens were transferred from giver to ${address}`);
 
     // Deploy `hello` contract
     // See more info about `process_message` here  

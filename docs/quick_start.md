@@ -166,7 +166,7 @@ async function getTokensFromGiver(dest, value) {
         },
     };
     await client.processing.process_message(params);
-    console.log('Success. Tokens were transfered\n');
+    console.log('Success. Tokens were transferred\n');
 }
 
 async function deployWallet(walletKeys) {
@@ -414,7 +414,7 @@ You will see the result of core.js file execution. Core.js file demonstrades cor
 node core
 Future address of Hello wallet contract is: 0:1863addf562c5ab98f3761787458e47406675379a4dc6eb36042ba84bde5cb8d
 Transfering 1000000000 tokens from giver to 0:1863addf562c5ab98f3761787458e47406675379a4dc6eb36042ba84bde5cb8d
-Success. Tokens were transfered
+Success. Tokens were transferred
 
 Deploying Hello wallet contract
 Success. Contract was deployed
