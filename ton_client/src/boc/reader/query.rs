@@ -14,8 +14,8 @@
 use serde_json::Value;
 use crate::error::{ClientResult, ClientError};
 use super::parser::{CellQuery, CellFieldReader, CellValueReader};
-use ton_types::{Cell, SliceData, HashmapE, HashmapType};
-use ton_block::types::Grams;
+use ever_block::{Cell, SliceData, HashmapE, HashmapType};
+use ever_block::types::Grams;
 
 fn read_value(slice: &mut SliceData, reader: &CellValueReader) -> ClientResult<Value> {
     Ok(match reader {

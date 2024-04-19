@@ -40,8 +40,8 @@ await client.net.query_collection({
 
 **Core**
 
-[https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/query](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/query)
+[https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/query](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/query)
 
 **AppKit**
 
-[https://github.com/tonlabs/sdk-samples/tree/master/appkit-examples/query](https://github.com/tonlabs/sdk-samples/tree/master/appkit-examples/query)
+[https://github.com/everx-labs/sdk-samples/tree/master/appkit-examples/query](https://github.com/everx-labs/sdk-samples/tree/master/appkit-examples/query)

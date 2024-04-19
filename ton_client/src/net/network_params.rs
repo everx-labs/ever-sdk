@@ -22,8 +22,8 @@ use crate::{
     net::{OrderBy, ParamsOfQueryCollection, ServerLink, SortDirection},
 };
 use std::sync::Arc;
-use ton_block::{Deserializable, GlobalCapabilities};
-use ton_executor::BlockchainConfig;
+use ever_block::{Deserializable, GlobalCapabilities};
+use ever_executor::BlockchainConfig;
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ResultOfGetSignatureId {
@@ -46,7 +46,7 @@ pub(crate) fn offline_config() -> (BlockchainConfig, i32) {
     let bytes = include_bytes!("../default_config.boc");
     (
         BlockchainConfig::with_config(
-            ton_block::ConfigParams::construct_from_bytes(bytes).unwrap()
+            ever_block::ConfigParams::construct_from_bytes(bytes).unwrap()
         ).unwrap(),
         42
     )

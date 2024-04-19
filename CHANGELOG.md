@@ -104,7 +104,7 @@ State init should be finalized and ready to be used in message as is.
 - Message monitor buffers new messages for delayed start of the subscription. New subscription
   starts when 1 second has passed since the last addition or when 5 seconds has passed since last sending
 - Message monitor uses more than one subscription.
-- Version of `ton_types` upped to 2.0.0
+- Version of `ever_block` upped to 2.0.0
 - Fixed code for changed dependencies api
 - Removed logic related to client-server clock sync
 - `boc.encode_tvc` and `boc.decode_tvc` are renamed to `boc.encode_state_init` 
@@ -176,8 +176,8 @@ fallback scenario together with REMP statuses processing while REMP is not prope
 - `message_id` and `message_dst` fields are added to all `ProcessingEvent` variants
 - Config parameter `binding: { library: string, version: string }`. Binding authors should define 
    this parameter at context initialization.
-- `tonclient-binding-library` and `tonclient-binding-version` GraphQL request headers. [Read more here](https://github.com/tonlabs/ever-sdk/blob/master/docs/for-binding-developers/json_interface.md#bindings)
-- `Error.data.binding_library` and `Error.data.binding_version` error data fields. [Read more here](https://github.com/tonlabs/ever-sdk/blob/master/docs/for-binding-developers/json_interface.md#bindings)
+- `tonclient-binding-library` and `tonclient-binding-version` GraphQL request headers. [Read more here](https://github.com/everx-labs/ever-sdk/blob/master/docs/for-binding-developers/json_interface.md#bindings)
+- `Error.data.binding_library` and `Error.data.binding_version` error data fields. [Read more here](https://github.com/everx-labs/ever-sdk/blob/master/docs/for-binding-developers/json_interface.md#bindings)
   
 ### Client breaking changes
 - `abi.get_signature_data` function ouput parameter `hash` is renamed to `unsigned` for consistency with other crypto functions parameters
@@ -389,7 +389,7 @@ connection
 ### New
 
 - supported removing Copy interface from UInt256
-- supported changed interface of `ton_types::Cell`
+- supported changed interface of `ever_block::Cell`
 
 ## [1.34.0] – 2022-05-18
 
@@ -627,7 +627,7 @@ from Graphql API.
 ### New
 
 - ABI v2.2 with fixed message body layout
-  supported. [See the specification](https://github.com/tonlabs/ton-labs-abi/blob/master/docs/ABI_2.2_spec.md)
+  supported. [See the specification](https://github.com/everx-labs/ton-labs-abi/blob/master/docs/ABI_2.2_spec.md)
   .
 
   Now, for contracts with ABI version < 2.2 compact layout will still be used for compatibility, for
@@ -698,7 +698,7 @@ from Graphql API.
 
 ### Fixed
 
-- Fixed problem with WASM binaries (https://github.com/tonlabs/ton-labs-types/pull/42)
+- Fixed problem with WASM binaries (https://github.com/everx-labs/ton-labs-types/pull/42)
 
 ## [1.20.0] – 2021-07-16
 
@@ -921,7 +921,7 @@ from Graphql API.
 - [`tvm` module](docs/mod_tvm.md) functions download current blockchain configuration if `net` is
   initialized with
   DApp Server endpoints.
-  Otherwise, [default configuration](https://github.com/tonlabs/ton-executor/blob/11f46c416ebf1f145eacfb996587891a0a3cb940/src/blockchain_config.rs#L214)
+  Otherwise, [default configuration](https://github.com/everx-labs/ton-executor/blob/11f46c416ebf1f145eacfb996587891a0a3cb940/src/blockchain_config.rs#L214)
   is used.
 - **Debot Module**:
     - Support for debot invoking in Debot Engine. `send` browser callback is used not only for

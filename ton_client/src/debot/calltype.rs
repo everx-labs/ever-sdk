@@ -16,8 +16,8 @@ use crate::tvm::{run_executor, run_tvm, AccountForExecutor, ParamsOfRunExecutor,
 use std::convert::TryFrom;
 use std::fmt::Display;
 use std::sync::Arc;
-use ton_block::{Message, MsgAddressExt, Serializable};
-use ton_types::{BuilderData, IBitstring, SliceData};
+use ever_block::{Message, MsgAddressExt, Serializable};
+use ever_block::{BuilderData, IBitstring, SliceData};
 
 const SUPPORTED_ABI_VERSION: u8 = 2;
 const ABI_2_3: u8 = 0x32;
@@ -100,7 +100,7 @@ pub fn prepare_ext_in_message(
     msg: &Message,
     now_ms: u64,
     keypair: Option<crate::crypto::KeyPair>,
-) -> Result<(u32, u32, u32, ton_block::MsgAddressInt, Message), String> {
+) -> Result<(u32, u32, u32, ever_block::MsgAddressInt, Message), String> {
     let config = crate::ClientConfig::default();
     let ton_client = Arc::new(crate::ClientContext::new(config).unwrap());
 
@@ -115,7 +115,7 @@ pub fn prepare_ext_in_message(
     };
 
     let hdr = msg.ext_in_header().unwrap();
-    let dst_addr: ton_block::MsgAddressInt = hdr.dst.clone();
+    let dst_addr: ever_block::MsgAddressInt = hdr.dst.clone();
     let meta = Metadata::try_from(hdr.src.clone()).unwrap();
 
     let future = decode_and_fix_ext_msg(msg, now_ms, &signer, true, &meta, &ton_client);

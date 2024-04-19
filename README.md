@@ -26,7 +26,7 @@ Core Ever-SDK client library is written in Rust, with bindings in 11 programming
 
 ### Rust (core library)
 
-Repository: https://github.com/tonlabs/ever-sdk
+Repository: https://github.com/everx-labs/ever-sdk
 
 **What is Core Client Library?**
 
@@ -42,17 +42,17 @@ Client Library exposes all the functionality through a few of exported functions
 
 ### Official Javascript(Typescript) binding
 
-Repository: [JavaScript SDK](https://github.com/tonlabs/ever-sdk-js)
+Repository: [JavaScript SDK](https://github.com/everx-labs/ever-sdk-js)
 
-You need to install core package and the package with binary for your platform. [See the documentation.](https://github.com/tonlabs/ever-sdk-js#library-distribution)
+You need to install core package and the package with binary for your platform. [See the documentation.](https://github.com/everx-labs/ever-sdk-js#library-distribution)
 
 | Platform                       | Package                                                                                                           |
 | ------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| core package for all platforms | [@eversdk/core](https://github.com/tonlabs/ever-sdk-js#install-core-package)                                      |
-| Node.js                        | [@eversdk/lib-node](https://github.com/tonlabs/ever-sdk-js#nodejs)                                                |
-| Web                            | [@eversdk/lib-web](https://github.com/tonlabs/ever-sdk-js#web)                                                    |
-| React-Native                   | [@eversdk/lib-react-native](https://github.com/tonlabs/ever-sdk-js#react-native)                                  |
-| React-Native with JSI support  | [@eversdk/lib-react-native-jsi](https://github.com/tonlabs/ever-sdk-js/tree/master/packages/lib-react-native-jsi) |
+| core package for all platforms | [@eversdk/core](https://github.com/everx-labs/ever-sdk-js#install-core-package)                                      |
+| Node.js                        | [@eversdk/lib-node](https://github.com/everx-labs/ever-sdk-js#nodejs)                                                |
+| Web                            | [@eversdk/lib-web](https://github.com/everx-labs/ever-sdk-js#web)                                                    |
+| React-Native                   | [@eversdk/lib-react-native](https://github.com/everx-labs/ever-sdk-js#react-native)                                  |
+| React-Native with JSI support  | [@eversdk/lib-react-native-jsi](https://github.com/everx-labs/ever-sdk-js/tree/master/packages/lib-react-native-jsi) |
 
 ### Community bindings
 
@@ -105,7 +105,7 @@ See the list of available TVM networks: [https://docs.everplatform.dev/products/
 
 [Error descriptions](docs/reference/error\_codes.md)
 
-[JavaScript SDK Types and Methods (API Reference)](https://tonlabs.github.io/ever-sdk-js/)
+[JavaScript SDK Types and Methods (API Reference)](https://everx-labs.github.io/ever-sdk-js/)
 
 [Core Types and Methods (API Reference)](docs/reference/types-and-methods/modules.md)
 
@@ -210,7 +210,7 @@ To run test suite use standard Rust test command
 cargo test
 ```
 
-SDK tests need [EVER OS API](https://docs.everplatform.dev/reference/graphql-api/networks) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/tonlabs/evernode-ds) which runs in real networks and by local blockchain [Evernode SE](https://github.com/tonlabs/evernode-se).
+SDK tests need [EVER OS API](https://docs.everplatform.dev/reference/graphql-api/networks) endpoint to run on. Such an API is exposed by a [DApp Server](https://github.com/everx-labs/evernode-ds) which runs in real networks and by local blockchain [Evernode SE](https://github.com/everx-labs/evernode-se).
 
 Evernode SE is used by default with address `http://localhost` and port 80. If you launch it on another port you need to specify it explicitly like this: `http://localhost:port`. If you have Evernode SE running on another address or you need to run tests on a real Everscale network use the following environment variables to override the default parameters
 
@@ -228,14 +228,14 @@ Instead of building library yourself, you can download the **latest** precompile
 
 | Platform | Major | Download links                                                                                                                                           |
 | -------- | ----- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Win32    | 0     | [`ton_client.lib`](https://binaries.tonlabs.io/tonclient\_0\_win32\_lib.gz), [`ton_client.dll`](https://binaries.tonlabs.io/tonclient\_0\_win32\_dll.gz) |
-|          | 1     | [`ton_client.lib`](https://binaries.tonlabs.io/tonclient\_1\_win32\_lib.gz), [`ton_client.dll`](https://binaries.tonlabs.io/tonclient\_1\_win32\_dll.gz) |
-| macOS    | 0     | [`libton_client.dylib`](https://binaries.tonlabs.io/tonclient\_0\_darwin.gz)                                                                             |
-|          | 1     | (x86\_64)[`libton_client.dylib`](https://binaries.tonlabs.io/tonclient\_1\_darwin.gz)                                                                    |
-|          | 1     | (aarch64)[`libton_client.dylib`](https://binaries.tonlabs.io/tonclient\_1\_darwin\_arm64.gz)                                                             |
-| Linux    | 0     | [`libton_client.so`](https://binaries.tonlabs.io/tonclient\_0\_linux.gz)                                                                                 |
-|          | 1     | [`libton_client.so`](https://binaries.tonlabs.io/tonclient\_1\_linux.gz)                                                                                 |
+| Win32    | 0     | [`ton_client.lib`](https://binaries.everx-labs.io/tonclient\_0\_win32\_lib.gz), [`ton_client.dll`](https://binaries.everx-labs.io/tonclient\_0\_win32\_dll.gz) |
+|          | 1     | [`ton_client.lib`](https://binaries.everx-labs.io/tonclient\_1\_win32\_lib.gz), [`ton_client.dll`](https://binaries.everx-labs.io/tonclient\_1\_win32\_dll.gz) |
+| macOS    | 0     | [`libton_client.dylib`](https://binaries.everx-labs.io/tonclient\_0\_darwin.gz)                                                                             |
+|          | 1     | (x86\_64)[`libton_client.dylib`](https://binaries.everx-labs.io/tonclient\_1\_darwin.gz)                                                                    |
+|          | 1     | (aarch64)[`libton_client.dylib`](https://binaries.everx-labs.io/tonclient\_1\_darwin\_arm64.gz)                                                             |
+| Linux    | 0     | [`libton_client.so`](https://binaries.everx-labs.io/tonclient\_0\_linux.gz)                                                                                 |
+|          | 1     | [`libton_client.so`](https://binaries.everx-labs.io/tonclient\_1\_linux.gz)                                                                                 |
 
-If you want an older version of library (e.g. `0.25.0` for macOS), you need to choose a link to your platform from the list above and replace `0` with a version: [https://binaries.tonlabs.io/tonclient\_**0\_25\_0**\_darwin.gz](https://binaries.tonlabs.io/tonclient\_0\_25\_0\_darwin.gz)
+If you want an older version of library (e.g. `0.25.0` for macOS), you need to choose a link to your platform from the list above and replace `0` with a version: [https://binaries.everx-labs.io/tonclient\_**0\_25\_0**\_darwin.gz](https://binaries.everx-labs.io/tonclient\_0\_25\_0\_darwin.gz)
 
 _Downloaded archive is gzipped file_

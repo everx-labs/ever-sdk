@@ -37,4 +37,4 @@ If address is incorrect the function `utils.convert_address` will fail with an e
 
 ## Sample source code
 
-[https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/utils.convert\_address/index.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/utils.convert\_address/index.js)
+[https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/utils.convert\_address/index.js](https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/utils.convert\_address/index.js)

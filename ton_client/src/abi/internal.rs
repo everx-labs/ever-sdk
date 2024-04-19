@@ -4,11 +4,11 @@ use crate::encoding::hex_decode;
 use crate::error::ClientResult;
 use crate::ClientContext;
 use serde_json::Value;
-use ton_abi::PublicKeyData;
+use ever_abi::PublicKeyData;
 use std::convert::TryInto;
 use std::sync::Arc;
 use ton_sdk::ContractImage;
-use ton_types::Cell;
+use ever_block::Cell;
 
 /// Combines `hex` encoded `signature` with `base64` encoded `unsigned_message`.
 /// Returns signed message encoded with `base64`.
@@ -34,7 +34,7 @@ pub(crate) fn add_sign_to_message_body(
 ) -> ClientResult<Vec<u8>> {
     let unsigned = ton_sdk::Contract::deserialize_tree_to_slice(unsigned_body)
         .map_err(|err| Error::attach_signature_failed(err))?;
-    let body = ton_abi::add_sign_to_function_call(
+    let body = ever_abi::add_sign_to_function_call(
         abi,
         signature
             .try_into()
@@ -46,7 +46,7 @@ pub(crate) fn add_sign_to_message_body(
         unsigned,
     )
     .map_err(|err| Error::attach_signature_failed(err))?;
-    Ok(ton_types::boc::write_boc(
+    Ok(ever_block::boc::write_boc(
         &body
             .into_cell()
             .map_err(|err| Error::attach_signature_failed(err))?,
@@ -100,7 +100,7 @@ pub(crate) fn create_tvc_image(
 
 /// Determines, if public key consists only zeroes, i.e. is empty.
 pub(crate) fn is_empty_pubkey(pubkey: &PublicKeyData) -> bool {
-    pubkey == &[0; ton_types::ED25519_PUBLIC_KEY_LENGTH]
+    pubkey == &[0; ever_block::ED25519_PUBLIC_KEY_LENGTH]
 }
 
 /// Resolves public key from deploy set, tvc or signer, using this priority:

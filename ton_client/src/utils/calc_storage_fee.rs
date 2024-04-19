@@ -38,7 +38,7 @@ pub async fn calc_storage_fee(
     params: ParamsOfCalcStorageFee,
 ) -> ClientResult<ResultOfCalcStorageFee> {
     let account =
-        deserialize_object_from_boc::<ton_block::Account>(&context, &params.account, "account")?
+        deserialize_object_from_boc::<ever_block::Account>(&context, &params.account, "account")?
             .object;
 
     let storage = account

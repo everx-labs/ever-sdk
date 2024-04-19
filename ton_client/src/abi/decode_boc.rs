@@ -8,7 +8,7 @@ use serde_json;
 use serde_json::Value;
 use std::convert::TryInto;
 use std::sync::Arc;
-use ton_abi::token::Detokenizer;
+use ever_abi::token::Detokenizer;
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfDecodeBoc {
@@ -31,7 +31,7 @@ pub struct ResultOfDecodeBoc {
 
 /// Decodes BOC into JSON as a set of provided parameters.
 ///
-/// Solidity functions use ABI types for [builder encoding](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#tvmbuilderstore).
+/// Solidity functions use ABI types for [builder encoding](https://github.com/everx-labs/TON-Solidity-Compiler/blob/master/API.md#tvmbuilderstore).
 /// The simplest way to decode such a BOC is to use ABI decoding.
 /// ABI has it own rules for fields layout in cells so manually encoded
 /// BOC can not be described in terms of ABI rules.
@@ -59,10 +59,10 @@ pub fn decode_boc(
         abi_params.push(param.try_into()?)
     }
 
-    let tokens = ton_abi::TokenValue::decode_params(
+    let tokens = ever_abi::TokenValue::decode_params(
         &abi_params,
         slice_from_cell(data)?,
-        &ton_abi::contract::MAX_SUPPORTED_VERSION,
+        &ever_abi::contract::MAX_SUPPORTED_VERSION,
         params.allow_partial
     )
         .map_err(|e| Error::invalid_data_for_decode(e))?;

@@ -10,7 +10,7 @@ If you want to test your contract locally and find out will your operation work 
 
 Core SDK provides [run_executor](../../reference/types-and-methods/mod\_tvm.md#run_executor) method of `tvm` module for it.
 
-[AppKit](https://github.com/tonlabs/ever-appkit-js) provides `localDeploy` and `localRun` functions for it.
+[AppKit](https://github.com/everx-labs/ever-appkit-js) provides `localDeploy` and `localRun` functions for it.
 
 ### How to emulate contract deploy?
 
@@ -34,8 +34,8 @@ See the JavaScript samples below to understand how to emulate contract deploy.
 
 **Core**
 
-[https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/run_executor](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/run_executor)
+[https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/run_executor](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/run_executor)
 
 **AppKit**
 
-[https://github.com/tonlabs/sdk-samples/tree/master/appkit-examples/run_executor](https://github.com/tonlabs/sdk-samples/tree/master/appkit-examples/run_executor)
+[https://github.com/everx-labs/sdk-samples/tree/master/appkit-examples/run_executor](https://github.com/everx-labs/sdk-samples/tree/master/appkit-examples/run_executor)

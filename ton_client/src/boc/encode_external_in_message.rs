@@ -6,7 +6,7 @@ use crate::client::ClientContext;
 use crate::encoding::{account_decode, slice_from_cell};
 use crate::error::ClientResult;
 use std::str::FromStr;
-use ton_block::{ExternalInboundMessageHeader, GetRepresentationHash, MsgAddressExt, StateInit};
+use ever_block::{ExternalInboundMessageHeader, GetRepresentationHash, MsgAddressExt, StateInit};
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct ParamsOfEncodeExternalInMessage {
@@ -60,7 +60,7 @@ pub fn encode_external_in_message(
         ..Default::default()
     };
 
-    let mut msg = ton_block::Message::with_ext_in_header(header);
+    let mut msg = ever_block::Message::with_ext_in_header(header);
     if let Some(init) = params.init {
         msg.set_state_init(
             deserialize_object_from_boc::<StateInit>(&context, &init, "state init")?.object,

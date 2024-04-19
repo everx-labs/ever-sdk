@@ -28,12 +28,12 @@ use crate::boc::tvc::resolve_state_init_cell;
 use ever_struct::scheme::TVC;
 use serde_json::Value;
 use std::io::Cursor;
-use ton_abi::{Contract, PublicKeyData};
-use ton_block::{
+use ever_abi::{Contract, PublicKeyData};
+use ever_block::{
     CurrencyCollection, Deserializable, InternalMessageHeader, Message, Serializable, StateInit,
 };
 use ton_sdk::ContractImage;
-use ton_types::{BuilderData, IBitstring, Result};
+use ever_block::{BuilderData, IBitstring, Result};
 
 use super::*;
 
@@ -630,7 +630,7 @@ async fn test_encode_message_pubkey_internal(
 }
 
 fn gen_pubkey() -> PublicKeyData {
-    ton_types::ed25519_generate_private_key().unwrap().verifying_key()
+    ever_block::ed25519_generate_private_key().unwrap().verifying_key()
 }
 
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
@@ -1324,7 +1324,7 @@ async fn test_deploy_code_variants() -> Result<()> {
     .await?;
 
     let mut state_init = StateInit::default();
-    state_init.set_code(ton_types::Cell::default());
+    state_init.set_code(ever_block::Cell::default());
     let tvc = serialize_object_to_base64(&state_init, "state init").unwrap();
     test_deploy_code_variants_with_contract(
         (Abi::Json(TINY_ABI_V24.to_owned()), tvc),
@@ -1553,11 +1553,11 @@ fn test_abi_v24_changes() {
     let client = TestClient::new();
 
     let mut state_init = StateInit::default();
-    state_init.set_code(ton_types::Cell::default());
+    state_init.set_code(ever_block::Cell::default());
     let tvc = serialize_object_to_base64(&state_init, "state init").unwrap();
     let abi = Abi::Json(TINY_ABI_V24.to_owned());
 
-    let empty_cell = serialize_cell_to_base64(&ton_types::Cell::default(), "data cell").unwrap();
+    let empty_cell = serialize_cell_to_base64(&ever_block::Cell::default(), "data cell").unwrap();
 
     let error = client
         .request::<_, ResultOfDecodeInitialData>(

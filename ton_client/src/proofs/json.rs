@@ -6,9 +6,9 @@ use std::time::Duration;
 
 use chrono::{DateTime, Utc};
 use serde_json::{Map, Value};
-use ton_block::{Block, Message, Transaction};
-use ton_block_json::{BlockSerializationSet, MessageSerializationSet, TransactionSerializationSet};
-use ton_types::{Result, UInt256};
+use ever_block::{Block, Message, Transaction};
+use ever_block_json::{BlockSerializationSet, MessageSerializationSet, TransactionSerializationSet};
+use ever_block::{Result, UInt256};
 
 use crate::error::ClientResult;
 use crate::proofs::errors::Error;
@@ -422,15 +422,15 @@ pub(crate) fn serialize_block(
     block: Block,
     boc: Vec<u8>,
 ) -> Result<Value> {
-    let mut value = ton_block_json::db_serialize_block_ex(
+    let mut value = ever_block_json::db_serialize_block_ex(
         "id",
         &BlockSerializationSet {
             block,
             id,
-            status: ton_block::BlockProcessingStatus::Finalized,
+            status: ever_block::BlockProcessingStatus::Finalized,
             boc
         },
-        ton_block_json::SerializationMode::QServer,
+        ever_block_json::SerializationMode::QServer,
     )?.into();
 
     add_time_strings(
@@ -449,18 +449,18 @@ pub(crate) fn serialize_transaction(
     workchain_id: i32,
     boc: Vec<u8>,
 ) -> Result<Value> {
-    let mut value = ton_block_json::db_serialize_transaction_ex(
+    let mut value = ever_block_json::db_serialize_transaction_ex(
         "id",
         &TransactionSerializationSet {
             transaction,
             id,
-            status: ton_block::TransactionProcessingStatus::Finalized,
+            status: ever_block::TransactionProcessingStatus::Finalized,
             block_id: Some(block_id),
             workchain_id,
             boc,
             proof: None,
         },
-        ton_block_json::SerializationMode::QServer,
+        ever_block_json::SerializationMode::QServer,
     )?.into();
 
     add_time_strings(
@@ -487,7 +487,7 @@ pub(crate) fn serialize_message(
     message: Message,
     boc: Vec<u8>,
 ) -> Result<Value> {
-    let mut value = ton_block_json::db_serialize_message_ex(
+    let mut value = ever_block_json::db_serialize_message_ex(
         "id",
         &MessageSerializationSet {
             message,
@@ -495,11 +495,11 @@ pub(crate) fn serialize_message(
             block_id: None,
             transaction_id: None,
             transaction_now: None,
-            status: ton_block::MessageProcessingStatus::Finalized,
+            status: ever_block::MessageProcessingStatus::Finalized,
             boc,
             proof: None,
         },
-        ton_block_json::SerializationMode::QServer,
+        ever_block_json::SerializationMode::QServer,
     )?.into();
 
     add_time_strings(

@@ -1,4 +1,4 @@
-use ton_types::Result;
+use ever_block::Result;
 
 use crate::client::LocalStorage;
 use crate::client::storage::KeyValueStorage;

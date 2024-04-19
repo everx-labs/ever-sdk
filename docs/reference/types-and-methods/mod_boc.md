@@ -4,7 +4,7 @@ BOC manipulation module.
 
 
 ## Functions
-[decode_tvc](mod\_boc.md#decode_tvc) – Decodes tvc according to the tvc spec. Read more about tvc structure here https://github.com/tonlabs/ever-struct/blob/main/src/scheme/mod.rs#L30
+[decode_tvc](mod\_boc.md#decode_tvc) – Decodes tvc according to the tvc spec. Read more about tvc structure here https://github.com/everx-labs/ever-struct/blob/main/src/scheme/mod.rs#L30
 
 [parse_message](mod\_boc.md#parse_message) – Parses message boc into a JSON
 
@@ -139,7 +139,7 @@ BOC manipulation module.
 # Functions
 ## decode_tvc
 
-Decodes tvc according to the tvc spec. Read more about tvc structure here https://github.com/tonlabs/ever-struct/blob/main/src/scheme/mod.rs#L30
+Decodes tvc according to the tvc spec. Read more about tvc structure here https://github.com/everx-labs/ever-struct/blob/main/src/scheme/mod.rs#L30
 
 ```ts
 type ParamsOfDecodeTvc = {

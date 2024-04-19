@@ -58,4 +58,4 @@ There are a few collections with blockchain data:
 
 [Reference](../../reference/types-and-methods/mod\_net.md#aggregate\_collection)
 
-Sample: [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/query](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/query)
+Sample: [https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/query](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/query)

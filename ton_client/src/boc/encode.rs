@@ -2,8 +2,8 @@ use std::slice::Iter;
 
 use crate::{error::ClientResult, ClientContext};
 use serde_json::Value;
-use ton_block::Serializable;
-use ton_types::{BuilderData, Cell, IBitstring};
+use ever_block::Serializable;
+use ever_block::{BuilderData, Cell, IBitstring};
 
 use super::{internal::serialize_cell_to_boc, Error};
 use crate::boc::internal::deserialize_cell_from_boc;

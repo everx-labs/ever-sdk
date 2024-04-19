@@ -2,9 +2,9 @@ use std::convert::TryInto;
 use std::sync::Arc;
 
 use serde_json::Value;
-use ton_abi::contract::MAX_SUPPORTED_VERSION;
-use ton_abi::token::Tokenizer;
-use ton_abi::TokenValue;
+use ever_abi::contract::MAX_SUPPORTED_VERSION;
+use ever_abi::token::Tokenizer;
+use ever_abi::TokenValue;
 
 use crate::abi::{AbiParam, Error};
 use crate::boc::BocCacheType;

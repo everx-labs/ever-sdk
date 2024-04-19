@@ -2,10 +2,10 @@ pragma ton-solidity >=0.47.0;
 pragma AbiHeader expire;
 pragma AbiHeader time;
 pragma AbiHeader pubkey;
-import "https://raw.githubusercontent.com/tonlabs/debots/main/Debot.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/SigningBoxInput/SigningBoxInput.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
+import "https://raw.githubusercontent.com/everx-labs/debots/main/Debot.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/SigningBoxInput/SigningBoxInput.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
 
 contract testDebot is Debot {
 

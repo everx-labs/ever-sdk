@@ -457,10 +457,10 @@
 <span class="kw">use</span> <span class="ident">serde_json</span>::<span class="ident">Value</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">TryFrom</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">sync</span>::{<span class="ident">atomic</span>::<span class="ident">AtomicU64</span>, <span class="ident">Arc</span>};
-<span class="kw">use</span> <span class="ident">ton_block</span>::{<span class="ident">Account</span>, <span class="ident">Message</span>, <span class="ident">Serializable</span>, <span class="ident">MsgAddressInt</span>, <span class="ident">CurrencyCollection</span>, <span class="ident">Transaction</span>};
-<span class="kw">use</span> <span class="ident">ton_executor</span>::{<span class="ident">ExecutorError</span>, <span class="ident">OrdinaryTransactionExecutor</span>, <span class="ident">TransactionExecutor</span>};
+<span class="kw">use</span> <span class="ident">ever_block</span>::{<span class="ident">Account</span>, <span class="ident">Message</span>, <span class="ident">Serializable</span>, <span class="ident">MsgAddressInt</span>, <span class="ident">CurrencyCollection</span>, <span class="ident">Transaction</span>};
+<span class="kw">use</span> <span class="ident">ever_executor</span>::{<span class="ident">ExecutorError</span>, <span class="ident">OrdinaryTransactionExecutor</span>, <span class="ident">TransactionExecutor</span>};
 <span class="kw">use</span> <span class="ident">ton_sdk</span>::<span class="ident">TransactionFees</span>;
-<span class="kw">use</span> <span class="ident">ton_types</span>::<span class="ident">Cell</span>;
+<span class="kw">use</span> <span class="ident">ever_block</span>::<span class="ident">Cell</span>;
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">ApiType</span>, <span class="ident">Debug</span>, <span class="ident">Clone</span>)]</span>
 <span class="attribute">#[<span class="ident">serde</span>(<span class="ident">tag</span> <span class="op">=</span> <span class="string">&quot;type&quot;</span>)]</span>

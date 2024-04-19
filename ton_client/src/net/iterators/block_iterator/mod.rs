@@ -31,7 +31,7 @@ use crate::net::iterators::block::{
 use crate::net::iterators::block_iterator::state::StateBuilder;
 use crate::net::iterators::{query_by_ids, register_iterator, ResultOfIteratorNext};
 use crate::net::{query_collection, ChainIterator, ParamsOfQueryCollection, RegisteredIterator};
-use ton_block::ShardIdent;
+use ever_block::ShardIdent;
 
 mod branch;
 mod filter;

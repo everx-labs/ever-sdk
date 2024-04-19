@@ -128,7 +128,7 @@ impl Error {
         )
     }
 
-    pub fn initial_pubkey_not_supported(abi_version: &ton_abi::contract::AbiVersion) -> ClientError {
+    pub fn initial_pubkey_not_supported(abi_version: &ever_abi::contract::AbiVersion) -> ClientError {
         error(
             ErrorCode::PubKeyNotSupported,
             format!(

@@ -16,8 +16,8 @@ If you need to deploy a contract, then you will also need its tvc file. This fil
 If you plan to develop and compile the contracts yourself then these docs will help you:
 
 * [Compiling contract with one command with everdev](https://docs.everos.dev/everdev/command-line-interface/solidity#compile)
-* [Solidity Compiler](https://github.com/tonlabs/TON-Solidity-Compiler)
-* [Public repository with contracts](https://github.com/tonlabs/ton-labs-contracts)
+* [Solidity Compiler](https://github.com/everx-labs/TON-Solidity-Compiler)
+* [Public repository with contracts](https://github.com/everx-labs/ton-labs-contracts)
 
 ## Create contract wrapper
 

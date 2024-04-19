@@ -21,8 +21,8 @@ use crate::boc::internal::{
 use crate::error::ClientResult;
 use crate::ClientContext;
 use ever_struct::scheme::TVC;
-use ton_block::{StateInit, Deserializable};
-use ton_types::Cell;
+use ever_block::{StateInit, Deserializable};
+use ever_block::Cell;
 
 #[derive(Serialize, Deserialize, ApiType, Default)]
 pub struct ParamsOfDecodeTvc {
@@ -49,7 +49,7 @@ pub struct TvcV1 {
 }
 
 /// Decodes tvc according to the tvc spec.
-/// Read more about tvc structure here https://github.com/tonlabs/ever-struct/blob/main/src/scheme/mod.rs#L30
+/// Read more about tvc structure here https://github.com/everx-labs/ever-struct/blob/main/src/scheme/mod.rs#L30
 
 #[api_function]
 pub fn decode_tvc(

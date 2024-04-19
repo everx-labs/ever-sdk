@@ -16,7 +16,7 @@ use std::future::Future;
 use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex, RwLock};
-use ton_types::UInt256;
+use ever_block::UInt256;
 use crate::utils::json::JsonHelper;
 
 #[derive(Debug)]
@@ -137,7 +137,7 @@ impl NetworkContext {
         Ok(handle)
     }
 
-    pub(crate) async fn get_current_network_uid(&self) -> ton_types::Result<Arc<NetworkUID>> {
+    pub(crate) async fn get_current_network_uid(&self) -> ever_block::Result<Arc<NetworkUID>> {
         if let Some(ref uid) = *self.network_uid.read().await {
             return Ok(Arc::clone(uid));
         }
@@ -154,7 +154,7 @@ impl NetworkContext {
         Ok(queried_uid)
     }
 
-    pub(crate) async fn query_current_network_uid(&self) -> ton_types::Result<Arc<NetworkUID>> {
+    pub(crate) async fn query_current_network_uid(&self) -> ever_block::Result<Arc<NetworkUID>> {
         let blocks = self
             .query_collection(ParamsOfQueryCollection {
                 collection: "blocks".to_string(),

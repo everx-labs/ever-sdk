@@ -76,7 +76,7 @@ messages(
 
 ### Query
 
-See the full sample here [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/pagination](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/pagination)
+See the full sample here [https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/pagination](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/pagination)
 
 Read about used API here -> [Account messages pagination](https://docs.everplatform.dev/samples/graphql-samples/accounts#get-messages-within-block-range). &#x20;
 
@@ -108,7 +108,7 @@ result = await client.net.query({
 
 ### Subscribe
 
-See the full sample here [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/subscribe-and-decode](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/subscribe-and-decode)
+See the full sample here [https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/subscribe-and-decode](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/subscribe-and-decode)
 
 To subscribe to all this. Don't forget to specify your own callback.
 
@@ -126,7 +126,7 @@ const messageSubscription = await TonClient.default.net.subscribe_collection({
 
 ### Decode
 
-See the full sample here [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/subscribe-and-decode](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/subscribe-and-decode)
+See the full sample here [https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/subscribe-and-decode](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/subscribe-and-decode)
 
 ```javascript
 const decoded = (await TonClient.default.abi.decode_message({

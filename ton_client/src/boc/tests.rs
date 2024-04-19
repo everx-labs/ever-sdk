@@ -25,8 +25,8 @@ use internal::serialize_cell_to_base64;
 use pretty_assertions::assert_eq;
 use serde_json::Value;
 use std::str::FromStr;
-use ton_block::{MsgAddrStd, MsgAddressInt, Serializable};
-use ton_types::{AccountId, BuilderData, IBitstring};
+use ever_block::{MsgAddrStd, MsgAddressInt, Serializable};
+use ever_block::{AccountId, BuilderData, IBitstring};
 
 #[test]
 fn test_encode_boc() {
@@ -495,7 +495,7 @@ fn parse_account() {
 fn parse_pruned_account() {
     let client = TestClient::new();
 
-    let (account, _) = deserialize_object_from_boc_bin::<ton_block::Account>(include_bytes!("test_data/account.boc")).unwrap();
+    let (account, _) = deserialize_object_from_boc_bin::<ever_block::Account>(include_bytes!("test_data/account.boc")).unwrap();
 
     let code = account.get_code().map(|cell| cell.repr_hash());
     let data = account.get_data().map(|cell| cell.repr_hash());
@@ -503,7 +503,7 @@ fn parse_pruned_account() {
     
     let cell = account.serialize().unwrap();
 
-    let proof = ton_block::MerkleProof::create(
+    let proof = ever_block::MerkleProof::create(
         &cell,
         |hash| Some(hash) != code.as_ref() && Some(hash) != data.as_ref() && Some(hash) != libs.as_ref()
     ).unwrap();

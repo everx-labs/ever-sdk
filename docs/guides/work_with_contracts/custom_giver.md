@@ -106,7 +106,7 @@ Now you can use your new function for funding your contracts before deployment:
 ```javascript
 async function main(client) {
     // Define contract ABI in the Application 
-    // See more info about ABI type here https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_abi.md#abi
+    // See more info about ABI type here https://github.com/everx-labs/ever-sdk/blob/master/docs/mod_abi.md#abi
     const abi = {
         type: 'Contract',
         value: HelloWallet.abi
@@ -115,7 +115,7 @@ async function main(client) {
     const helloKeys = await client.crypto.generate_random_sign_keys();
     
     // Prepare parameters for deploy message encoding
-    // See more info about `encode_message` method parameters here https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_abi.md#encode_message
+    // See more info about `encode_message` method parameters here https://github.com/everx-labs/ever-sdk/blob/master/docs/mod_abi.md#encode_message
     const deployOptions = {
         abi,
         deploy_set: {
@@ -144,7 +144,7 @@ async function main(client) {
 
     // Deploy `hello` contract
     // See more info about `process_message` here  
-    // https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_processing.md#process_message
+    // https://github.com/everx-labs/ever-sdk/blob/master/docs/mod_processing.md#process_message
     await client.processing.process_message({
         send_events: false,
         message_encode_params: deployOptions
@@ -156,4 +156,4 @@ async function main(client) {
 
 ## Sample Source Code
 
-Full sample: [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/custom-giver/](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/custom-giver/)
+Full sample: [https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/custom-giver/](https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/custom-giver/)

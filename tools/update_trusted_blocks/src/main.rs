@@ -6,7 +6,7 @@ use serde_json::json;
 use ton_client::ClientContext;
 use ton_client::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
 use ton_client::proofs::{ParamsOfProofBlockData, proof_block_data};
-use ton_types::{Result, UInt256};
+use ever_block::{Result, UInt256};
 
 fn with_project(endpoint: &str) -> String {
     let key = "EVERCLOUD_AUTH_PROJECT";

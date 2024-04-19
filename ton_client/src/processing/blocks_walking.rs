@@ -16,8 +16,8 @@ use crate::client::ClientContext;
 use crate::error::ClientResult;
 use crate::net::{OrderBy, ParamsOfQueryCollection, ParamsOfWaitForCollection, SortDirection, BLOCKS_COLLECTION, Endpoint};
 use std::sync::Arc;
-use ton_block::MsgAddressInt;
-use ton_block::MASTERCHAIN_ID;
+use ever_block::MsgAddressInt;
+use ever_block::MASTERCHAIN_ID;
 
 pub const BLOCK_FIELDS: &str = r#"
     id

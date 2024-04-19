@@ -152,7 +152,7 @@ impl ClientError {
         self
     }
 
-    pub fn add_address(mut self, address: &ton_block::MsgAddressInt) -> ClientError {
+    pub fn add_address(mut self, address: &ever_block::MsgAddressInt) -> ClientError {
         self.data["account_address"] = address.to_string().into();
         self
     }

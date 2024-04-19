@@ -57,11 +57,11 @@ All the methods that create messages - `encode_message`, `process_message` can t
 
 **Core sample**
 
-[https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/signingBox](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/signingBox)
+[https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/signingBox](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/signingBox)
 
 **AppKit sample**
 
-[https://github.com/tonlabs/sdk-samples/tree/master/appkit-examples/signing-box](https://github.com/tonlabs/sdk-samples/tree/master/appkit-examples/signing-box)
+[https://github.com/everx-labs/sdk-samples/tree/master/appkit-examples/signing-box](https://github.com/everx-labs/sdk-samples/tree/master/appkit-examples/signing-box)
 
 ## Sign message outside sdk
 

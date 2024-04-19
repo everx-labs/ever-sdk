@@ -21,8 +21,8 @@ use crate::crypto::internal::ton_crc16;
 use crate::error::ClientResult;
 use crate::tvm::Error;
 use std::sync::Arc;
-use ton_vm::stack::integer::IntegerData;
-use ton_vm::stack::{Stack, StackItem};
+use ever_vm::stack::integer::IntegerData;
+use ever_vm::stack::{Stack, StackItem};
 
 #[derive(Serialize, Deserialize, ApiType, Default, Clone)]
 pub struct ParamsOfRunGet {
@@ -59,7 +59,7 @@ pub async fn run_get(
     context: Arc<ClientContext>,
     params: ParamsOfRunGet,
 ) -> ClientResult<ResultOfRunGet> {
-    let mut account: ton_block::Account =
+    let mut account: ever_block::Account =
         deserialize_object_from_boc(&context, &params.account, "account")?.object;
     let options = ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
 

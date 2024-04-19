@@ -287,7 +287,7 @@
 <span class="kw">use</span> <span class="ident">serde_json</span>::<span class="ident">Value</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">convert</span>::<span class="ident">TryFrom</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span>;
-<span class="kw">use</span> <span class="ident">ton_block</span>::<span class="ident">MsgAddressInt</span>;
+<span class="kw">use</span> <span class="ident">ever_block</span>::<span class="ident">MsgAddressInt</span>;
 <span class="kw">use</span> <span class="ident">ton_sdk</span>::<span class="ident">Block</span>;
 
 <span class="kw">pub</span> <span class="kw">async</span> <span class="kw">fn</span> <span class="ident">fetch_next_shard_block</span><span class="op">&lt;</span><span class="ident">F</span>: <span class="ident">futures</span>::<span class="ident">Future</span><span class="op">&lt;</span><span class="ident">Output</span> <span class="op">=</span> ()<span class="op">&gt;</span> <span class="op">+</span> <span class="ident">Send</span><span class="op">&gt;</span>(

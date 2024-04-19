@@ -52,7 +52,7 @@ async function runGetMethod(methodName, address, accountState) {
     const { message } = await client.abi.encode_message({
         // Define contract ABI in the Application
         // See more info about ABI type here:
-        // https://github.com/tonlabs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_abi.md#abi
+        // https://github.com/everx-labs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_abi.md#abi
         abi: {
             type: 'Contract',
             value: HelloWallet.abi,
@@ -67,7 +67,7 @@ async function runGetMethod(methodName, address, accountState) {
 
     // Execute `getTimestamp` get method  (execute the message locally on TVM)
     // See more info about run_tvm method here:
-    // https://github.com/tonlabs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_tvm.md#run_tvm
+    // https://github.com/everx-labs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_tvm.md#run_tvm
     console.log('Run `getTimestamp` get method');
     const response = await client.tvm.run_tvm({
         message,
@@ -83,6 +83,6 @@ async function runGetMethod(methodName, address, accountState) {
 
 ## Source code
 
-[https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js)
+[https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js](https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js)
 
 Check out [AppKit documentation](https://docs.everos.dev/appkit-js/guides/run\_abi\_get\_method) for this use case.

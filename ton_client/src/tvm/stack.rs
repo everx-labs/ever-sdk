@@ -18,11 +18,11 @@ use crate::error::ClientResult;
 use crate::tvm::Error;
 use core::result::Result::{Err, Ok};
 use serde_json::Value;
-use ton_types::BuilderData;
+use ever_block::BuilderData;
 use std::ops::Deref;
 use std::slice::Iter;
-use ton_vm::stack::{continuation::ContinuationData, integer::IntegerData};
-use ton_vm::stack::StackItem;
+use ever_vm::stack::{continuation::ContinuationData, integer::IntegerData};
+use ever_vm::stack::StackItem;
 
 enum ProcessingResult<'a> {
     Serialized(Value),

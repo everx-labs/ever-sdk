@@ -207,7 +207,7 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>::<span class="ident">ClientResult</span>;
 <span class="kw">use</span> <span class="kw">crate</span>::{<span class="ident">processing</span>, <span class="ident">ClientContext</span>};
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span>;
-<span class="kw">use</span> <span class="ident">ton_abi</span>::{<span class="ident">Token</span>, <span class="ident">TokenValue</span>};
+<span class="kw">use</span> <span class="ident">ever_abi</span>::{<span class="ident">Token</span>, <span class="ident">TokenValue</span>};
 
 <span class="attribute">#[<span class="ident">derive</span>(<span class="ident">Serialize</span>, <span class="ident">Deserialize</span>, <span class="ident">Clone</span>, <span class="ident">Debug</span>, <span class="ident">ApiType</span>, <span class="ident">Default</span>)]</span>
 <span class="kw">pub</span> <span class="kw">struct</span> <span class="ident">AbiHandle</span>(<span class="ident">u32</span>);
@@ -241,8 +241,8 @@
         }
     }
 
-    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">abi</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ClientResult</span><span class="op">&lt;</span><span class="ident">ton_abi</span>::<span class="ident">Contract</span><span class="op">&gt;</span> {
-        <span class="ident">ton_abi</span>::<span class="ident">Contract</span>::<span class="ident">load</span>(<span class="self">self</span>.<span class="ident">json_string</span>()<span class="question-mark">?</span>.<span class="ident">as_bytes</span>())
+    <span class="kw">pub</span>(<span class="kw">crate</span>) <span class="kw">fn</span> <span class="ident">abi</span>(<span class="kw-2">&amp;</span><span class="self">self</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ClientResult</span><span class="op">&lt;</span><span class="ident">ever_abi</span>::<span class="ident">Contract</span><span class="op">&gt;</span> {
+        <span class="ident">ever_abi</span>::<span class="ident">Contract</span>::<span class="ident">load</span>(<span class="self">self</span>.<span class="ident">json_string</span>()<span class="question-mark">?</span>.<span class="ident">as_bytes</span>())
             .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">x</span><span class="op">|</span> <span class="ident">Error</span>::<span class="ident">invalid_json</span>(<span class="ident">x</span>))
     }
 }

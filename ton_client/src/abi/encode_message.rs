@@ -11,10 +11,10 @@ use crate::error::ClientResult;
 use serde_json::Value;
 use std::str::FromStr;
 use std::sync::Arc;
-use ton_abi::Contract;
-use ton_block::{CurrencyCollection, MsgAddressInt};
+use ever_abi::Contract;
+use ever_block::{CurrencyCollection, MsgAddressInt};
 use ton_sdk::{ContractImage, FunctionCallSet};
-use ton_types::Cell;
+use ever_block::Cell;
 
 use super::types::extend_data_to_sign;
 
@@ -815,7 +815,7 @@ pub async fn encode_message_body(
     let func = call.func.clone();
     let (body, data_to_sign) = match params.signer {
         Signer::None => {
-            let body = ton_abi::encode_function_call(
+            let body = ever_abi::encode_function_call(
                 &abi,
                 &func,
                 call.header.as_deref(),
@@ -828,7 +828,7 @@ pub async fn encode_message_body(
             (body, None)
         }
         _ => if params.is_internal {
-            ton_abi::encode_function_call(
+            ever_abi::encode_function_call(
                 &abi,
                 &func,
                 None,
@@ -839,7 +839,7 @@ pub async fn encode_message_body(
             )
             .map(|body| (body, None))
         } else {
-            ton_abi::prepare_function_call_for_sign(
+            ever_abi::prepare_function_call_for_sign(
                 &abi,
                 &func,
                 call.header.as_deref(),
@@ -850,7 +850,7 @@ pub async fn encode_message_body(
         }
         .map_err(|err| Error::encode_run_message_failed(err, Some(&func)))?,
     };
-    let body: Vec<u8> = ton_types::boc::write_boc(
+    let body: Vec<u8> = ever_block::boc::write_boc(
         &body
             .clone()
             .into_cell()

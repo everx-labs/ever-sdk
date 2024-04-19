@@ -102,8 +102,8 @@ log("Starting use case #2")
 
 * Javascript:
 
-[https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/message-monitor](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/message-monitor)
+[https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/message-monitor](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/message-monitor)
 
 * Rust:
 
-[https://github.com/tonlabs/sdk-samples/tree/master/core-examples/rust/message-monitoring](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/rust/message-monitoring)
+[https://github.com/everx-labs/sdk-samples/tree/master/core-examples/rust/message-monitoring](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/rust/message-monitoring)

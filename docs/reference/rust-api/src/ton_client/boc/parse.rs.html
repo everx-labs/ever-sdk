@@ -260,23 +260,23 @@
     <span class="ident">context</span>: <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">ClientContext</span><span class="op">&gt;</span>,
     <span class="ident">params</span>: <span class="ident">ParamsOfParse</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ClientResult</span><span class="op">&lt;</span><span class="ident">ResultOfParse</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">object</span> <span class="op">=</span> <span class="ident">deserialize_object_from_boc</span>::<span class="op">&lt;</span><span class="ident">ton_block</span>::<span class="ident">Message</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">boc</span>, <span class="string">&quot;message&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">object</span> <span class="op">=</span> <span class="ident">deserialize_object_from_boc</span>::<span class="op">&lt;</span><span class="ident">ever_block</span>::<span class="ident">Message</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">boc</span>, <span class="string">&quot;message&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">ton_block_json</span>::<span class="ident">MessageSerializationSet</span> {
+    <span class="kw">let</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">ever_block_json</span>::<span class="ident">MessageSerializationSet</span> {
         <span class="ident">block_id</span>: <span class="prelude-val">None</span>,
         <span class="ident">boc</span>: <span class="ident">object</span>.<span class="ident">boc</span>.<span class="ident">bytes</span>(<span class="string">&quot;message&quot;</span>)<span class="question-mark">?</span>,
         <span class="ident">id</span>: <span class="ident">object</span>.<span class="ident">cell</span>.<span class="ident">repr_hash</span>(),
         <span class="ident">message</span>: <span class="ident">object</span>.<span class="ident">object</span>,
         <span class="ident">proof</span>: <span class="prelude-val">None</span>,
-        <span class="ident">status</span>: <span class="ident">ton_block</span>::<span class="ident">MessageProcessingStatus</span>::<span class="ident">Finalized</span>,
+        <span class="ident">status</span>: <span class="ident">ever_block</span>::<span class="ident">MessageProcessingStatus</span>::<span class="ident">Finalized</span>,
         <span class="ident">transaction_id</span>: <span class="prelude-val">None</span>,
         <span class="ident">transaction_now</span>: <span class="prelude-val">None</span>,
     };
 
-    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="ident">ton_block_json</span>::<span class="ident">db_serialize_message_ex</span>(
+    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="ident">ever_block_json</span>::<span class="ident">db_serialize_message_ex</span>(
         <span class="string">&quot;id&quot;</span>,
         <span class="kw-2">&amp;</span><span class="ident">set</span>,
-        <span class="ident">ton_block_json</span>::<span class="ident">SerializationMode</span>::<span class="ident">QServer</span>,
+        <span class="ident">ever_block_json</span>::<span class="ident">SerializationMode</span>::<span class="ident">QServer</span>,
     )
     .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">err</span><span class="op">|</span> <span class="ident">Error</span>::<span class="ident">serialization_error</span>(<span class="ident">err</span>, <span class="string">&quot;message&quot;</span>))<span class="question-mark">?</span>;
 
@@ -294,22 +294,22 @@
     <span class="ident">params</span>: <span class="ident">ParamsOfParse</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ClientResult</span><span class="op">&lt;</span><span class="ident">ResultOfParse</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">object</span> <span class="op">=</span>
-        <span class="ident">deserialize_object_from_boc</span>::<span class="op">&lt;</span><span class="ident">ton_block</span>::<span class="ident">Transaction</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">boc</span>, <span class="string">&quot;transaction&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="ident">deserialize_object_from_boc</span>::<span class="op">&lt;</span><span class="ident">ever_block</span>::<span class="ident">Transaction</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">boc</span>, <span class="string">&quot;transaction&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">ton_block_json</span>::<span class="ident">TransactionSerializationSetEx</span> {
+    <span class="kw">let</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">ever_block_json</span>::<span class="ident">TransactionSerializationSetEx</span> {
         <span class="ident">block_id</span>: <span class="prelude-val">None</span>,
         <span class="ident">boc</span>: <span class="kw-2">&amp;</span><span class="ident">object</span>.<span class="ident">boc</span>.<span class="ident">bytes</span>(<span class="string">&quot;transaction&quot;</span>)<span class="question-mark">?</span>,
         <span class="ident">id</span>: <span class="kw-2">&amp;</span><span class="ident">object</span>.<span class="ident">cell</span>.<span class="ident">repr_hash</span>(),
         <span class="ident">transaction</span>: <span class="kw-2">&amp;</span><span class="ident">object</span>.<span class="ident">object</span>,
         <span class="ident">proof</span>: <span class="prelude-val">None</span>,
-        <span class="ident">status</span>: <span class="ident">ton_block</span>::<span class="ident">TransactionProcessingStatus</span>::<span class="ident">Finalized</span>,
+        <span class="ident">status</span>: <span class="ident">ever_block</span>::<span class="ident">TransactionProcessingStatus</span>::<span class="ident">Finalized</span>,
         <span class="ident">workchain_id</span>: <span class="prelude-val">None</span>,
     };
 
-    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="ident">ton_block_json</span>::<span class="ident">db_serialize_transaction_ex</span>(
+    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="ident">ever_block_json</span>::<span class="ident">db_serialize_transaction_ex</span>(
         <span class="string">&quot;id&quot;</span>,
         <span class="ident">set</span>,
-        <span class="ident">ton_block_json</span>::<span class="ident">SerializationMode</span>::<span class="ident">QServer</span>,
+        <span class="ident">ever_block_json</span>::<span class="ident">SerializationMode</span>::<span class="ident">QServer</span>,
     )
     .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">err</span><span class="op">|</span> <span class="ident">Error</span>::<span class="ident">serialization_error</span>(<span class="ident">err</span>, <span class="string">&quot;transaction&quot;</span>))<span class="question-mark">?</span>;
 
@@ -326,18 +326,18 @@
     <span class="ident">context</span>: <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">ClientContext</span><span class="op">&gt;</span>,
     <span class="ident">params</span>: <span class="ident">ParamsOfParse</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ClientResult</span><span class="op">&lt;</span><span class="ident">ResultOfParse</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">object</span> <span class="op">=</span> <span class="ident">deserialize_object_from_boc</span>::<span class="op">&lt;</span><span class="ident">ton_block</span>::<span class="ident">Account</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">boc</span>, <span class="string">&quot;account&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">object</span> <span class="op">=</span> <span class="ident">deserialize_object_from_boc</span>::<span class="op">&lt;</span><span class="ident">ever_block</span>::<span class="ident">Account</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">boc</span>, <span class="string">&quot;account&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">ton_block_json</span>::<span class="ident">AccountSerializationSet</span> {
+    <span class="kw">let</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">ever_block_json</span>::<span class="ident">AccountSerializationSet</span> {
         <span class="ident">boc</span>: <span class="ident">object</span>.<span class="ident">boc</span>.<span class="ident">bytes</span>(<span class="string">&quot;account&quot;</span>)<span class="question-mark">?</span>,
         <span class="ident">proof</span>: <span class="prelude-val">None</span>,
         <span class="ident">account</span>: <span class="ident">object</span>.<span class="ident">object</span>,
     };
 
-    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="ident">ton_block_json</span>::<span class="ident">db_serialize_account_ex</span>(
+    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="ident">ever_block_json</span>::<span class="ident">db_serialize_account_ex</span>(
         <span class="string">&quot;id&quot;</span>,
         <span class="kw-2">&amp;</span><span class="ident">set</span>,
-        <span class="ident">ton_block_json</span>::<span class="ident">SerializationMode</span>::<span class="ident">QServer</span>,
+        <span class="ident">ever_block_json</span>::<span class="ident">SerializationMode</span>::<span class="ident">QServer</span>,
     )
     .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">err</span><span class="op">|</span> <span class="ident">Error</span>::<span class="ident">serialization_error</span>(<span class="ident">err</span>, <span class="string">&quot;account&quot;</span>))<span class="question-mark">?</span>;
 
@@ -354,19 +354,19 @@
     <span class="ident">context</span>: <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span><span class="op">&lt;</span><span class="ident">ClientContext</span><span class="op">&gt;</span>,
     <span class="ident">params</span>: <span class="ident">ParamsOfParse</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ClientResult</span><span class="op">&lt;</span><span class="ident">ResultOfParse</span><span class="op">&gt;</span> {
-    <span class="kw">let</span> <span class="ident">object</span> <span class="op">=</span> <span class="ident">deserialize_object_from_boc</span>::<span class="op">&lt;</span><span class="ident">ton_block</span>::<span class="ident">Block</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">boc</span>, <span class="string">&quot;block&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+    <span class="kw">let</span> <span class="ident">object</span> <span class="op">=</span> <span class="ident">deserialize_object_from_boc</span>::<span class="op">&lt;</span><span class="ident">ever_block</span>::<span class="ident">Block</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">boc</span>, <span class="string">&quot;block&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">ton_block_json</span>::<span class="ident">BlockSerializationSet</span> {
+    <span class="kw">let</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">ever_block_json</span>::<span class="ident">BlockSerializationSet</span> {
         <span class="ident">boc</span>: <span class="ident">object</span>.<span class="ident">boc</span>.<span class="ident">bytes</span>(<span class="string">&quot;block&quot;</span>)<span class="question-mark">?</span>,
         <span class="ident">id</span>: <span class="ident">object</span>.<span class="ident">cell</span>.<span class="ident">repr_hash</span>(),
         <span class="ident">block</span>: <span class="ident">object</span>.<span class="ident">object</span>,
-        <span class="ident">status</span>: <span class="ident">ton_block</span>::<span class="ident">BlockProcessingStatus</span>::<span class="ident">Finalized</span>,
+        <span class="ident">status</span>: <span class="ident">ever_block</span>::<span class="ident">BlockProcessingStatus</span>::<span class="ident">Finalized</span>,
     };
 
-    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="ident">ton_block_json</span>::<span class="ident">db_serialize_block_ex</span>(
+    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="ident">ever_block_json</span>::<span class="ident">db_serialize_block_ex</span>(
         <span class="string">&quot;id&quot;</span>,
         <span class="kw-2">&amp;</span><span class="ident">set</span>,
-        <span class="ident">ton_block_json</span>::<span class="ident">SerializationMode</span>::<span class="ident">QServer</span>,
+        <span class="ident">ever_block_json</span>::<span class="ident">SerializationMode</span>::<span class="ident">QServer</span>,
     )
     .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">err</span><span class="op">|</span> <span class="ident">Error</span>::<span class="ident">serialization_error</span>(<span class="ident">err</span>, <span class="string">&quot;block&quot;</span>))<span class="question-mark">?</span>;
 
@@ -384,9 +384,9 @@
     <span class="ident">params</span>: <span class="ident">ParamsOfParseShardstate</span>,
 ) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">ClientResult</span><span class="op">&lt;</span><span class="ident">ResultOfParse</span><span class="op">&gt;</span> {
     <span class="kw">let</span> <span class="ident">object</span> <span class="op">=</span>
-        <span class="ident">deserialize_object_from_boc</span>::<span class="op">&lt;</span><span class="ident">ton_block</span>::<span class="ident">ShardStateUnsplit</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">boc</span>, <span class="string">&quot;shardstate&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
+        <span class="ident">deserialize_object_from_boc</span>::<span class="op">&lt;</span><span class="ident">ever_block</span>::<span class="ident">ShardStateUnsplit</span><span class="op">&gt;</span>(<span class="kw-2">&amp;</span><span class="ident">context</span>, <span class="kw-2">&amp;</span><span class="ident">params</span>.<span class="ident">boc</span>, <span class="string">&quot;shardstate&quot;</span>).<span class="kw">await</span><span class="question-mark">?</span>;
 
-    <span class="kw">let</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">ton_block_json</span>::<span class="ident">ShardStateSerializationSet</span> {
+    <span class="kw">let</span> <span class="ident">set</span> <span class="op">=</span> <span class="ident">ever_block_json</span>::<span class="ident">ShardStateSerializationSet</span> {
         <span class="ident">boc</span>: <span class="ident">object</span>.<span class="ident">boc</span>.<span class="ident">bytes</span>(<span class="string">&quot;shardstate&quot;</span>)<span class="question-mark">?</span>,
         <span class="ident">id</span>: <span class="ident">params</span>.<span class="ident">id</span>,
         <span class="ident">state</span>: <span class="ident">object</span>.<span class="ident">object</span>,
@@ -394,10 +394,10 @@
         <span class="ident">workchain_id</span>: <span class="ident">params</span>.<span class="ident">workchain_id</span>,
     };
 
-    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="ident">ton_block_json</span>::<span class="ident">db_serialize_shard_state_ex</span>(
+    <span class="kw">let</span> <span class="ident">parsed</span> <span class="op">=</span> <span class="ident">ever_block_json</span>::<span class="ident">db_serialize_shard_state_ex</span>(
         <span class="string">&quot;id&quot;</span>,
         <span class="kw-2">&amp;</span><span class="ident">set</span>,
-        <span class="ident">ton_block_json</span>::<span class="ident">SerializationMode</span>::<span class="ident">QServer</span>,
+        <span class="ident">ever_block_json</span>::<span class="ident">SerializationMode</span>::<span class="ident">QServer</span>,
     )
     .<span class="ident">map_err</span>(<span class="op">|</span><span class="ident">err</span><span class="op">|</span> <span class="ident">Error</span>::<span class="ident">serialization_error</span>(<span class="ident">err</span>, <span class="string">&quot;shardstate&quot;</span>))<span class="question-mark">?</span>;
 

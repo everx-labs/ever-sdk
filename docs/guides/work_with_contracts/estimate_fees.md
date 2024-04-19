@@ -59,8 +59,8 @@ Use [calc\_storage\_fee](../../reference/types-and-methods/mod\_utils.md#calc\_s
 
 **Core**
 
-[https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/run\_executor](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/run\_executor)
+[https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/run\_executor](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/run\_executor)
 
 **AppKit**
 
-[https://github.com/tonlabs/sdk-samples/blob/master/appkit-examples/fee-calculation/index.js](https://github.com/tonlabs/sdk-samples/blob/master/appkit-examples/fee-calculation/index.js)
+[https://github.com/everx-labs/sdk-samples/blob/master/appkit-examples/fee-calculation/index.js](https://github.com/everx-labs/sdk-samples/blob/master/appkit-examples/fee-calculation/index.js)

@@ -15,7 +15,7 @@ use crate::tvm::check_transaction::{calc_transaction_fees, extract_error};
 use serde_json::Value;
 use std::convert::TryFrom;
 use std::sync::Arc;
-use ton_block::MsgAddressInt;
+use ever_block::MsgAddressInt;
 use ton_sdk::Block;
 
 pub async fn fetch_next_shard_block<F: futures::Future<Output = ()> + Send>(
