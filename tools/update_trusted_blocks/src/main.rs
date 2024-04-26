@@ -1,6 +1,4 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::env;
+use std::{collections::HashMap, env, str::FromStr, sync::Arc};
 
 use serde_json::json;
 use ton_client::ClientContext;
@@ -24,7 +22,7 @@ fn with_project(endpoint: &str) -> String {
 
 async fn query_network_keyblocks(
     endpoint: String,
-    zs_root_hash: UInt256,
+    zs_root_hash: &UInt256,
     trusted_blocks: Option<Vec<(u32, [u8; 32])>>,
 ) -> Result<Vec<(u32, [u8; 32])>> {
     println!("*** [{}] ***", endpoint);
@@ -135,8 +133,8 @@ async fn main() -> Result<()> {
         let endpoint = with_project(network).to_owned();
         let value = query_network_keyblocks(
             endpoint,
-            zs_root_hash,
-            trusted_key_blocks.remove(&zs_root_hash.inner()),
+            &zs_root_hash,
+            trusted_key_blocks.remove(zs_root_hash.as_slice()),
         ).await?;
         trusted_key_blocks.insert(zs_root_hash.inner(), value);
     }
