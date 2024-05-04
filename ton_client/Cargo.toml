@@ -22,7 +22,7 @@ ton_sdk = { default-features = false, path = '../ton_sdk' }
 ton_client_processing = { default-features = false, path = '../ton_client_processing' }
 
 ever_abi = { git = 'https://github.com/everx-labs/ever-abi.git',  tag = '2.5.1' }
-ever_block = { git = 'https://github.com/everx-labs/ever-block.git', tag = '1.10.0' }
+ever_block = { git = 'ssh://git@github.com/everx-labs/ever-block-private.git', branch = 'fix_wasm' }
 ever_block_json = { git = 'https://github.com/everx-labs/ever-block-json.git', tag = '0.8.3' }
 ever_executor = { features = ['signature_with_id'], git = 'https://github.com/everx-labs/ever-executor.git', tag = '1.17.3' }
 ever_vm = { features = ['signature_with_id', 'signature_no_check'], git = 'https://github.com/everx-labs/ever-vm.git', tag = '2.1.2' }

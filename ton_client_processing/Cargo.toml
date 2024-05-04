@@ -10,7 +10,7 @@ name = 'ton_client_processing'
 crate-type = [ 'cdylib', 'rlib', 'staticlib' ]
 
 [dependencies]
-ever_block = { git = 'https://github.com/everx-labs/ever-block.git', tag = '1.10.0' }
+ever_block = { git = 'ssh://git@github.com/everx-labs/ever-block-private.git', branch = 'fix_wasm' }
 
 api_derive = { path = '../api/derive' }
 api_info = { path = '../api/info' }
