@@ -11,4 +11,4 @@ serde_derive = '1.0.130'
 serde_json = '1.0.68'
 tokio = { default-features = false, features = [ 'sync', 'fs' ], version = '1' }
 ton_client = { path = '../../ton_client' }
-ever_block = { git = 'ssh://git@github.com/everx-labs/ever-block-private.git', branch = 'fix_wasm' }
+ever_block = { git = 'https://github.com/everx-labs/ever-block.git', tag = '1.10.0' }
