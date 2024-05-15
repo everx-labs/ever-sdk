@@ -136,7 +136,11 @@ impl TryFrom<&ever_block::Transaction> for Transaction {
             None
         };
 
-        let in_msg = transaction.in_msg.as_ref().map(|msg| msg.hash().into());
+        let in_msg = if transaction.in_msg.empty() {
+            None
+        } else {
+            Some(transaction.in_msg.hash().into())
+        };
         let mut out_msgs = vec![];
         transaction.out_msgs.iterate_slices(|slice| {
             if let Ok(cell) = slice.reference(0) {
@@ -146,7 +150,7 @@ impl TryFrom<&ever_block::Transaction> for Transaction {
         })?;
         let mut out_messages = vec![];
         transaction.out_msgs.iterate(|msg| {
-            out_messages.push(Message::with_msg(&msg.0)?);
+            out_messages.push(Message::with_msg(msg.0.get_std()?)?);
             Ok(true)
         })?;
 

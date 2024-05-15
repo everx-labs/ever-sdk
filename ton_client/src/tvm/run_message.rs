@@ -405,6 +405,7 @@ where
         signature_id: options.signature_id,
         ..ExecuteParams::default()
     };
+    let msg = ever_block::CommonMessage::Std(msg);
     let transaction =
         match executor.execute_with_libs_and_params(Some(&msg), &mut account_root, params) {
             Ok(transaction) => transaction,
