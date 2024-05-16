@@ -2,6 +2,18 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.46.1] – 2024-05-16
+
+### New
+
+- Updated dependencies version
+
+- Removed ever-types from list of dependencies
+
+### Fixed
+
+- Some fixes in WASM build
+
 ## [1.45.1] – 2023-12-19
 
 ### Fixed
