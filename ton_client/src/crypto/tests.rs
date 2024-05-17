@@ -1268,7 +1268,7 @@ fn password_provider(
 }
 
 #[tokio::test]
-async fn test_crypto_boxes() -> ton_types::Result<()> {
+async fn test_crypto_boxes() -> ever_block::Result<()> {
     let client = Arc::new(TestClient::new());
     let password_hash =
         Arc::new("1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_string());
@@ -1362,7 +1362,7 @@ async fn test_crypto_boxes() -> ton_types::Result<()> {
 }
 
 #[tokio::test]
-async fn test_crypto_box_signing_boxes() -> ton_types::Result<()> {
+async fn test_crypto_box_signing_boxes() -> ever_block::Result<()> {
     let client = Arc::new(TestClient::new());
     let password_hash =
         Arc::new("1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_string());
@@ -1480,7 +1480,7 @@ async fn test_crypto_box_signing_boxes() -> ton_types::Result<()> {
 }
 
 #[tokio::test]
-async fn test_crypto_box_encryption_boxes() -> ton_types::Result<()> {
+async fn test_crypto_box_encryption_boxes() -> ever_block::Result<()> {
     let client = Arc::new(TestClient::new());
     let password_hash =
         Arc::new("1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_string());
@@ -1616,7 +1616,7 @@ async fn test_crypto_box_encryption_boxes() -> ton_types::Result<()> {
 }
 
 #[tokio::test]
-async fn test_crypto_box_derive_key_cache() -> ton_types::Result<()> {
+async fn test_crypto_box_derive_key_cache() -> ever_block::Result<()> {
     let client = Arc::new(TestClient::new());
     let password_hash =
         Arc::new("1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF1234567890ABCDEF".to_string());

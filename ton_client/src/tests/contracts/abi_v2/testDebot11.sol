@@ -2,12 +2,12 @@ pragma ton-solidity >=0.45.0;
 pragma AbiHeader expire;
 pragma AbiHeader time;
 pragma AbiHeader pubkey;
-import "https://raw.githubusercontent.com/tonlabs/debots/main/Debot.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/JsonDeserialize/Json.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Hex/Hex.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/EncryptionBoxInput/EncryptionBoxInput.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
+import "https://raw.githubusercontent.com/everx-labs/debots/main/Debot.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/JsonDeserialize/Json.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/Hex/Hex.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/EncryptionBoxInput/EncryptionBoxInput.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
 
 contract ExampleContract is Debot {
 

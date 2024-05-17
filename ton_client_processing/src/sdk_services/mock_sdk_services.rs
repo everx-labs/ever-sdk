@@ -5,7 +5,7 @@ use std::collections::{HashMap, HashSet};
 use std::future::Future;
 use std::sync::{Arc, Mutex, RwLock};
 use std::time::{Duration, SystemTime};
-use ton_types::Cell;
+use ever_block::Cell;
 
 #[derive(Clone)]
 pub struct MockSdkServices {
@@ -90,7 +90,7 @@ impl State {
             .map_err(|err| {
                 Error::invalid_boc(format!("error decode {} BOC base64: {}", name, err))
             })?;
-        ton_types::boc::read_single_root_boc(&bytes).map_err(|err| {
+        ever_block::boc::read_single_root_boc(&bytes).map_err(|err| {
             Error::invalid_boc(format!("{} BOC deserialization error: {}", name, err))
         })
     }

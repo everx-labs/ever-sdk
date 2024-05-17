@@ -21,7 +21,7 @@ npm i --save @eversdk/core
 npm i --save @eversdk/lib-node
 ```
 
-If you want to use high-level [AppKit](https://github.com/tonlabs/ever-appkit-js) package then install this package as well:
+If you want to use high-level [AppKit](https://github.com/everx-labs/ever-appkit-js) package then install this package as well:
 
 ```
 npm i --save @eversdk/appkit
@@ -64,7 +64,7 @@ npm i --save @eversdk/lib-web
 
 **Important!** Each time you run `npm install` the new version of the `eversdk.wasm` and `index.js` is downloaded. So you have to always update the `eversdk.wasm` inside your web package before publishing (starting local web server, creating web bundle etc.). If you use Webpack the best way is to use CopyPlugin.
 
-If you want to use high-level [AppKit](https://github.com/tonlabs/ever-appkit-js) package then install this package as well:
+If you want to use high-level [AppKit](https://github.com/everx-labs/ever-appkit-js) package then install this package as well:
 
 ```
 npm i --save @eversdk/appkit

@@ -133,7 +133,7 @@ function responseHandler(params, responseType) {
 
 See the full example in sdk samples repository:
 
-[https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/remp/index.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/remp/index.js)
+[https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/remp/index.js](https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/remp/index.js)
 
 ## Expected output
 
@@ -163,7 +163,7 @@ Transaction id: effed4849898e08d1fe5759532d34f23dbec061c5fd666604f817be82732cfb9
 
 ## Sample Source code
 
-Full sample: [https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/remp](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/remp)
+Full sample: [https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/remp](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/remp)
 
 ## See also
 

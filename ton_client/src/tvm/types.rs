@@ -18,8 +18,8 @@ use crate::error::ClientResult;
 use crate::net::network_params::get_default_params;
 use crate::boc::internal::deserialize_object_from_boc;
 use std::sync::Arc;
-use ton_executor::BlockchainConfig;
-use ton_vm::executor::BehaviorModifiers;
+use ever_executor::BlockchainConfig;
+use ever_vm::executor::BehaviorModifiers;
 
 #[derive(Serialize, Deserialize, ApiType, Clone, Default)]
 pub struct ExecutionOptions {

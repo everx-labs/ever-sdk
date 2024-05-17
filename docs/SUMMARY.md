@@ -20,12 +20,12 @@
   * [Module utils](reference/types-and-methods/mod\_utils.md)
 * [Error API](reference/error\_api.md)
 * [Error Codes](reference/error\_codes.md)
-* [JavaScript Reference](https://tonlabs.github.io/ever-sdk-js/)
-* [Rust Reference](https://github.com/tonlabs/ever-sdk/tree/master/docs/reference/rust-api)
+* [JavaScript Reference](https://everx-labs.github.io/ever-sdk-js/)
+* [Rust Reference](https://github.com/everx-labs/ever-sdk/tree/master/docs/reference/rust-api)
 
 ## Samples
 
-* [JavaScript Samples](https://github.com/tonlabs/sdk-samples)
+* [JavaScript Samples](https://github.com/everx-labs/sdk-samples)
 
 ## guides
 
@@ -69,5 +69,5 @@
 
 ## Links
 
-* [Ever SDK repository](https://github.com/tonlabs/ever-sdk)
+* [Ever SDK repository](https://github.com/everx-labs/ever-sdk)
 * [AppKit JS documentation](https://docs.everos.dev/appkit-js/)

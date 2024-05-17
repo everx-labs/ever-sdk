@@ -48,7 +48,7 @@ pub struct Boxes {
 
 #[derive(Clone, Default)]
 pub(crate) struct NetworkParams {
-    pub(crate) blockchain_config: Arc<ton_executor::BlockchainConfig>,
+    pub(crate) blockchain_config: Arc<ever_executor::BlockchainConfig>,
     pub(crate) global_id: i32,
 }
 

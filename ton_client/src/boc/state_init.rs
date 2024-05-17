@@ -11,8 +11,8 @@
 * limitations under the License.
 */
 
-use ton_block::{Number5, StateInit, StateInitLib, TickTock};
-use ton_types::{BuilderData, Cell};
+use ever_block::{Number5, StateInit, StateInitLib, TickTock, SERDE_OPTS_EMPTY};
+use ever_block::{BuilderData, Cell};
 
 use super::BocCacheType;
 use crate::boc::internal::{
@@ -325,7 +325,7 @@ pub fn encode_state_init(
     };
     let code = get_cell("code", params.code.as_deref())?;
     let data = get_cell("data", params.data.as_deref())?;
-    let library = StateInitLib::with_hashmap(get_cell("library", params.library.as_deref())?);
+    let library = StateInitLib::with_hashmap(get_cell("library", params.library.as_deref())?, SERDE_OPTS_EMPTY);
 
     let special = if params.tick.is_some() || params.tock.is_some() {
         Some(TickTock {

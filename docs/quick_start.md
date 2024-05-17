@@ -17,7 +17,7 @@ Node.js latest version installed [Docker](https://www.docker.com/get-started) la
 
 ## Prepare development environment
 
-Install [EVERDEV CLI](https://github.com/tonlabs/everdev) that will help you easily start local node, compile your contracts, install demo projects and create new empty projects.
+Install [EVERDEV CLI](https://github.com/everx-labs/everdev) that will help you easily start local node, compile your contracts, install demo projects and create new empty projects.
 
 ```shell
 $ npm install -g everdev
@@ -25,7 +25,7 @@ $ npm install -g everdev
 
 ## Start local node (SE)
 
-We will run our test on local blockchain for testing ([Evernode SE](https://github.com/tonlabs/evernode-se), start it with this command (docker should be launched).
+We will run our test on local blockchain for testing ([Evernode SE](https://github.com/everx-labs/evernode-se), start it with this command (docker should be launched).
 
 ```
 $ everdev se start
@@ -45,8 +45,8 @@ $ npm i
 
 The script implements the following logic:
 
-1. Links the project with Node.js [Ever-SDK](https://github.com/tonlabs/ever-sdk) binary. If you plan to use JS SDK in Web, link it with Wasm binary. Read more [here](https://github.com/tonlabs/ever-sdk-js).
-2. `TONClient` instance is created and initialized with [Evernode SE](https://github.com/tonlabs/evernode-se) ("[http://localhost](http://localhost)", local blockchain) endpoint. See the list of other available [endpoints](https://docs.everplatform.dev/reference/graphql-api/networks).
+1. Links the project with Node.js [Ever-SDK](https://github.com/everx-labs/ever-sdk) binary. If you plan to use JS SDK in Web, link it with Wasm binary. Read more [here](https://github.com/everx-labs/ever-sdk-js).
+2. `TONClient` instance is created and initialized with [Evernode SE](https://github.com/everx-labs/evernode-se) ("[http://localhost](http://localhost)", local blockchain) endpoint. See the list of other available [endpoints](https://docs.everplatform.dev/reference/graphql-api/networks).
 3. Future address is calculated from the code and data of the contract (data includes signing keys)
 4. &#x20;Flag `useGiver: true` allows to sponsor deploy with Evernode SE giver that is hard coded as the default Account giver. [You can re-assign it to your own giver](guides/work\_with\_contracts/deploy.md#transfer-funds-to-the-future-address).
 
@@ -120,7 +120,7 @@ async function calcWalletAddress(keys) {
 function buildDeployOptions(keys) {
     // Prepare parameters for deploy message encoding
     // See more info about `encode_message` method parameters here:
-    // https://github.com/tonlabs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_abi.md#encode_message
+    // https://github.com/everx-labs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_abi.md#encode_message
     const deployOptions = {
         abi: {
             type: 'Contract',
@@ -172,7 +172,7 @@ async function getTokensFromGiver(dest, value) {
 async function deployWallet(walletKeys) {
     // Deploy `Hello wallet` contract
     // See more info about `process_message` here:
-    // https://github.com/tonlabs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_processing.md#process_message
+    // https://github.com/everx-labs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_processing.md#process_message
     console.log('Deploying Hello wallet contract');
     await client.processing.process_message({
         send_events: false,
@@ -261,7 +261,7 @@ async function runGetMethod(methodName, address, accountState) {
     const { message } = await client.abi.encode_message({
         // Define contract ABI in the Application
         // See more info about ABI type here:
-        // https://github.com/tonlabs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_abi.md#abi
+        // https://github.com/everx-labs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_abi.md#abi
         abi: {
             type: 'Contract',
             value: HelloWallet.abi,
@@ -276,7 +276,7 @@ async function runGetMethod(methodName, address, accountState) {
 
     // Execute `getTimestamp` get method  (execute the message locally on TVM)
     // See more info about run_tvm method here:
-    // https://github.com/tonlabs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_tvm.md#run_tvm
+    // https://github.com/everx-labs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_tvm.md#run_tvm
     console.log('Run `getTimestamp` get method');
     const response = await client.tvm.run_tvm({
         message,
@@ -306,7 +306,7 @@ async function sendValue(address, dest, amount, keys) {
             address,
             // Define contract ABI in the Application
             // See more info about ABI type here:
-            // https://github.com/tonlabs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_abi.md#abi
+            // https://github.com/everx-labs/ever-sdk/blob/master/docs/reference/types-and-methods/mod_abi.md#abi
             abi: {
                 type: 'Contract',
                 value: HelloWallet.abi,
@@ -465,4 +465,4 @@ The tokens were sent, but soon they will come back because bounce = true and des
 
 You can find full source code of this sample here
 
-[https://github.com/tonlabs/sdk-samples/tree/master/demo/hello-wallet](https://github.com/tonlabs/sdk-samples/tree/master/demo/hello-wallet)
+[https://github.com/everx-labs/sdk-samples/tree/master/demo/hello-wallet](https://github.com/everx-labs/sdk-samples/tree/master/demo/hello-wallet)

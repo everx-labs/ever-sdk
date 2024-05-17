@@ -3,7 +3,7 @@ use crate::error::{ClientError, ClientResult};
 use crate::ClientContext;
 use std::convert::TryInto;
 use std::sync::Arc;
-use ton_abi::{Token, TokenValue};
+use ever_abi::{Token, TokenValue};
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiHandle(u32);
@@ -37,8 +37,8 @@ impl Abi {
         }
     }
 
-    pub fn abi(&self) -> ClientResult<ton_abi::Contract> {
-        ton_abi::Contract::load(self.json_string()?.as_bytes())
+    pub fn abi(&self) -> ClientResult<ever_abi::Contract> {
+        ever_abi::Contract::load(self.json_string()?.as_bytes())
             .map_err(|x| Error::invalid_json(x))
     }
 }
@@ -105,10 +105,10 @@ pub struct AbiParam {
     pub init: bool,
 }
 
-impl TryInto<ton_abi::Param> for AbiParam {
+impl TryInto<ever_abi::Param> for AbiParam {
     type Error = ClientError;
 
-    fn try_into(self) -> ClientResult<ton_abi::Param> {
+    fn try_into(self) -> ClientResult<ever_abi::Param> {
         serde_json::from_value(
             serde_json::to_value(&self)
                 .map_err(|err| Error::invalid_json(err))?

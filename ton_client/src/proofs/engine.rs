@@ -6,8 +6,8 @@ use std::sync::Arc;
 
 use failure::{bail, err_msg};
 use serde_json::Value;
-use ton_block::{BinTreeType, Block, Deserializable, InRefValue, ShardIdent, ShardStateUnsplit};
-use ton_types::{Result, UInt256};
+use ever_block::{BinTreeType, Block, Deserializable, InRefValue, ShardIdent, ShardStateUnsplit};
+use ever_block::{Result, UInt256};
 
 use crate::boc::internal::get_boc_hash;
 use crate::client::storage::{InMemoryKeyValueStorage, KeyValueStorage};
@@ -724,7 +724,7 @@ impl ProofHelperEngineImpl {
     }
 
     pub async fn check_shard_block(&self, boc: &[u8]) -> Result<()> {
-        let cell = ton_types::boc::read_single_root_boc(&boc)?;
+        let cell = ever_block::boc::read_single_root_boc(&boc)?;
         let root_hash = cell.repr_hash();
         let block = Block::construct_from_cell(cell)?;
 
@@ -748,7 +748,7 @@ impl ProofHelperEngineImpl {
                 let mc_boc = self.download_block_boc(
                     &mc_proof.id().root_hash().as_hex_string(),
                 ).await?;
-                let mc_cell = ton_types::boc::read_single_root_boc(&mc_boc)?;
+                let mc_cell = ever_block::boc::read_single_root_boc(&mc_boc)?;
 
                 if mc_cell.repr_hash() != *mc_proof.id().root_hash() {
                     bail!(
@@ -808,7 +808,7 @@ impl ProofHelperEngineImpl {
                 let mut last_prev_ref_seq_no = top_seq_no;
                 let mut last_prev_ref_root_hash = top_root_hash;
                 for boc in shard_chain.iter().rev() {
-                    let cell = ton_types::boc::read_single_root_boc(&boc)?;
+                    let cell = ever_block::boc::read_single_root_boc(&boc)?;
                     let root_hash = cell.repr_hash();
                     let block = Block::construct_from_cell(cell)?;
                     let info = block.read_info()?;

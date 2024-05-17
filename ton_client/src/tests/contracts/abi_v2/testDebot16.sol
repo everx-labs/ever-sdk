@@ -2,8 +2,8 @@ pragma ton-solidity >=0.51.0;
 pragma AbiHeader expire;
 pragma AbiHeader time;
 pragma AbiHeader pubkey;
-import "https://raw.githubusercontent.com/tonlabs/debots/main/Debot.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Base64/Base64.sol";
+import "https://raw.githubusercontent.com/everx-labs/debots/main/Debot.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/Base64/Base64.sol";
 
 contract TestDebot16 is Debot {
 

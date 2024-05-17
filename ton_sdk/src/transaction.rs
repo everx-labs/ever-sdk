@@ -17,11 +17,11 @@ use crate::types::grams_to_u64;
 use crate::types::StringId;
 use crate::{Message, MessageId};
 
-use ton_block::{
+use ever_block::{
     AccStatusChange, ComputeSkipReason, GetRepresentationHash, TrComputePhase,
     TransactionDescr, TransactionProcessingStatus,
 };
-use ton_types::Result;
+use ever_block::Result;
 
 use std::convert::TryFrom;
 
@@ -81,9 +81,9 @@ pub struct Transaction {
     pub total_fees: u64,
 }
 
-impl TryFrom<&ton_block::Transaction> for Transaction {
+impl TryFrom<&ever_block::Transaction> for Transaction {
     type Error = failure::Error;
-    fn try_from(transaction: &ton_block::Transaction) -> Result<Self> {
+    fn try_from(transaction: &ever_block::Transaction) -> Result<Self> {
         let descr = if let TransactionDescr::Ordinary(descr) = transaction.read_description()? {
             descr
         } else {
@@ -136,7 +136,11 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
             None
         };
 
-        let in_msg = transaction.in_msg.as_ref().map(|msg| msg.hash().into());
+        let in_msg = if transaction.in_msg.empty() {
+            None
+        } else {
+            Some(transaction.in_msg.hash().into())
+        };
         let mut out_msgs = vec![];
         transaction.out_msgs.iterate_slices(|slice| {
             if let Ok(cell) = slice.reference(0) {
@@ -146,7 +150,7 @@ impl TryFrom<&ton_block::Transaction> for Transaction {
         })?;
         let mut out_messages = vec![];
         transaction.out_msgs.iterate(|msg| {
-            out_messages.push(Message::with_msg(&msg.0)?);
+            out_messages.push(Message::with_msg(msg.0.get_std()?)?);
             Ok(true)
         })?;
 

@@ -6,7 +6,7 @@ use crate::message_monitor::{MessageMonitoringParams, MessageMonitoringResult};
 #[cfg(test)]
 pub use mock_sdk_services::MockSdkServices;
 use std::future::Future;
-use ton_types::Cell;
+use ever_block::Cell;
 
 pub struct NetSubscription(pub usize);
 

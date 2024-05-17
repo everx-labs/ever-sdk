@@ -25,7 +25,7 @@ use std::iter::FromIterator;
 #[allow(unused_imports)]
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, RwLock};
-use ton_types::{Cell, UInt256};
+use ever_block::{Cell, UInt256};
 
 pub const SHA256_SIZE: usize = 32;
 pub const DEPTH_SIZE: usize = 2;

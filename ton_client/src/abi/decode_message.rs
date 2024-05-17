@@ -6,10 +6,10 @@ use crate::client::ClientContext;
 use crate::error::ClientResult;
 use serde_json::Value;
 use std::sync::Arc;
-use ton_abi::contract::DecodedMessage;
-use ton_abi::token::Detokenizer;
+use ever_abi::contract::DecodedMessage;
+use ever_abi::token::Detokenizer;
 use ton_sdk::{AbiContract, AbiFunction, AbiEvent};
-use ton_types::SliceData;
+use ever_block::SliceData;
 
 use super::types::extend_data_to_sign;
 
@@ -69,7 +69,7 @@ impl DecodedMessageBody {
         body_type: MessageBodyType,
         decoded: DecodedMessage,
         header: Option<FunctionHeader>,
-    ) -> ton_types::Result<Self> {
+    ) -> ever_block::Result<Self> {
         let value = Detokenizer::detokenize_to_json_value(&decoded.tokens)?;
         Ok(Self {
             body_type,
@@ -115,9 +115,9 @@ pub fn decode_message(
     let (abi, message) = prepare_decode(&context, &params)?;
     if let Some(body) = message.body() {
         let data_layout = match message.header() {
-            ton_block::CommonMsgInfo::ExtInMsgInfo(_) => Some(DataLayout::Input),
-            ton_block::CommonMsgInfo::ExtOutMsgInfo(_) => Some(DataLayout::Output),
-            ton_block::CommonMsgInfo::IntMsgInfo(_) => params.data_layout,
+            ever_block::CommonMsgInfo::ExtInMsgInfo(_) => Some(DataLayout::Input),
+            ever_block::CommonMsgInfo::ExtOutMsgInfo(_) => Some(DataLayout::Output),
+            ever_block::CommonMsgInfo::IntMsgInfo(_) => params.data_layout,
         };
         decode_body(abi, body, message.is_internal(), params.allow_partial, params.function_name, data_layout)
     } else {
@@ -170,7 +170,7 @@ pub fn decode_message_body(
 fn prepare_decode(
     context: &ClientContext,
     params: &ParamsOfDecodeMessage,
-) -> ClientResult<(AbiContract, ton_block::Message)> {
+) -> ClientResult<(AbiContract, ever_block::Message)> {
     let abi = params.abi.abi()?;
     let message = deserialize_object_from_boc(context, &params.message, "message")
         .map_err(|x| Error::invalid_message_for_decode(x))?;
@@ -215,7 +215,7 @@ fn decode_unknown_function(
         let input = abi.decode_input(body.clone(), is_internal, allow_partial)
             .map_err(|err| Error::invalid_message_for_decode(err))?;
         let (header, _, _) =
-            ton_abi::Function::decode_header(abi.version(), body.clone(), abi.header(), is_internal)
+            ever_abi::Function::decode_header(abi.version(), body.clone(), abi.header(), is_internal)
                 .map_err(|err| {
                     Error::invalid_message_for_decode(format!(
                         "Can't decode function header: {}",
@@ -266,7 +266,7 @@ fn decode_with_function(
                 let decoded = function.decode_input(body.clone(), is_internal, allow_partial)
                     .map_err(|err| Error::invalid_message_for_decode(err))?;
                 let (header, _, _) =
-                    ton_abi::Function::decode_header(abi.version(), body.clone(), abi.header(), is_internal)
+                    ever_abi::Function::decode_header(abi.version(), body.clone(), abi.header(), is_internal)
                         .map_err(|err| Error::invalid_message_for_decode(err))?;
                 DecodedMessageBody::new(
                     MessageBodyType::Input,
@@ -357,7 +357,7 @@ pub async fn get_signature_data(
     params: ParamsOfGetSignatureData,
 ) -> ClientResult<ResultOfGetSignatureData> {
     let abi = params.abi.abi()?;
-    let message: ton_block::Message = deserialize_object_from_boc(&context, &params.message, "message")?.object;
+    let message: ever_block::Message = deserialize_object_from_boc(&context, &params.message, "message")?.object;
     if let Some(body) = message.body() {
         let address = message.dst()
             .ok_or_else(|| Error::invalid_message_for_decode(

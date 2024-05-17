@@ -2,12 +2,12 @@ pragma ton-solidity >=0.40.0;
 pragma AbiHeader expire;
 pragma AbiHeader time;
 pragma AbiHeader pubkey;
-import "https://raw.githubusercontent.com/tonlabs/tonos-cli/master/tests/samples/Debot.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Base64/Base64.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Hex/Hex.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
-import "https://raw.githubusercontent.com/tonlabs/DeBot-IS-consortium/main/SigningBoxInput/SigningBoxInput.sol";
+import "https://raw.githubusercontent.com/everx-labs/tonos-cli/master/tests/samples/Debot.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/Sdk/Sdk.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/Base64/Base64.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/Hex/Hex.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/Terminal/Terminal.sol";
+import "https://raw.githubusercontent.com/everx-labs/DeBot-IS-consortium/main/SigningBoxInput/SigningBoxInput.sol";
 
 // compiled with ton-solidity 0.47.0
 

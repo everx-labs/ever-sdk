@@ -15,8 +15,8 @@ use crate::boc::internal::deserialize_cell_from_base64;
 use crate::error::ClientError;
 use serde_json::Value;
 use std::fmt::Display;
-use ton_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
-use ton_types::{Cell, ExceptionCode};
+use ever_block::{AccStatusChange, ComputeSkipReason, MsgAddressInt};
+use ever_block::{Cell, ExceptionCode};
 
 #[derive(ApiType)]
 pub enum ErrorCode {

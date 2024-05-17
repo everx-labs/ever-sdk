@@ -3,7 +3,7 @@ use super::json_lib_utils::bypass_json;
 use crate::abi::Abi;
 use crate::debot::json_lib_utils::pack;
 use serde_json::Value as JsonValue;
-use ton_abi::{Contract, ParamType};
+use ever_abi::{Contract, ParamType};
 
 const ABI: &str = r#"
 {

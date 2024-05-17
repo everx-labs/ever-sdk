@@ -527,7 +527,7 @@ async fn subscribe_for_transactions_with_addresses() {
                 collection: "transactions".to_owned(),
                 filter: Some(json!({
                     "account_addr": { "eq": msg.address.clone() },
-                    "status": { "eq": ton_sdk::json_helper::transaction_status_to_u8(ton_block::TransactionProcessingStatus::Finalized) }
+                    "status": { "eq": ton_sdk::json_helper::transaction_status_to_u8(ever_block::TransactionProcessingStatus::Finalized) }
                 })),
                 result: "id account_addr status".to_owned(),
             },
@@ -586,7 +586,7 @@ async fn subscribe_for_transactions_with_addresses() {
                 collection: "transactions".to_owned(),
                 filter: Some(json!({
                     "account_addr": { "eq": msg.address.clone() },
-                    "status": { "eq": ton_sdk::json_helper::transaction_status_to_u8(ton_block::TransactionProcessingStatus::Finalized) }
+                    "status": { "eq": ton_sdk::json_helper::transaction_status_to_u8(ever_block::TransactionProcessingStatus::Finalized) }
                 })),
                 result: "id account_addr status".to_owned(),
             },
@@ -752,7 +752,7 @@ async fn find_last_shard_block() {
 // async fn test_endpoints() {
 //     let client = TestClient::new_with_config(json!({
 //         "network": {
-//             "endpoints": ["cinet.tonlabs.io", "cinet2.tonlabs.io/"],
+//             "endpoints": ["cinet.everx.dev", "cinet2.everx.dev/"],
 //         }
 //     }));
 

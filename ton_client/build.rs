@@ -69,7 +69,7 @@ impl BuildInfo {
             .iter()
             .filter(|x| {
                 let source = x["source"].as_str().unwrap_or("");
-                source.is_empty() || source.contains("tonlabs")
+                source.is_empty() || source.contains("everx-labs")
             })
             .map(|x| {
                 let name = x["name"].as_str().unwrap().to_string();

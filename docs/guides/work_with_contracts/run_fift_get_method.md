@@ -12,4 +12,4 @@ This is why we have a separate method for that in tvm module - [run_get](../../r
 
 Check this sample, demonstrating how to run get methods of elector contract:
 
-[https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/run_get/index.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/run_get/index.js)
+[https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/run_get/index.js](https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/run_get/index.js)

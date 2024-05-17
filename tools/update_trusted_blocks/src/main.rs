@@ -1,12 +1,10 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::env;
+use std::{collections::HashMap, env, str::FromStr, sync::Arc};
 
 use serde_json::json;
 use ton_client::ClientContext;
 use ton_client::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
 use ton_client::proofs::{ParamsOfProofBlockData, proof_block_data};
-use ton_types::{Result, UInt256};
+use ever_block::{Result, UInt256};
 
 fn with_project(endpoint: &str) -> String {
     let key = "EVERCLOUD_AUTH_PROJECT";
@@ -24,7 +22,7 @@ fn with_project(endpoint: &str) -> String {
 
 async fn query_network_keyblocks(
     endpoint: String,
-    zs_root_hash: UInt256,
+    zs_root_hash: &UInt256,
     trusted_blocks: Option<Vec<(u32, [u8; 32])>>,
 ) -> Result<Vec<(u32, [u8; 32])>> {
     println!("*** [{}] ***", endpoint);
@@ -135,8 +133,8 @@ async fn main() -> Result<()> {
         let endpoint = with_project(network).to_owned();
         let value = query_network_keyblocks(
             endpoint,
-            zs_root_hash,
-            trusted_key_blocks.remove(&zs_root_hash.inner()),
+            &zs_root_hash,
+            trusted_key_blocks.remove(zs_root_hash.as_slice()),
         ).await?;
         trusted_key_blocks.insert(zs_root_hash.inner(), value);
     }

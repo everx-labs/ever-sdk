@@ -2,7 +2,7 @@ use crate::boc::internal::{deserialize_cell_from_base64, serialize_cell_to_base6
 use serde_json::Value as JsonValue;
 use sha2::Digest;
 use std::collections::HashMap;
-use ton_abi::{contract::ABI_VERSION_2_0, token::Tokenizer, Param, ParamType, TokenValue};
+use ever_abi::{contract::ABI_VERSION_2_0, token::Tokenizer, Param, ParamType, TokenValue};
 
 use serde_repr::{Deserialize_repr, Serialize_repr};
 #[derive(Serialize_repr, Deserialize_repr)]

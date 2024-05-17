@@ -138,7 +138,7 @@
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">encoding</span>::{<span class="ident">account_decode</span>, <span class="ident">account_encode_ex</span>, <span class="ident">AccountAddressType</span>, <span class="ident">Base64AddressParams</span>, <span class="ident">decode_std_base64</span>};
 <span class="kw">use</span> <span class="kw">crate</span>::<span class="ident">error</span>::<span class="ident">ClientResult</span>;
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">sync</span>::<span class="ident">Arc</span>;
-<span class="kw">use</span> <span class="ident">ton_block</span>::<span class="ident">MsgAddressInt</span>;
+<span class="kw">use</span> <span class="ident">ever_block</span>::<span class="ident">MsgAddressInt</span>;
 
 <span class="kw">use</span> <span class="ident">std</span>::<span class="ident">str</span>::<span class="ident">FromStr</span>;
 
@@ -235,7 +235,7 @@
 
 <span class="attribute">#[<span class="ident">cfg</span>(<span class="ident">test</span>)]</span>
 <span class="kw">pub</span> <span class="kw">fn</span> <span class="ident">abi_uint</span>(<span class="ident">n</span>: <span class="ident">u128</span>, <span class="ident">size</span>: <span class="ident">usize</span>) <span class="op">-</span><span class="op">&gt;</span> <span class="ident">serde_json</span>::<span class="ident">Value</span> {
-    <span class="ident">serde_json</span>::<span class="ident">to_value</span>(<span class="ident">ton_abi</span>::<span class="ident">TokenValue</span>::<span class="ident">Uint</span>(<span class="ident">ton_abi</span>::<span class="ident">Uint</span>::<span class="ident">new</span>(<span class="ident">n</span>, <span class="ident">size</span>)))
+    <span class="ident">serde_json</span>::<span class="ident">to_value</span>(<span class="ident">ever_abi</span>::<span class="ident">TokenValue</span>::<span class="ident">Uint</span>(<span class="ident">ever_abi</span>::<span class="ident">Uint</span>::<span class="ident">new</span>(<span class="ident">n</span>, <span class="ident">size</span>)))
         .<span class="ident">unwrap_or</span>(<span class="ident">Default</span>::<span class="ident">default</span>())
 }
 </pre></div>

@@ -11,7 +11,7 @@ use ton_client_processing::{
     MessageMonitoringStatus, MessageMonitoringTransaction, MessageMonitoringTransactionCompute,
     MonitoredMessage, NetSubscription,
 };
-use ton_types::Cell;
+use ever_block::Cell;
 
 pub(crate) struct SdkServices {
     net: Arc<NetworkContext>,

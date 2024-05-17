@@ -1,5 +1,5 @@
 {
-  "version": "1.45.1",
+  "version": "1.46.1",
   "modules": [
     {
       "name": "client",
@@ -7655,7 +7655,7 @@
         {
           "name": "decode_boc",
           "summary": "Decodes BOC into JSON as a set of provided parameters.",
-          "description": "Solidity functions use ABI types for [builder encoding](https://github.com/tonlabs/TON-Solidity-Compiler/blob/master/API.md#tvmbuilderstore).\nThe simplest way to decode such a BOC is to use ABI decoding.\nABI has it own rules for fields layout in cells so manually encoded\nBOC can not be described in terms of ABI rules.\n\nTo solve this problem we introduce a new ABI type `Ref(<ParamType>)`\nwhich allows to store `ParamType` ABI parameter in cell reference and, thus,\ndecode manually encoded BOCs. This type is available only in `decode_boc` function\nand will not be available in ABI messages encoding until it is included into some ABI revision.\n\nSuch BOC descriptions covers most users needs. If someone wants to decode some BOC which\ncan not be described by these rules (i.e. BOC with TLB containing constructors of flags\ndefining some parsing conditions) then they can decode the fields up to fork condition,\ncheck the parsed data manually, expand the parsing schema and then decode the whole BOC\nwith the full schema.",
+          "description": "Solidity functions use ABI types for [builder encoding](https://github.com/everx-labs/TON-Solidity-Compiler/blob/master/API.md#tvmbuilderstore).\nThe simplest way to decode such a BOC is to use ABI decoding.\nABI has it own rules for fields layout in cells so manually encoded\nBOC can not be described in terms of ABI rules.\n\nTo solve this problem we introduce a new ABI type `Ref(<ParamType>)`\nwhich allows to store `ParamType` ABI parameter in cell reference and, thus,\ndecode manually encoded BOCs. This type is available only in `decode_boc` function\nand will not be available in ABI messages encoding until it is included into some ABI revision.\n\nSuch BOC descriptions covers most users needs. If someone wants to decode some BOC which\ncan not be described by these rules (i.e. BOC with TLB containing constructors of flags\ndefining some parsing conditions) then they can decode the fields up to fork condition,\ncheck the parsed data manually, expand the parsing schema and then decode the whole BOC\nwith the full schema.",
           "params": [
             {
               "name": "context",
@@ -8784,7 +8784,7 @@
       "functions": [
         {
           "name": "decode_tvc",
-          "summary": "Decodes tvc according to the tvc spec. Read more about tvc structure here https://github.com/tonlabs/ever-struct/blob/main/src/scheme/mod.rs#L30",
+          "summary": "Decodes tvc according to the tvc spec. Read more about tvc structure here https://github.com/everx-labs/ever-struct/blob/main/src/scheme/mod.rs#L30",
           "description": null,
           "params": [
             {

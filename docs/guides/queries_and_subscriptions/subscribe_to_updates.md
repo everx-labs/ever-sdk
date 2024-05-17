@@ -63,4 +63,4 @@ const messageSubscription = await TonClient.default.net.subscribe_collection({
 
 See this sample to understand how to use [subscribe\_collection](../../reference/types-and-methods/mod\_net.md#subscribe\_collection) function:
 
-[https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/listen-and-decode](https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/listen-and-decode)
+[https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/listen-and-decode](https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/listen-and-decode)

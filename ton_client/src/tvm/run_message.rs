@@ -27,12 +27,12 @@ use crate::{abi::Abi, boc::BocCacheType};
 use serde_json::Value;
 use std::convert::TryFrom;
 use std::sync::{atomic::AtomicU64, Arc};
-use ton_block::{Account, CurrencyCollection, Message, MsgAddressInt, Serializable, Transaction};
-use ton_executor::{
+use ever_block::{Account, CurrencyCollection, Message, MsgAddressInt, Serializable, Transaction};
+use ever_executor::{
     ExecuteParams, ExecutorError, OrdinaryTransactionExecutor, TransactionExecutor,
 };
 use ton_sdk::TransactionFees;
-use ton_types::{Cell, UInt256};
+use ever_block::{Cell, UInt256};
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
 #[serde(tag = "type")]
@@ -405,6 +405,7 @@ where
         signature_id: options.signature_id,
         ..ExecuteParams::default()
     };
+    let msg = ever_block::CommonMessage::Std(msg);
     let transaction =
         match executor.execute_with_libs_and_params(Some(&msg), &mut account_root, params) {
             Ok(transaction) => transaction,

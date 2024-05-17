@@ -13,7 +13,7 @@
 
 use num_traits::cast::ToPrimitive;
 use std::fmt;
-use ton_types::{Result, UInt256};
+use ever_block::{Result, UInt256};
 
 use crate::error::SdkError;
 
@@ -69,7 +69,7 @@ impl StringId {
     }
 }
 
-pub fn grams_to_u64(grams: &ton_block::types::Grams) -> Result<u64> {
+pub fn grams_to_u64(grams: &ever_block::types::Grams) -> Result<u64> {
     grams.as_u128().to_u64().ok_or_else(|| {
         SdkError::InvalidData {
             msg: format!("Cannot convert grams value {}", grams),

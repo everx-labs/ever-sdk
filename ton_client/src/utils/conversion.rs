@@ -16,7 +16,7 @@ use crate::client::ClientContext;
 use crate::encoding::{account_decode, account_encode_ex, AccountAddressType, Base64AddressParams, decode_std_base64};
 use crate::error::ClientResult;
 use std::sync::Arc;
-use ton_block::MsgAddressInt;
+use ever_block::MsgAddressInt;
 
 use std::str::FromStr;
 
@@ -113,6 +113,6 @@ pub fn get_address_type(
 
 #[cfg(test)]
 pub fn abi_uint(n: u128, size: usize) -> serde_json::Value {
-    serde_json::to_value(ton_abi::TokenValue::Uint(ton_abi::Uint::new(n, size)))
+    serde_json::to_value(ever_abi::TokenValue::Uint(ever_abi::Uint::new(n, size)))
         .unwrap_or(Default::default())
 }

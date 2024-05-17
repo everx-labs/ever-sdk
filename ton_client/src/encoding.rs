@@ -19,8 +19,8 @@ use crate::error::ClientResult;
 use std::str::FromStr;
 use num_bigint::BigInt;
 use num_traits::cast::NumCast;
-use ton_block::MsgAddressInt;
-use ton_types::{Cell, SliceData};
+use ever_block::MsgAddressInt;
+use ever_block::{Cell, SliceData};
 
 //------------------------------------------------------------------------------------------------------
 

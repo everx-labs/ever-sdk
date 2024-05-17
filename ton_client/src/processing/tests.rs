@@ -18,7 +18,7 @@ use crate::tvm::{AccountForExecutor, ParamsOfRunExecutor, ResultOfRunExecutor};
 use crate::utils::conversion::abi_uint;
 use api_info::ApiModule;
 use ever_struct::scheme::TVC;
-use ton_block::{Serializable, StateInit};
+use ever_block::{Serializable, StateInit};
 
 fn processing_event_name(e: Option<&ProcessingEvent>) -> &str {
     if let Some(e) = e {
@@ -47,6 +47,7 @@ fn processing_event_name(e: Option<&ProcessingEvent>) -> &str {
 fn assert_events(events: &[ProcessingEvent], remp_enabled: bool) {
     let expected = if remp_enabled {
         return;
+/*
         &[
             "WillFetchFirstBlock",
             "WillSend",
@@ -59,6 +60,7 @@ fn assert_events(events: &[ProcessingEvent], remp_enabled: bool) {
             "RempIncludedIntoAcceptedBlock*",
             "RempOther*",
         ][..]
+*/
     } else {
         &[
             "WillFetchFirstBlock",

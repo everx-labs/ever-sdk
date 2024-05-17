@@ -14,7 +14,7 @@
 use crate::boc::Error;
 use crate::client::ClientContext;
 use crate::error::ClientResult;
-use ton_block::Serializable;
+use ever_block::Serializable;
 use super::internal::deserialize_object_from_boc;
 
 #[derive(Serialize, Deserialize, Clone, ApiType, Default)]
@@ -36,11 +36,11 @@ pub fn get_blockchain_config(
     params: ParamsOfGetBlockchainConfig,
 ) -> ClientResult<ResultOfGetBlockchainConfig> {
     let config = if let Ok(block) =
-        deserialize_object_from_boc::<ton_block::Block>(&context, &params.block_boc, "block")
+        deserialize_object_from_boc::<ever_block::Block>(&context, &params.block_boc, "block")
     {
         extract_config_from_block(&block.object)?
     } else {
-        let zerostate = deserialize_object_from_boc::<ton_block::ShardStateUnsplit>(
+        let zerostate = deserialize_object_from_boc::<ever_block::ShardStateUnsplit>(
             &context, &params.block_boc, "zerostate"
         )?;
         extract_config_from_zerostate(&zerostate.object)?
@@ -49,7 +49,7 @@ pub fn get_blockchain_config(
     let cell = config.serialize()
         .map_err(|err| Error::serialization_error(err, "config to cells"))?;
 
-    let bytes = ton_types::boc::write_boc(&cell)
+    let bytes = ever_block::boc::write_boc(&cell)
         .map_err(|err| Error::serialization_error(err, "config cells to bytes"))?;
 
     Ok(ResultOfGetBlockchainConfig {
@@ -57,7 +57,7 @@ pub fn get_blockchain_config(
     })
 }
 
-pub(crate) fn extract_config_from_block(block: &ton_block::Block) -> ClientResult<ton_block::ConfigParams> {
+pub(crate) fn extract_config_from_block(block: &ever_block::Block) -> ClientResult<ever_block::ConfigParams> {
     let extra = block
         .read_extra()
         .map_err(|err| Error::invalid_boc(format!("can not read `extra` from block: {}", err)))?;
@@ -74,7 +74,7 @@ pub(crate) fn extract_config_from_block(block: &ton_block::Block) -> ClientResul
     ))?.clone())
 }
 
-pub(crate) fn extract_config_from_zerostate(zerostate: &ton_block::ShardStateUnsplit) -> ClientResult<ton_block::ConfigParams> {
+pub(crate) fn extract_config_from_zerostate(zerostate: &ever_block::ShardStateUnsplit) -> ClientResult<ever_block::ConfigParams> {
     let master = zerostate
         .read_custom()
         .map_err(|err| Error::invalid_boc(format!("can not read `master` from zerostate: {}", err)))?

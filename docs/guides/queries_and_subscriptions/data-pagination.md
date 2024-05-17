@@ -15,4 +15,4 @@ Read about each entity type pagination API:
 
 Look at the sample how to implement these entities pagination with JS SDK:
 
-{% embed url="https://github.com/tonlabs/sdk-samples/tree/master/core-examples/node-js/pagination" %}
+{% embed url="https://github.com/everx-labs/sdk-samples/tree/master/core-examples/node-js/pagination" %}

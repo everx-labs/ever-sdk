@@ -1,6 +1,6 @@
 use crate::{error, MessageMonitorSdkServices};
 use serde_json::Value;
-use ton_types::Cell;
+use ever_block::Cell;
 
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize, ApiType)]
 #[serde(tag = "type")]

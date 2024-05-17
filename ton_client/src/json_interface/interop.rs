@@ -27,7 +27,7 @@ pub type ContextHandle = u32;
 
 /// Response types, handled by the response handlers of the library.
 ///
-/// See the full description here https://github.com/tonlabs/ever-sdk/blob/master/docs/for-binding-developers/json_interface.md#responses
+/// See the full description here https://github.com/everx-labs/ever-sdk/blob/master/docs/for-binding-developers/json_interface.md#responses
 /// In case of `subscribe` and `subscribe_collection` functions
 /// there are only 2 types of ResponseType: 100 - OK, 101 - Error
 pub enum ResponseType {

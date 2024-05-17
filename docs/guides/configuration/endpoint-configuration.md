@@ -22,7 +22,7 @@ network: {
 
 ### Local node&#x20;
 
-If you want to work with [local blockchain Evernode-SE](https://github.com/tonlabs/evernode-se), specify [http://localhost](http://localhost) in the `endpoints`
+If you want to work with [local blockchain Evernode-SE](https://github.com/everx-labs/evernode-se), specify [http://localhost](http://localhost) in the `endpoints`
 
 ```javascript
 const client = new TonClient({

@@ -18,7 +18,7 @@ Find out how to deploy a contract to Everscale Blockchain with SDK
 
 > [See the API reference](../../reference/types-and-methods/modules.md).
 
-Core api is more flexible than [AppKit](https://github.com/tonlabs/ever-appkit-js), and you can perform a lot of complex logic using it. But you will need to write more code with it as well:)
+Core api is more flexible than [AppKit](https://github.com/everx-labs/ever-appkit-js), and you can perform a lot of complex logic using it. But you will need to write more code with it as well:)
 
 You need to define the contract in your node.js application before deploy.
 
@@ -131,7 +131,7 @@ const abi = {
 const helloKeys = await client.crypto.generate_random_sign_keys();
 
 // Prepare parameters for deploy message encoding
-// See more info about `encode_message` method parameters here https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_abi.md#encode_message
+// See more info about `encode_message` method parameters here https://github.com/everx-labs/ever-sdk/blob/master/docs/mod_abi.md#encode_message
 const deployOptions = {
     abi,
     deploy_set: {
@@ -190,7 +190,7 @@ Method \`process\_message performs all the deploy steps sequentially in one meth
 ```javascript
 // Deploy `hello` contract
 // See more info about `process_message` here  
-// https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_processing.md#process_message
+// https://github.com/everx-labs/ever-sdk/blob/master/docs/mod_processing.md#process_message
 await client.processing.process_message({
     send_events: false,
     message_encode_params: deployOptions
@@ -201,7 +201,7 @@ console.log(`Hello contract was deployed at address: ${address}`);
 
 See the full example in sdk samples repository:
 
-[https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js)
+[https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js](https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index.js)
 
 Check out how to run contract's methods in the next [section](run\_onchain.md).
 
@@ -213,7 +213,7 @@ To deploy a contract, first you need to create a deploy message that will includ
 
 ```javascript
 // Prepare parameters for deploy message encoding
-// See more info about `encode_message` method parameters here https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_abi.md#encode_message
+// See more info about `encode_message` method parameters here https://github.com/everx-labs/ever-sdk/blob/master/docs/mod_abi.md#encode_message
 const deployOptions = {
     abi: {
         type: 'Contract',
@@ -246,7 +246,7 @@ Now the message should be sent. `send_message` method returns the the last block
 ```javascript
 // Send deploy message to the network
 // See more info about `send_message` here  
-// https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_processing.md#send_message
+// https://github.com/everx-labs/ever-sdk/blob/master/docs/mod_processing.md#send_message
 var shard_block_id;
 shard_block_id = (await client.processing.send_message({
     message: encode_deploy_result.message,
@@ -261,7 +261,7 @@ After the message was sent we need to wait for the transaction:
 ```javascript
 // Monitor message delivery. 
 // See more info about `wait_for_transaction` here  
-// https://github.com/tonlabs/ever-sdk/blob/master/docs/mod_processing.md#wait_for_transaction
+// https://github.com/everx-labs/ever-sdk/blob/master/docs/mod_processing.md#wait_for_transaction
 const deploy_processing_result = await client.processing.wait_for_transaction({
   abi: {
         type: 'Contract',
@@ -281,7 +281,7 @@ If `wait_for_transaction` fails with 507 error - you can perform a retry. In all
 
 See the full example in sdk samples repository:
 
-[https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index\_pattern2.js](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index\_pattern2.js)
+[https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index\_pattern2.js](https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/index\_pattern2.js)
 
 Check out how to run contract's methods in the next [section](run\_onchain.md).
 
@@ -300,6 +300,6 @@ You can get it several ways:
 
 ## Sample Source Code
 
-Full sample: [https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/](https://github.com/tonlabs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/)
+Full sample: [https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/](https://github.com/everx-labs/sdk-samples/blob/master/core-examples/node-js/hello-wallet/)
 
 Check out [AppKit documentation](https://docs.everos.dev/appkit-js/guides/deploy) for this use case.

@@ -20,10 +20,10 @@ extern crate api_info;
 #[macro_use]
 extern crate api_derive;
 
-pub use ton_abi::json_abi;
-pub use ton_abi::Contract as AbiContract;
-pub use ton_abi::Function as AbiFunction;
-pub use ton_abi::Event as AbiEvent;
+pub use ever_abi::json_abi;
+pub use ever_abi::Contract as AbiContract;
+pub use ever_abi::Function as AbiFunction;
+pub use ever_abi::Event as AbiEvent;
 
 mod error;
 pub use error::SdkError;

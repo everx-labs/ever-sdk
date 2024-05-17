@@ -13,7 +13,7 @@
 
 use super::errors::Error;
 use crate::error::ClientResult;
-use ton_block::AccStatusChange;
+use ever_block::AccStatusChange;
 use ton_sdk::Transaction;
 
 pub(crate) async fn calc_transaction_fees<F>(
@@ -24,7 +24,7 @@ pub(crate) async fn calc_transaction_fees<F>(
     show_tips_on_error: bool,
 ) -> ClientResult<ton_sdk::TransactionFees>
 where
-    F: futures::Future<Output = ClientResult<(ton_block::MsgAddressInt, u64)>>,
+    F: futures::Future<Output = ClientResult<(ever_block::MsgAddressInt, u64)>>,
 {
     if !transaction.is_aborted() || skip_check {
         return Ok(transaction.calc_fees());
@@ -48,7 +48,7 @@ pub(crate) async fn extract_error<F>(
     show_tips: bool,
 ) -> ClientResult<()>
 where
-    F: futures::Future<Output = ClientResult<(ton_block::MsgAddressInt, u64)>>,
+    F: futures::Future<Output = ClientResult<(ever_block::MsgAddressInt, u64)>>,
 {
     if let Some(storage) = &transaction.storage {
         if storage.status_change != AccStatusChange::Unchanged {
