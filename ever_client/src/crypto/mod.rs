@@ -71,7 +71,7 @@ pub use crate::crypto::keys::{
     ResultOfConvertPublicKeyToTonSafeFormat, ResultOfSign, ResultOfVerifySignature,
 };
 pub use crate::crypto::math::{
-    factorize, generate_random_bytes, modular_power, ton_crc16, ParamsOfFactorize,
+    factorize, generate_random_bytes, modular_power, ton_crc16, ton_crc16_from_raw_data, ParamsOfFactorize,
     ParamsOfGenerateRandomBytes, ParamsOfModularPower, ParamsOfTonCrc16, ResultOfFactorize,
     ResultOfGenerateRandomBytes, ResultOfModularPower, ResultOfTonCrc16,
 };

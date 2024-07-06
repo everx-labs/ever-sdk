@@ -33,6 +33,7 @@ use ever_executor::{
 };
 use ever_sdk::TransactionFees;
 use ever_block::{Cell, UInt256};
+use ever_vm::stack::StackItem;
 
 #[derive(Serialize, Deserialize, ApiType, Debug, Clone)]
 #[serde(tag = "type")]
@@ -381,6 +382,36 @@ pub async fn run_tvm(
         account,
         decoded,
     })
+}
+
+/// Executes get-methods of ABI-compatible contracts
+///
+/// Performs only a part of compute phase of transaction execution
+/// that is used to run get-methods of ABI-compatible contracts.
+///
+/// If you try to run get-methods with `run_executor` you will get an error, because it checks ACCEPT and exits
+/// if there is none, which is actually true for get-methods.
+///
+///  To get the account BOC (bag of cells) - use `net.query` method to download it from GraphQL API
+/// (field `boc` of `account`) or generate it with `abi.encode_account method`.
+/// To get the message BOC - use `abi.encode_message` or prepare it any other way, for instance, with FIFT script.
+///
+/// Attention! Updated account state is produces as well, but only
+/// `account_state.storage.state.data`  part of the BOC is updated.
+#[api_function]
+pub async fn run_solidity_getter(
+    context: Arc<ClientContext>,
+    params: ParamsOfRunTvm,
+    stack_items: Vec<StackItem>
+) -> ClientResult<Vec<StackItem>> {
+    let mut account = deserialize_object_from_boc::<Account>(&context, &params.account, "account")?;
+    let options =
+        ResolvedExecutionOptions::from_options(&context, params.execution_options).await?;
+    if account.object.is_none() {
+        return Err(Error::invalid_account_boc("Account is None"));
+    }
+
+    Ok(super::call_tvm::call_tvm_msg_getter(&mut account.object, options, stack_items)?)
 }
 
 async fn call_executor<F>(

@@ -1,9 +1,21 @@
-use crate::abi::Error;
-use crate::error::{ClientError, ClientResult};
-use crate::ClientContext;
 use std::convert::TryInto;
 use std::sync::Arc;
-use ever_abi::{Token, TokenValue};
+
+use ever_abi::{Param, ParamType, Token, TokenValue};
+use ever_abi::contract::AbiVersion;
+use ever_abi::token::{Cursor, Detokenizer};
+use ever_block::{HashmapE, HashmapType, Serializable, SliceData, fail, BuilderData};
+use ever_block::Result;
+use ever_vm::int;
+use ever_vm::stack::integer::IntegerData;
+use ever_vm::stack::integer::serialization::{UnsignedIntegerBigEndianEncoding, SignedIntegerBigEndianEncoding};
+use ever_vm::stack::StackItem;
+use num_bigint::{BigInt};
+use ever_block::IBitstring;
+
+use crate::abi::Error;
+use crate::ClientContext;
+use crate::error::{ClientError, ClientResult};
 
 #[derive(Serialize, Deserialize, Clone, Debug, ApiType, Default)]
 pub struct AbiHandle(u32);
@@ -138,7 +150,7 @@ pub struct FunctionHeader {
 
     /// Public key is used by the contract to check the signature.
     ///
-    /// Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header)..
+    /// Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header).
     pub pubkey: Option<String>,
 }
 
@@ -214,5 +226,221 @@ pub(crate) async fn extend_data_to_sign(
         }
     } else {
         Ok(None)
+    }
+}
+
+pub struct TokenValueToStackItem;
+
+impl TokenValueToStackItem {
+
+    fn hashmap_e_to_stack_item(hashmap_e: HashmapE) -> StackItem {
+        if let Some(cell) = hashmap_e.data() {
+            return StackItem::Cell(cell.clone());
+        }
+        return StackItem::None;
+    }
+
+    pub fn convert_token_to_vm_type(token_value: TokenValue, abi_version: &AbiVersion) -> Result<StackItem> {
+        Ok(match token_value {
+            TokenValue::Uint(v) => int!(v.number),
+            TokenValue::Int(v) => int!(v.number),
+            TokenValue::VarInt(_, v) => int!(v),
+            TokenValue::VarUint(_, v) => int!(v),
+            TokenValue::Bool(v) => ever_vm::boolean!(v),
+            TokenValue::Tuple(values) => {
+                let mut res: Vec<StackItem> = vec![];
+                for token in values {
+                    let item = Self::convert_token_to_vm_type(token.value, abi_version)?;
+                    res.push(item);
+                }
+                StackItem::Tuple(Arc::new(res))
+            }
+            TokenValue::Array(param_type, token_values) => {
+                let hashmap_e = TokenValue::put_array_into_dictionary(&param_type, &token_values, abi_version)?;
+                let cell = Self::hashmap_e_to_stack_item(hashmap_e);
+                let size = int!(token_values.len());
+                let res: Vec<StackItem> = vec![size, cell];
+                StackItem::Tuple(Arc::new(res))
+            }
+            TokenValue::FixedArray(_, _) => fail!("Not supported"),
+            TokenValue::Cell(v) => StackItem::Cell(v),
+            TokenValue::Map(key_type, value_type, values) => {
+                let hashmap_e = TokenValue::map_token_to_hashmap_e(&key_type, &value_type, &values, abi_version)?;
+                Self::hashmap_e_to_stack_item(hashmap_e)
+            }
+            TokenValue::Address(addr)
+            | TokenValue::AddressStd(addr) => {
+                let cell = addr.serialize().unwrap();
+                let slice :SliceData = SliceData::load_cell(cell).unwrap();
+                StackItem::Slice(slice)
+            }
+            TokenValue::Bytes(bytes) =>
+                StackItem::Cell(TokenValue::bytes_to_cells(bytes.as_ref(), abi_version)?),
+            TokenValue::FixedBytes(bytes) => {
+                let mut num = BigInt::ZERO;
+                for b in bytes {
+                    num = (num << 8) + b;
+                }
+                int!(num)
+            }
+            TokenValue::String(str) =>
+                StackItem::Cell(TokenValue::bytes_to_cells(str.as_bytes(), abi_version)?),
+            TokenValue::Token(_) => fail!("Not supported"),
+            TokenValue::Time(_) => fail!("Not supported"),
+            TokenValue::Expire(_) => fail!("Not supported"),
+            TokenValue::PublicKey(_) => fail!("Not supported"),
+            TokenValue::Optional(_, token_value) => {
+                if let Some(value) = token_value {
+                    let is_opt_or_map = match *value {
+                        TokenValue::Optional(_, _) => true,
+                        TokenValue::Map(_, _, _) => true,
+                        _ => false
+                    };
+                    let res = Self::convert_token_to_vm_type(*value, abi_version)?;
+                    if is_opt_or_map {
+                        StackItem::Tuple(Arc::new(vec![res]))
+                    } else {
+                        res
+                    }
+                } else {
+                    StackItem::None
+                }
+            }
+            TokenValue::Ref(_) => fail!("Not supported"),
+        })
+    }
+}
+
+pub struct StackItemToJson;
+
+impl StackItemToJson {
+
+    fn cell_to_slice(stack_item: &StackItem) -> Result<SliceData> {
+        let StackItem::Cell(x) = stack_item else { fail!("Unexpected vm item") };
+        Ok(SliceData::load_builder(x.write_to_new_cell()?)?)
+    }
+
+    fn int_to_slice(stack_item: &StackItem, size: usize, is_sign: bool) -> Result<SliceData> {
+        let StackItem::Integer(x) = stack_item else { fail!("Unexpected vm item") };
+        Ok(
+            if is_sign {
+                x.as_slice::<SignedIntegerBigEndianEncoding>(size)?
+            } else {
+                x.as_slice::<UnsignedIntegerBigEndianEncoding>(size)?
+            }
+        )
+    }
+
+    fn tuple_to_token(items: &[StackItem], params: &[Param], abi_version: &AbiVersion) -> Result<Vec<Token>> {
+        let mut tokens = vec![];
+        for i in 0..items.len() {
+            let x = &Self::stack_item_to_token(&items[i], &params[i], abi_version)?;
+            tokens.push(x.clone());
+        }
+        Ok(tokens)
+    }
+
+    fn dict_to_builder(item: &StackItem) -> Result<BuilderData> {
+        let mut builder = BuilderData::new();
+        if let StackItem::Cell(cell) = item {
+            builder.append_bit_one()?;
+            builder.checked_append_reference(cell.clone())?;
+        } else if let StackItem::None = item {
+            builder.append_bit_zero()?;
+        } else {
+            fail!("Unexpected vm item")
+        }
+        Ok(builder)
+    }
+
+    fn stack_item_to_token(stack_item: &StackItem, param: &Param, abi_version: &AbiVersion) -> Result<Token> {
+        let slice = match &param.kind {
+            ParamType::Uint(size) => Self::int_to_slice(stack_item, *size, false)?,
+            ParamType::Int(size) => Self::int_to_slice(stack_item, *size, true)?,
+            ParamType::VarUint(size) => {
+                let StackItem::Integer(x) = stack_item else { fail!("Unexpected vm item") };
+                let num = x.take_value_of(|num| Some(num.clone()))?
+                    .to_biguint()
+                    .unwrap();
+                SliceData::load_builder(TokenValue::write_varuint(&num, *size)?)?
+            }
+            ParamType::VarInt(size) => {
+                let StackItem::Integer(x) = stack_item else { fail!("Unexpected vm item") };
+                let num = x.take_value_of(|num| Some(num.clone()))?;
+                SliceData::load_builder(TokenValue::write_varint(&num, *size)?)?
+            }
+            ParamType::Bool => Self::int_to_slice(stack_item, 1, true)?,
+            ParamType::Tuple(params) => {
+                let StackItem::Tuple(items) = stack_item else { fail!("Unexpected vm item") };
+                let tokens = Self::tuple_to_token(items, params, abi_version)?;
+                let token_value = TokenValue::Tuple(tokens);
+                return Ok(Token { name: param.name.to_string(), value: token_value });
+            },
+            ParamType::Array(_) => {
+                let StackItem::Tuple(items) = stack_item else { fail!("Unexpected vm item") };
+                assert_eq!(items.len(), 2);
+                let len = Self::int_to_slice(&items[0], 32, false)?;
+                let dict = Self::dict_to_builder(&items[1])?;
+                let mut builder = BuilderData::new();
+                builder.checked_append_references_and_data(&len)?;
+                builder.append_builder(&dict)?;
+                SliceData::load_builder(builder)?
+            }
+            ParamType::FixedArray(_, _) => fail!("Not supported"),
+            ParamType::Cell => {
+                let StackItem::Cell(cell) = stack_item else { fail!("Unexpected vm item") };
+                SliceData::load_builder(cell.write_to_new_cell()?)?
+            }
+            ParamType::Map(_, _) => {
+                SliceData::load_builder(Self::dict_to_builder(stack_item)?)?
+            }
+            ParamType::Address | ParamType::AddressStd => {
+                let StackItem::Slice(slice) = stack_item else { fail!("Unexpected vm item") };
+                slice.clone()
+            }
+            ParamType::Bytes => Self::cell_to_slice(stack_item)?,
+            ParamType::FixedBytes(size) => Self::int_to_slice(stack_item, 8 * *size, false)?,
+            ParamType::String => Self::cell_to_slice(stack_item)?,
+            ParamType::Token => fail!("Not supported"),
+            ParamType::Time => fail!("Not supported"),
+            ParamType::Expire => fail!("Not supported"),
+            ParamType::PublicKey => fail!("Not supported"),
+            ParamType::Optional(underlying) => {
+                let underlying_token_value = if let StackItem::None = stack_item {
+                    TokenValue::Optional(*underlying.clone(), None)
+                } else {
+                    let mut is_opt  = false;
+                    let mut is_map  = false;
+                    match **underlying {
+                        ParamType::Optional(_) => is_opt = true,
+                        ParamType::Map(_, _) => is_map = true,
+                        _ => { }
+                    };
+                    let underlying_param = Param{name: "unnamed".to_string(), kind: *underlying.clone()};
+                    if is_opt || is_map {
+                        let StackItem::Tuple(tuple) = stack_item else { fail!("Unexpected vm item") };
+                        Self::stack_item_to_token(&tuple[0], &underlying_param, abi_version)?
+                    } else {
+                        Self::stack_item_to_token(stack_item, &underlying_param, abi_version)?
+                    }.value
+                };
+                return Ok(Token { name: param.name.to_string(), value: underlying_token_value });
+            }
+            ParamType::Ref(_) => fail!("Not supported"),
+        };
+        let (token_value, _cursor) = TokenValue::read_from(
+            &param.kind,
+            Cursor{used_bits: 0, used_refs:0, slice},
+            true,
+            abi_version,
+            false
+        )?;
+        Ok(Token { name: param.name.to_string(), value: token_value })
+    }
+
+    pub fn convert_vm_items_to_json(stack_items: &[StackItem], params: &[Param], abi_version: &AbiVersion) -> Result<serde_json::Value> {
+        assert_eq!(stack_items.len(), params.len());
+        let tokens : Vec<Token> = Self::tuple_to_token(stack_items, params, abi_version)?;
+        Ok(Detokenizer::detokenize_to_json_value(tokens.as_slice())?)
     }
 }

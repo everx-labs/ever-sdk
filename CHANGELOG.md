@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.48.0]
+
+### New
+
+- Updated project dependencies
+- Supported `abi::types::TokenValueToStackItem` and `abi::types::StackItemToJson` structures for conversions.
+- Supported `crypto::ton_crc16_from_raw_data`. 
+- Fixed `ever_client::boc::get_salt_and_ver` function. 
+
 ## [1.47.0] – 2024-07-12
 
 ### New
