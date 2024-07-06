@@ -219,6 +219,13 @@ pub fn ton_crc16(
     })
 }
 
+#[api_function]
+pub fn ton_crc16_from_raw_data(
+    raw_data: Vec<u8>
+) -> u16 {
+    crypto::internal::ton_crc16(&raw_data)
+}
+
 //--------------------------------------------------------------------------- generate_random_bytes
 
 #[derive(Serialize, Deserialize, ApiType, Default)]

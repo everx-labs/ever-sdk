@@ -60,6 +60,7 @@ pub use init_data::{
 pub use signing::Signer;
 pub use types::{
     Abi, AbiContract, AbiData, AbiEvent, AbiFunction, AbiHandle, AbiParam, FunctionHeader,
+    TokenValueToStackItem, StackItemToJson
 };
 
 pub fn default_workchain() -> i32 {

@@ -1,10 +1,5 @@
 [workspace]
 exclude = [ 'examples/rust' ]
-members = [
-    'ever_sdk',
-    'ever_client',
-    'ever_client_processing',
-    'evercli',
-    'api/test',
-    'tools/update_trusted_blocks'
-]
+members = [ 'ever_sdk', 'ever_client', 'ever_client_processing', 'evercli', 'api/test', 'tools/update_trusted_blocks' ]
+
+

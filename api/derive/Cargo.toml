@@ -2,14 +2,15 @@
 authors = [ 'EverX Labs Ltd <support@everx.dev>' ]
 edition = '2018'
 name = 'api_derive'
-version = '1.47.0'
+version = '1.48.0'
 
 [dependencies]
+proc-macro2 = '1.0.52'
 quote = '1.0.26'
 serde_json = '1.0.57'
-api_info = { path = '../info' }
 syn = { features = [ 'full' ], version = '1.0.109' }
-proc-macro2 = "1.0.52"
+api_info = { path = '../info' }
 
 [lib]
 proc-macro = true
+

@@ -223,27 +223,7 @@ impl HDPrivateKey {
     }
 
     fn map_secp_error(error: libsecp256k1::Error) -> ClientError {
-        match error {
-            libsecp256k1::Error::InvalidSignature => {
-                crypto::Error::bip32_invalid_key("InvalidSignature")
-            }
-            libsecp256k1::Error::InvalidPublicKey => {
-                crypto::Error::bip32_invalid_key("InvalidPublicKey")
-            }
-            libsecp256k1::Error::InvalidSecretKey => {
-                crypto::Error::bip32_invalid_key("InvalidSecretKey")
-            }
-            libsecp256k1::Error::InvalidRecoveryId => {
-                crypto::Error::bip32_invalid_key("InvalidRecoveryId")
-            }
-            libsecp256k1::Error::InvalidMessage => crypto::Error::bip32_invalid_key("InvalidMessage"),
-            libsecp256k1::Error::InvalidInputLength => {
-                crypto::Error::bip32_invalid_key("InvalidInputLength")
-            }
-            libsecp256k1::Error::TweakOutOfRange => {
-                crypto::Error::bip32_invalid_key("TweakOutOfRange")
-            }
-        }
+        crypto::Error::bip32_invalid_key(format!("{}", error))
     }
 
     pub(crate) fn derive(
