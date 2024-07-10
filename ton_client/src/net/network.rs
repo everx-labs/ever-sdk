@@ -7,7 +7,7 @@ use crate::net::{
     ServerLink,
 };
 use crate::{client, net};
-use failure::bail;
+use anyhow::bail;
 use futures::FutureExt;
 use futures::StreamExt;
 use rand::RngCore;

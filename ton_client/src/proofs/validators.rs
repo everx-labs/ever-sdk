@@ -3,7 +3,7 @@ use std::convert::TryInto;
 use std::fmt::{Display, Formatter};
 
 // use ed25519_dalek::Digest;
-use failure::bail;
+use anyhow::bail;
 use sha2::Digest;
 use ever_block::{
     CatchainConfig, ConfigParams, UnixTime32, ValidatorDescr, ValidatorSet, WorkchainDescr,

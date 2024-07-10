@@ -1,15 +1,15 @@
 [package]
-authors = [ 'TON Labs LTD <support@everx.dev>' ]
+authors = [ 'EverX Labs Ltd <support@everx.dev>' ]
 description = 'TON CLient Command Line Tool'
 documentation = 'https://docs.ton.dev'
 edition = '2018'
 homepage = 'https://ton.dev'
-keywords = [ 'TON', 'SDK', 'smart contract', 'everx-labs' ]
+keywords = [ 'TVM', 'SDK', 'smart-contract', 'everx-labs' ]
 license = 'Apache-2.0'
 name = 'toncli'
 readme = 'README.md'
 repository = 'https://github.com/everx-labs/ever-sdk'
-version = '1.46.1'
+version = '1.46.2'
 
 [dependencies]
 base64 = '0.13.0'

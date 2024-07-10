@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use failure::bail;
+use anyhow::bail;
 use graphql_parser::schema::{Definition, ObjectType, Type, TypeDefinition};
 use serde_json::Value;
 use ever_block::{

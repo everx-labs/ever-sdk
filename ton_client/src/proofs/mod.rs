@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use failure::{bail, err_msg};
+use anyhow::{bail, format_err};
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 use ever_block::{
@@ -555,7 +555,7 @@ impl BlockProof {
     pub fn deserialize(data: &[u8]) -> Result<Self> {
         let proof = ever_block::BlockProof::construct_from_bytes(data)?;
         let signatures = proof.signatures
-            .ok_or_else(|| err_msg("Signatures must be filled"))?;
+            .ok_or_else(|| format_err!("Signatures must be filled"))?;
 
         let mut pure_signatures = Vec::new();
         ever_block::HashmapType::iterate_slices(signatures.pure_signatures.signatures(),
@@ -831,7 +831,7 @@ impl BlockProof {
             .read_extra()?
             .read_custom()?
             .and_then(|custom| custom.config().cloned())
-            .ok_or_else(|| err_msg("State doesn't contain `custom` field"))?;
+            .ok_or_else(|| format_err!("State doesn't contain `custom` field"))?;
         calc_subset_for_workchain(
             &validator_set,
             &config,
@@ -912,7 +912,7 @@ impl BlockProof {
 
         let (cur_validator_set, cc_config) = zerostate.read_cur_validator_set_and_cc_conf()?;
         let mc_state_extra = zerostate.read_custom()?
-            .ok_or_else(|| err_msg("Can't read custom field from the zerostate"))?;
+            .ok_or_else(|| format_err!("Can't read custom field from the zerostate"))?;
 
         let (validators, hash_short) = calc_subset_for_workchain(
             &cur_validator_set,

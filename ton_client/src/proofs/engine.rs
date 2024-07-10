@@ -4,7 +4,7 @@ use std::ops::Range;
 use std::str::FromStr;
 use std::sync::Arc;
 
-use failure::{bail, err_msg};
+use anyhow::{bail, format_err};
 use serde_json::Value;
 use ever_block::{BinTreeType, Block, Deserializable, InRefValue, ShardIdent, ShardStateUnsplit};
 use ever_block::{Result, UInt256};
@@ -574,7 +574,7 @@ impl ProofHelperEngineImpl {
             last_proof = Some(proof);
         }
 
-        last_proof.ok_or_else(|| err_msg("Empty proof chain"))
+        last_proof.ok_or_else(|| format_err!("Empty proof chain"))
     }
 
     pub(crate) fn extract_top_shard_block(
@@ -583,7 +583,7 @@ impl ProofHelperEngineImpl {
     ) -> Result<(u32, UInt256)> {
         let extra = mc_block.read_extra()?;
         let mc_extra = extra.read_custom()?
-            .ok_or_else(|| err_msg("Unable to read McBlockExtra"))?;
+            .ok_or_else(|| format_err!("Unable to read McBlockExtra"))?;
 
         let mut result = None;
         if let Some(InRefValue(bin_tree)) = mc_extra.shards().get(&shard.workchain_id())? {
@@ -598,7 +598,7 @@ impl ProofHelperEngineImpl {
         }
 
         result.ok_or_else(
-            || err_msg(format!("Top block for the given shard ({}) not found", shard))
+            || format_err!(format!("Top block for the given shard ({}) not found", shard))
         )
     }
 
@@ -731,7 +731,7 @@ impl ProofHelperEngineImpl {
         let info = block.info.read_struct()?;
 
         let master_ref = info.read_master_ref()?
-            .ok_or_else(|| err_msg("Unable to read master_ref of block"))?;
+            .ok_or_else(|| format_err!("Unable to read master_ref of block"))?;
 
         let mut first_mc_seq_no = master_ref.master.seq_no;
         loop {

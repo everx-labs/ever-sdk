@@ -1,7 +1,7 @@
 [package]
 name = 'ton_client_processing'
-version = '1.46.1'
-authors = [ 'TON Labs LTD <support@everx.dev>' ]
+version = '1.46.2'
+authors = [ 'EverX Labs Ltd <support@everx.dev>' ]
 edition = '2018'
 license = 'Apache-2.0'
 
@@ -10,7 +10,7 @@ name = 'ton_client_processing'
 crate-type = [ 'cdylib', 'rlib', 'staticlib' ]
 
 [dependencies]
-ever_block = { git = 'https://github.com/everx-labs/ever-block.git', tag = '1.10.4' }
+ever_block = { git = 'https://github.com/everx-labs/ever-block.git', tag = '1.11.1' }
 
 api_derive = { path = '../api/derive' }
 api_info = { path = '../api/info' }
