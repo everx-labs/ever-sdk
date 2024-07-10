@@ -1,9 +1,9 @@
 use std::{collections::HashMap, env, str::FromStr, sync::Arc};
 
 use serde_json::json;
-use ton_client::ClientContext;
-use ton_client::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
-use ton_client::proofs::{ParamsOfProofBlockData, proof_block_data};
+use ever_client::ClientContext;
+use ever_client::net::{OrderBy, ParamsOfQueryCollection, query_collection, SortDirection};
+use ever_client::proofs::{ParamsOfProofBlockData, proof_block_data};
 use ever_block::{Result, UInt256};
 
 fn with_project(endpoint: &str) -> String {

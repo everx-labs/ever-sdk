@@ -1365,7 +1365,7 @@ from Graphql API.
 - `contracts.run.local` and `contracts.run.local` functions now have `fullRun` flag to emulate
   node transaction processing and calculate fees
 - `tonsdk` command line tool.
-- `ton_client` function `get_method_names`.
+- `ever_client` function `get_method_names`.
 
 ## May 22, 2020
 

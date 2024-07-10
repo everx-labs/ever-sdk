@@ -844,6 +844,91 @@ dependencies = [
 ]
 
 [[package]]
+name = "ever_client"
+version = "1.46.2"
+dependencies = [
+ "aes",
+ "anyhow",
+ "api_derive",
+ "api_info",
+ "async-trait",
+ "base58",
+ "base64 0.10.1",
+ "bincode",
+ "block-modes",
+ "byteorder",
+ "chacha20",
+ "chrono",
+ "crc 3.2.1",
+ "dirs 2.0.2",
+ "ed25519-dalek",
+ "ever-struct",
+ "ever_abi",
+ "ever_block",
+ "ever_block_json",
+ "ever_client_processing",
+ "ever_executor",
+ "ever_sdk",
+ "ever_vm",
+ "futures",
+ "graphql-parser",
+ "hex 0.3.2",
+ "hmac 0.11.0",
+ "home",
+ "indexed_db_futures",
+ "js-sys",
+ "lazy_static",
+ "libsecp256k1",
+ "lockfree",
+ "log",
+ "log4rs",
+ "lru",
+ "num-bigint",
+ "num-derive 0.3.3",
+ "num-traits",
+ "pbkdf2 0.8.0",
+ "pretty_assertions",
+ "rand 0.7.3",
+ "regex",
+ "reqwest",
+ "scrypt",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_repr",
+ "sha2 0.9.9",
+ "sodalite",
+ "thiserror",
+ "tiny-bip39",
+ "tokio",
+ "tokio-stream",
+ "tokio-tungstenite",
+ "wasm-bindgen",
+ "wasm-bindgen-futures",
+ "web-sys",
+ "zeroize",
+ "zstd",
+]
+
+[[package]]
+name = "ever_client_processing"
+version = "1.46.2"
+dependencies = [
+ "api_derive",
+ "api_info",
+ "async-trait",
+ "base64 0.21.7",
+ "ever_block",
+ "futures",
+ "log",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "serde_repr",
+ "tokio",
+]
+
+[[package]]
 name = "ever_executor"
 version = "1.18.2"
 source = "git+https://github.com/everx-labs/ever-executor.git?tag=1.18.2#0f32b284785b0f00a1438bb0263e04fb5b396359"
@@ -853,6 +938,29 @@ dependencies = [
  "ever_vm",
  "lazy_static",
  "log",
+ "thiserror",
+]
+
+[[package]]
+name = "ever_sdk"
+version = "1.46.2"
+dependencies = [
+ "anyhow",
+ "api_derive",
+ "api_info",
+ "base64 0.10.1",
+ "chrono",
+ "ever_abi",
+ "ever_block",
+ "hex 0.3.2",
+ "lazy_static",
+ "log",
+ "num-bigint",
+ "num-traits",
+ "serde",
+ "serde_derive",
+ "serde_json",
+ "sha2 0.9.9",
  "thiserror",
 ]
 
@@ -872,6 +980,23 @@ dependencies = [
  "similar",
  "thiserror",
  "zstd",
+]
+
+[[package]]
+name = "evercli"
+version = "1.46.2"
+dependencies = [
+ "api_info",
+ "assert_cmd",
+ "base64 0.13.1",
+ "dirs 3.0.2",
+ "ever_client",
+ "json5",
+ "predicates 1.0.8",
+ "regex",
+ "serde",
+ "serde_derive",
+ "serde_json",
 ]
 
 [[package]]
@@ -2905,114 +3030,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ton_client"
-version = "1.46.2"
-dependencies = [
- "aes",
- "anyhow",
- "api_derive",
- "api_info",
- "async-trait",
- "base58",
- "base64 0.10.1",
- "bincode",
- "block-modes",
- "byteorder",
- "chacha20",
- "chrono",
- "crc 3.2.1",
- "dirs 2.0.2",
- "ed25519-dalek",
- "ever-struct",
- "ever_abi",
- "ever_block",
- "ever_block_json",
- "ever_executor",
- "ever_vm",
- "futures",
- "graphql-parser",
- "hex 0.3.2",
- "hmac 0.11.0",
- "home",
- "indexed_db_futures",
- "js-sys",
- "lazy_static",
- "libsecp256k1",
- "lockfree",
- "log",
- "log4rs",
- "lru",
- "num-bigint",
- "num-derive 0.3.3",
- "num-traits",
- "pbkdf2 0.8.0",
- "pretty_assertions",
- "rand 0.7.3",
- "regex",
- "reqwest",
- "scrypt",
- "serde",
- "serde_derive",
- "serde_json",
- "serde_repr",
- "sha2 0.9.9",
- "sodalite",
- "thiserror",
- "tiny-bip39",
- "tokio",
- "tokio-stream",
- "tokio-tungstenite",
- "ton_client_processing",
- "ton_sdk",
- "wasm-bindgen",
- "wasm-bindgen-futures",
- "web-sys",
- "zeroize",
- "zstd",
-]
-
-[[package]]
-name = "ton_client_processing"
-version = "1.46.2"
-dependencies = [
- "api_derive",
- "api_info",
- "async-trait",
- "base64 0.21.7",
- "ever_block",
- "futures",
- "log",
- "serde",
- "serde_derive",
- "serde_json",
- "serde_repr",
- "tokio",
-]
-
-[[package]]
-name = "ton_sdk"
-version = "1.46.2"
-dependencies = [
- "anyhow",
- "api_derive",
- "api_info",
- "base64 0.10.1",
- "chrono",
- "ever_abi",
- "ever_block",
- "hex 0.3.2",
- "lazy_static",
- "log",
- "num-bigint",
- "num-traits",
- "serde",
- "serde_derive",
- "serde_json",
- "sha2 0.9.9",
- "thiserror",
-]
-
-[[package]]
 name = "ton_tl_codegen"
 version = "0.1.0"
 source = "git+https://github.com/everx-labs/ever-tl.git?tag=0.4.2#60920237cadad90f4d123db741b0c765fc030a84"
@@ -3024,23 +3041,6 @@ dependencies = [
  "serde",
  "serde_derive",
  "syn 1.0.109",
-]
-
-[[package]]
-name = "toncli"
-version = "1.46.2"
-dependencies = [
- "api_info",
- "assert_cmd",
- "base64 0.13.1",
- "dirs 3.0.2",
- "json5",
- "predicates 1.0.8",
- "regex",
- "serde",
- "serde_derive",
- "serde_json",
- "ton_client",
 ]
 
 [[package]]
@@ -3181,11 +3181,11 @@ dependencies = [
  "anyhow",
  "bincode",
  "ever_block",
+ "ever_client",
  "serde",
  "serde_derive",
  "serde_json",
  "tokio",
- "ton_client",
 ]
 
 [[package]]

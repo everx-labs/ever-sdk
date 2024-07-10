@@ -1,3 +1,3 @@
 (function() {var implementors = {};
-implementors["ton_client"] = [{"text":"impl Fail for <a class=\"enum\" href=\"ton_client/tvm/enum.StdContractError.html\" title=\"enum ton_client::tvm::StdContractError\">StdContractError</a>","synthetic":false,"types":["ton_client::tvm::errors::StdContractError"]}];
+implementors["ever_client"] = [{"text":"impl Fail for <a class=\"enum\" href=\"ever_client/tvm/enum.StdContractError.html\" title=\"enum ever_client::tvm::StdContractError\">StdContractError</a>","synthetic":false,"types":["ever_client::tvm::errors::StdContractError"]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()
