@@ -2,7 +2,7 @@
 authors = [ 'EverX Labs Ltd <support@everx.dev>' ]
 edition = '2018'
 name = 'api_derive'
-version = '1.46.2'
+version = '1.47.0'
 
 [dependencies]
 quote = '1.0.26'

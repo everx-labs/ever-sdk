@@ -1,6 +1,6 @@
 [package]
 name = 'ever_client_processing'
-version = '1.46.2'
+version = '1.47.0'
 authors = [ 'EverX Labs Ltd <support@everx.dev>' ]
 edition = '2018'
 license = 'Apache-2.0'
