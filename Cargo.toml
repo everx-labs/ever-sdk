@@ -1,10 +1,10 @@
 [workspace]
 exclude = [ 'examples/rust' ]
 members = [
-    'ton_sdk',
-    'ton_client',
-    'ton_client_processing',
-    'toncli',
+    'ever_sdk',
+    'ever_client',
+    'ever_client_processing',
+    'evercli',
     'api/test',
     'tools/update_trusted_blocks'
 ]

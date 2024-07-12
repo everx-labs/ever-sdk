@@ -1,8 +1,8 @@
 [package]
-authors = [ 'TON Labs LTD <support@everx.dev>' ]
+authors = [ 'EverX Labs Ltd <support@everx.dev>' ]
 edition = '2018'
 name = 'api_info'
-version = '1.46.1'
+version = '1.47.0'
 
 [dependencies]
 serde = '1.0.115'

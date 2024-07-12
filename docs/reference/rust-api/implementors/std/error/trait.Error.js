@@ -1,3 +1,3 @@
 (function() {var implementors = {};
-implementors["ton_client"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/std/error/trait.Error.html\" title=\"trait std::error::Error\">Error</a> for <a class=\"struct\" href=\"ton_client/error/struct.ClientError.html\" title=\"struct ton_client::error::ClientError\">ClientError</a>","synthetic":false,"types":["ton_client::error::ClientError"]}];
+implementors["ever_client"] = [{"text":"impl <a class=\"trait\" href=\"https://doc.rust-lang.org/nightly/std/error/trait.Error.html\" title=\"trait std::error::Error\">Error</a> for <a class=\"struct\" href=\"ever_client/error/struct.ClientError.html\" title=\"struct ever_client::error::ClientError\">ClientError</a>","synthetic":false,"types":["ever_client::error::ClientError"]}];
 if (window.register_implementors) {window.register_implementors(implementors);} else {window.pending_implementors = implementors;}})()

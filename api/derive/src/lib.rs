@@ -36,7 +36,7 @@ pub fn include_build_info(_input: TokenStream) -> TokenStream {
     let content = match std::fs::read_to_string(
         std::env::current_dir()
             .unwrap()
-            .join("ton_client/src/build_info.json"),
+            .join("ever_client/src/build_info.json"),
     ) {
         Err(_e) => return quote!("").into(),
         Ok(content) => content,

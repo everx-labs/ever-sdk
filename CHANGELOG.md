@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.47.0] – 2024-07-12
+
+### New
+
+- Updated project dependencies
+
+- Some project folders were renamed in accordance with the rebranding:
+  - ton_client -> ever_client
+  - ton_client_processing -> ever_client_processing
+  - ton_sdk -> ever_sdk
+  - toncli -> evercli
+
+- Removed create `failure`, now we use `anyhow` and `thiserror` creates
+
 ## [1.46.1] – 2024-05-16
 
 ### New
@@ -1365,7 +1379,7 @@ from Graphql API.
 - `contracts.run.local` and `contracts.run.local` functions now have `fullRun` flag to emulate
   node transaction processing and calculate fees
 - `tonsdk` command line tool.
-- `ton_client` function `get_method_names`.
+- `ever_client` function `get_method_names`.
 
 ## May 22, 2020
 

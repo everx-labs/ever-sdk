@@ -5,7 +5,7 @@ key-blocks are hashes of known key-blocks of known networks. TON SDK uses these 
 
 Each downloaded block is being proven by SDK using already known trusted key-blocks hashes.
 
-Utility saves downloaded block hashes into a [binary file](../../ton_client/src/proofs/trusted_key_blocks.bin). This 
+Utility saves downloaded block hashes into a [binary file](../../ever_client/src/proofs/trusted_key_blocks.bin). This 
 file is being compiled into the final SDK binary.
 
 If file already exists, it will be appended with the new key-blocks.
