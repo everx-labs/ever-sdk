@@ -25,3 +25,4 @@ ever_client = { path = '../ever_client' }
 [dev-dependencies]
 assert_cmd = '1.0.1'
 predicates = '1.0.5'
+
