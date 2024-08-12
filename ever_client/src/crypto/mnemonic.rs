@@ -272,7 +272,9 @@ pub trait CryptoMnemonic {
     ) -> ClientResult<KeyPair>;
     fn phrase_from_entropy(&self, entropy: &[u8]) -> ClientResult<String>;
     fn is_phrase_valid(&self, phrase: &String) -> ClientResult<bool>;
+    #[allow(dead_code)]
     fn seed_from_phrase_and_salt(&self, phrase: &String, salt: &String) -> ClientResult<String>;
+    #[allow(dead_code)]
     fn entropy_from_phrase(&self, phrase: &String) -> ClientResult<String>;
 }
 

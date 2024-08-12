@@ -25,34 +25,35 @@ use ever_vm::{
     stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem},
 };
 
-use ever_vm::executor::EngineTraceInfo;
-use ever_vm::executor::EngineTraceInfoType;
 
-fn trace_callback(_engine: &Engine, info: &EngineTraceInfo, extended: bool) {
-    if info.info_type == EngineTraceInfoType::Dump {
-        println!("{}", info.cmd_str);
-        return
-    }
-    println!("{}: {}",
-             info.step,
-             info.cmd_str
-    );
-    if extended {
-        println!("{} {}",
-             info.cmd_code.remaining_bits(),
-             info.cmd_code.to_hex_string()
-        );
-    }
-    println!("\nGas: {} ({})",
-             info.gas_used,
-             info.gas_cmd
-    );
-    println!("\n--- Stack trace ------------------------");
-    for item in info.stack.iter() {
-        println!("{}", item);
-    }
-    println!("----------------------------------------\n");
-}
+// for debugging getters
+// use ever_vm::executor::EngineTraceInfo;
+// use ever_vm::executor::EngineTraceInfoType;
+// fn trace_callback(_engine: &Engine, info: &EngineTraceInfo, extended: bool) {
+//     if info.info_type == EngineTraceInfoType::Dump {
+//         println!("{}", info.cmd_str);
+//         return
+//     }
+//     println!("{}: {}",
+//              info.step,
+//              info.cmd_str
+//     );
+//     if extended {
+//         println!("{} {}",
+//              info.cmd_code.remaining_bits(),
+//              info.cmd_code.to_hex_string()
+//         );
+//     }
+//     println!("\nGas: {} ({})",
+//              info.gas_used,
+//              info.gas_cmd
+//     );
+//     println!("\n--- Stack trace ------------------------");
+//     for item in info.stack.iter() {
+//         println!("{}", item);
+//     }
+//     println!("----------------------------------------\n");
+// }
 
 pub(crate) fn call_tvm(
     account: &mut Account,
