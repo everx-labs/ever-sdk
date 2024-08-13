@@ -26,7 +26,7 @@ mod tests;
 pub use errors::{Error, ErrorCode, StdContractError};
 pub use run_get::{run_get, ParamsOfRunGet, ResultOfRunGet};
 pub use run_message::{
-    run_executor, run_tvm, AccountForExecutor, ParamsOfRunExecutor, ParamsOfRunTvm,
+    run_executor, run_tvm, run_solidity_getter, AccountForExecutor, ParamsOfRunExecutor, ParamsOfRunTvm,
     ResultOfRunExecutor, ResultOfRunTvm,
 };
 pub(crate) use run_message::run_executor_internal;

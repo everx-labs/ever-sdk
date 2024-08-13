@@ -25,6 +25,36 @@ use ever_vm::{
     stack::{integer::IntegerData, savelist::SaveList, Stack, StackItem},
 };
 
+
+// for debugging getters
+// use ever_vm::executor::EngineTraceInfo;
+// use ever_vm::executor::EngineTraceInfoType;
+// fn trace_callback(_engine: &Engine, info: &EngineTraceInfo, extended: bool) {
+//     if info.info_type == EngineTraceInfoType::Dump {
+//         println!("{}", info.cmd_str);
+//         return
+//     }
+//     println!("{}: {}",
+//              info.step,
+//              info.cmd_str
+//     );
+//     if extended {
+//         println!("{} {}",
+//              info.cmd_code.remaining_bits(),
+//              info.cmd_code.to_hex_string()
+//         );
+//     }
+//     println!("\nGas: {} ({})",
+//              info.gas_used,
+//              info.gas_cmd
+//     );
+//     println!("\n--- Stack trace ------------------------");
+//     for item in info.stack.iter() {
+//         println!("{}", item);
+//     }
+//     println!("----------------------------------------\n");
+// }
+
 pub(crate) fn call_tvm(
     account: &mut Account,
     options: ResolvedExecutionOptions,
@@ -75,6 +105,7 @@ pub(crate) fn call_tvm(
 
     engine.set_signature_id(options.signature_id);
     engine.modify_behavior(options.behavior_modifiers);
+    // engine.set_trace_callback(move |engine, info| { trace_callback(engine, info, true); });
 
     match engine.execute() {
         Err(err) => {
@@ -154,6 +185,27 @@ pub(crate) fn call_tvm_msg(
 
     msgs.reverse();
     Ok(msgs)
+}
+
+// For solidity
+pub(crate) fn call_tvm_msg_getter(
+    account: &mut Account,
+    options: ResolvedExecutionOptions,
+    stack_items: Vec<StackItem>
+) -> ClientResult<Vec<StackItem>> {
+
+    let mut stack = Stack::new();
+    for x in stack_items {
+        stack.push(x);
+    }
+
+    let engine = call_tvm(account, options, stack)?;
+
+    let mut items = vec![];
+    for item in engine.stack().iter() {
+        items.push(item.clone());
+    }
+    Ok(items)
 }
 
 fn build_contract_info(

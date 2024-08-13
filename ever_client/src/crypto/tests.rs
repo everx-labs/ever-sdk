@@ -455,7 +455,7 @@ fn mnemonic() {
         .unwrap();
     assert_eq!(result.words.split(" ").count(), 2048);
 
-    for dictionary in 1..9 {
+    for dictionary in 0..9 {
         for word_count in &[12u8, 15, 18, 21, 24] {
             let result: ResultOfMnemonicFromRandom = client
                 .request(
@@ -485,7 +485,7 @@ fn mnemonic() {
         "abandon math mimic master filter design carbon crystal rookie group knife young"
     );
 
-    for dictionary in 1..9 {
+    for dictionary in 0..9 {
         for word_count in &[12u8, 15, 18, 21, 24] {
             let result: ResultOfMnemonicFromRandom = client
                 .request(

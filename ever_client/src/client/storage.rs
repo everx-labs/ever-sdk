@@ -21,6 +21,7 @@ pub trait KeyValueStorage: Send + Sync {
     async fn put_str(&self, key: &str, value: &str) -> ClientResult<()>;
 
     /// Remove value by a given key
+    #[allow(dead_code)]
     async fn remove(&self, key: &str) -> ClientResult<()>;
 }
 
