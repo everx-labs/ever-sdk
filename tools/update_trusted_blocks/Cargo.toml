@@ -10,6 +10,6 @@ serde = '1.0.130'
 serde_derive = '1.0.130'
 serde_json = '1.0.68'
 tokio = { default-features = false, features = [ 'sync', 'fs' ], version = '1' }
-ever_block = { git = 'https://github.com/everx-labs/ever-block.git', tag = '1.11.11' }
+ever_block = { git = 'https://github.com/everx-labs/ever-block.git', tag = '1.11.20' }
 ever_client = { path = '../../ever_client' }
 
