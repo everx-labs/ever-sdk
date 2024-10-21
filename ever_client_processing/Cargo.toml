@@ -3,7 +3,7 @@ authors = [ 'EverX Labs Ltd <support@everx.dev>' ]
 edition = '2018'
 license = 'Apache-2.0'
 name = 'ever_client_processing'
-version = '1.48.0'
+version = '1.48.1'
 
 [dependencies]
 async-trait = '0.1.40'
