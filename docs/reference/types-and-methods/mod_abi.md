@@ -1024,7 +1024,7 @@ type FunctionHeader = {
 - `time`?: _bigint_ – Message creation time in milliseconds.
 <br>If not specified, `now` is used (if ABI includes `time` header).
 - `pubkey`?: _string_ – Public key is used by the contract to check the signature.
-<br>Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header)..
+<br>Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header).
 
 
 ## CallSet
