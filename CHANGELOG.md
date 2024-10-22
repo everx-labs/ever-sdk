@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [1.48.1]
+
+### New
+
+- Updated project dependencies
+- Use universal binaries for darwin
+
 ## [1.48.0]
 
 ### New

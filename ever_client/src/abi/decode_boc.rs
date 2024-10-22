@@ -31,7 +31,7 @@ pub struct ResultOfDecodeBoc {
 
 /// Decodes BOC into JSON as a set of provided parameters.
 ///
-/// Solidity functions use ABI types for [builder encoding](https://github.com/everx-labs/TON-Solidity-Compiler/blob/master/API.md#tvmbuilderstore).
+/// Solidity functions use ABI types for [builder encoding](https://github.com/everx-labs/TVM-Solidity-Compiler/blob/master/API.md#tvmbuilderstore).
 /// The simplest way to decode such a BOC is to use ABI decoding.
 /// ABI has it own rules for fields layout in cells so manually encoded
 /// BOC can not be described in terms of ABI rules.

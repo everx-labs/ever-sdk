@@ -27,7 +27,7 @@ You can find error codes with descriptions on this page
 
 ## Solidity Runtime Errors
 
-[https://github.com/everx-labs/TON-Solidity-Compiler/blob/master/API.md#solidity-runtime-errors](https://github.com/everx-labs/TON-Solidity-Compiler/blob/master/API.md#solidity-runtime-errors)
+[https://github.com/everx-labs/TVM-Solidity-Compiler/blob/master/API.md#solidity-runtime-errors](https://github.com/everx-labs/TVM-Solidity-Compiler/blob/master/API.md#solidity-runtime-errors)
 
 ## TON Virtual Machine Runtime Errors
 

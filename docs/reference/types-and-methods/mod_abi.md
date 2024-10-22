@@ -724,7 +724,7 @@ NOTE: Sync version is available only for `lib-node` binding.
 
 Decodes BOC into JSON as a set of provided parameters.
 
-Solidity functions use ABI types for [builder encoding](https://github.com/everx-labs/TON-Solidity-Compiler/blob/master/API.md#tvmbuilderstore).
+Solidity functions use ABI types for [builder encoding](https://github.com/everx-labs/TVM-Solidity-Compiler/blob/master/API.md#tvmbuilderstore).
 The simplest way to decode such a BOC is to use ABI decoding.
 ABI has it own rules for fields layout in cells so manually encoded
 BOC can not be described in terms of ABI rules.
@@ -1024,7 +1024,7 @@ type FunctionHeader = {
 - `time`?: _bigint_ – Message creation time in milliseconds.
 <br>If not specified, `now` is used (if ABI includes `time` header).
 - `pubkey`?: _string_ – Public key is used by the contract to check the signature.
-<br>Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header)..
+<br>Encoded in `hex`. If not specified, method fails with exception (if ABI includes `pubkey` header).
 
 
 ## CallSet
