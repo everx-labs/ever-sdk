@@ -4,7 +4,7 @@ build = 'build.rs'
 edition = '2018'
 license = 'Apache-2.0'
 name = 'ever_client'
-version = '1.48.0'
+version = '1.48.1'
 
 [dependencies]
 aes = '0.7.4'
@@ -54,14 +54,14 @@ zeroize = { features = [ 'zeroize_derive' ], version = '1.3' }
 zstd = { default-features = false, optional = true, version = '0.11.0' }
 api_derive = { path = '../api/derive' }
 api_info = { path = '../api/info' }
-ever-struct = { git = 'https://github.com/everx-labs/ever-struct.git', tag = '1.1.12' }
-ever_abi = { git = 'https://github.com/everx-labs/ever-abi.git', tag = '2.7.2' }
-ever_block = { git = 'https://github.com/everx-labs/ever-block.git', tag = '1.11.11' }
-ever_block_json = { git = 'https://github.com/everx-labs/ever-block-json.git', tag = '0.9.18' }
+ever-struct = { git = 'https://github.com/everx-labs/ever-struct.git', tag = '1.1.21' }
+ever_abi = { git = 'https://github.com/everx-labs/ever-abi.git', tag = '2.7.11' }
+ever_block = { git = 'https://github.com/everx-labs/ever-block.git', tag = '1.11.20' }
+ever_block_json = { git = 'https://github.com/everx-labs/ever-block-json.git', tag = '0.9.37' }
 ever_client_processing = { default-features = false, path = '../ever_client_processing' }
-ever_executor = { features = [ 'signature_with_id' ], git = 'https://github.com/everx-labs/ever-executor.git', tag = '1.18.12' }
+ever_executor = { features = [ 'signature_with_id' ], git = 'https://github.com/everx-labs/ever-executor.git', tag = '1.18.22' }
 ever_sdk = { default-features = false, path = '../ever_sdk' }
-ever_vm = { features = [ 'signature_with_id', 'signature_no_check' ], git = 'https://github.com/everx-labs/ever-vm.git', tag = '2.2.12' }
+ever_vm = { features = [ 'signature_with_id', 'signature_no_check' ], git = 'https://github.com/everx-labs/ever-vm.git', tag = '2.2.21' }
 lockfree = { git = 'https://github.com/everx-labs/lockfree.git', package = 'lockfree' }
 sodalite = { features = [ 'rand' ], git = 'https://github.com/everx-labs/sodalite.git' }
 
@@ -90,5 +90,4 @@ wasm-base = [ 'chrono/wasmbind', 'indexed_db_futures', 'js-sys', 'rand/wasm-bind
 [lib]
 crate-type = [ 'cdylib', 'rlib', 'staticlib' ]
 name = 'ever_client'
-
 
