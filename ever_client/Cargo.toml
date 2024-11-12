@@ -55,7 +55,7 @@ zstd = { default-features = false, optional = true, version = '0.11.0' }
 api_derive = { path = '../api/derive' }
 api_info = { path = '../api/info' }
 ever-struct = { git = 'https://github.com/everx-labs/ever-struct.git', tag = '1.1.21' }
-ever_abi = { git = 'https://github.com/everx-labs/ever-abi.git', tag = '2.7.11' }
+ever_abi = { git = 'https://github.com/everx-labs/ever-abi.git', tag = '2.8.0' }
 ever_block = { git = 'https://github.com/everx-labs/ever-block.git', tag = '1.11.20' }
 ever_block_json = { git = 'https://github.com/everx-labs/ever-block-json.git', tag = '0.9.37' }
 ever_client_processing = { default-features = false, path = '../ever_client_processing' }
