@@ -125,7 +125,7 @@ checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
 
 [[package]]
 name = "api_derive"
-version = "1.48.1"
+version = "1.49.0"
 dependencies = [
  "api_info",
  "proc-macro2",
@@ -136,7 +136,7 @@ dependencies = [
 
 [[package]]
 name = "api_info"
-version = "1.48.1"
+version = "1.49.0"
 dependencies = [
  "serde",
  "serde_derive",
@@ -145,7 +145,7 @@ dependencies = [
 
 [[package]]
 name = "api_test"
-version = "1.48.1"
+version = "1.49.0"
 dependencies = [
  "api_derive",
  "api_info",
@@ -865,7 +865,7 @@ dependencies = [
 
 [[package]]
 name = "ever_client"
-version = "1.48.1"
+version = "1.49.0"
 dependencies = [
  "aes",
  "anyhow",
@@ -932,7 +932,7 @@ dependencies = [
 
 [[package]]
 name = "ever_client_processing"
-version = "1.48.1"
+version = "1.49.0"
 dependencies = [
  "api_derive",
  "api_info",
@@ -963,7 +963,7 @@ dependencies = [
 
 [[package]]
 name = "ever_sdk"
-version = "1.48.1"
+version = "1.49.0"
 dependencies = [
  "anyhow",
  "api_derive",
@@ -1004,7 +1004,7 @@ dependencies = [
 
 [[package]]
 name = "evercli"
-version = "1.48.1"
+version = "1.49.0"
 dependencies = [
  "api_info",
  "assert_cmd",
