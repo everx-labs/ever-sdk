@@ -797,8 +797,8 @@ dependencies = [
 
 [[package]]
 name = "ever_abi"
-version = "2.8.0"
-source = "git+https://github.com/everx-labs/ever-abi.git?tag=2.8.0#e3ad9f0ab239e39f1209045e063a2b29ea022396"
+version = "2.8.1"
+source = "git+https://github.com/everx-labs/ever-abi.git?tag=2.8.1#b4b5a7dafda0d43928a4ec9b97598eb38850d248"
 dependencies = [
  "anyhow",
  "byteorder",
