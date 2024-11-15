@@ -793,7 +793,7 @@ async fn test_proof_block_data() -> Result<()> {
     )
     .await?;
 
-    client
+    let _: () = client
         .request_async(
             "proofs.proof_block_data",
             ParamsOfProofBlockData {
@@ -804,7 +804,7 @@ async fn test_proof_block_data() -> Result<()> {
 
     block_json["boc"] = Value::Null;
 
-    client
+    let _: () = client
         .request_async(
             "proofs.proof_block_data",
             ParamsOfProofBlockData {
