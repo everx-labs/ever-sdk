@@ -1452,7 +1452,7 @@ async fn test_crypto_box_signing_boxes() -> ever_block::Result<()> {
         assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 4);
     }
 
-    client
+    let _: () = client
         .request_async(
             "crypto.clear_crypto_box_secret_cache",
             RegisteredCryptoBox {
@@ -1588,7 +1588,7 @@ async fn test_crypto_box_encryption_boxes() -> ever_block::Result<()> {
         assert_eq!(callback_calls_counter.load(Ordering::Relaxed), 4);
     }
 
-    client
+    let _: () = client
         .request_async(
             "crypto.clear_crypto_box_secret_cache",
             RegisteredCryptoBox {
