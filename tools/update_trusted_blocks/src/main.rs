@@ -113,7 +113,7 @@ async fn main() -> Result<()> {
 
     let networks = [
         ("mainnet.evercloud.dev", "58ffca1a178daff705de54216e5433c9bd2e7d850070d334d38997847ab9e845"),
-        ("devnet.evercloud.dev", "cd81dae0c23d78e7c3eb5903f2a7bd98889991d36a26812a9163ca0f29c47093"),
+        /* ("devnet.evercloud.dev", "cd81dae0c23d78e7c3eb5903f2a7bd98889991d36a26812a9163ca0f29c47093"), */
     ];
 
     let mut trusted_key_blocks = match std::fs::read(&args[1]) {
