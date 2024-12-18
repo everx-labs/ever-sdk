@@ -3,7 +3,7 @@ authors = [ 'EverX Labs Ltd <support@everx.dev>' ]
 edition = '2018'
 license = 'Apache-2.0'
 name = 'ever_sdk'
-version = '1.49.2'
+version = '1.49.3'
 
 [dependencies]
 anyhow = '1.0'
