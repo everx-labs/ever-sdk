@@ -1002,7 +1002,7 @@ async fn test_proof_block_data() -> Result<()> {
     )
     .await?;
 
-    client
+    let _: () = client
         .request_async(
             "proofs.proof_block_data",
             ParamsOfProofBlockData {
