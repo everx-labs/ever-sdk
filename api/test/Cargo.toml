@@ -2,7 +2,7 @@
 authors = [ 'EverX Labs Ltd <support@everx.dev>' ]
 edition = '2018'
 name = 'api_test'
-version = '1.49.2'
+version = '1.49.3'
 
 [dependencies]
 serde = '1.0.115'
