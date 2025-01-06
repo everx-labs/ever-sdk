@@ -125,7 +125,7 @@ checksum = "4c95c10ba0b00a02636238b814946408b1322d5ac4760326e6fb8ec956d85775"
 
 [[package]]
 name = "api_derive"
-version = "1.49.2"
+version = "1.49.4"
 dependencies = [
  "api_info",
  "proc-macro2",
@@ -136,7 +136,7 @@ dependencies = [
 
 [[package]]
 name = "api_info"
-version = "1.49.2"
+version = "1.49.4"
 dependencies = [
  "serde",
  "serde_derive",
@@ -145,7 +145,7 @@ dependencies = [
 
 [[package]]
 name = "api_test"
-version = "1.49.2"
+version = "1.49.4"
 dependencies = [
  "api_derive",
  "api_info",
@@ -787,8 +787,8 @@ dependencies = [
 
 [[package]]
 name = "ever-struct"
-version = "1.1.21"
-source = "git+https://github.com/everx-labs/ever-struct.git?tag=1.1.21#4252511faecb729f67981abecfb9b5f0e367c80f"
+version = "1.1.23"
+source = "git+https://github.com/everx-labs/ever-struct.git?tag=1.1.23#e06901ba3b839dc7c482ab8525875069023b4000"
 dependencies = [
  "anyhow",
  "ever_block",
@@ -797,8 +797,8 @@ dependencies = [
 
 [[package]]
 name = "ever_abi"
-version = "2.8.1"
-source = "git+https://github.com/everx-labs/ever-abi.git?tag=2.8.1#b4b5a7dafda0d43928a4ec9b97598eb38850d248"
+version = "2.8.4"
+source = "git+https://github.com/everx-labs/ever-abi.git?tag=2.8.4#505c7cae5194030e88828a8154a8cea1e3cee1ed"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -815,8 +815,8 @@ dependencies = [
 
 [[package]]
 name = "ever_block"
-version = "1.11.20"
-source = "git+https://github.com/everx-labs/ever-block.git?tag=1.11.20#20cd74844f5531538a280c23eeaf6e8a47362a26"
+version = "1.11.21"
+source = "git+https://github.com/everx-labs/ever-block.git?tag=1.11.21#d96e1aa73a5eb8451178b85e5436a3d791eaa4cc"
 dependencies = [
  "aes-ctr",
  "anyhow",
@@ -845,8 +845,8 @@ dependencies = [
 
 [[package]]
 name = "ever_block_json"
-version = "0.9.37"
-source = "git+https://github.com/everx-labs/ever-block-json.git?tag=0.9.37#7867a09f4027be84668f79cc3580764cc2ef6a7d"
+version = "0.9.40"
+source = "git+https://github.com/everx-labs/ever-block-json.git?tag=0.9.40#a58b01967cf73f0b6f8986d84eaf391c07a21b94"
 dependencies = [
  "anyhow",
  "ever_block",
@@ -865,7 +865,7 @@ dependencies = [
 
 [[package]]
 name = "ever_client"
-version = "1.49.2"
+version = "1.49.4"
 dependencies = [
  "aes",
  "anyhow",
@@ -932,7 +932,7 @@ dependencies = [
 
 [[package]]
 name = "ever_client_processing"
-version = "1.49.2"
+version = "1.49.4"
 dependencies = [
  "api_derive",
  "api_info",
@@ -950,8 +950,8 @@ dependencies = [
 
 [[package]]
 name = "ever_executor"
-version = "1.18.22"
-source = "git+https://github.com/everx-labs/ever-executor.git?tag=1.18.22#446ae61a8e15028d1fb89297b073994f0bb84208"
+version = "1.18.25"
+source = "git+https://github.com/everx-labs/ever-executor.git?tag=1.18.25#ff34590978c37ba41eba0ccb60ba638ed71acc71"
 dependencies = [
  "anyhow",
  "ever_block",
@@ -963,7 +963,7 @@ dependencies = [
 
 [[package]]
 name = "ever_sdk"
-version = "1.49.2"
+version = "1.49.4"
 dependencies = [
  "anyhow",
  "api_derive",
@@ -986,8 +986,8 @@ dependencies = [
 
 [[package]]
 name = "ever_vm"
-version = "2.2.21"
-source = "git+https://github.com/everx-labs/ever-vm.git?tag=2.2.21#d3309bc4087209db302b4a4bbd063176434f28a1"
+version = "2.2.23"
+source = "git+https://github.com/everx-labs/ever-vm.git?tag=2.2.23#ac1d8f940e7230d589d79b1dbc5c7c22ca77b42e"
 dependencies = [
  "anyhow",
  "diffy",
@@ -1004,7 +1004,7 @@ dependencies = [
 
 [[package]]
 name = "evercli"
-version = "1.49.2"
+version = "1.49.4"
 dependencies = [
  "api_info",
  "assert_cmd",
@@ -3204,8 +3204,8 @@ dependencies = [
 
 [[package]]
 name = "ton_api"
-version = "0.4.29"
-source = "git+https://github.com/everx-labs/ever-tl.git?tag=0.4.29#56c1ca4845f3ec30d89d38b39613175867f492a0"
+version = "0.4.31"
+source = "git+https://github.com/everx-labs/ever-tl.git?tag=0.4.31#bb57bbdd9ad07d17c55ea2949c90a0edd1f6a0ba"
 dependencies = [
  "anyhow",
  "byteorder",
@@ -3225,7 +3225,7 @@ dependencies = [
 [[package]]
 name = "ton_tl_codegen"
 version = "0.1.0"
-source = "git+https://github.com/everx-labs/ever-tl.git?tag=0.4.29#56c1ca4845f3ec30d89d38b39613175867f492a0"
+source = "git+https://github.com/everx-labs/ever-tl.git?tag=0.4.31#bb57bbdd9ad07d17c55ea2949c90a0edd1f6a0ba"
 dependencies = [
  "crc 1.8.1",
  "pom",
@@ -3369,7 +3369,7 @@ checksum = "8ecb6da28b8a351d773b68d5825ac39017e680750f980f3a1a85cd8dd28a47c1"
 
 [[package]]
 name = "update_trusted_blocks"
-version = "0.1.0"
+version = "1.49.4"
 dependencies = [
  "anyhow",
  "bincode",
