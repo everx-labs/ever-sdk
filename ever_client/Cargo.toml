@@ -44,7 +44,7 @@ serde_repr = '0.1.7'
 sha2 = '0.9.5'
 thiserror = '1.0'
 tiny-bip39 = '0.8.2'
-tokio = { default-features = false, features = [ 'sync' ], version = '1.4' }
+tokio = { default-features = false, features = [ 'sync' ], version = '1.43' }
 tokio-stream = { default-features = false, version = '0.1' }
 tokio-tungstenite = { optional = true, version = '0.17.1' }
 wasm-bindgen = { optional = true, version = '0.2.73' }
