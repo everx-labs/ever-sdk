@@ -93,7 +93,7 @@ log("Starting use case #2")
     log(
         result.results.length === TOTAL_NUMBER_OF_MESSAGES
             ? `End of use case #2, all results received`
-            : `Error occured, expected ${TOTAL_NUMBER_OF_MESSAGES}, received ${result.results.length}`,
+            : `Error occurred, expected ${TOTAL_NUMBER_OF_MESSAGES}, received ${result.results.length}`,
     )
 }
 ```

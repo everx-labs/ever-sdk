@@ -170,7 +170,7 @@ Now that you know the address, you need to transfer the initial funds to it from
 // Request contract deployment funds form a local Evernode SE giver
 // not suitable for other networks
 await get_tokens_from_giver(client, address);
-console.log(`Tokens were transfered from giver to ${address}`);
+console.log(`Tokens were transferred from giver to ${address}`);
 ```
 
 ## Deploy

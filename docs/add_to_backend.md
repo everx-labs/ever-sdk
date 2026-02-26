@@ -257,7 +257,7 @@ Where&#x20;
 
 `owner_public_key` is usually [the public key](add\_to\_backend.md#6.-create-deposit-account-signer) of `wallet_signer` in the form `0x...`.
 
-`lifetime` - time in seconds that a transaction in multi-owner accounts will persits and be available for signing by other owners. For a simple multi owner account may be set to any value, as it will be executed immediately anyway.
+`lifetime` - time in seconds that a transaction in multi-owner accounts will persists and be available for signing by other owners. For a simple multi owner account may be set to any value, as it will be executed immediately anyway.
 
 Example:
 
